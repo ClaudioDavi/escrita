@@ -17,6 +17,40 @@ the vault's `data.json`); design mockups on the canvas
 (https://claude.ai/artifact/DGww2xWiadXRuWqVv2jFv6) before UI work; suggest, never
 rewrite prose; mobile-safe; pure logic tested with vitest.
 
+## Modes: the universe is opt-in
+
+Not every writer wants a shared world. One setting, **Shared universe**, decides how
+much of this roadmap exists for a user:
+
+| Mode | For | Where characters and places live | Scope of "appears in", continuity, create-from-selection |
+|---|---|---|---|
+| **Off** (default) | Writers who don't want any of it | Nowhere in particular | Hidden: no panel, no commands, no properties added |
+| **Per book** | Standalone novels | Inside each book: `<Book folder>/Characters/`, `Places/`… (today's convention) | That book's chapters only |
+| **Universe** | A shared world across works | `Universe/` folders, shared | Every work in the universe |
+
+Rules:
+
+- **Off is the default for new installs.** Commands are only registered, and the
+  universe panel only offered, when the mode isn't off (re-register on
+  `settingsChanged`). No property is ever added to a note while the mode is off.
+- **Features that don't need a universe work in every mode**: open threads (1.5) are
+  listed per work when off or per book, and per universe in universe mode; names from
+  the entry folders feed spellcheck and the revision lens (1.4) in per-book mode too.
+- **Per book** reuses the book convention: entry folders are subfolders of the book
+  folder (names configurable, author: `Personagens`, `Lugares`), and every feature is
+  scoped to that book. Short stories have no entries in this mode.
+- **Switching modes never moves or edits files.** Per book → universe offers the
+  migration command (1.1) with a preview; universe → per book or off only hides
+  features. Notes stay where they are.
+- **Mixed vaults**: in universe mode, a work without a `universe` property (and not in
+  a folder with a default universe) is standalone. Its entries live in its own book
+  folder (per-book rules) and are invisible to the universe.
+- Implementation: a pure `scopeFor(file, settings) → { kind: "none" | "book" |
+  "universe", root }` in `src/universe/scope.ts` that every feature asks first; tested
+  for each mode and for mixed vaults.
+
+The author's vault uses **Universe** mode.
+
 ## Phases
 
 | Phase | Contents | Effort |
@@ -203,6 +237,8 @@ properties and conventions.
 
 | Setting | Default | Author's vault |
 |---|---|---|
+| Shared universe mode | off | universe |
+| Entry folders in per-book mode | `Characters`, `Places`, … | (not used) |
 | Universe note / folder | `Universe.md` / `Universe/` | `Universo.md` / `Universo/` |
 | Default universe for folders | (none) | `Contos`, `Textos`, `Romances` |
 | Type property and values | `type`: character, place, object, group, event | `tipo`: personagem, lugar, objeto, grupo, evento |
