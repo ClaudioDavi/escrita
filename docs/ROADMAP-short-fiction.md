@@ -24,7 +24,7 @@ Background research: `reports/Obsidian fiction writing gaps.md` (local only, not
   `#f0a476`, Portuguese copy.
 - **Suggest, never rewrite.** No feature changes prose without an explicit click.
 
-### The author's vault (for testing and for his `data.json`)
+### The author's vault (for testing and for its `data.json`)
 
 - Vault: `~/projects/website/escrita/`. Contos in `Contos/`, essays in `Textos/`, one note each.
 - Properties: `status` (`ideia`, `rascunho`, `revisão`, `pronto`, `publicado`), `date`
