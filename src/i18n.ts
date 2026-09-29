@@ -1,0 +1,35 @@
+// Tiny i18n. Each feature module ships its own `strings.ts` with an `en`
+// dictionary (the source of truth) and translations keyed by locale.
+// Adding a language = adding one key to each strings file.
+
+import { moment } from "obsidian";
+
+export type Dict = Record<string, string>;
+export type Strings = { en: Dict } & Record<string, Dict>;
+
+const dicts: Record<string, Dict> = { en: {} };
+
+export function registerStrings(s: Strings): void {
+  for (const [lang, d] of Object.entries(s)) dicts[lang] = Object.assign(dicts[lang] ?? {}, d);
+}
+
+export function lang(): string {
+  const l = (moment.locale() || "en").toLowerCase();
+  if (l.startsWith("pt")) return "pt-BR";
+  const exact = Object.keys(dicts).find((k) => k.toLowerCase() === l);
+  if (exact) return exact;
+  const base = Object.keys(dicts).find((k) => k.toLowerCase() === l.split("-")[0]);
+  return base ?? "en";
+}
+
+/** t("goals.today", { n: 412 }) → "412 today". Missing keys fall back to English, then the key. */
+export function t(key: string, vars?: Record<string, string | number>): string {
+  const s = dicts[lang()]?.[key] ?? dicts.en[key] ?? key;
+  if (!vars) return s;
+  return s.replace(/\{(\w+)\}/g, (_, k: string) => (k in vars ? String(vars[k]) : `{${k}}`));
+}
+
+/** Locale-aware number: 18420 → "18,420" / "18.420". */
+export function fmt(n: number): string {
+  return Math.round(n).toLocaleString(lang());
+}

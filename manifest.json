@@ -1,0 +1,10 @@
+{
+  "id": "escrita",
+  "name": "Escrita",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "For fiction writers: an outline with ghost scene beats, daily and book word goals, sprints, placeholders and darlings.",
+  "author": "Claudio Davi",
+  "authorUrl": "https://claudiodavi.com",
+  "isDesktopOnly": false
+}
