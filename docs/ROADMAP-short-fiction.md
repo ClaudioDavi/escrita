@@ -1,4 +1,7 @@
-# Roadmap: short fiction and essays (v0.2 → v0.3)
+# Roadmap: short fiction and essays
+
+Which version each feature ships in is decided in [ROADMAP.md](ROADMAP.md); the
+table below mirrors it.
 
 Plan for the next six months of the author's writing: **contos (short stories) and
 textos (essays, chronicles)**, one note each, published whole to a personal site.
@@ -37,22 +40,19 @@ Background research: `reports/Obsidian fiction writing gaps.md` (local only, not
   `%% … %%` comments are stripped; an unclosed `%%` hides everything after it.
 - Obsidian Git auto-commits and pushes; the site deploys from `main`.
 
-## Milestones
+## Versions
 
-| Milestone | Contents | Effort |
-|---|---|---|
-| 0 | No-network guard | XS |
-| 1 (v0.2) | Publish check · Targets per piece + days off · Outline for a single note | S + S + S |
-| 2 (v0.3) | Snapshots with word-level compare | M |
-| 3 (v0.3) | Revision lens (pt-BR and English rules) | M |
-| 4 (v0.3) | Word counts in the file explorer | S |
+| Version | Contents | Effort | Status |
+|---|---|---|---|
+| 0.2.0 | No-network guard (0) · Publish check (1) · Targets per piece + days off (2) · Outline for a single note (3) | XS + S + S + S | Shipped |
+| 0.3 | Word counts in the file explorer (6) · Dialogue focus (7) · Snapshots with word-level compare (4) | S + S + M | Next |
+| 0.4 | Revision lens, pt-BR and English rules (5) | M–L | Planned |
 
-Ship milestone 1 as one release. Snapshots and the revision lens can ship
-together or separately.
+Sections keep their original numbers so references from the other roadmaps stay valid.
 
 ---
 
-## 0. No-network guard
+## 0. No-network guard (shipped in 0.2.0)
 
 - `tests/no-network.test.ts`: fail if any file in `src/` contains `fetch(`,
   `requestUrl`, `request(` from obsidian, `XMLHttpRequest`, `WebSocket`, `EventSource`,
@@ -64,7 +64,7 @@ together or separately.
 
 ---
 
-## 1. Publish check
+## 1. Publish check (shipped in 0.2.0)
 
 **Why.** Every conto and texto is published whole, so publishing happens weekly. Today
 it is a manual property edit, and the mistakes it can make are silent (a leftover
@@ -126,7 +126,7 @@ only content is comments.
 
 ---
 
-## 2. Targets per piece, and days off
+## 2. Targets per piece, and days off (shipped in 0.2.0)
 
 **Why.** Book goals and deadlines only work for novels today. A conto has its own
 target length, often a hard **maximum** from a contest or magazine, frequently counted
@@ -171,7 +171,7 @@ deadline skips days off.
 
 ---
 
-## 3. Outline for a single note
+## 3. Outline for a single note (shipped in 0.2.0)
 
 **Why.** Contos have scenes too. Beats (`%% beat: … %%`) and ghost rendering already
 work in any note; only the outline panel requires a book.
@@ -243,7 +243,7 @@ manual check on mobile.
 
 ---
 
-## 5. Revision lens (v0.3)
+## 5. Revision lens (v0.4)
 
 **Why.** Short fiction and essays are revised sentence by sentence. Style checkers
 (ProWritingAid, iA Writer Style Check, Harper) are English-only or need a server. This
@@ -349,6 +349,36 @@ unit and target; abbreviation.
 each note, the book total next to the book, matches the status bar's numbers, updates
 within a second of typing stopping, and looks right alongside Novel Word Count
 installed (or tells the user to turn off its file counts).
+
+---
+
+## 7. Dialogue focus (v0.3)
+
+Moved here from the novel roadmap (it was N 3): it works on any note, a conto as much as
+a chapter.
+
+**Why.** Revising voices means reading the dialogue alone. Scrivener's Dialogue Focus
+and the stale Dialogue Mode plugin only know quotes, in English. Portuguese, Spanish and
+French fiction mostly uses the dash.
+
+**What it does.** Command "Toggle dialogue focus" for the active note. A CodeMirror
+decoration dims everything except dialogue; the text is never changed. It recognizes
+both styles:
+
+- Dash dialogue: a paragraph starting with `—` is dialogue up to the next `—` that
+  introduces narration, and dialogue again after the following `—`
+  (`— Vem cá — disse ela. — Agora.` → the speech parts only).
+- Quote dialogue: text inside `“…”` / `"…"` / `«…»`, per the existing quote-style
+  setting.
+
+Skip frontmatter, comments and code, like the other decorations.
+
+**Pure, tested:** `dialogueRanges(paragraph, style) → Range[]`, with tests on dash
+dialogue with and without narration, narration in the middle, a dash inside a sentence
+that isn't dialogue, nested quotes, curly and straight quotes, and CRLF.
+
+**Done when** a conto and a chapter with both dialogue styles dim everything but the
+speech, toggling off restores the view, and a 10,000-word note stays responsive.
 
 ---
 

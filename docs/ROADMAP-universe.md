@@ -6,6 +6,8 @@ events carry over between works. Today characters and places live inside one nov
 folder (`Romances/<Book>/Personagens/`), so contos can't share them. This roadmap
 makes the **universe** the container and every work a part of it.
 
+Not scheduled yet; versions are decided in [ROADMAP.md](ROADMAP.md).
+
 It is independent of [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md) and
 [ROADMAP-novel.md](ROADMAP-novel.md); where features overlap (character tracking in the
 novel roadmap, the name-variant rule in the revision lens), build them once, here, at
@@ -110,7 +112,7 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
   frontmatter don't count). Case-insensitive by default; per-entry `caseSensitive`.
 - **Portuguese inflection**: plural, feminine, diminutive and augmentative forms
   (*Maria / Mariazinha*, *menino / meninos / menina*) through the stemmer built for the
-  revision lens (short-fiction roadmap, feature 5), or a small shared one in `core/` if
+  revision lens (short-fiction roadmap, feature 5, scheduled for v0.4), or a small shared one in `core/` if
   this ships first. English: plural and possessive (`Teo's`).
 - **Ignore list** per entry (`ignore` property) for names that are also common words
   (a character named "Rosa", a place called "Porto").

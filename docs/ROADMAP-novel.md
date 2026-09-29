@@ -1,5 +1,7 @@
 # Roadmap: novel writing (later)
 
+None of these is scheduled yet; versions are decided in [ROADMAP.md](ROADMAP.md).
+
 Features for when the author starts a novel. They build on the book convention
 already in place (a book note next to a folder with a chapters subfolder; see
 [ARCHITECTURE.md](ARCHITECTURE.md)) and on the short-fiction roadmap
@@ -22,7 +24,7 @@ mobile-safe manuscript tool with first-class Portuguese.
 |---|---|---|---|
 | 1 | POV and status in the outline | Quick win | S |
 | 2 | Per-chapter targets | Quick win | S |
-| 3 | Dialogue focus (travessão-aware) | Quick win | S |
+| 3 | ~~Dialogue focus~~ (moved to short fiction, feature 7, v0.3) | — | — |
 | 4 | Book-wide publish check and serial dashboard | Quick win | S |
 | 5 | Longform importer | Quick win | S–M |
 | 6 | Companion-plugin guide | Quick win | S |
@@ -36,8 +38,9 @@ Effort: S a few days, M one to two weeks, L several weeks.
 ---
 
 Word counts next to chapters, the book note and book folders in the file explorer are
-planned in [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md), feature 6, together with
-contos and essays.
+planned in [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md), feature 6 (v0.3), together
+with contos and essays. Snapshots of a single chapter come with feature 4 (v0.3); feature 10
+below extends them to the whole book.
 
 ## 1. POV and status in the outline
 
@@ -57,19 +60,10 @@ chapters. The outline shows a small bar per chapter when a target exists. A book
 setting "Default chapter target" (property on the book note, e.g. `chapterTarget`)
 applies when a chapter has none.
 
-## 3. Dialogue focus
+## 3. Dialogue focus (moved)
 
-Dims everything except dialogue, to revise voices. Unlike Scrivener's Dialogue Focus
-and the stale Dialogue Mode plugin (quote-based, English), it recognizes both styles:
-
-- Dash dialogue (Portuguese, Spanish, French): a paragraph starting with `—` is
-  dialogue up to the next `—` that introduces narration (`— Vem cá — disse ela. — Agora.`
-  → the speech parts only).
-- Quote dialogue: text inside `“…”` / `"…"` / `«…»` per the quote-style setting.
-
-Command "Toggle dialogue focus". A CodeMirror decoration dims non-dialogue text.
-Pure, tested parser `dialogueRanges(paragraph, style)`. Also useful for contos, so it
-can move to the short-fiction roadmap if wanted.
+Moved to [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md), feature 7, and scheduled
+for v0.3: it works on any note, so contos get it too.
 
 ## 4. Book-wide publish check and serial dashboard
 
