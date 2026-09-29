@@ -4,7 +4,10 @@ import type EscritaPlugin from "../main";
 import type { EscritaModule } from "../data";
 import { folderList } from "../settings";
 import { writingDay } from "../core/dates";
-import { countSelection } from "../core/wordcount";
+import { countSelection, countWords } from "../core/wordcount";
+import { pieceCount, readPiece, type Piece } from "../core/piece";
+import { dayOffPredicate, hasDaysOff, type DayOffPredicate } from "../core/daysoff";
+import { pieceSummary } from "./piece";
 import { fmt, t } from "../i18n";
 import { ProgressModal } from "./progress-modal";
 import { Sprint, formatClock, type SprintEvent } from "./sprint";
@@ -28,6 +31,8 @@ export class GoalsModule implements EscritaModule {
   private status: StatusBar | null = null;
   private selection = 0;
   private activeCounts: { chapter: number | null; book: number | null } = { chapter: null, book: null };
+  /** the active note's piece (target/limit/unit) and its length in that unit, when it has a target or limit */
+  private activePiece: { piece: Piece; count: number } | null = null;
   private currentSprint: Sprint | null = null;
   private sprintTimer: number | null = null;
   private modal: ProgressModal | null = null;
@@ -36,6 +41,18 @@ export class GoalsModule implements EscritaModule {
 
   get sprint(): Sprint | null {
     return this.currentSprint;
+  }
+
+  /** Days off from settings, or null when there are none (the old behavior everywhere). */
+  dayOff(): DayOffPredicate | null {
+    const s = this.plugin.settings;
+    return hasDaysOff(s) ? dayOffPredicate(s) : null;
+  }
+
+  /** The target/limit/unit/deadline properties of a note, or null when it has none. */
+  pieceOf(file: TFile | null): Piece | null {
+    if (!file || file.extension !== "md") return null;
+    return readPiece(this.plugin.app.metadataCache.getFileCache(file)?.frontmatter, this.plugin.settings);
   }
 
   /** Today's writing day (YYYY-MM-DD), honoring "the day ends at". */
@@ -83,6 +100,10 @@ export class GoalsModule implements EscritaModule {
       this.refreshStatus();
     }));
     plugin.registerEvent(vault.on("modify", (file) => this.onModify(file)));
+    // Frontmatter edits (a new target, limit or unit) change the piece segment.
+    plugin.registerEvent(plugin.app.metadataCache.on("changed", (file) => {
+      if (file.path === workspace.getActiveFile()?.path) this.refreshStatus();
+    }));
     plugin.registerEvent(vault.on("rename", (file, oldPath) => this.onRename(file, oldPath)));
     plugin.registerEvent(vault.on("delete", (file) => {
       this.plugin.counter.forget(file.path);
@@ -152,7 +173,7 @@ export class GoalsModule implements EscritaModule {
       const after = await this.plugin.counter.count(file);
       this.baseline.set(file.path, after);
       if (before === undefined || after === before) return;
-      this.record(after - before, await this.bookChange(file));
+      this.record(after - before, (await this.bookChange(file)) ?? this.pieceChange(file, after));
     });
     this.refreshStatus();
   }
@@ -164,6 +185,16 @@ export class GoalsModule implements EscritaModule {
     if (!book) return null;
     const total = await this.plugin.counter.total(books.chapters(book).map((c) => c.file));
     return { path: book.note.path, total };
+  }
+
+  /**
+   * A note with its own target, limit or deadline (outside a book) keeps its
+   * per-day words in history the way a book does, keyed by its path, so the
+   * progress modal can chart it and pace it with its own average.
+   */
+  private pieceChange(file: TFile, words: number): { path: string; total: number } | null {
+    if (this.plugin.books.bookFor(file) || !this.pieceOf(file)) return null;
+    return { path: file.path, total: words };
   }
 
   private record(delta: number, book: { path: string; total: number } | null): void {
@@ -215,8 +246,8 @@ export class GoalsModule implements EscritaModule {
   refreshStatus = debounce(() => { void this.updateActiveCounts(); }, 400, true);
 
   private async updateActiveCounts(): Promise<void> {
+    const file = this.plugin.app.workspace.getActiveFile();
     try {
-      const file = this.plugin.app.workspace.getActiveFile();
       const books = this.plugin.books;
       const book = file ? books.bookFor(file) : null;
       if (!file || !book) {
@@ -231,7 +262,25 @@ export class GoalsModule implements EscritaModule {
       console.error("Escrita: couldn't count the active book", e);
       this.activeCounts = { chapter: null, book: null };
     }
+    try {
+      const piece = this.pieceOf(file);
+      if (file && piece && (piece.target !== undefined || piece.limit !== undefined)) {
+        const md = await this.plugin.app.vault.cachedRead(file);
+        this.activePiece = { piece, count: pieceCount(md, piece.unit) };
+      } else {
+        this.activePiece = null;
+      }
+    } catch (e) {
+      console.error("Escrita: couldn't count the active note", e);
+      this.activePiece = null;
+    }
     this.renderStatus();
+  }
+
+  /** The active note's length in its unit and in words (for the progress modal). */
+  async measure(file: TFile, piece: Piece): Promise<{ count: number; words: number }> {
+    const md = await this.plugin.app.vault.cachedRead(file);
+    return { count: pieceCount(md, piece.unit), words: countWords(md) };
   }
 
   private renderStatus(): void {
@@ -244,9 +293,12 @@ export class GoalsModule implements EscritaModule {
       selection: this.selection,
       chapter: this.activeCounts.chapter,
       book: this.activeCounts.book,
+      piece: this.activePiece
+        ? { ...pieceSummary(this.activePiece.count, this.activePiece.piece), unit: this.activePiece.piece.unit }
+        : null,
       today: addedOn(history, today),
       goal: this.plugin.settings.dailyGoal,
-      streak: streak(history, today),
+      streak: streak(history, today, this.dayOff()),
       sprint: s ? { clock: formatClock(s.remainingMs(now)), words: s.words, target: s.target, progress: s.progress(now) } : null,
     });
   }
@@ -255,8 +307,11 @@ export class GoalsModule implements EscritaModule {
 
   openProgress(): void {
     this.modal?.close();
-    const book = this.plugin.books.bookFor(this.plugin.app.workspace.getActiveFile());
-    this.modal = new ProgressModal(this.plugin, this, book);
+    const active = this.plugin.app.workspace.getActiveFile();
+    const book = this.plugin.books.bookFor(active);
+    // Outside a book, a note with a target, limit or deadline gets a piece tile and pacing.
+    const pieceFile = !book && active && this.pieceOf(active) ? active : null;
+    this.modal = new ProgressModal(this.plugin, this, book, pieceFile);
     this.modal.open();
   }
 

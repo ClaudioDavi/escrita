@@ -21,10 +21,15 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   `bookFor(file)`, `isChapter(file)`, `chapters(book)`, `allBooks()`, `frontmatter(file)`),
   `counter` (`WordCounter`: cached per-file word counts), `chapterOps` (`ChapterOps`:
   create/renumber/retitle chapters), and the other modules (`goals`, `outline`,
-  `placeholders`, `darlings`, `editor`).
+  `placeholders`, `darlings`, `editor`, `publish`).
 - **Pure core** (no Obsidian imports, unit tested): `core/wordcount.ts`,
   `core/markers.ts` (beat/placeholder/scene-break syntax), `core/book.ts`
-  (chapter numbering), `core/dates.ts` (writing day). Reuse these; don't duplicate.
+  (chapter numbering), `core/dates.ts` (writing day), `core/piece.ts` (a note's
+  target/limit/unit/deadline, `pieceCount`, `pieceProgress`), `core/daysoff.ts`
+  (`dayOffPredicate`, `parseDatesOff`), `core/lists.ts` (`lineList`) and
+  `core/merge.ts` (`mergeDefaults` for saved settings). `countCharacters(md, { spaces })`
+  in `core/wordcount.ts` counts on `proseOnly` text with whitespace runs collapsed.
+  Reuse these; don't duplicate.
 - **Pure logic goes in files without `obsidian` imports** so vitest can test it.
   Obsidian-facing code stays thin.
 - **i18n.** Every user-visible string goes through `t("<module>.<key>", vars)`
@@ -47,6 +52,12 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   Must look right in light and dark themes. Touch targets ≥ 32px in side panels.
 - **Data safety is the top priority.** Never lose or silently change prose. Anything
   that deletes text either moves it somewhere recoverable (darlings, trash) or asks.
+- **No network.** Escrita never contacts a server. `tests/no-network.test.ts` fails
+  when any file in `src/` (or the built `main.js`) uses `fetch(`, `requestUrl`,
+  `request(` from obsidian, `XMLHttpRequest`, `WebSocket`, `EventSource`, `sendBeacon`,
+  a dynamic `import(` of a non-relative path, or a Node/Electron network module. Only
+  whole-line and block comments are skipped, so don't even mention those APIs in a
+  trailing comment. `npm run test:bundle` (CI, after the build) requires `main.js`.
 - **Checks.** `npm run typecheck`, `npx vitest run`, `npm run build` must pass.
   Other modules are being written at the same time, so errors outside your folder
   may appear transiently; your files must be clean.
@@ -150,6 +161,24 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
   since start (tracked files); ticks every second via `registerInterval` updating the status bar;
   target reached → Notice once; time up → Notice with words, minutes, words/hour; stop
   early from the status bar or command. Sprint state is not persisted across reloads.
+- **Targets per piece** (`core/piece.ts`, display helpers in `src/goals/piece.ts`):
+  any note can have `target`, `limit`, `unit` (`words` | `characters` |
+  `characters-no-spaces`; names from `targetProperty`/`limitProperty`/`unitProperty`)
+  and `deadline`. `readPiece` returns null when none is set. `pieceProgress` gives the
+  state `none | under | near (≥ 95% of the limit) | over`. Status bar: when the active
+  note has a target or limit, a piece segment "4,210 / 5,000 words" with a bar, amber
+  near the limit, red with "+312 over the limit" past it (`pieceSummary`). Outside a
+  book, a note with a target, limit or deadline records its per-day words in
+  `history` under its own path (like a book), and the progress modal replaces the
+  book tile with a piece tile (count against target, limit mark, `pieceBar`) and
+  paces toward the note's `deadline` (`paceInUnit` converts words/day to the unit).
+  Editing target, limit, unit and deadline in the modal writes the note's properties.
+- **Days off** (`core/daysoff.ts`, settings `weekdaysOff`, `datesOff`):
+  `goals.dayOff()` returns a predicate, or null when nothing is off (old behaviour).
+  `streak(history, today, isDayOff)` skips days off with no writing; writing on one
+  still counts. `pacing({ …, isDayOff })` spreads the remaining words over writing
+  days only (`afterWritingDays` for the projected finish), and `dailyAverage` averages
+  over writing days. The chart draws days off as dimmed bands (`offBands`).
 - **Commands**: "Open progress", "Start a sprint", "Stop the sprint".
 
 ### outline (`src/outline/` + `src/core/chapter-ops.ts`, `chapter-engine.ts`, `chapter-plan.ts`)
@@ -209,6 +238,16 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
   the cursor is on the line, or in Source mode, the raw line gets a faint class instead.
   Off when `settings.ghostBeats` is false (reconfigure on `settingsChanged` via
   `workspace.updateOptions()`).
+- **Outline for a single note**: `resolveTarget` (`src/outline/model.ts`, tested)
+  decides what the panel shows: `book`, `note` or `empty`. A book file shows its book;
+  any other Markdown note shows its own beats (header: note title, beat count, length
+  against its target/limit in the piece's unit via `outline/units.ts`); anything else
+  becoming active (the panel, a PDF, nothing) keeps the last target. Keys follow
+  `decideNoteKey`: Enter adds a beat after, Backspace on an empty beat removes it,
+  text edits rewrite the comment line, Tab/Shift+Tab do nothing. Clicking a letter
+  jumps to the line. A note with no beats shows "Add the first beat"
+  (`insertFirstBeat`, after the frontmatter and a leading `# title`) above the usual book picker / "Create a
+  book" empty state. The book outline is unchanged.
 - **Commands**: "Open outline", "Open outline as a board", "Create a book" (modal: title +
   parent folder → creates `<folder>/<title>.md` with `goal`/`deadline` properties, the
   book folder, the chapters folder and a first chapter), "Add a beat to this chapter",
@@ -273,7 +312,8 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
 ### editor (`src/editor/`)
 
 - **Enter, Enter, Enter** (`src/editor/enter-flow.ts`, only when `settings.enterFlow` and
-  the file is a chapter — use `editorInfoField` to get the file): a high-precedence
+  the file is a chapter, or another note tracked by goals (`goals.tracked`), where only
+  `"break"` applies and `"chapter"` falls back to a normal Enter — use `editorInfoField` to get the file): a high-precedence
   (`Prec.high`) Enter keymap. With an empty selection on an empty line, outside
   frontmatter, code blocks and lists: let `N` = 1 when `paragraphStyle` is `single`,
   else 2. If the empty lines directly above (counting the current one) number ≥ `N` and
@@ -302,3 +342,36 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
   Obsidian's own spellcheck alone.
 - **Commands**: "Toggle spellcheck", "Insert scene break" (inserts `\n\n---\n\n` normalized
   around the cursor).
+
+### publish (`src/publish/`)
+
+- **Pure checks** (`src/publish/checks.ts`, tested): `runChecks(text, frontmatter, ctx)
+  → Check[]`, each `{ id, level: blocker | warning | passed, line?, items, vars }`
+  (messages are built with `t()` in the modal from the id and vars). In order:
+  `unclosedComment` (odd `%%` outside fenced and inline code; blocker, with the opening
+  line), `placeholders` (blocker, each item jumps to its line), `unwrittenBeats`
+  (warning), `emptyBody` (`countWords` = 0; blocker), `recommended` (missing
+  `recommendedProperties`, case-insensitive; warning; skipped when the list is empty),
+  `overLimit` (the piece's `limit` in its unit; warning; only when a limit is set),
+  `urlTaken` (another published note in `publishFolders` has the same address;
+  blocker; skipped when no folders), `urlChanged` (address differs from the one stored
+  at the last publish; warning). `sortChecks` puts blockers first; `hasBlockers`.
+- **URLs** (`src/publish/slug.ts`, tested): `slugify` matches the author's site (NFD,
+  strip diacritics, lowercase, runs of non `a-z0-9` → `-`). `noteUrl`: a note's slug
+  property or file stem; a book chapter is `<book slug>/<chapter slug>` with its number
+  dropped. `slugToKeep` decides whether a rename of a published note should offer to
+  keep the old URL.
+- **Dates** (`src/publish/date.ts`, tested): the modal's date field starts at the
+  note's date or today; publishing writes the date only when the user changed it or
+  the note has none, so an existing value (even non-ISO) is kept as it is.
+- **Modal** (`src/publish/modal.ts`): "Publish “<title>”", the sorted checks with an
+  icon per level, clickable items (jump to the line, or open the other note), a date
+  input, and Publish. Blockers disable Publish until "Publish anyway" is checked.
+- **Publish** sets `statusProperty` = `publishedValue` and `dateProperty` in one
+  `processFrontMatter` call, then a Notice. It stores `data.publish[path] =
+  { previousStatus, slug }`. **Unpublish** restores `previousStatus`, else
+  `unpublishedValue`, else `ready`; the stored slug is kept. Records follow file and
+  folder renames and are dropped on delete. Escrita never commits or pushes.
+- **Stable URLs**: when `keepUrlOnRename` is on and a published note is renamed so its
+  address changes, a Notice offers to add `<slugProperty>: <old slug>`.
+- **Commands** (also in the file menu): "Publish this note", "Unpublish this note".

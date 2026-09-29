@@ -1,6 +1,8 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, PluginSettingTab, Setting, moment } from "obsidian";
 import type EscritaPlugin from "./main";
 import { t } from "./i18n";
+import { cleanWeekdays } from "./core/merge";
+import { invalidDatesOff } from "./core/daysoff";
 
 export type ParagraphStyle = "single" | "blank";
 export type Scope = "books" | "all";
@@ -29,6 +31,30 @@ export interface EscritaSettings {
   showStatusBar: boolean;
   sprintMinutes: number;
   sprintTarget: number;
+  /** property names for a piece's target length, hard limit and unit (see core/piece) */
+  targetProperty: string;
+  limitProperty: string;
+  unitProperty: string;
+  /** weekdays off, 0 = Sunday … 6 = Saturday (see core/daysoff) */
+  weekdaysOff: number[];
+  /** specific days off, YYYY-MM-DD, one per line */
+  datesOff: string;
+
+  // Publishing (status property: statusProperty)
+  /** status value that means published */
+  publishedValue: string;
+  /** status set by "Unpublish" when the previous status is unknown */
+  unpublishedValue: string;
+  /** property holding the publication date */
+  dateProperty: string;
+  /** properties a published note should have; newline/comma list (lineList); empty disables the check */
+  recommendedProperties: string;
+  /** folders whose published notes share one URL space; one per line (folderList); empty turns the duplicate URL check off */
+  publishFolders: string;
+  /** property that overrides the URL slug */
+  slugProperty: string;
+  /** offer to add the old slug when a published note is renamed */
+  keepUrlOnRename: boolean;
 
   // Outline
   ghostBeats: boolean;
@@ -69,6 +95,19 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   showStatusBar: true,
   sprintMinutes: 25,
   sprintTarget: 500,
+  targetProperty: "target",
+  limitProperty: "limit",
+  unitProperty: "unit",
+  weekdaysOff: [],
+  datesOff: "",
+
+  publishedValue: "published",
+  unpublishedValue: "ready",
+  dateProperty: "date",
+  recommendedProperties: "description",
+  publishFolders: "",
+  slugProperty: "slug",
+  keepUrlOnRename: true,
 
   ghostBeats: true,
 
@@ -94,6 +133,12 @@ export function parseStatusColors(s: string): Record<string, string> {
     if (m) out[m[1].toLowerCase()] = m[2];
   }
   return out;
+}
+
+/** Settings as saved, with defaults filled in and list fields cleaned (used by loadAll). */
+export function normalizeSettings(s: EscritaSettings): EscritaSettings {
+  s.weekdaysOff = cleanWeekdays(s.weekdaysOff);
+  return s;
 }
 
 export function folderList(s: string): string[] {
@@ -182,6 +227,69 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setName(t("settings.showStatusBar"))
       .addToggle((c) => c.setValue(s.showStatusBar)
         .onChange(async (v) => { s.showStatusBar = v; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.targetProperty"))
+      .setDesc(t("settings.pieceProperties.desc"))
+      .addText((c) => c.setPlaceholder("target").setValue(s.targetProperty)
+        .onChange(async (v) => { s.targetProperty = v.trim() || DEFAULT_SETTINGS.targetProperty; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.limitProperty"))
+      .addText((c) => c.setPlaceholder("limit").setValue(s.limitProperty)
+        .onChange(async (v) => { s.limitProperty = v.trim() || DEFAULT_SETTINGS.limitProperty; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.unitProperty"))
+      .addText((c) => c.setPlaceholder("unit").setValue(s.unitProperty)
+        .onChange(async (v) => { s.unitProperty = v.trim() || DEFAULT_SETTINGS.unitProperty; await save(); }));
+    this.weekdaysSetting(containerEl, save);
+    const datesOff = new Setting(containerEl)
+      .setName(t("settings.datesOff"))
+      .setDesc(t("settings.datesOff.desc"));
+    const datesHint = datesOff.descEl.createDiv({ cls: "escrita-setting-warning" });
+    const showDatesHint = () => {
+      const bad = invalidDatesOff(s.datesOff);
+      datesHint.setText(bad.length ? t("settings.datesOff.invalid", { dates: bad.join(", ") }) : "");
+      datesHint.toggle(bad.length > 0);
+    };
+    showDatesHint();
+    datesOff.addTextArea((c) => c.setPlaceholder("2026-12-25\n2027-01-01").setValue(s.datesOff)
+      .onChange(async (v) => { s.datesOff = v; showDatesHint(); await save(); }));
+
+    new Setting(containerEl).setName(t("settings.publishing")).setHeading();
+    new Setting(containerEl)
+      .setName(t("settings.publishedValue"))
+      .setDesc(t("settings.publishedValue.desc"))
+      .addText((c) => c.setPlaceholder("published").setValue(s.publishedValue)
+        .onChange(async (v) => { s.publishedValue = v.trim() || DEFAULT_SETTINGS.publishedValue; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.unpublishedValue"))
+      .setDesc(t("settings.unpublishedValue.desc"))
+      .addText((c) => c.setPlaceholder("ready").setValue(s.unpublishedValue)
+        .onChange(async (v) => { s.unpublishedValue = v.trim() || DEFAULT_SETTINGS.unpublishedValue; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.dateProperty"))
+      .setDesc(t("settings.dateProperty.desc"))
+      .addText((c) => c.setPlaceholder("date").setValue(s.dateProperty)
+        .onChange(async (v) => { s.dateProperty = v.trim() || DEFAULT_SETTINGS.dateProperty; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.recommendedProperties"))
+      .setDesc(t("settings.recommendedProperties.desc"))
+      .addTextArea((c) => c.setPlaceholder("description").setValue(s.recommendedProperties)
+        .onChange(async (v) => { s.recommendedProperties = v; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.publishFolders"))
+      .setDesc(t("settings.publishFolders.desc"))
+      .addTextArea((c) => c.setPlaceholder("Stories\nEssays").setValue(s.publishFolders)
+        .onChange(async (v) => { s.publishFolders = v; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.slugProperty"))
+      .setDesc(t("settings.slugProperty.desc"))
+      .addText((c) => c.setPlaceholder("slug").setValue(s.slugProperty)
+        .onChange(async (v) => { s.slugProperty = v.trim() || DEFAULT_SETTINGS.slugProperty; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.keepUrlOnRename"))
+      .setDesc(t("settings.keepUrlOnRename.desc"))
+      .addToggle((c) => c.setValue(s.keepUrlOnRename)
+        .onChange(async (v) => { s.keepUrlOnRename = v; await save(); }));
 
     new Setting(containerEl).setName(t("settings.outline")).setHeading();
     new Setting(containerEl)
@@ -257,5 +365,32 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setDesc(t("settings.spellcheckOnDemand.desc"))
       .addToggle((c) => c.setValue(s.spellcheckOnDemand)
         .onChange(async (v) => { s.spellcheckOnDemand = v; await save(); }));
+  }
+
+  /** One labeled checkbox per weekday, in the locale's week order. */
+  private weekdaysSetting(containerEl: HTMLElement, save: () => Promise<void>): void {
+    const s = this.plugin.settings;
+    const setting = new Setting(containerEl)
+      .setName(t("settings.weekdaysOff"))
+      .setDesc(t("settings.weekdaysOff.desc"));
+    setting.settingEl.addClass("escrita-setting-weekdays");
+    const box = setting.controlEl.createDiv({ cls: "escrita-weekdays" });
+    const first = moment.localeData().firstDayOfWeek();
+    for (let i = 0; i < 7; i++) {
+      const day = (first + i) % 7;
+      const label = box.createEl("label", { cls: "escrita-weekday" });
+      const input = label.createEl("input", { type: "checkbox" });
+      input.checked = s.weekdaysOff.includes(day);
+      label.createSpan({ text: moment.weekdaysShort(day) });
+      label.setAttr("aria-label", moment.weekdays(day));
+      // The listener lives and dies with the element (re-rendered on every display()).
+      input.addEventListener("change", () => {
+        const set = new Set(s.weekdaysOff);
+        if (input.checked) set.add(day);
+        else set.delete(day);
+        s.weekdaysOff = cleanWeekdays([...set]);
+        void save();
+      });
+    }
   }
 }

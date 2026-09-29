@@ -51,6 +51,25 @@
 .is-met .escrita-status-fill {
   background: var(--escrita-good);
 }
+/* piece segment: amber near its limit, red over it */
+.escrita-status-piece.is-met {
+  color: var(--escrita-good);
+}
+.escrita-status-piece.is-near {
+  color: var(--escrita-warn);
+}
+.escrita-status-piece.is-over {
+  color: var(--escrita-bad);
+}
+.escrita-status-piece.is-near .escrita-status-fill {
+  background: var(--escrita-warn);
+}
+.escrita-status-piece.is-over .escrita-status-fill {
+  background: var(--escrita-bad);
+}
+.escrita-status-over {
+  font-weight: var(--font-semibold);
+}
 .escrita-status-clock {
   font-family: var(--font-monospace);
 }
@@ -129,6 +148,16 @@
 .escrita-tile-value.is-met {
   color: var(--escrita-good);
 }
+.escrita-tile-value.is-near {
+  color: var(--escrita-warn);
+}
+.escrita-tile-value.is-over,
+.escrita-tile-sub.is-over {
+  color: var(--escrita-bad);
+}
+.escrita-tile-sub.is-over {
+  font-weight: var(--font-semibold);
+}
 .escrita-tile-streak {
   font-size: 1.1em;
 }
@@ -158,6 +187,30 @@
 .escrita-bar-fill.is-met {
   background: var(--escrita-good);
 }
+.escrita-bar-fill.is-near {
+  background: var(--escrita-warn);
+}
+.escrita-bar-fill.is-over {
+  background: var(--escrita-bad);
+}
+/* the piece bar is taller so its target and limit marks can be seen */
+.escrita-piece-bar {
+  height: 6px;
+  border-radius: 3px;
+  overflow: visible;
+}
+.escrita-bar-mark {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--text-muted);
+}
+.escrita-bar-mark.is-limit {
+  background: var(--escrita-bad);
+}
 .escrita-streak-segments {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -175,6 +228,13 @@
 .escrita-streak-seg.is-met {
   background: var(--escrita-accent);
 }
+.escrita-streak-seg.is-off {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--escrita-bar-bg) 0 2px,
+    transparent 2px 4px
+  );
+}
 
 /* chart */
 .escrita-chart {
@@ -189,6 +249,14 @@
 .escrita-chart-axis {
   stroke: var(--background-modifier-border);
   stroke-width: 1;
+}
+.escrita-chart-off {
+  fill: var(--background-modifier-hover);
+}
+.escrita-chart-hatch {
+  stroke: var(--text-faint);
+  stroke-width: 1;
+  opacity: 0.35;
 }
 .escrita-chart-bar {
   fill: var(--text-faint);
@@ -253,6 +321,14 @@
   height: 0;
   border-radius: 0;
   border-top: 1px dashed var(--text-muted);
+}
+.escrita-legend-swatch.is-off {
+  border: 1px solid var(--background-modifier-border);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--background-modifier-hover) 0 2px,
+    var(--background-primary) 2px 4px
+  );
 }
 .escrita-legend-swatch.is-total {
   height: 0;

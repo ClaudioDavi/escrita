@@ -1,6 +1,7 @@
 import { Plugin, debounce } from "obsidian";
-import { DEFAULT_SETTINGS, EscritaSettingTab, type EscritaSettings } from "./settings";
-import type { EscritaData, EscritaModule } from "./data";
+import { DEFAULT_SETTINGS, EscritaSettingTab, normalizeSettings, type EscritaSettings } from "./settings";
+import type { EscritaData, EscritaModule, PublishRecord } from "./data";
+import { mergeDefaults } from "./core/merge";
 import { registerStrings } from "./i18n";
 import { coreStrings } from "./strings";
 import { BookService } from "./core/books";
@@ -16,6 +17,8 @@ import { DarlingsModule } from "./darlings";
 import { darlingsStrings } from "./darlings/strings";
 import { EditorModule } from "./editor";
 import { editorStrings } from "./editor/strings";
+import { PublishModule } from "./publish";
+import { publishStrings } from "./publish/strings";
 
 export default class EscritaPlugin extends Plugin {
   settings!: EscritaSettings;
@@ -29,13 +32,14 @@ export default class EscritaPlugin extends Plugin {
   placeholders!: PlaceholdersModule;
   darlings!: DarlingsModule;
   editor!: EditorModule;
+  publish!: PublishModule;
   private modules: EscritaModule[] = [];
 
   /** Persist data soon; for frequent writes such as word tracking. */
   requestSave = debounce(() => { void this.persist(); }, 2000, true);
 
   async onload(): Promise<void> {
-    for (const s of [coreStrings, goalsStrings, outlineStrings, placeholdersStrings, darlingsStrings, editorStrings]) {
+    for (const s of [coreStrings, goalsStrings, outlineStrings, placeholdersStrings, darlingsStrings, editorStrings, publishStrings]) {
       registerStrings(s);
     }
     await this.loadAll();
@@ -49,7 +53,8 @@ export default class EscritaPlugin extends Plugin {
     this.placeholders = new PlaceholdersModule(this);
     this.darlings = new DarlingsModule(this);
     this.editor = new EditorModule(this);
-    this.modules = [this.goals, this.outline, this.placeholders, this.darlings, this.editor];
+    this.publish = new PublishModule(this);
+    this.modules = [this.goals, this.outline, this.placeholders, this.darlings, this.editor, this.publish];
     for (const m of this.modules) await m.load();
 
     this.addSettingTab(new EscritaSettingTab(this.app, this));
@@ -64,8 +69,13 @@ export default class EscritaPlugin extends Plugin {
 
   private async loadAll(): Promise<void> {
     const raw = ((await this.loadData()) ?? {}) as Partial<EscritaData>;
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, raw.settings ?? {});
-    this.data = { version: 1, settings: this.settings, history: raw.history ?? {} };
+    this.settings = normalizeSettings(mergeDefaults(DEFAULT_SETTINGS, raw.settings));
+    this.data = {
+      version: 1,
+      settings: this.settings,
+      history: isRecord(raw.history) ? raw.history : {},
+      publish: isRecord(raw.publish) ? (raw.publish as Record<string, PublishRecord>) : {},
+    };
   }
 
   private async persist(): Promise<void> {
@@ -77,4 +87,8 @@ export default class EscritaPlugin extends Plugin {
     await this.persist();
     for (const m of this.modules) m.settingsChanged?.();
   }
+}
+
+function isRecord<T>(v: T | undefined | null): v is T {
+  return !!v && typeof v === "object" && !Array.isArray(v);
 }

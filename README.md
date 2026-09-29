@@ -14,6 +14,7 @@ Your books stay plain Markdown. Everything Escrita adds to a chapter is an Obsid
 - Each chapter can hold **beats**: one-line scene notes. A beat stays muted until you write the scene under it, then it gets a check mark.
 - You can edit the outline from the keyboard. Enter adds a chapter or beat. Tab turns an empty chapter into a beat of the chapter before it. Shift+Tab turns an unwritten beat into a new chapter. Backspace on an empty line removes it. Drag chapters to reorder them, and the files are renumbered for you.
 - Titles, summaries and beat text are editable in place. Chapter files are renamed with Obsidian's own rename, so links keep working.
+- Outside a book, the panel shows the beats of the note you're in (a short story, an essay), with its length against its target or limit. Enter adds a beat, Backspace on an empty one removes it, and a note with no beats offers **Add the first beat**.
 - **Ghost beats**: in Live Preview, beats show inside the chapter as faint labels ("Beat b · from outline") above where the scene goes. Put the cursor on the line to see the raw text.
 - **Open outline as a board** writes a Canvas file with one card per chapter, colored by status.
 
@@ -23,6 +24,18 @@ Your books stay plain Markdown. Everything Escrita adds to a chapter is an Obsid
 - A daily goal for all your writing, and a word goal and deadline for each book (stored as `goal` and `deadline` in the book note's properties).
 - The **Progress** window shows today, the book and your streak, a 30-day chart of words per day with the book's running total, and pacing: words per day needed to hit the deadline, and the finish date projected from your 7-day average.
 - Words written after midnight can count toward the day before, up to an hour you choose.
+
+### Targets for a single piece
+
+Any note can have its own length goal, not just books. Set `target` (the length you're aiming for), `limit` (a hard maximum, like a contest's), `unit` (`words`, `characters` with spaces, or `characters-no-spaces`) and `deadline` (YYYY-MM-DD) in its properties. Characters are counted on the text a reader sees: no properties, comments, code or formatting marks, with runs of spaces counted as one. An accented letter or an em dash counts as one character.
+
+### Days off
+
+Choose weekdays off and specific dates off. A day off never breaks your streak, and pacing toward a deadline counts only the days you write. Writing on a day off still counts.
+
+### Publish check
+
+**Publish this note** checks the active note before you publish it: an unclosed `%%` comment, placeholders left, unwritten beats, an empty body, missing recommended properties such as `description`, a length over the piece's limit, and a URL that another published note already uses or that changed since the last publish. Blockers can be overridden. Publishing sets the status property to your published value and the date property to today (or a date you choose). **Unpublish this note** puts the earlier status back. Escrita never commits or pushes; your sync or Git plugin does that.
 
 ### Sprints
 
@@ -42,7 +55,7 @@ Mark something to fix later without breaking your flow: `%% XXX: check if the ce
 
 ### Enter, Enter, Enter
 
-Off by default. In a chapter, pressing Enter on empty lines after a paragraph inserts a scene break (`---`). Pressing Enter again after a scene break at the end of the chapter creates the next chapter and moves you into it. Set whether your paragraphs are separated by a blank line or a single line break so it knows what counts as "empty".
+Off by default. In a chapter, or any other note in your tracked folders (a short story, an essay), pressing Enter on empty lines after a paragraph inserts a scene break (`---`). In a chapter, pressing Enter again after a scene break at the end creates the next chapter and moves you into it. Set whether your paragraphs are separated by a blank line or a single line break so it knows what counts as "empty".
 
 ### Smart typography
 
@@ -80,6 +93,8 @@ A beat counts as written when prose follows it before the next beat, scene break
 
 - **Books**: chapters folder name, chapter template (`{{title}}`, `{{date}}` and `{{time}}` are filled in), how many digits chapter numbers get (`01`, `001`…), the status and summary property names, and the status colors used in the outline.
 - **Goals**: daily word goal, the hour the writing day ends, folders to track and to ignore, the size of a change that is ignored as a paste or sync, the default sprint length and word target, and whether to show the status bar.
+- **Goals** (continued): the property names for a piece's target, limit and unit, weekdays off and dates off.
+- **Publishing**: the status values for published and unpublished notes (the status property is the one under Books), the date property, recommended properties, the folders whose published notes must not share a URL, the slug property, and whether to offer keeping the URL when a published note is renamed.
 - **Outline**: ghost beats on or off.
 - **Placeholders**: the marker word, and whether to mark files in the file explorer.
 - **Darlings**: the darlings note inside a book, and the note used for everything else.
@@ -94,6 +109,7 @@ A beat counts as written when prose follows it before the next beat, scene break
 | Placeholders | Insert placeholder, Next placeholder in this note, Previous placeholder in this note, Open placeholders |
 | Darlings | Move selection to darlings, Open darlings |
 | Editor | Toggle spellcheck, Insert scene break |
+| Publishing | Publish this note, Unpublish this note |
 
 Escrita sets no hotkeys. Bind the ones you use often in Settings → Hotkeys. For example, Ctrl/Cmd+Shift+X for **Insert placeholder**.
 
@@ -109,7 +125,7 @@ Escrita works on desktop and mobile.
 
 ## Privacy
 
-Escrita makes no network requests. Your writing stays in your vault. Word history and settings are saved in the plugin's `data.json` inside your vault's `.obsidian/plugins/escrita/` folder.
+No network access, no AI, no telemetry. Escrita never contacts a server or a model, and a test fails if network code ever appears in its source or in the built plugin. Your writing stays in your vault. Word history, settings and what Escrita remembers about published notes are saved in the plugin's `data.json` inside your vault's `.obsidian/plugins/escrita/` folder.
 
 ## Languages
 
@@ -132,6 +148,21 @@ npm test         # unit tests
 To try your build, link or copy the repository folder into a test vault's `.obsidian/plugins/escrita/`.
 
 To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updates `manifest.json` and `versions.json`), commit, then push a tag with the bare version number (for example `git tag 0.1.1 && git push --tags`). The release workflow builds the plugin and drafts a GitHub release with `main.js`, `manifest.json` and `styles.css`; publish the draft when it looks right.
+
+## Changelog
+
+### 0.2.0
+
+- **Publish check**: **Publish this note** and **Unpublish this note**, with checks for unclosed comments, placeholders, unwritten beats, an empty body, recommended properties, the piece's limit, and taken or changed URLs. Offers to keep a published note's URL when you rename it. New **Publishing** settings.
+- **Targets per piece**: `target`, `limit`, `unit` and `deadline` on any note, counted in words or characters (with or without spaces). The status bar and the progress window show the piece's length and pacing.
+- **Days off**: weekdays and dates off that never break your streak and are skipped when pacing toward a deadline.
+- **Outline for a single note**: the outline panel shows and edits the beats of a note outside a book.
+- **Enter, Enter, Enter in any tracked note**: scene breaks in short stories and essays too, not only in chapters.
+- **No network**: a test fails if network code appears in the source or the built plugin.
+
+### 0.1
+
+- First release: outline and ghost beats, goals and pacing, sprints, status bar, placeholders, darlings, Enter Enter Enter, smart typography, spellcheck on demand.
 
 ## License
 

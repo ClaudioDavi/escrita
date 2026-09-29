@@ -7,11 +7,14 @@ import type { Book } from "../core/books";
 import { beatLine, parseBeats, parsePlaceholders, type BeatMarker } from "../core/markers";
 import { parseStatusColors } from "../settings";
 import { fmt, t } from "../i18n";
-import { appendBeat, insertBeat, isBlankBody, moveBeatOut, removeBeat, setBeatText } from "./beats-edit";
+import { readPiece, pieceCount, type Piece, type PieceUnit } from "../core/piece";
+import { appendBeat, insertBeat, insertFirstBeat, isBlankBody, moveBeatOut, removeBeat, setBeatText } from "./beats-edit";
 import {
-  beatLetter, chapterAsBeatText, decideKey, dropIndex, moveItem, type Field, type KeyAction,
+  beatLetter, chapterAsBeatText, decideKey, decideNoteKey, dropIndex, moveItem, noteGoal, resolveTarget,
+  type ActiveFile, type Field, type KeyAction, type OutlineTarget,
 } from "./model";
 import { confirmAction } from "./modals";
+import { pluralKey, unitKey } from "./units";
 import { errorMessage } from "./errors";
 
 export const OUTLINE_VIEW = "escrita-outline";
@@ -50,10 +53,19 @@ type FocusTarget =
 interface RowEls {
   row: ChapterRow;
   group: HTMLElement;
-  title: HTMLElement;
-  summary: HTMLElement;
-  meta: HTMLElement;
+  /** title, summary and meta exist for chapters, not for a single note */
+  title?: HTMLElement;
+  summary?: HTMLElement;
+  meta?: HTMLElement;
   beats: { el: HTMLElement; text: HTMLElement }[];
+}
+
+/** A single note shown on its own (not in a book): its beats and its length. */
+interface NoteState {
+  row: ChapterRow;
+  piece: Piece | null;
+  /** length in the piece's unit (words without a piece) */
+  count: number;
 }
 
 function str(v: unknown): string {
@@ -82,13 +94,24 @@ function buttonize(el: HTMLElement, label: string, onActivate: (e: KeyboardEvent
 }
 
 function plural(n: number, key: string): string {
-  return t(`${key}.${n === 1 ? "one" : "other"}`, { n: fmt(n) });
+  return t(pluralKey(key, n), { n: fmt(n) });
 }
 
-/** The outline panel: chapters and their beats for one book, editable in place. */
+/** "1 word", "1,234 characters", "1 character (no spaces)"… */
+function unitText(n: number, unit: PieceUnit): string {
+  return plural(n, unitKey(unit));
+}
+
+/**
+ * The outline panel: chapters and their beats for one book, editable in
+ * place; or, for a note outside any book, that note's beats.
+ */
 export class OutlineView extends ItemView {
+  /** what is shown: a book, a single note, or the empty state */
+  private target: OutlineTarget = { mode: "empty" };
   private bookPath: string | null = null;
   private book: Book | null = null;
+  private note: NoteState | null = null;
   private rows: ChapterRow[] = [];
   private rowEls: RowEls[] = [];
   private lines = new WeakMap<HTMLElement, LineInfo>();
@@ -117,12 +140,17 @@ export class OutlineView extends ItemView {
   getIcon(): string { return "list-tree"; }
 
   getState(): Record<string, unknown> {
-    return { ...super.getState(), book: this.bookPath };
+    const note = this.target.mode === "note" ? this.target.path : undefined;
+    return { ...super.getState(), book: this.bookPath, note };
   }
 
   async setState(state: unknown, result: ViewStateResult): Promise<void> {
-    const s = state as { book?: unknown } | null;
-    if (s && typeof s.book === "string") this.bookPath = s.book;
+    const s = state as { book?: unknown; note?: unknown } | null;
+    if (s && typeof s.book === "string") {
+      this.bookPath = s.book;
+      this.target = { mode: "book", path: s.book };
+    }
+    if (s && typeof s.note === "string") this.target = { mode: "note", path: s.note };
     await super.setState(state, result);
     this.requestRefresh();
   }
@@ -130,6 +158,7 @@ export class OutlineView extends ItemView {
   /** Show a given book (by its note path). */
   showBook(notePath: string): void {
     this.bookPath = notePath;
+    this.target = { mode: "book", path: notePath };
     this.draftBefore = null;
     void this.refresh(true);
   }
@@ -146,7 +175,12 @@ export class OutlineView extends ItemView {
     this.registerEvent(workspace.on("file-open", () => this.requestRefresh()));
     this.registerEvent(metadataCache.on("changed", (file) => { if (this.concerns(file.path)) this.requestRefresh(); }));
     const onFs = (file: TAbstractFile, oldPath?: string) => {
-      if (!this.book || this.concerns(file.path) || (oldPath !== undefined && this.concerns(oldPath))) this.requestRefresh();
+      // A single note renamed: keep showing it under its new path.
+      if (oldPath !== undefined && this.target.mode === "note" && this.target.path === oldPath) {
+        this.target = { mode: "note", path: file.path };
+        if (this.lastActive === oldPath) this.lastActive = file.path;
+      }
+      if (this.target.mode !== "book" || this.concerns(file.path) || (oldPath !== undefined && this.concerns(oldPath))) this.requestRefresh();
     };
     this.registerEvent(vault.on("create", (f) => onFs(f)));
     this.registerEvent(vault.on("delete", (f) => onFs(f)));
@@ -155,7 +189,7 @@ export class OutlineView extends ItemView {
     this.register(this.plugin.placeholders.onChange(() => { if (this.book) this.requestRefresh(); }));
     this.registerDomEvent(this.contentEl, "focusout", () => {
       this.contentEl.win.setTimeout(() => {
-        if (this.book && this.dirty && !this.fieldFocused() && !this.busy) void this.refresh(true);
+        if ((this.book || this.note) && this.dirty && !this.fieldFocused() && !this.busy) void this.refresh(true);
       }, 0);
     });
     await this.refresh(true);
@@ -166,6 +200,7 @@ export class OutlineView extends ItemView {
     this.requestRefresh.cancel();
     this.token++;
     this.book = null;
+    this.note = null;
     this.contentEl.empty();
   }
 
@@ -175,6 +210,7 @@ export class OutlineView extends ItemView {
   }
 
   private concerns(path: string): boolean {
+    if (this.target.mode === "note") return path === this.target.path;
     const b = this.book;
     if (!b) return false;
     return path === b.note.path || path.startsWith(`${b.folder.path}/`);
@@ -187,28 +223,63 @@ export class OutlineView extends ItemView {
 
   // ------------------------------------------------------------------ data
 
-  private resolveBook(): Book | null {
-    const books = this.plugin.books;
-    const file = this.app.workspace.getActiveFile();
-    // Follow the active file's book, but only when the active file changes,
-    // so a book picked from the dropdown stays until you open another note.
-    if ((file?.path ?? null) !== this.lastActive) {
-      this.lastActive = file?.path ?? null;
-      const active = books.bookFor(file);
-      if (active) {
-        if (this.bookPath !== active.note.path) this.draftBefore = null;
-        this.bookPath = active.note.path;
-        return active;
-      }
+  /** Decide what to show (see `resolveTarget`) and remember it. */
+  private resolve(): OutlineTarget {
+    const { books } = this.plugin;
+    const { vault, workspace } = this.app;
+    const file = workspace.getActiveFile();
+    const active: ActiveFile | null = file
+      ? { path: file.path, markdown: file.extension === "md", bookPath: books.bookFor(file)?.note.path ?? null }
+      : null;
+    const r = resolveTarget({
+      active,
+      lastActive: this.lastActive,
+      shown: this.target,
+      bookPath: this.bookPath,
+      valid: (mode, path) => {
+        const f = vault.getAbstractFileByPath(path);
+        if (!(f instanceof TFile) || f.extension !== "md") return false;
+        const b = books.bookFor(f);
+        return mode === "book" ? b?.note.path === path : !b;
+      },
+    });
+    this.lastActive = r.lastActive;
+    if (r.target.mode === "book") {
+      if (this.bookPath !== r.target.path) this.draftBefore = null;
+      this.bookPath = r.target.path;
     }
-    if (this.bookPath) {
-      const note = this.app.vault.getAbstractFileByPath(this.bookPath);
-      if (note instanceof TFile) {
-        const b = books.bookFor(note);
-        if (b && b.note.path === note.path) return b;
-      }
-    }
-    return null;
+    this.target = r.target;
+    return r.target;
+  }
+
+  private bookAt(path: string): Book | null {
+    const note = this.app.vault.getAbstractFileByPath(path);
+    if (!(note instanceof TFile)) return null;
+    const b = this.plugin.books.bookFor(note);
+    return b && b.note.path === note.path ? b : null;
+  }
+
+  private async loadNote(file: TFile): Promise<NoteState> {
+    const s = this.plugin.settings;
+    const text = await this.app.vault.cachedRead(file);
+    const fm = this.plugin.books.frontmatter(file);
+    const piece = readPiece(fm, s);
+    return {
+      piece,
+      count: pieceCount(text, piece?.unit ?? "words"),
+      row: {
+        file,
+        index: 0,
+        label: "",
+        title: file.basename,
+        summary: "",
+        status: "",
+        words: await this.plugin.counter.count(file),
+        beats: parseBeats(text),
+        placeholders: 0,
+        bodyBlank: isBlankBody(text),
+      },
+    };
   }
 
   private async loadRows(book: Book): Promise<ChapterRow[]> {
@@ -236,11 +307,17 @@ export class OutlineView extends ItemView {
   async refresh(force = false): Promise<void> {
     if (force) this.forceNext = true;
     const token = ++this.token;
-    const book = this.resolveBook();
+    const target = this.resolve();
+    if (target.mode === "note") {
+      await this.refreshNote(target.path, token);
+      return;
+    }
+    const book = target.mode === "book" ? this.bookAt(target.path) : null;
     if (!book) {
       if (!this.forceNext && this.fieldFocused()) return;
       this.forceNext = false;
       this.book = null;
+      this.note = null;
       this.rows = [];
       this.renderNoBook();
       return;
@@ -260,17 +337,51 @@ export class OutlineView extends ItemView {
       return;
     }
     this.book = book;
+    this.note = null;
     this.rows = rows;
     this.forceNext = false;
     this.render();
   }
 
+  private async refreshNote(path: string, token: number): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof TFile)) return;
+    let note: NoteState;
+    try {
+      note = await this.loadNote(file);
+    } catch (e) {
+      console.error("Escrita: could not load the outline", e);
+      return;
+    }
+    if (token !== this.token) return;
+    const same = this.note?.row.file === file && !this.book;
+    if (!this.forceNext && this.fieldFocused()) {
+      // Never re-render under the caret: patch in place, or wait for the field to lose focus.
+      if (!same || !this.patchNote(note)) this.dirty = true;
+      return;
+    }
+    this.book = null;
+    this.note = note;
+    this.rows = [note.row];
+    this.forceNext = false;
+    this.renderNote();
+  }
+
   // ------------------------------------------------------------------ rendering
 
-  private renderNoBook(): void {
+  private renderNoBook(note?: NoteState): void {
     const el = this.contentEl;
     el.empty();
     this.rowEls = [];
+    this.lines = new WeakMap();
+    if (note) {
+      // A note without beats: offer its first beat, above the usual book options.
+      this.renderNoteHeader(el, note);
+      const first = el.createDiv({ cls: "escrita-outline-empty escrita-outline-note-empty" });
+      first.createEl("p", { text: t("outline.note.noBeats") });
+      const add = first.createEl("button", { cls: "mod-cta", text: t("outline.note.addFirst") });
+      add.addEventListener("click", () => { void this.addFirstBeat(note.row.file); });
+    }
     const books = this.plugin.books.allBooks();
     const box = el.createDiv({ cls: "escrita-outline-empty" });
     if (books.length) {
@@ -286,7 +397,7 @@ export class OutlineView extends ItemView {
       box.createEl("p", { text: t("outline.empty.desc", { folder }) });
       box.createEl("pre", { cls: "escrita-outline-example", text: t("outline.empty.example", { folder }) });
     }
-    const create = box.createEl("button", { cls: books.length ? "" : "mod-cta", text: t("outline.empty.create") });
+    const create = box.createEl("button", { cls: books.length || note ? "" : "mod-cta", text: t("outline.empty.create") });
     create.addEventListener("click", () => this.plugin.outline.createBook());
   }
 
@@ -357,6 +468,110 @@ export class OutlineView extends ItemView {
 
     el.scrollTop = scroll;
     this.applyFocus();
+  }
+
+  /** A single note: its title, length against its target or limit, and its beats. */
+  private renderNote(): void {
+    const note = this.note;
+    if (!note) { this.renderNoBook(); return; }
+    this.dirty = false;
+    if (!note.row.beats.length) { this.renderNoBook(note); this.applyFocus(); return; }
+    const el = this.contentEl;
+    const scroll = el.scrollTop;
+    el.empty();
+    this.rowEls = [];
+    this.lines = new WeakMap();
+
+    this.renderNoteHeader(el, note);
+    const list = el.createDiv({ cls: "escrita-outline-list" });
+    const group = list.createDiv({ cls: "escrita-outline-chapter escrita-outline-note" });
+    const row = note.row;
+    const beats: RowEls["beats"] = row.beats.map((b, i) => this.renderBeat(group, row, b, i));
+    this.rowEls.push({ row, group, beats });
+
+    const foot = el.createDiv({ cls: "escrita-outline-footer" });
+    if (Platform.isMobile) {
+      foot.createDiv({ cls: "escrita-outline-hint", text: t("outline.note.touchHint") });
+    } else {
+      for (const [keys, text] of [[["Enter"], t("outline.hint.enter")], [["⌫"], t("outline.hint.backspace")]] as const) {
+        const h = foot.createDiv({ cls: "escrita-outline-hint" });
+        for (const k of keys) h.createEl("kbd", { text: k });
+        h.createSpan({ text });
+      }
+    }
+
+    el.scrollTop = scroll;
+    this.applyFocus();
+  }
+
+  private renderNoteHeader(el: HTMLElement, note: NoteState): void {
+    const header = el.createDiv({ cls: "escrita-outline-header" });
+    const top = header.createDiv({ cls: "escrita-outline-top" });
+    top.createDiv({ cls: "escrita-outline-heading", text: t("outline.viewTitle") });
+    header.createDiv({ cls: "escrita-outline-book", text: note.row.title });
+    this.statsEl = header.createDiv({ cls: "escrita-outline-stats" });
+    this.progressEl = header.createDiv({ cls: "escrita-outline-progress" });
+    this.renderNoteStats(note);
+  }
+
+  private renderNoteStats(note: NoteState): void {
+    if (!this.statsEl || !this.progressEl) return;
+    this.statsEl.setText(plural(note.row.beats.length, "outline.beats"));
+    const unit = note.piece?.unit ?? "words";
+    const g = noteGoal(note.count, note.piece);
+    const p = this.progressEl;
+    p.empty();
+    p.toggleClass("is-near", g.state === "near");
+    p.toggleClass("is-over", g.state === "over");
+    p.toggleClass("is-reached", g.reached);
+    if (g.goal === undefined) {
+      p.createDiv({ cls: "escrita-outline-progress-text", text: unitText(g.count, unit) });
+      return;
+    }
+    let text = t("outline.progress", { words: fmt(g.count), goal: unitText(g.goal, unit) });
+    if (g.kind === "limit") text += ` ${t("outline.note.limitOnly")}`;
+    if (g.limit !== undefined) text += ` · ${t("outline.note.limit", { n: fmt(g.limit) })}`;
+    const line = p.createDiv({ cls: "escrita-outline-progress-text", text });
+    const over = note.count - (note.piece?.limit ?? Infinity);
+    if (g.state === "over" && over > 0) line.createSpan({ cls: "escrita-outline-over", text: ` · ${t("outline.note.over", { n: fmt(over) })}` });
+    const bar = p.createDiv({ cls: "escrita-outline-bar" });
+    bar.createDiv({ cls: "escrita-outline-bar-fill" }).setCssProps({ width: `${(g.fill * 100).toFixed(1)}%` });
+  }
+
+  /** Update a single note's counts and non-focused beat texts in place; false when its beats changed shape. */
+  private patchNote(note: NoteState): boolean {
+    const els = this.rowEls[0];
+    if (!els || els.title || els.row.file !== note.row.file || els.beats.length !== note.row.beats.length) return false;
+    if (!note.row.beats.length) return false;
+    this.note = note;
+    this.rows = [note.row];
+    els.row = note.row;
+    const focused = this.contentEl.doc.activeElement;
+    note.row.beats.forEach((b, j) => {
+      const be = els.beats[j];
+      be.el.toggleClass("is-written", b.written);
+      const check = be.el.querySelector<HTMLElement>(".escrita-outline-check");
+      if (check) { check.empty(); if (b.written) setIcon(check, "check"); }
+      this.lines.set(be.text, { field: "beat", row: note.row, beat: j });
+      if (be.text === focused) return;
+      if (fieldText(be.text) !== b.text) be.text.setText(b.text);
+      be.text.dataset.original = b.text;
+    });
+    this.renderNoteStats(note);
+    return true;
+  }
+
+  /** "Add the first beat": at the top of the note's body, focused for typing. */
+  private async addFirstBeat(file: TFile): Promise<void> {
+    if (this.busy) return;
+    this.busy = true;
+    try {
+      const ok = await this.run(() => this.app.vault.process(file, (text) => insertFirstBeat(text, "")));
+      if (ok) this.pendingFocus = { kind: "beat", file, beat: 0, caret: "end" };
+    } finally {
+      this.busy = false;
+    }
+    await this.refresh(true);
   }
 
   private renderStats(): void {
@@ -478,25 +693,29 @@ export class OutlineView extends ItemView {
     this.moreButton(line, () => this.chapterMenu(row.file));
     const summary = this.makeField(group, "escrita-outline-summary", row.summary, t("outline.summaryPlaceholder"), { field: "summary", row });
 
-    const beats: RowEls["beats"] = [];
-    row.beats.forEach((b, i) => {
-      const bl = group.createDiv({ cls: "escrita-outline-beat" });
-      if (b.written) bl.addClass("is-written");
-      const letter = bl.createDiv({ cls: "escrita-outline-letter", text: beatLetter(i) });
-      buttonize(letter, t("outline.letterTip"), (e) => { void this.openFile(row.file, b.line, e.ctrlKey || e.metaKey); });
-      setTooltip(letter, t("outline.letterTip"));
-      const text = this.makeField(bl, "escrita-outline-beat-text", b.text, t("outline.beatPlaceholder"), { field: "beat", row, beat: i });
-      const check = bl.createDiv({ cls: "escrita-outline-check" });
-      if (b.written) { setIcon(check, "check"); setTooltip(check, t("outline.writtenTip")); }
-      this.moreButton(bl, () => this.beatMenu(row.file, i));
-      bl.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        this.beatMenu(row.file, i).showAtMouseEvent(e);
-      });
-      beats.push({ el: bl, text });
-    });
-
+    const beats: RowEls["beats"] = row.beats.map((b, i) => this.renderBeat(group, row, b, i));
     this.rowEls.push({ row, group, title, summary, meta, beats });
+  }
+
+  private renderBeat(group: HTMLElement, row: ChapterRow, b: BeatMarker, i: number): RowEls["beats"][number] {
+    const bl = group.createDiv({ cls: "escrita-outline-beat" });
+    if (b.written) bl.addClass("is-written");
+    const letter = bl.createDiv({ cls: "escrita-outline-letter", text: beatLetter(i) });
+    // Look the line up when clicked: the beat may have moved since this was drawn.
+    buttonize(letter, t("outline.letterTip"), (e) => {
+      const cur = this.rows.find((r) => r.file === row.file)?.beats[i] ?? b;
+      void this.openFile(row.file, cur.line, e.ctrlKey || e.metaKey);
+    });
+    setTooltip(letter, t("outline.letterTip"));
+    const text = this.makeField(bl, "escrita-outline-beat-text", b.text, t("outline.beatPlaceholder"), { field: "beat", row, beat: i });
+    const check = bl.createDiv({ cls: "escrita-outline-check" });
+    if (b.written) { setIcon(check, "check"); setTooltip(check, t("outline.writtenTip")); }
+    this.moreButton(bl, () => this.beatMenu(row.file, i));
+    bl.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      this.beatMenu(row.file, i).showAtMouseEvent(e);
+    });
+    return { el: bl, text };
   }
 
   /** A "new chapter" line before chapter `before` (a draft), or the last line (null). */
@@ -544,7 +763,7 @@ export class OutlineView extends ItemView {
     if (rows.length !== this.rowEls.length) return false;
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i], els = this.rowEls[i];
-      if (row.file !== els.row.file || row.beats.length !== els.beats.length) return false;
+      if (!els.title || row.file !== els.row.file || row.beats.length !== els.beats.length) return false;
     }
     this.rows = rows;
     const activePath = this.app.workspace.getActiveFile()?.path;
@@ -559,9 +778,9 @@ export class OutlineView extends ItemView {
       const els = this.rowEls[i];
       els.row = row;
       els.group.toggleClass("is-active", row.file.path === activePath);
-      this.renderMeta(els.meta, row);
-      sync(els.title, row.title, { field: "title", row });
-      sync(els.summary, row.summary, { field: "summary", row });
+      if (els.meta) this.renderMeta(els.meta, row);
+      if (els.title) sync(els.title, row.title, { field: "title", row });
+      if (els.summary) sync(els.summary, row.summary, { field: "summary", row });
       row.beats.forEach((b, j) => {
         const be = els.beats[j];
         be.el.toggleClass("is-written", b.written);
@@ -673,10 +892,14 @@ export class OutlineView extends ItemView {
       return fn(text);
     });
     if (!ok) {
-      new Notice(t("outline.beatChanged"));
+      new Notice(this.changedMessage());
       void this.refresh(true);
     }
     return ok;
+  }
+
+  private changedMessage(): string {
+    return t(this.note ? "outline.note.changed" : "outline.beatChanged");
   }
 
   /** Run a file operation, reporting errors instead of throwing. */
@@ -705,7 +928,8 @@ export class OutlineView extends ItemView {
     const caret = caretInfo(el);
     const row = line.row;
     const rowEls = row ? this.rowEls.find((r) => r.row.file === row.file) : undefined;
-    const action = decideKey({
+    const decide = this.note ? decideNoteKey : decideKey;
+    const action = decide({
       key: e.key,
       shift: e.shiftKey,
       mod: e.ctrlKey || e.metaKey || e.altKey,
@@ -716,7 +940,7 @@ export class OutlineView extends ItemView {
       chapterIndex: line.field === "new" ? Math.max(0, this.newLineAt(line)) : row ? this.indexOf(row.file) : 0,
       words: row?.words ?? 0,
       bodyBlank: row?.bodyBlank ?? true,
-      summaryEmpty: rowEls ? fieldText(rowEls.summary).trim() === "" : true,
+      summaryEmpty: rowEls?.summary ? fieldText(rowEls.summary).trim() === "" : true,
       beatWritten: line.beat !== undefined ? row?.beats[line.beat]?.written ?? false : false,
     });
     if (action.type === "default") return;
@@ -752,7 +976,7 @@ export class OutlineView extends ItemView {
   private locate(row: ChapterRow): number {
     const idx = this.indexOf(row.file);
     if (idx < 0 || !row.file.parent) {
-      new Notice(t("outline.beatChanged"));
+      new Notice(this.changedMessage());
       void this.refresh(true);
       return -1;
     }
@@ -761,13 +985,15 @@ export class OutlineView extends ItemView {
 
   private async act(action: KeyAction, el: HTMLElement, line: LineInfo): Promise<void> {
     const book = this.book;
-    if (!book) return;
+    const note = this.note;
+    // A single note only has beats: chapter actions need a book.
+    if (!book && !(note && (action.type === "newBeat" || action.type === "removeBeat"))) return;
     const row = line.row;
     const untitled = t("common.untitled");
 
     switch (action.type) {
       case "newChapter": {
-        if (!row) return;
+        if (!row || !book) return;
         const idx = this.locate(row);
         if (idx < 0) return;
         await this.commit(el);
@@ -777,6 +1003,7 @@ export class OutlineView extends ItemView {
         break;
       }
       case "createFromNew": {
+        if (!book) return;
         const at = this.newLineAt(line);
         if (at < 0) { new Notice(t("outline.beatChanged")); break; }
         const value = fieldText(el).trim();
@@ -790,6 +1017,7 @@ export class OutlineView extends ItemView {
         break;
       }
       case "newAsBeat": {
+        if (!book) return;
         const at = this.newLineAt(line);
         if (at < 0) { new Notice(t("outline.beatChanged")); break; }
         const target = this.rows[at - 1];
@@ -807,7 +1035,7 @@ export class OutlineView extends ItemView {
         await this.commit(el);
         const i = line.beat;
         const ok = await this.run(() => this.editBeats(row.file, i, undefined, (text) => {
-          if (!parseBeats(text)[i]) throw new Error(t("outline.beatChanged"));
+          if (!parseBeats(text)[i]) throw new Error(this.changedMessage());
           return insertBeat(text, action.before ? i - 1 : i, "");
         }));
         if (!ok) return;
@@ -821,17 +1049,17 @@ export class OutlineView extends ItemView {
         el.dataset.done = "1";
         const ok = await this.run(() => this.editBeats(row.file, i, undefined, (text) => {
           const cur = parseBeats(text)[i];
-          if (!cur || (cur.text !== expected && cur.text !== "")) throw new Error(t("outline.beatChanged"));
+          if (!cur || (cur.text !== expected && cur.text !== "")) throw new Error(this.changedMessage());
           return removeBeat(text, i);
         }));
         if (!ok) { el.dataset.done = ""; return; }
-        this.pendingFocus = i > 0
-          ? { kind: "beat", file: row.file, beat: i - 1, caret: "end" }
-          : { kind: "summary", file: row.file, caret: "end" };
+        if (i > 0) this.pendingFocus = { kind: "beat", file: row.file, beat: i - 1, caret: "end" };
+        else if (note) this.pendingFocus = { kind: "beat", file: row.file, beat: 0, caret: "start" };
+        else this.pendingFocus = { kind: "summary", file: row.file, caret: "end" };
         break;
       }
       case "beatToChapter": {
-        if (!row || line.beat === undefined) return;
+        if (!row || !book || line.beat === undefined) return;
         const i = line.beat;
         const beatText = fieldText(el).trim();
         const original = row.beats[i]?.text;
@@ -859,7 +1087,7 @@ export class OutlineView extends ItemView {
         break;
       }
       case "chapterToBeat": {
-        if (!row) return;
+        if (!row || !book) return;
         const idx = this.locate(row);
         if (idx < 0) return;
         const prev = this.rows[idx - 1];
@@ -881,7 +1109,7 @@ export class OutlineView extends ItemView {
         break;
       }
       case "trashChapter": {
-        if (!row) return;
+        if (!row || !book) return;
         el.dataset.done = "1";
         const before = this.previousTarget(el);
         const ok = await this.run(async () => {
@@ -971,17 +1199,18 @@ export class OutlineView extends ItemView {
     const idx = this.indexOf(file);
     const row = this.rows[idx];
     const els = this.rowEls.find((r) => r.row.file === file);
-    if (!row || !els) return menu;
+    const titleEl = els?.title;
+    if (!row || !titleEl) return menu;
 
     // The keyboard actions, for touch screens (no Tab key) and discoverability.
     menu.addSeparator();
     menu.addItem((i) => i.setTitle(t("outline.menu.newChapterAfter")).setIcon("plus")
-      .onClick(() => this.trigger({ type: "newChapter", before: false }, els.title)));
+      .onClick(() => this.trigger({ type: "newChapter", before: false }, titleEl)));
     menu.addItem((i) => i.setTitle(t("outline.menu.addBeat")).setIcon("list-plus")
       .onClick(() => { void this.addBeat(file); }));
     menu.addItem((i) => i.setTitle(t("outline.menu.toBeat")).setIcon("indent")
       .setDisabled(idx === 0 || row.words > 0 || !row.bodyBlank)
-      .onClick(() => this.trigger({ type: "chapterToBeat" }, els.title)));
+      .onClick(() => this.trigger({ type: "chapterToBeat" }, titleEl)));
 
     menu.addSeparator();
     if (idx > 0) {
@@ -1011,9 +1240,11 @@ export class OutlineView extends ItemView {
     if (textEl) {
       menu.addItem((it) => it.setTitle(t("outline.menu.addBeatAfter")).setIcon("list-plus")
         .onClick(() => this.trigger({ type: "newBeat", before: false }, textEl)));
-      menu.addItem((it) => it.setTitle(t("outline.menu.toChapter")).setIcon("outdent")
-        .setDisabled(!beat || beat.written)
-        .onClick(() => this.trigger({ type: "beatToChapter" }, textEl)));
+      if (!this.note) {
+        menu.addItem((it) => it.setTitle(t("outline.menu.toChapter")).setIcon("outdent")
+          .setDisabled(!beat || beat.written)
+          .onClick(() => this.trigger({ type: "beatToChapter" }, textEl)));
+      }
     }
     menu.addItem((it) => it.setTitle(t("outline.menu.removeBeat")).setIcon("x")
       .onClick(() => {

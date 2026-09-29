@@ -4,6 +4,12 @@
 // through the deadline (deadline inclusive), and the projection starts
 // tomorrow too, since today's writing is already part of the average. On the
 // deadline itself there is still one day left (today).
+//
+// Days off: with an `isDayOff` predicate, the words a day needed are spread
+// over the writing days only (tomorrow through the deadline, days off left
+// out), and the projected finish advances only on writing days. The average
+// passed in should then be per writing day too (dailyAverage with isDayOff).
+// When every day left is a day off, today is the only writing day left.
 
 import { addDays, daysBetween, parseDay, isoDay } from "../core/dates";
 
@@ -18,6 +24,8 @@ export interface PacingInput {
   today: string;
   /** recent words per day (e.g. the 7-day average) */
   average: number;
+  /** days off (no writing expected); omitted = every day is a writing day */
+  isDayOff?: ((day: string) => boolean) | null;
 }
 
 export interface Pacing {
@@ -32,6 +40,8 @@ export interface Pacing {
   /** days until the deadline, deadline inclusive (at least 1 on the deadline day); null without a deadline; < 0 once it has passed */
   daysLeft: number | null;
   overdue: boolean;
+  /** writing days left (daysLeft minus days off, at least 1 until the deadline passes); equals daysLeft without days off */
+  writingDaysLeft: number | null;
   /** words a day needed to finish by the deadline; null without a deadline, when overdue, or when done */
   neededPerDay: number | null;
   average: number;
@@ -59,13 +69,25 @@ export function pacing(input: PacingInput): Pacing | null {
   const until = deadline ? daysBetween(input.today, deadline) : null;
   const daysLeft = until === null ? null : until === 0 ? 1 : until;
   const overdue = !done && daysLeft !== null && daysLeft <= 0;
-  const neededPerDay = !done && daysLeft !== null && daysLeft > 0 ? Math.ceil(remaining / daysLeft) : null;
+  const off = input.isDayOff ?? null;
+  let writingDaysLeft = daysLeft;
+  // (A deadline centuries away isn't walked day by day.)
+  if (off && until !== null && until > 0 && until <= 365 * 200) {
+    let w = 0;
+    for (let i = 1; i <= until; i++) if (!off(addDays(input.today, i))) w++;
+    writingDaysLeft = Math.max(1, w);
+  }
+  const neededPerDay = !done && writingDaysLeft !== null && daysLeft !== null && daysLeft > 0
+    ? Math.ceil(remaining / writingDaysLeft)
+    : null;
 
   let projectedFinish: string | null = null;
   if (!done && average > 0) {
     const days = Math.ceil(remaining / average);
     // Guard absurd projections (a trickle of words against a huge goal).
-    if (Number.isFinite(days) && days <= 365 * 200) projectedFinish = addDays(input.today, days);
+    if (Number.isFinite(days) && days <= 365 * 200) {
+      projectedFinish = off ? afterWritingDays(input.today, days, off) : addDays(input.today, days);
+    }
   }
   const daysEarly = deadline && projectedFinish ? daysBetween(projectedFinish, deadline) : null;
 
@@ -75,9 +97,24 @@ export function pacing(input: PacingInput): Pacing | null {
 
   return {
     goal, total, remaining, fraction: Math.min(1, total / goal), done,
-    deadline, daysLeft, overdue, neededPerDay, average,
+    deadline, daysLeft, overdue, writingDaysLeft, neededPerDay, average,
     projectedFinish, daysEarly, onTrack,
   };
+}
+
+/**
+ * The day on which the `n`th writing day after `today` falls, skipping days
+ * off; null when it would be more than 200 years away (e.g. every day is off).
+ */
+export function afterWritingDays(today: string, n: number, isDayOff: (day: string) => boolean): string | null {
+  if (!(n > 0)) return today;
+  let d = today;
+  let left = Math.ceil(n);
+  for (let i = 0; i < 365 * 200; i++) {
+    d = addDays(d, 1);
+    if (!isDayOff(d) && --left === 0) return d;
+  }
+  return null;
 }
 
 /** A frontmatter `goal` value → a positive whole number, or null. Accepts "80,000", "80.000", "80 000". */

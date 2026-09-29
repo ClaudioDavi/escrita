@@ -118,12 +118,16 @@ export class EditorModule implements EscritaModule {
     const sel = state.selection;
     if (sel.ranges.length !== 1 || !sel.main.empty) return false;
     const file = fileOf(state);
-    if (!file || !this.plugin.books.isChapter(file)) return false;
+    if (!file) return false;
+    // Chapters get breaks and new chapters; other tracked writing (a conto,
+    // an essay) gets scene breaks only.
+    const chapter = this.plugin.books.isChapter(file);
+    if (!chapter && !this.plugin.goals.tracked(file)) return false;
 
     const lines = state.doc.toJSON();
     const cursorLine = state.doc.lineAt(sel.main.head).number - 1;
     const decision = decideEnter(lines, cursorLine, this.plugin.settings.paragraphStyle);
-    if (decision === "normal") return false;
+    if (decision === "normal" || (decision === "chapter" && !chapter)) return false;
     if (this.creatingChapter) return true; // swallow repeats while the chapter is being made
 
     if (decision === "break") {

@@ -1,6 +1,8 @@
 import { setIcon, setTooltip } from "obsidian";
 import { fmt, t } from "../i18n";
-import { plural } from "./format";
+import type { PieceUnit } from "../core/piece";
+import { plural, unitAmount } from "./format";
+import type { PieceSummary } from "./piece";
 
 /** Registers a DOM listener so plugin unload removes it (plugin.registerDomEvent). */
 export type RegisterDom = <K extends keyof HTMLElementEventMap>(
@@ -16,6 +18,8 @@ export interface StatusState {
   chapter: number | null;
   /** words in the active file's book, or null outside a book */
   book: number | null;
+  /** the active note's length against its target or limit, or null when it has neither */
+  piece: (PieceSummary & { unit: PieceUnit }) | null;
   today: number;
   goal: number;
   streak: number;
@@ -28,6 +32,10 @@ export interface StatusState {
  */
 export class StatusBar {
   private counts: HTMLElement;
+  private piece: HTMLElement;
+  private pieceText: HTMLElement;
+  private pieceFill: HTMLElement;
+  private pieceOver: HTMLElement;
   private today: HTMLElement;
   private todayIcon: HTMLElement;
   private todayText: HTMLElement;
@@ -52,6 +60,11 @@ export class StatusBar {
     });
 
     this.counts = el.createSpan({ cls: "escrita-status-part escrita-status-counts" });
+
+    this.piece = el.createSpan({ cls: "escrita-status-part escrita-status-piece" });
+    this.pieceText = this.piece.createSpan();
+    this.pieceFill = this.piece.createSpan({ cls: "escrita-status-bar" }).createSpan({ cls: "escrita-status-fill" });
+    this.pieceOver = this.piece.createSpan({ cls: "escrita-status-over" });
 
     this.today = el.createSpan({ cls: "escrita-status-part escrita-status-today" });
     this.todayIcon = this.today.createSpan({ cls: "escrita-status-check" });
@@ -85,6 +98,19 @@ export class StatusBar {
     else if (s.book !== null) counts = t("goals.status.book", { book: fmt(s.book) });
     this.counts.setText(counts);
     this.counts.toggleClass("escrita-hidden", counts === "");
+
+    // The active note's own target or limit ("4,210 / 5,000 words").
+    const p = s.piece;
+    this.piece.toggleClass("escrita-hidden", !p || p.of === null);
+    if (p && p.of !== null) {
+      this.pieceText.setText(`${fmt(p.count)} / ${unitAmount(p.unit, p.of)}`);
+      this.piece.toggleClass("is-met", p.reached && p.state !== "near" && p.state !== "over");
+      this.piece.toggleClass("is-near", p.state === "near");
+      this.piece.toggleClass("is-over", p.state === "over");
+      setWidth(this.pieceFill, p.fraction);
+      this.pieceOver.setText(p.state === "over" ? t("goals.status.over", { n: fmt(p.over) }) : "");
+      this.pieceOver.toggleClass("escrita-hidden", p.state !== "over");
+    }
 
     const running = s.sprint !== null;
     const met = s.goal > 0 && s.today >= s.goal;

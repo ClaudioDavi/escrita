@@ -6,4 +6,37 @@ body {
   --escrita-placeholder-fg: var(--color-red);
   --escrita-good: var(--color-green);
   --escrita-bar-bg: var(--background-modifier-border);
+  /* near a limit, warnings (amber) and over a limit, blockers (red) */
+  --escrita-warn: var(--color-orange);
+  --escrita-bad: var(--color-red);
+}
+
+/* Settings tab: weekdays off. Seven checkboxes don't fit beside the label,
+   so they get their own line under it. */
+.escrita-setting-weekdays {
+  flex-wrap: wrap;
+}
+.escrita-setting-weekdays .setting-item-info {
+  flex-basis: 100%;
+}
+.escrita-setting-weekdays .setting-item-control {
+  flex-basis: 100%;
+  justify-content: flex-start;
+  margin-top: var(--size-4-2);
+}
+.escrita-weekdays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-1) var(--size-4-3);
+}
+.escrita-weekday {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  min-height: 32px;
+  cursor: pointer;
+}
+.escrita-setting-warning {
+  color: var(--escrita-warn);
+  margin-top: var(--size-4-1);
 }

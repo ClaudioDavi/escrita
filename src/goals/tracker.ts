@@ -116,24 +116,70 @@ export function goalMet(words: number, goal: number): boolean {
   return goal > 0 ? words >= goal : words > 0;
 }
 
+/** Tells whether a writing day (YYYY-MM-DD) is a day off; see core/daysoff. */
+export type IsDayOff = (day: string) => boolean;
+
 /**
  * Consecutive days with writing (`added > 0`) ending today, or ending yesterday
  * when nothing has been written today yet (so the streak isn't "broken" at breakfast).
+ *
+ * With `isDayOff`, a day off with no writing is skipped: it neither breaks nor
+ * extends the streak. Writing on a day off still counts and extends it.
  */
-export function streak(history: History, today: string): number {
+export function streak(history: History, today: string, isDayOff?: IsDayOff | null): number {
   let d = addedOn(history, today) > 0 ? today : addDays(today, -1);
   let n = 0;
-  // Bounded so a corrupt history can never loop forever.
-  while (n < 100000 && addedOn(history, d) > 0) {
-    n++;
+  if (!isDayOff) {
+    // Bounded so a corrupt history can never loop forever.
+    while (n < 100000 && addedOn(history, d) > 0) {
+      n++;
+      d = addDays(d, -1);
+    }
+    return n;
+  }
+  // Nothing before the oldest record can extend the streak, so stop there
+  // (this also ends the walk when every day is a day off).
+  const oldest = oldestDay(history);
+  if (oldest === null) return 0;
+  for (let steps = 0; steps < 100000 && d >= oldest; steps++) {
+    if (addedOn(history, d) > 0) n++;
+    else if (!isDayOff(d)) break;
     d = addDays(d, -1);
   }
   return n;
 }
 
+/** The earliest well-formed day key in the history, or null. */
+function oldestDay(history: History): string | null {
+  let oldest: string | null = null;
+  for (const k of Object.keys(history)) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(k) && (oldest === null || k < oldest)) oldest = k;
+  }
+  return oldest;
+}
+
 /** Days in `days` whose vault-wide writing met `goal`. */
 export function goalMetDays(history: History, days: string[], goal: number): number {
   return days.filter((d) => goalMet(addedOn(history, d), goal)).length;
+}
+
+/**
+ * "Goal met on `met` of `of` days" over a window, with days off taken out of
+ * the count: a day off where the goal wasn't met is left out of both numbers
+ * (resting isn't missing the goal), while a day off where it was met counts
+ * in both (the work was done). Without days off, `of` is the window length.
+ */
+export function goalMetSummary(
+  history: History, days: string[], goal: number, isDayOff?: IsDayOff | null,
+): { met: number; of: number } {
+  let met = 0;
+  let of = 0;
+  for (const d of days) {
+    const ok = goalMet(addedOn(history, d), goal);
+    if (ok) met++;
+    if (ok || !isDayOff?.(d)) of++;
+  }
+  return { met, of };
 }
 
 /** Words added per day for the given days (vault-wide, or one book). */
@@ -181,25 +227,40 @@ export function bookTotalSeries(history: History, days: string[], bookPath: stri
  * Average words per day over the last `n` days. Uses the window ending yesterday
  * when nothing has been added today yet, so a fresh morning doesn't drag it down.
  * `net` averages added minus deleted (floored at 0), which is what grows a book.
+ *
+ * With `isDayOff`, the average is per writing day: days off without any
+ * activity are left out of the denominator (a rest day doesn't drag the pace
+ * down), while a day off with writing counts like any other day. Pacing
+ * projects over writing days only, so the two agree.
  */
 export function dailyAverage(
   history: History,
   today: string,
-  opts: { days?: number; bookPath?: string | null; net?: boolean } = {},
+  opts: { days?: number; bookPath?: string | null; net?: boolean; isDayOff?: IsDayOff | null } = {},
 ): number {
   const n = Math.max(1, Math.floor(opts.days ?? 7));
   const end = addedOn(history, today, opts.bookPath) > 0 ? today : addDays(today, -1);
-  const window = lastDays(end, n);
+  let window = lastDays(end, n);
+  const off = opts.isDayOff;
+  if (off) {
+    window = window.filter((d) => !off(d) || addedOn(history, d, opts.bookPath) > 0 || deletedOn(history, d, opts.bookPath) > 0);
+    if (window.length === 0) return 0;
+  }
   const values = window.map((d) => (opts.net ? netOn(history, d, opts.bookPath) : addedOn(history, d, opts.bookPath)));
-  const avg = values.reduce((a, b) => a + b, 0) / n;
+  const avg = values.reduce((a, b) => a + b, 0) / (off ? window.length : n);
   return Number.isFinite(avg) ? Math.max(0, avg) : 0;
 }
 
-/** Per-day state for the streak segments: "met", "wrote" (below goal) or "none". */
-export function dayStates(history: History, days: string[], goal: number): ("met" | "wrote" | "none")[] {
+/**
+ * Per-day state for the streak segments: "met", "wrote" (below goal), "none",
+ * or "off" for a day off without writing (only with `isDayOff`).
+ */
+export function dayStates(
+  history: History, days: string[], goal: number, isDayOff?: IsDayOff | null,
+): ("met" | "wrote" | "none" | "off")[] {
   return days.map((d) => {
     const w = addedOn(history, d);
-    if (w <= 0) return "none";
+    if (w <= 0) return isDayOff?.(d) ? "off" : "none";
     return goalMet(w, goal) ? "met" : "wrote";
   });
 }

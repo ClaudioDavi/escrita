@@ -12,6 +12,11 @@ describe("wordcount", () => {
   it("keeps contractions and hyphenated words whole", () => {
     expect(countWords("don't guarda-chuva d’água")).toBe(3);
   });
+  it("keeps combining marks inside the word", () => {
+    const decomposed = "ningue\u0301m sai\u0301da cora\u00e7a\u0303o";
+    expect(countWords(decomposed)).toBe(3);
+    expect(countWords(decomposed.normalize("NFC"))).toBe(3);
+  });
   it("unclosed comment hides the rest", () => {
     expect(proseOnly("um %% dois três").trim()).toBe("um");
   });
@@ -22,6 +27,10 @@ describe("markers", () => {
   it("parses beats and written state", () => {
     const b = parseBeats(text);
     expect(b.map((x) => [x.text, x.written])).toEqual([["b", true], ["c", false]]);
+  });
+  it("does not count a multi-line comment as written prose", () => {
+    const t = "%% beat: a %%\n%% nota\nque continua\n%%\n\n%% beat: b %%\n%% nota\nlonga %% e escrito";
+    expect(parseBeats(t).map((x) => [x.text, x.written])).toEqual([["a", false], ["b", true]]);
   });
   it("parses placeholders", () => {
     expect(parsePlaceholders(text, "XXX").map((p) => p.text)).toEqual(["janela"]);

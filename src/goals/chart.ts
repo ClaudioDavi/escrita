@@ -1,5 +1,6 @@
 // Pure geometry for the progress chart (no Obsidian imports): bars of words per
-// day, a dashed daily-goal line and, for a book, a line for its running total.
+// day, a dashed daily-goal line, for a book a line for its running total, and
+// bands behind the bars for days off.
 
 export interface ChartInput {
   width: number;
@@ -10,6 +11,19 @@ export interface ChartInput {
   goal: number;
   /** the book's total at the end of each day (same length as values), or null */
   totals?: number[] | null;
+  /** whether each day is a day off (same length as values), or null */
+  off?: readonly boolean[] | null;
+}
+
+/** A run of consecutive days off, drawn as a full-height band behind the bars. */
+export interface ChartBand {
+  /** first and last day index of the run */
+  from: number;
+  to: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface ChartBar {
@@ -41,6 +55,8 @@ export interface ChartGeometry {
   totalEnd: { x: number; y: number; value: number } | null;
   /** x labels: first day, middle, last (today) */
   xLabels: ChartLabel[];
+  /** days off, merged into runs, left to right */
+  offBands: ChartBand[];
 }
 
 export const CHART_PAD = { top: 12, bottom: 20, left: 2, right: 2, label: 52 };
@@ -110,5 +126,18 @@ export function chartGeometry(input: ChartInput): ChartGeometry {
     }
   }
 
-  return { width, height, plot, bars, goalY, totalPath, totalEnd, xLabels };
+  const offBands: ChartBand[] = [];
+  const off = input.off && input.off.length === n ? input.off : null;
+  if (off) {
+    for (let i = 0; i < n; i++) {
+      if (!off[i]) continue;
+      let j = i;
+      while (j + 1 < n && off[j + 1]) j++;
+      const x = plot.left + i * slot;
+      offBands.push({ from: i, to: j, x: r2(x), y: plot.top, width: r2((j - i + 1) * slot), height: r2(plotH) });
+      i = j;
+    }
+  }
+
+  return { width, height, plot, bars, goalY, totalPath, totalEnd, xLabels, offBands };
 }

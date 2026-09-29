@@ -1,0 +1,115 @@
+/* ---------- publish modal ---------- */
+.escrita-publish-modal {
+  width: min(560px, 100%);
+}
+.escrita-publish-summary {
+  margin-bottom: var(--size-4-3);
+  color: var(--text-muted);
+}
+.escrita-publish-summary.is-blocker {
+  color: var(--escrita-bad);
+}
+.escrita-publish-checks,
+.escrita-publish-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.escrita-publish-check {
+  padding: var(--size-4-1) 0;
+}
+.escrita-publish-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-4-2);
+}
+.escrita-publish-icon {
+  display: inline-flex;
+  flex: none;
+  padding-top: 2px;
+}
+.escrita-publish-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.escrita-publish-check.is-blocker .escrita-publish-icon {
+  color: var(--escrita-bad);
+}
+.escrita-publish-check.is-warning .escrita-publish-icon {
+  color: var(--escrita-warn);
+}
+.escrita-publish-check.is-passed .escrita-publish-icon {
+  color: var(--escrita-good);
+}
+.escrita-publish-check.is-passed .escrita-publish-text {
+  color: var(--text-muted);
+}
+.escrita-publish-items {
+  margin: var(--size-4-1) 0 0 calc(16px + var(--size-4-2));
+}
+.escrita-publish-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--size-4-2);
+  min-height: 32px;
+  padding: var(--size-4-1) var(--size-4-2);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.escrita-publish-line {
+  flex: none;
+  min-width: 2.5em;
+  font-family: var(--font-monospace);
+  color: var(--text-faint);
+}
+.escrita-publish .is-clickable {
+  cursor: pointer;
+}
+.escrita-publish .is-clickable:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+.escrita-publish-text.is-clickable {
+  border-radius: var(--radius-s);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.escrita-publish .is-clickable:focus-visible {
+  outline: 2px solid var(--background-modifier-border-focus);
+  outline-offset: 1px;
+}
+.escrita-publish-date {
+  margin-top: var(--size-4-4);
+  padding-top: var(--size-4-3);
+  border-top: 1px solid var(--background-modifier-border);
+}
+.escrita-publish-date-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+}
+.escrita-publish-hint {
+  margin-top: var(--size-4-1);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+}
+.escrita-publish-date-warning {
+  color: var(--escrita-warn);
+}
+.escrita-publish-footer {
+  margin-top: var(--size-4-4);
+}
+.escrita-publish-anyway label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  min-height: 32px;
+  cursor: pointer;
+}
+.escrita-publish-keep {
+  margin-top: var(--size-4-2);
+}

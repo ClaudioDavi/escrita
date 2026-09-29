@@ -41,9 +41,19 @@ export function bodyStartLine(lines: string[]): number {
   return 0;
 }
 
-function isProse(line: string): boolean {
-  const t = line.replace(/%%[^\n]*?%%/g, "").trim();
-  return t.length > 0 && !SCENE_BREAK.test(t);
+/**
+ * Text of a line that sits outside `%%` comments, given whether the line
+ * starts inside a comment that an earlier line opened. Returns the state at
+ * the end of the line, so comments that span several lines are skipped.
+ */
+function outsideComments(line: string, inComment: boolean): { text: string; inComment: boolean } {
+  const parts = line.split("%%");
+  let text = "";
+  for (let k = 0; k < parts.length; k++) {
+    if (k > 0) inComment = !inComment;
+    if (!inComment) text += " " + parts[k];
+  }
+  return { text, inComment };
 }
 
 export function parseBeats(text: string): BeatMarker[] {
@@ -54,9 +64,13 @@ export function parseBeats(text: string): BeatMarker[] {
     const m = BEAT_LINE.exec(lines[i]);
     if (!m) continue;
     let written = false;
+    let inComment = false;
     for (let j = i + 1; j < lines.length; j++) {
-      if (BEAT_LINE.test(lines[j]) || SCENE_BREAK.test(lines[j])) break;
-      if (isProse(lines[j])) { written = true; break; }
+      if (!inComment && (BEAT_LINE.test(lines[j]) || SCENE_BREAK.test(lines[j]))) break;
+      const r = outsideComments(lines[j], inComment);
+      inComment = r.inComment;
+      const t = r.text.trim();
+      if (t.length > 0 && !SCENE_BREAK.test(t)) { written = true; break; }
     }
     beats.push({ line: i, text: m[1], written });
   }

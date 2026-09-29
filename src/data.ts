@@ -11,8 +11,16 @@ export interface DayBook {
 export interface DayRecord {
   added: number;
   deleted: number;
-  /** keyed by book note path */
+  /** keyed by book note path, or by the path of a standalone piece note (same shape) */
   books: Record<string, DayBook>;
+}
+
+/** What Escrita remembers about a note it published (see the publish module). */
+export interface PublishRecord {
+  /** the status value the note had before "Publish this note"; "Unpublish" restores it */
+  previousStatus?: string;
+  /** the note's slug (URL) at its last publish, to notice URL changes */
+  slug?: string;
 }
 
 export interface EscritaData {
@@ -20,6 +28,8 @@ export interface EscritaData {
   settings: EscritaSettings;
   /** keyed by writing day, YYYY-MM-DD */
   history: Record<string, DayRecord>;
+  /** keyed by note path; absent in data saved by 0.1 (loaded as {}) */
+  publish: Record<string, PublishRecord>;
 }
 
 export interface EscritaModule {

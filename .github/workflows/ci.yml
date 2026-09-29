@@ -17,3 +17,5 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      # Scan the built main.js for network APIs (milestone 0 guard).
+      - run: npm run test:bundle

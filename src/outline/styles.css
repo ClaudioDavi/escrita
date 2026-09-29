@@ -406,3 +406,28 @@ body:not(.is-mobile) .escrita-outline-chapter:not(:focus-within):not(.is-active)
 .escrita-beat-raw .cm-comment {
   color: var(--escrita-ghost);
 }
+
+/* A single note (not in a book) */
+.escrita-outline-note-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--size-2-2);
+}
+
+.escrita-outline-progress.is-near .escrita-outline-progress-text {
+  color: var(--escrita-warn);
+}
+
+.escrita-outline-progress.is-near .escrita-outline-bar-fill {
+  background: var(--escrita-warn);
+}
+
+.escrita-outline-progress.is-over .escrita-outline-progress-text,
+.escrita-outline-over {
+  color: var(--escrita-bad);
+}
+
+.escrita-outline-progress.is-over .escrita-outline-bar-fill {
+  background: var(--escrita-bad);
+}

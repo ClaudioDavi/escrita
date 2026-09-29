@@ -214,3 +214,35 @@ export function minimalChange(a: string, b: string): { from: number; to: number;
   while (ea > s && eb > s && a.charCodeAt(ea - 1) === b.charCodeAt(eb - 1)) { ea--; eb--; }
   return { from: s, to: ea, insert: b.slice(s, eb) };
 }
+
+/**
+ * The first beat of a note that has none: at the top of the body, after the
+ * frontmatter, leading blank lines and a leading title heading (`# …`), so it
+ * opens the first scene and any prose already there becomes that beat's
+ * scene. A note that already has beats gets the beat before its first one.
+ */
+export function insertFirstBeat(text: string, beatText: string): string {
+  const doc = split(text);
+  const { lines } = doc;
+  if (parseBeats(lines.join("\n")).length) return insertBeat(text, -1, beatText);
+  let k = doc.body;
+  while (k < lines.length && blank(lines[k])) k++;
+  if (k < lines.length && /^#[ \t]+\S/.test(lines[k])) {
+    k++;
+    while (k < lines.length && blank(lines[k])) k++;
+  }
+  const beat = beatLine(cleanBeatText(beatText));
+  if (k >= lines.length) {
+    // Nothing (or only a title) in the body: the beat goes at the end.
+    const head = lines.slice(0, k);
+    let h = head.length;
+    while (h > doc.body && blank(head[h - 1])) h--;
+    const kept = head.slice(0, h);
+    const titled = h > doc.body;
+    return join(doc, [...kept, ...(titled ? [""] : []), beat]);
+  }
+  const before = lines.slice(0, k);
+  // A title right above: keep one blank line between it and the beat.
+  const gap = k > doc.body && !blank(lines[k - 1]) ? [""] : [];
+  return join(doc, [...before, ...gap, beat, "", ...lines.slice(k)]);
+}

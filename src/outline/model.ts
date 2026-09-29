@@ -1,7 +1,9 @@
 // Pure logic behind the outline panel (no Obsidian imports): keyboard
-// decisions, beat letters, reordering, the ghost-beat scan and the canvas board.
+// decisions, beat letters, reordering, the ghost-beat scan, the canvas board
+// and what the panel shows (a book, one note or nothing).
 
 import { BEAT_LINE, bodyStartLine } from "../core/markers";
+import { pieceProgress } from "../core/piece";
 
 /** 0 → "a", 25 → "z", 26 → "aa", 27 → "ab"… */
 export function beatLetter(i: number): string {
@@ -372,4 +374,104 @@ export function mergeBoard(existing: string, fresh: CanvasData, gap = 40, column
   nodes.push(...added.map((c): Json => ({ ...c })));
   const edges = oldEdges.filter((e) => !dropped.has(String(e.fromNode)) && !dropped.has(String(e.toNode)));
   return { ...data, escrita: true, nodes, edges };
+}
+
+// ---------------------------------------------------------------- what the panel shows
+
+/** What the outline panel shows: a book, a single note's beats, or the empty state. */
+export type OutlineTarget =
+  | { mode: "book"; path: string }
+  | { mode: "note"; path: string }
+  | { mode: "empty" };
+
+/** The active file, as far as the panel cares. */
+export interface ActiveFile {
+  path: string;
+  /** a Markdown note */
+  markdown: boolean;
+  /** the note path of the book it belongs to (book note, chapter or anything in the book's folder) */
+  bookPath: string | null;
+}
+
+export interface TargetInput {
+  /** the active file (null when none, e.g. every tab closed) */
+  active: ActiveFile | null;
+  /** the active path last followed (undefined = never) */
+  lastActive: string | null | undefined;
+  /** what the panel shows now */
+  shown: OutlineTarget;
+  /** the book last shown or picked; kept while a note is shown */
+  bookPath: string | null;
+  /** whether a path still resolves: a book note for "book", a Markdown note outside any book for "note" */
+  valid: (mode: "book" | "note", path: string) => boolean;
+}
+
+/**
+ * Decide what the outline shows. It follows the active file only when that
+ * changes: a file in a book shows the book, any other Markdown note shows its
+ * own beats. Anything else becoming active (the outline itself, a PDF, an
+ * image, nothing) is not followed, so the panel keeps showing the last note
+ * or book, and a book picked by hand stays until another note is opened.
+ * Returns the target and the active path to remember.
+ */
+export function resolveTarget(i: TargetInput): { target: OutlineTarget; lastActive: string | null | undefined } {
+  const a = i.active;
+  const followable = !!a && (a.bookPath !== null || a.markdown);
+  if (a && followable && a.path !== i.lastActive) {
+    if (a.bookPath !== null && i.valid("book", a.bookPath)) return { target: { mode: "book", path: a.bookPath }, lastActive: a.path };
+    if (a.bookPath === null && a.markdown && i.valid("note", a.path)) return { target: { mode: "note", path: a.path }, lastActive: a.path };
+  }
+  const lastActive = followable && a ? a.path : i.lastActive;
+  const s = i.shown;
+  if (s.mode !== "empty" && i.valid(s.mode, s.path)) return { target: s, lastActive };
+  if (i.bookPath && i.valid("book", i.bookPath)) return { target: { mode: "book", path: i.bookPath }, lastActive };
+  return { target: { mode: "empty" }, lastActive };
+}
+
+/**
+ * Keys on a single note's beats: the same as beats in a book, minus what
+ * needs chapters (Tab and Shift+Tab conversions), which do nothing.
+ */
+export function decideNoteKey(k: KeyInput): KeyAction {
+  const a = decideKey({ ...k, field: "beat" });
+  switch (a.type) {
+    case "default":
+    case "swallow":
+    case "newBeat":
+    case "removeBeat":
+    case "focus":
+      return a;
+    default:
+      return { type: "swallow" };
+  }
+}
+
+/** The numbers in a single note's header: its count in the piece's unit against a target or limit. */
+export interface NoteGoal {
+  count: number;
+  /** what the count is shown against: the target, else the limit */
+  goal?: number;
+  kind: "target" | "limit" | "none";
+  /** the limit, when there is also a target */
+  limit?: number;
+  state: "none" | "under" | "near" | "over";
+  /** 0–1, for the bar */
+  fill: number;
+  reached: boolean;
+}
+
+export function noteGoal(count: number, piece: { target?: number; limit?: number } | null): NoteGoal {
+  const target = piece?.target, limit = piece?.limit;
+  const p = pieceProgress({ count, target, limit });
+  const goal = target ?? limit;
+  const out: NoteGoal = {
+    count: Number.isFinite(count) && count > 0 ? count : 0,
+    kind: target !== undefined ? "target" : limit !== undefined ? "limit" : "none",
+    state: p.state,
+    fill: Math.max(0, Math.min(1, p.ratio)),
+    reached: p.reached,
+  };
+  if (goal !== undefined) out.goal = goal;
+  if (target !== undefined && limit !== undefined) out.limit = limit;
+  return out;
 }

@@ -23,6 +23,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - run: npm run test:bundle
       - name: Check the tag matches manifest.json
         run: |
           version=$(node -p "require('./manifest.json').version")
