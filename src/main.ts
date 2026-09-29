@@ -57,6 +57,8 @@ export default class EscritaPlugin extends Plugin {
 
   onunload(): void {
     for (const m of this.modules) m.unload?.();
+    // Write now what a pending debounced save would have written.
+    this.requestSave.cancel();
     void this.persist();
   }
 

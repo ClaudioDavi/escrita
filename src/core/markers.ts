@@ -30,7 +30,7 @@ function escapeRe(s: string): string {
 }
 
 export function placeholderRegex(marker: string): RegExp {
-  return new RegExp(`%%[ \\t]*${escapeRe(marker)}\\b:?[ \\t]*([^\\n]*?)[ \\t]*%%`, "g");
+  return new RegExp(`%%[ \\t]*${escapeRe(marker)}(?![\\p{L}\\p{N}_-]):?[ \\t]*([^\\n]*?)[ \\t]*%%`, "gu");
 }
 
 /** Index of the first body line (after frontmatter), 0-based. */
@@ -67,8 +67,12 @@ export function parsePlaceholders(text: string, marker: string): PlaceholderMark
   const out: PlaceholderMarker[] = [];
   const re = placeholderRegex(marker);
   let m: RegExpExecArray | null;
+  // Count newlines incrementally so large notes with many markers stay linear.
+  let line = 0;
+  let scanned = 0;
   while ((m = re.exec(text))) {
-    const line = text.slice(0, m.index).split("\n").length - 1;
+    for (let i = text.indexOf("\n", scanned); i !== -1 && i < m.index; i = text.indexOf("\n", i + 1)) line++;
+    scanned = m.index;
     out.push({ line, from: m.index, to: m.index + m[0].length, text: m[1] });
   }
   return out;

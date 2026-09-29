@@ -10,7 +10,7 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   `styles.css`, plus any files it needs) with tests in `tests/<module>*.test.ts`.
   Do not edit `src/main.ts`, `src/settings.ts`, `src/data.ts`, `src/i18n.ts`,
   `src/strings.ts` or `src/core/*` (exception: the outline module implements
-  `src/core/chapter-ops.ts`). If you need a change there, say so in your final
+  `src/core/chapter-ops.ts` with its pure helpers `src/core/chapter-engine.ts` and `src/core/chapter-plan.ts`). If you need a change there, say so in your final
   report instead.
 - **Entry point.** `src/<module>/index.ts` exports `class <Name>Module implements EscritaModule`
   with `constructor(private plugin: EscritaPlugin)`, `load()`, optional `unload()`
@@ -152,7 +152,7 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
   early from the status bar or command. Sprint state is not persisted across reloads.
 - **Commands**: "Open progress", "Start a sprint", "Stop the sprint".
 
-### outline (`src/outline/` + `src/core/chapter-ops.ts`)
+### outline (`src/outline/` + `src/core/chapter-ops.ts`, `chapter-engine.ts`, `chapter-plan.ts`)
 
 - **ChapterOps** (implement in `src/core/chapter-ops.ts`, keeping its public signatures):
   `createChapterAt(book, at, title, body?)` — shift later chapters' numbers (rename
@@ -253,7 +253,7 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
   %% /escrita-darling %%
   ```
 
-  JSON must never contain `%%` (escape `%` as `%`) or newlines. Notice: "Moved to
+  JSON must never contain `%%` (escape `%` as the JSON escape `\u0025`) or newlines. Notice: "Moved to
   darlings — restore it from the Darlings panel."
 - **Pure format** (`src/darlings/format.ts`, tested): `formatEntry`, `parseEntries(text)`
   → `{id, from, date, before, after, text, start, end}` (offsets of the whole entry

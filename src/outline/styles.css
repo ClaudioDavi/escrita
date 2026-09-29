@@ -1,0 +1,408 @@
+/* Outline panel */
+.escrita-outline {
+  padding: var(--size-4-3) var(--size-4-2);
+  font-size: var(--font-ui-small);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+}
+
+.escrita-outline-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-2);
+  padding: 0 var(--size-2-3);
+}
+
+.escrita-outline-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-2-2);
+}
+
+.escrita-outline-heading {
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.escrita-outline-tools {
+  display: flex;
+  gap: var(--size-2-1);
+}
+
+.escrita-outline-book {
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+}
+
+.escrita-outline-bookselect {
+  width: 100%;
+  font-weight: var(--font-semibold);
+}
+
+.escrita-outline-stats,
+.escrita-outline-progress-text {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+}
+
+.escrita-outline-bar {
+  height: 3px;
+  margin-top: var(--size-2-1);
+  border-radius: 2px;
+  background: var(--escrita-bar-bg);
+  overflow: hidden;
+}
+
+.escrita-outline-bar-fill {
+  height: 100%;
+  background: var(--escrita-accent);
+  border-radius: 2px;
+}
+
+/* Rows */
+.escrita-outline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.escrita-outline-chapter {
+  border-radius: var(--radius-s);
+  padding: var(--size-2-1) var(--size-2-3);
+  border-top: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+}
+
+.escrita-outline-chapter.is-active {
+  background: var(--background-modifier-hover);
+}
+
+.escrita-outline-chapter.is-dragging {
+  opacity: 0.5;
+}
+
+.escrita-outline-chapter.is-drop-before {
+  border-top-color: var(--escrita-accent);
+}
+
+.escrita-outline-chapter.is-drop-after {
+  border-bottom-color: var(--escrita-accent);
+}
+
+.escrita-outline-line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-2-3);
+  min-height: 32px;
+}
+
+.escrita-outline-num,
+.escrita-outline-letter,
+.escrita-outline-plus {
+  flex: 0 0 max(2.2em, 32px);
+  min-height: 32px;
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  line-height: 32px;
+  text-align: right;
+  user-select: none;
+}
+
+.escrita-outline-num {
+  cursor: grab;
+}
+
+.escrita-outline-num:hover,
+.escrita-outline-letter:hover,
+.escrita-outline-num:focus-visible,
+.escrita-outline-letter:focus-visible {
+  color: var(--text-accent);
+}
+
+.escrita-outline-num:focus-visible,
+.escrita-outline-letter:focus-visible {
+  outline: none;
+  border-radius: var(--radius-s);
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}
+
+/* "⋯" row menu: always there on touch screens, on hover/focus with a mouse */
+.escrita-outline-tool,
+.escrita-outline-more {
+  flex: 0 0 auto;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.escrita-outline-tool:not(:hover):not(:focus-visible),
+.escrita-outline-more:not(:hover):not(:focus-visible) {
+  background: transparent;
+  box-shadow: none;
+}
+
+body:not(.is-mobile) .escrita-outline-more {
+  opacity: 0;
+}
+
+body:not(.is-mobile) .escrita-outline-line:hover .escrita-outline-more,
+body:not(.is-mobile) .escrita-outline-beat:hover .escrita-outline-more,
+body:not(.is-mobile) .escrita-outline-line:focus-within .escrita-outline-more,
+body:not(.is-mobile) .escrita-outline-beat:focus-within .escrita-outline-more,
+.escrita-outline-more:focus-visible {
+  opacity: 1;
+}
+
+.escrita-outline-chapter.is-active .escrita-outline-num {
+  color: var(--escrita-accent);
+}
+
+.escrita-outline-letter {
+  cursor: pointer;
+}
+
+.escrita-outline-field {
+  flex: 1 1 auto;
+  min-width: 0;
+  outline: none;
+  border-radius: var(--radius-s);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  cursor: text;
+}
+
+.escrita-outline-field:focus {
+  box-shadow: 0 0 0 1px var(--background-modifier-border-focus);
+}
+
+.escrita-outline-field:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-faint);
+  pointer-events: none;
+}
+
+.escrita-outline-title {
+  font-weight: var(--font-medium);
+  color: var(--text-normal);
+  padding: 7px 2px;
+  line-height: 18px;
+}
+
+.escrita-outline-meta {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  line-height: 32px;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.escrita-outline-words.is-empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.escrita-outline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--escrita-dot, var(--text-faint));
+}
+
+.escrita-outline-badge {
+  padding: 0 6px;
+  border-radius: var(--radius-s);
+  line-height: 18px;
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  background: var(--escrita-placeholder-bg);
+  color: var(--escrita-placeholder-fg);
+}
+
+.escrita-outline-summary {
+  margin-left: calc(max(2.2em, 32px) + var(--size-2-3));
+  padding: 0 2px 4px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.45;
+}
+
+.is-mobile .escrita-outline-summary {
+  min-height: 32px;
+  padding-top: 6px;
+}
+
+/* Empty summaries only take space on the chapter you're in (always shown on touch screens). */
+body:not(.is-mobile) .escrita-outline-chapter:not(:focus-within):not(.is-active) .escrita-outline-summary:empty {
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.escrita-outline-beat {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-2-3);
+  min-height: 32px;
+  padding-left: calc(1.2em + var(--size-2-3));
+}
+
+.escrita-outline-beat-text {
+  padding: 7px 2px;
+  line-height: 18px;
+  color: var(--text-muted);
+}
+
+.escrita-outline-beat.is-written .escrita-outline-beat-text {
+  color: var(--text-normal);
+}
+
+.escrita-outline-check {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  color: var(--escrita-good);
+}
+
+.escrita-outline-check .svg-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.escrita-outline-new {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-2-3);
+  min-height: 32px;
+  padding: 0 var(--size-2-3);
+}
+
+.escrita-outline-new.is-draft {
+  background: var(--background-modifier-hover);
+  border-radius: var(--radius-s);
+}
+
+.escrita-outline-new-text {
+  padding: 7px 2px;
+  line-height: 18px;
+  color: var(--text-normal);
+}
+
+.escrita-outline-new-hint {
+  flex: 0 0 auto;
+  line-height: 32px;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
+.escrita-outline-new:focus-within .escrita-outline-new-hint {
+  visibility: hidden;
+}
+
+/* Footer: keycap hints */
+.escrita-outline-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-2-2) var(--size-4-3);
+  padding: var(--size-4-2) var(--size-2-3) 0;
+  border-top: 1px solid var(--background-modifier-border);
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
+.escrita-outline-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.escrita-outline-hint kbd {
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  padding: 0 4px;
+  border: 1px solid var(--background-modifier-border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+  color: var(--text-muted);
+}
+
+/* Empty state */
+.escrita-outline-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  padding: var(--size-4-4) var(--size-2-3);
+  color: var(--text-muted);
+}
+
+.escrita-outline-empty p {
+  margin: 0;
+}
+
+.escrita-outline-empty-title {
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+}
+
+.escrita-outline-example {
+  margin: 0;
+  padding: var(--size-4-2);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  font-size: var(--font-ui-smaller);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.escrita-outline-booklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-2);
+}
+
+.escrita-outline-bookbtn {
+  justify-content: flex-start;
+  min-height: 32px;
+}
+
+/* Ghost beats in the editor */
+.escrita-ghost-beat {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  color: var(--escrita-ghost);
+  cursor: text;
+}
+
+.escrita-ghost-label {
+  font-family: var(--font-interface);
+  font-size: 0.68em;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.escrita-ghost-text {
+  font-style: italic;
+}
+
+.escrita-beat-raw,
+.escrita-beat-raw .cm-comment {
+  color: var(--escrita-ghost);
+}

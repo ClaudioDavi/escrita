@@ -127,11 +127,18 @@ export class EscritaSettingTab extends PluginSettingTab {
       .addText((c) => c.setPlaceholder("Templates/Chapter.md").setValue(s.chapterTemplate)
         .onChange(async (v) => { s.chapterTemplate = v.trim(); await save(); }));
     new Setting(containerEl)
+      .setName(t("settings.numberPadding"))
+      .setDesc(t("settings.numberPadding.desc"))
+      .addDropdown((d) => {
+        for (let w = 1; w <= 4; w++) d.addOption(String(w), "1".padStart(w, "0"));
+        d.setValue(String(s.numberPadding)).onChange(async (v) => { s.numberPadding = Number(v); await save(); });
+      });
+    new Setting(containerEl)
       .setName(t("settings.statusProperty"))
       .setDesc(t("settings.statusProperty.desc"))
-      .addText((c) => c.setValue(s.statusProperty)
+      .addText((c) => c.setPlaceholder("status").setValue(s.statusProperty)
         .onChange(async (v) => { s.statusProperty = v.trim() || "status"; await save(); }))
-      .addText((c) => c.setValue(s.summaryProperty)
+      .addText((c) => c.setPlaceholder("summary").setValue(s.summaryProperty)
         .onChange(async (v) => { s.summaryProperty = v.trim() || "summary"; await save(); }));
     new Setting(containerEl)
       .setName(t("settings.statusColors"))
@@ -164,6 +171,13 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setDesc(t("settings.ignoreJumpsOver.desc"))
       .addText((c) => c.setValue(String(s.ignoreJumpsOver))
         .onChange(async (v) => { s.ignoreJumpsOver = num(v, s.ignoreJumpsOver, 50); await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.sprintMinutes"))
+      .setDesc(t("settings.sprintMinutes.desc"))
+      .addText((c) => c.setValue(String(s.sprintMinutes))
+        .onChange(async (v) => { s.sprintMinutes = Math.min(240, num(v, s.sprintMinutes, 1)); await save(); }))
+      .addText((c) => c.setValue(String(s.sprintTarget))
+        .onChange(async (v) => { s.sprintTarget = num(v, s.sprintTarget, 0); await save(); }));
     new Setting(containerEl)
       .setName(t("settings.showStatusBar"))
       .addToggle((c) => c.setValue(s.showStatusBar)

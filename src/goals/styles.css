@@ -1,0 +1,359 @@
+/* ---------- status bar ---------- */
+.escrita-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.escrita-status.escrita-hidden,
+.escrita-status .escrita-hidden,
+.escrita-progress .escrita-hidden {
+  display: none;
+}
+.escrita-status:focus-visible {
+  outline: 2px solid var(--background-modifier-border-focus);
+  outline-offset: -2px;
+}
+.escrita-status-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.escrita-status-check {
+  display: inline-flex;
+  color: var(--escrita-good);
+}
+.escrita-status-check svg {
+  width: 12px;
+  height: 12px;
+}
+.escrita-status-today.is-met,
+.escrita-status-sprint.is-met {
+  color: var(--escrita-good);
+}
+.escrita-status-bar {
+  display: inline-block;
+  position: relative;
+  width: 48px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--escrita-bar-bg);
+  overflow: hidden;
+}
+.escrita-status-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: 2px;
+  background: var(--escrita-accent);
+}
+.is-met .escrita-status-fill {
+  background: var(--escrita-good);
+}
+.escrita-status-clock {
+  font-family: var(--font-monospace);
+}
+/* Qualified so it beats Obsidian's `button:not(.clickable-icon)` (0,1,1). */
+.escrita-status .escrita-status-stop {
+  height: auto;
+  padding: 0 6px;
+  font-size: inherit;
+  line-height: 1.4;
+  box-shadow: none;
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  cursor: var(--cursor);
+}
+.escrita-status .escrita-status-stop:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+/* ---------- progress modal ---------- */
+.escrita-progress-modal {
+  width: min(680px, 100%);
+}
+.escrita-progress-modal .modal-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.escrita-progress-scope {
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-normal);
+  color: var(--text-muted);
+}
+.escrita-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.escrita-progress-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.escrita-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.escrita-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  min-width: 0;
+}
+.escrita-tile-label {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.escrita-tile-value {
+  font-size: 1.35em;
+  font-weight: var(--font-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.escrita-tile-value.is-met {
+  color: var(--escrita-good);
+}
+.escrita-tile-streak {
+  font-size: 1.1em;
+}
+.escrita-tile-of {
+  font-size: 0.75em;
+  font-weight: var(--font-normal);
+  color: var(--text-muted);
+}
+.escrita-tile-sub {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.escrita-bar {
+  position: relative;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--escrita-bar-bg);
+  overflow: hidden;
+}
+.escrita-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: 2px;
+  background: var(--escrita-accent);
+}
+.escrita-bar-fill.is-met {
+  background: var(--escrita-good);
+}
+.escrita-streak-segments {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.escrita-streak-seg {
+  height: 6px;
+  border-radius: 2px;
+  background: var(--escrita-bar-bg);
+}
+.escrita-streak-seg.is-wrote {
+  background: var(--escrita-accent);
+  opacity: 0.45;
+}
+.escrita-streak-seg.is-met {
+  background: var(--escrita-accent);
+}
+
+/* chart */
+.escrita-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.escrita-chart-svg {
+  display: block;
+  overflow: visible;
+}
+.escrita-chart-axis {
+  stroke: var(--background-modifier-border);
+  stroke-width: 1;
+}
+.escrita-chart-bar {
+  fill: var(--text-faint);
+  opacity: 0.45;
+}
+.escrita-chart-bar.is-met {
+  fill: var(--escrita-accent);
+  opacity: 1;
+}
+.escrita-chart-goal {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+.escrita-chart-total {
+  fill: none;
+  stroke: var(--text-normal);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.escrita-chart-total-dot {
+  fill: var(--text-normal);
+}
+.escrita-chart-total-label,
+.escrita-chart-xlabel {
+  font-size: 10px;
+  font-family: var(--font-interface);
+  font-variant-numeric: tabular-nums;
+  fill: var(--text-muted);
+}
+.escrita-chart-total-label {
+  fill: var(--text-normal);
+  font-weight: var(--font-semibold);
+}
+.escrita-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.escrita-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.escrita-legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.escrita-legend-swatch.is-bar {
+  background: var(--text-faint);
+  opacity: 0.45;
+}
+.escrita-legend-swatch.is-met {
+  background: var(--escrita-accent);
+}
+.escrita-legend-swatch.is-goal {
+  height: 0;
+  border-radius: 0;
+  border-top: 1px dashed var(--text-muted);
+}
+.escrita-legend-swatch.is-total {
+  height: 0;
+  border-radius: 0;
+  border-top: 2px solid var(--text-normal);
+}
+
+/* pacing */
+.escrita-pacing {
+  padding: 10px 12px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  line-height: 1.5;
+}
+.escrita-pacing.is-good {
+  border-color: rgba(var(--color-green-rgb), 0.35);
+  background: rgba(var(--color-green-rgb), 0.1);
+}
+.escrita-pacing.is-behind {
+  border-color: rgba(var(--color-yellow-rgb), 0.4);
+  background: rgba(var(--color-yellow-rgb), 0.12);
+}
+.escrita-pacing-verdict {
+  font-weight: var(--font-semibold);
+}
+
+/* settings and sprint rows */
+.escrita-progress-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+.escrita-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.escrita-field input,
+.escrita-field select {
+  width: 100%;
+  min-height: 32px;
+}
+.escrita-field-label {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.escrita-progress-sprint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+.escrita-sprint-title {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.escrita-sprint-status {
+  flex: 1;
+  font-variant-numeric: tabular-nums;
+}
+.escrita-segmented {
+  display: inline-flex;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  overflow: hidden;
+}
+.escrita-progress .escrita-segmented button {
+  min-height: 32px;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--text-muted);
+}
+.escrita-progress .escrita-segmented button + button {
+  border-left: 1px solid var(--background-modifier-border);
+}
+.escrita-progress .escrita-segmented button.is-active {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+  font-weight: var(--font-semibold);
+}
+.escrita-sprint-target {
+  width: 7em;
+  min-height: 32px;
+}
+.escrita-sprint-button {
+  min-height: 32px;
+  margin-left: auto;
+}
+
+@media (max-width: 520px) {
+  .escrita-tiles {
+    grid-template-columns: 1fr;
+  }
+  .escrita-sprint-button {
+    margin-left: 0;
+  }
+}

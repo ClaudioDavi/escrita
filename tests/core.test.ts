@@ -26,6 +26,18 @@ describe("markers", () => {
   it("parses placeholders", () => {
     expect(parsePlaceholders(text, "XXX").map((p) => p.text)).toEqual(["janela"]);
   });
+  it("gives placeholders the right line numbers", () => {
+    const t = "a\n%% XXX: um %% e %% XXX: dois %%\n\nb\n%% XXX %%\r\n%% XXX: três %%";
+    expect(parsePlaceholders(t, "XXX").map((p) => [p.line, p.text])).toEqual([[1, "um"], [1, "dois"], [4, ""], [5, "três"]]);
+  });
+  it("matches markers ending in non-ASCII letters", () => {
+    expect(parsePlaceholders("%% AÇÃ: ver %%", "AÇÃ").map((p) => p.text)).toEqual(["ver"]);
+    expect(parsePlaceholders("%% PENDÊNCIÁ %%", "PENDÊNCIÁ")).toHaveLength(1);
+  });
+  it("does not treat a longer word as the marker", () => {
+    expect(parsePlaceholders("%% XXX-foo %% %% XXXY: a %% %% AÇÃO: b %%", "XXX")).toEqual([]);
+    expect(parsePlaceholders("%% AÇÃO: b %%", "AÇÃ")).toEqual([]);
+  });
 });
 
 describe("book", () => {

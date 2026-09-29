@@ -1,0 +1,9 @@
+/* Escrita: shared tokens. Everything follows the active theme. */
+body {
+  --escrita-accent: var(--interactive-accent);
+  --escrita-ghost: var(--text-faint);
+  --escrita-placeholder-bg: rgba(var(--color-red-rgb), 0.15);
+  --escrita-placeholder-fg: var(--color-red);
+  --escrita-good: var(--color-green);
+  --escrita-bar-bg: var(--background-modifier-border);
+}

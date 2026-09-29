@@ -5,4 +5,4 @@ data.json
 .DS_Store
 .vscode/
 .idea/
-styles.css
+/styles.css

@@ -1,0 +1,1093 @@
+import {
+  ItemView, MarkdownView, Menu, Notice, Platform, TAbstractFile, TFile, WorkspaceLeaf, debounce, setIcon, setTooltip,
+  type ViewStateResult,
+} from "obsidian";
+import type EscritaPlugin from "../main";
+import type { Book } from "../core/books";
+import { beatLine, parseBeats, parsePlaceholders, type BeatMarker } from "../core/markers";
+import { parseStatusColors } from "../settings";
+import { fmt, t } from "../i18n";
+import { appendBeat, insertBeat, isBlankBody, moveBeatOut, removeBeat, setBeatText } from "./beats-edit";
+import {
+  beatLetter, chapterAsBeatText, decideKey, dropIndex, moveItem, type Field, type KeyAction,
+} from "./model";
+import { confirmAction } from "./modals";
+import { errorMessage } from "./errors";
+
+export const OUTLINE_VIEW = "escrita-outline";
+
+interface ChapterRow {
+  file: TFile;
+  /** 0-based position */
+  index: number;
+  /** the number as written in the file name, or the position */
+  label: string;
+  title: string;
+  summary: string;
+  status: string;
+  words: number;
+  beats: BeatMarker[];
+  placeholders: number;
+  bodyBlank: boolean;
+}
+
+interface LineInfo {
+  field: Field;
+  row?: ChapterRow;
+  beat?: number;
+  /**
+   * for "new" lines: the chapter the line sits before (null = the last line).
+   * Positions are looked up from it when the line is used, never stored.
+   */
+  before?: TFile | null;
+}
+
+type FocusTarget =
+  | { kind: "title" | "summary"; file: TFile; caret?: "start" | "end" | "all" }
+  | { kind: "beat"; file: TFile; beat: number; caret?: "start" | "end" | "all" }
+  | { kind: "new"; before: TFile | null };
+
+interface RowEls {
+  row: ChapterRow;
+  group: HTMLElement;
+  title: HTMLElement;
+  summary: HTMLElement;
+  meta: HTMLElement;
+  beats: { el: HTMLElement; text: HTMLElement }[];
+}
+
+function str(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  if (Array.isArray(v)) return v.map(str).join(", ");
+  return String(v);
+}
+
+function oneLine(s: string): string {
+  return s.replace(/[\r\n]+/g, " ");
+}
+
+function fieldText(el: HTMLElement): string {
+  return oneLine(el.textContent ?? "");
+}
+
+/** Make a non-field element work like a button from the keyboard. */
+function buttonize(el: HTMLElement, label: string, onActivate: (e: KeyboardEvent | MouseEvent) => void): void {
+  el.setAttr("role", "button");
+  el.setAttr("tabindex", "0");
+  el.setAttr("aria-label", label);
+  el.addEventListener("click", onActivate);
+  el.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onActivate(e); }
+  });
+}
+
+function plural(n: number, key: string): string {
+  return t(`${key}.${n === 1 ? "one" : "other"}`, { n: fmt(n) });
+}
+
+/** The outline panel: chapters and their beats for one book, editable in place. */
+export class OutlineView extends ItemView {
+  private bookPath: string | null = null;
+  private book: Book | null = null;
+  private rows: ChapterRow[] = [];
+  private rowEls: RowEls[] = [];
+  private lines = new WeakMap<HTMLElement, LineInfo>();
+  /** a "new chapter" line opened between chapters: the chapter it sits before */
+  private draftBefore: TFile | null = null;
+  private pendingFocus: FocusTarget | null = null;
+  private dirty = false;
+  private busy = false;
+  private token = 0;
+  /** a forced refresh is in flight; a later refresh that supersedes it inherits the force */
+  private forceNext = false;
+  private dragFile: TFile | null = null;
+  /** active file path when the book was last resolved (undefined = never) */
+  private lastActive: string | null | undefined = undefined;
+  private statsEl: HTMLElement | null = null;
+  private progressEl: HTMLElement | null = null;
+
+  private requestRefresh = debounce(() => { void this.refresh(); }, 300, true);
+
+  constructor(leaf: WorkspaceLeaf, private plugin: EscritaPlugin) {
+    super(leaf);
+  }
+
+  getViewType(): string { return OUTLINE_VIEW; }
+  getDisplayText(): string { return t("outline.viewTitle"); }
+  getIcon(): string { return "list-tree"; }
+
+  getState(): Record<string, unknown> {
+    return { ...super.getState(), book: this.bookPath };
+  }
+
+  async setState(state: unknown, result: ViewStateResult): Promise<void> {
+    const s = state as { book?: unknown } | null;
+    if (s && typeof s.book === "string") this.bookPath = s.book;
+    await super.setState(state, result);
+    this.requestRefresh();
+  }
+
+  /** Show a given book (by its note path). */
+  showBook(notePath: string): void {
+    this.bookPath = notePath;
+    this.draftBefore = null;
+    void this.refresh(true);
+  }
+
+  /** The book currently shown, if any. */
+  currentBook(): Book | null {
+    return this.book;
+  }
+
+  async onOpen(): Promise<void> {
+    this.contentEl.addClass("escrita-outline");
+    const { workspace, vault, metadataCache } = this.app;
+    this.registerEvent(workspace.on("active-leaf-change", () => this.requestRefresh()));
+    this.registerEvent(workspace.on("file-open", () => this.requestRefresh()));
+    this.registerEvent(metadataCache.on("changed", (file) => { if (this.concerns(file.path)) this.requestRefresh(); }));
+    const onFs = (file: TAbstractFile, oldPath?: string) => {
+      if (!this.book || this.concerns(file.path) || (oldPath !== undefined && this.concerns(oldPath))) this.requestRefresh();
+    };
+    this.registerEvent(vault.on("create", (f) => onFs(f)));
+    this.registerEvent(vault.on("delete", (f) => onFs(f)));
+    this.registerEvent(vault.on("rename", (f, old) => onFs(f, old)));
+    // Placeholder badges: the index only notifies when some file's markers change.
+    this.register(this.plugin.placeholders.onChange(() => { if (this.book) this.requestRefresh(); }));
+    this.registerDomEvent(this.contentEl, "focusout", () => {
+      this.contentEl.win.setTimeout(() => {
+        if (this.book && this.dirty && !this.fieldFocused() && !this.busy) void this.refresh(true);
+      }, 0);
+    });
+    await this.refresh(true);
+  }
+
+  async onClose(): Promise<void> {
+    // Drop a queued refresh and any in flight, so nothing renders into the closed view.
+    this.requestRefresh.cancel();
+    this.token++;
+    this.book = null;
+    this.contentEl.empty();
+  }
+
+  /** Called when settings change. */
+  settingsChanged(): void {
+    void this.refresh();
+  }
+
+  private concerns(path: string): boolean {
+    const b = this.book;
+    if (!b) return false;
+    return path === b.note.path || path.startsWith(`${b.folder.path}/`);
+  }
+
+  private fieldFocused(): boolean {
+    const a = this.contentEl.doc.activeElement;
+    return !!a && this.contentEl.contains(a) && a.classList.contains("escrita-outline-field");
+  }
+
+  // ------------------------------------------------------------------ data
+
+  private resolveBook(): Book | null {
+    const books = this.plugin.books;
+    const file = this.app.workspace.getActiveFile();
+    // Follow the active file's book, but only when the active file changes,
+    // so a book picked from the dropdown stays until you open another note.
+    if ((file?.path ?? null) !== this.lastActive) {
+      this.lastActive = file?.path ?? null;
+      const active = books.bookFor(file);
+      if (active) {
+        if (this.bookPath !== active.note.path) this.draftBefore = null;
+        this.bookPath = active.note.path;
+        return active;
+      }
+    }
+    if (this.bookPath) {
+      const note = this.app.vault.getAbstractFileByPath(this.bookPath);
+      if (note instanceof TFile) {
+        const b = books.bookFor(note);
+        if (b && b.note.path === note.path) return b;
+      }
+    }
+    return null;
+  }
+
+  private async loadRows(book: Book): Promise<ChapterRow[]> {
+    const s = this.plugin.settings;
+    const chapters = this.plugin.books.chapters(book);
+    return Promise.all(chapters.map(async (ch, i): Promise<ChapterRow> => {
+      const text = await this.app.vault.cachedRead(ch.file);
+      const fm = this.plugin.books.frontmatter(ch.file);
+      return {
+        file: ch.file,
+        index: i,
+        label: /^\d+/.exec(ch.file.basename)?.[0] ?? String(i + 1),
+        title: ch.title,
+        summary: str(fm[s.summaryProperty]),
+        status: str(fm[s.statusProperty]),
+        words: await this.plugin.counter.count(ch.file),
+        beats: parseBeats(text),
+        placeholders: parsePlaceholders(text, s.placeholderMarker).length,
+        bodyBlank: isBlankBody(text),
+      };
+    }));
+  }
+
+  /** Reload and re-render. Without `force`, only counts are patched while a field has focus. */
+  async refresh(force = false): Promise<void> {
+    if (force) this.forceNext = true;
+    const token = ++this.token;
+    const book = this.resolveBook();
+    if (!book) {
+      if (!this.forceNext && this.fieldFocused()) return;
+      this.forceNext = false;
+      this.book = null;
+      this.rows = [];
+      this.renderNoBook();
+      return;
+    }
+    let rows: ChapterRow[];
+    try {
+      rows = await this.loadRows(book);
+    } catch (e) {
+      console.error("Escrita: could not load the outline", e);
+      return;
+    }
+    if (token !== this.token) return;
+    const sameBook = this.book?.note.path === book.note.path;
+    if (!this.forceNext && sameBook && this.fieldFocused()) {
+      // Keep `rows` matching what the panel shows until it can be re-rendered.
+      if (!this.patch(rows)) this.dirty = true;
+      return;
+    }
+    this.book = book;
+    this.rows = rows;
+    this.forceNext = false;
+    this.render();
+  }
+
+  // ------------------------------------------------------------------ rendering
+
+  private renderNoBook(): void {
+    const el = this.contentEl;
+    el.empty();
+    this.rowEls = [];
+    const books = this.plugin.books.allBooks();
+    const box = el.createDiv({ cls: "escrita-outline-empty" });
+    if (books.length) {
+      box.createDiv({ cls: "escrita-outline-empty-title", text: t("outline.pick") });
+      const list = box.createDiv({ cls: "escrita-outline-booklist" });
+      for (const b of books) {
+        const btn = list.createEl("button", { cls: "escrita-outline-bookbtn", text: b.title });
+        btn.addEventListener("click", () => this.showBook(b.note.path));
+      }
+    } else {
+      const folder = this.plugin.settings.chaptersFolder;
+      box.createDiv({ cls: "escrita-outline-empty-title", text: t("outline.empty.title") });
+      box.createEl("p", { text: t("outline.empty.desc", { folder }) });
+      box.createEl("pre", { cls: "escrita-outline-example", text: t("outline.empty.example", { folder }) });
+    }
+    const create = box.createEl("button", { cls: books.length ? "" : "mod-cta", text: t("outline.empty.create") });
+    create.addEventListener("click", () => this.plugin.outline.createBook());
+  }
+
+  private render(): void {
+    const book = this.book;
+    if (!book) { this.renderNoBook(); return; }
+    this.dirty = false;
+    const el = this.contentEl;
+    // Save whatever is being typed before the field goes away.
+    const focused = el.doc.activeElement;
+    if (focused && this.fieldFocused()) void this.commit(focused as HTMLElement);
+    const scroll = el.scrollTop;
+    el.empty();
+    this.rowEls = [];
+    this.lines = new WeakMap();
+
+    // Header
+    const header = el.createDiv({ cls: "escrita-outline-header" });
+    const top = header.createDiv({ cls: "escrita-outline-top" });
+    top.createDiv({ cls: "escrita-outline-heading", text: t("outline.viewTitle") });
+    const tools = top.createDiv({ cls: "escrita-outline-tools" });
+    const boardBtn = tools.createEl("button", { cls: "clickable-icon escrita-outline-tool" });
+    setIcon(boardBtn, "layout-dashboard");
+    setTooltip(boardBtn, t("outline.board"));
+    boardBtn.setAttr("aria-label", t("outline.board"));
+    boardBtn.addEventListener("click", () => { if (this.book) void this.plugin.outline.openBoard(this.book); });
+
+    const books = this.plugin.books.allBooks();
+    if (books.length > 1) {
+      const sel = header.createEl("select", { cls: "dropdown escrita-outline-bookselect" });
+      sel.setAttr("aria-label", t("outline.bookSelect"));
+      for (const b of books) sel.createEl("option", { text: b.title, value: b.note.path });
+      sel.value = book.note.path;
+      sel.addEventListener("change", () => this.showBook(sel.value));
+    } else {
+      header.createDiv({ cls: "escrita-outline-book", text: book.title });
+    }
+    this.statsEl = header.createDiv({ cls: "escrita-outline-stats" });
+    this.progressEl = header.createDiv({ cls: "escrita-outline-progress" });
+    this.renderStats();
+
+    // Chapters
+    const list = el.createDiv({ cls: "escrita-outline-list" });
+    const activePath = this.app.workspace.getActiveFile()?.path;
+    this.rows.forEach((row) => {
+      if (this.draftBefore === row.file) this.renderNewLine(list, row.file);
+      this.renderChapter(list, row, row.file.path === activePath);
+    });
+    this.renderNewLine(list, null);
+
+    // Footer
+    const foot = el.createDiv({ cls: "escrita-outline-footer" });
+    const hint = (keys: string[], text: string) => {
+      const h = foot.createDiv({ cls: "escrita-outline-hint" });
+      for (const k of keys) h.createEl("kbd", { text: k });
+      h.createSpan({ text: text });
+    };
+    if (Platform.isMobile) {
+      // Soft keyboards have no Tab and there is no drag: the ⋯ menus do it all.
+      foot.createDiv({ cls: "escrita-outline-hint", text: t("outline.hint.touch") });
+    } else {
+      hint(["Enter"], t("outline.hint.enter"));
+      hint(["Tab"], t("outline.hint.tab"));
+      hint(["Shift", "Tab"], t("outline.hint.shiftTab"));
+      hint(["⌫"], t("outline.hint.backspace"));
+      foot.createDiv({ cls: "escrita-outline-hint", text: t("outline.hint.drag") });
+    }
+
+    el.scrollTop = scroll;
+    this.applyFocus();
+  }
+
+  private renderStats(): void {
+    if (!this.statsEl || !this.progressEl || !this.book) return;
+    const beats = this.rows.reduce((n, r) => n + r.beats.length, 0);
+    this.statsEl.setText(`${plural(this.rows.length, "outline.chapters")} · ${plural(beats, "outline.beats")}`);
+    const words = this.rows.reduce((n, r) => n + r.words, 0);
+    const goal = Number(this.plugin.books.frontmatter(this.book.note).goal);
+    this.progressEl.empty();
+    if (Number.isFinite(goal) && goal > 0) {
+      this.progressEl.createDiv({ cls: "escrita-outline-progress-text", text: t("outline.progress", { words: fmt(words), goal: fmt(goal) }) });
+      const bar = this.progressEl.createDiv({ cls: "escrita-outline-bar" });
+      bar.createDiv({ cls: "escrita-outline-bar-fill" }).setCssProps({ width: `${Math.min(100, (words / goal) * 100).toFixed(1)}%` });
+    } else {
+      this.progressEl.createDiv({ cls: "escrita-outline-progress-text", text: t("common.words", { n: fmt(words) }) });
+    }
+  }
+
+  private renderMeta(meta: HTMLElement, row: ChapterRow): void {
+    meta.empty();
+    if (row.placeholders > 0) {
+      const badge = meta.createSpan({
+        cls: "escrita-outline-badge",
+        text: t("outline.placeholderBadge", { n: fmt(row.placeholders), marker: this.plugin.settings.placeholderMarker }),
+      });
+      setTooltip(badge, t("outline.placeholderTip"));
+    }
+    if (row.status) {
+      const dot = meta.createSpan({ cls: "escrita-outline-dot" });
+      const color = parseStatusColors(this.plugin.settings.statusColors)[row.status.toLowerCase()];
+      if (color) dot.setCssProps({ "--escrita-dot": color });
+      setTooltip(dot, row.status);
+      dot.setAttr("role", "img");
+      dot.setAttr("aria-label", row.status);
+    }
+    if (row.words > 0) meta.createSpan({ cls: "escrita-outline-words", text: fmt(row.words) });
+    else meta.createSpan({ cls: "escrita-outline-words is-empty", text: t("outline.outlineOnly") });
+  }
+
+  private makeField(parent: HTMLElement, cls: string, value: string, placeholder: string, line: LineInfo): HTMLElement {
+    const el = parent.createDiv({ cls: `escrita-outline-field ${cls}`, text: value });
+    try {
+      el.contentEditable = "plaintext-only";
+    } catch {
+      // older engines reject the value
+    }
+    if (el.contentEditable !== "plaintext-only") el.contentEditable = "true";
+    el.setAttr("role", "textbox");
+    el.setAttr("aria-label", placeholder);
+    el.setAttr("data-placeholder", placeholder);
+    el.dataset.original = value;
+    this.lines.set(el, line);
+    el.addEventListener("input", () => {
+      if (fieldText(el) === "" && el.childNodes.length) el.empty();
+    });
+    el.addEventListener("paste", (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData?.getData("text/plain") ?? "").replace(/\s*[\r\n]+\s*/g, " ");
+      insertPlainText(el, text);
+    });
+    el.addEventListener("drop", (e) => e.preventDefault());
+    el.addEventListener("keydown", (e) => this.onKey(e, el));
+    el.addEventListener("blur", () => { void this.commit(el); });
+    return el;
+  }
+
+  private renderChapter(list: HTMLElement, row: ChapterRow, active: boolean): void {
+    const group = list.createDiv({ cls: "escrita-outline-chapter" });
+    if (active) group.addClass("is-active");
+    const line = group.createDiv({ cls: "escrita-outline-line" });
+
+    const num = line.createDiv({ cls: "escrita-outline-num", text: row.label });
+    buttonize(num, t("outline.menu.open"), (e) => { void this.openFile(row.file, undefined, e.ctrlKey || e.metaKey); });
+    setTooltip(num, Platform.isMobile ? t("outline.menu.open") : t("outline.numberTip"));
+    num.draggable = !Platform.isMobile;
+    num.addEventListener("dragstart", (e) => {
+      this.dragFile = row.file;
+      e.dataTransfer?.setData("text/plain", row.file.basename);
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+      group.addClass("is-dragging");
+    });
+    num.addEventListener("dragend", () => {
+      this.dragFile = null;
+      group.removeClass("is-dragging");
+      this.clearDropMarks();
+    });
+    group.addEventListener("dragover", (e) => {
+      if (!this.dragFile) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      const r = group.getBoundingClientRect();
+      const after = e.clientY > r.top + r.height / 2;
+      this.clearDropMarks();
+      group.addClass(after ? "is-drop-after" : "is-drop-before");
+    });
+    group.addEventListener("dragleave", (e) => {
+      if (!group.contains(e.relatedTarget as Node | null)) group.removeClass("is-drop-after", "is-drop-before");
+    });
+    group.addEventListener("drop", (e) => {
+      const dragged = this.dragFile;
+      if (!dragged) return;
+      e.preventDefault();
+      const r = group.getBoundingClientRect();
+      this.dragFile = null;
+      this.clearDropMarks();
+      const from = this.indexOf(dragged), target = this.indexOf(row.file);
+      if (from < 0 || target < 0) return;
+      void this.moveChapter(dragged, dropIndex(from, target, e.clientY > r.top + r.height / 2));
+    });
+    group.addEventListener("contextmenu", (e) => {
+      if ((e.target as HTMLElement).closest(".escrita-outline-beat")) return;
+      e.preventDefault();
+      this.chapterMenu(row.file).showAtMouseEvent(e);
+    });
+
+    const title = this.makeField(line, "escrita-outline-title", row.title, t("outline.titlePlaceholder"), { field: "title", row });
+    const meta = line.createDiv({ cls: "escrita-outline-meta" });
+    this.renderMeta(meta, row);
+    this.moreButton(line, () => this.chapterMenu(row.file));
+    const summary = this.makeField(group, "escrita-outline-summary", row.summary, t("outline.summaryPlaceholder"), { field: "summary", row });
+
+    const beats: RowEls["beats"] = [];
+    row.beats.forEach((b, i) => {
+      const bl = group.createDiv({ cls: "escrita-outline-beat" });
+      if (b.written) bl.addClass("is-written");
+      const letter = bl.createDiv({ cls: "escrita-outline-letter", text: beatLetter(i) });
+      buttonize(letter, t("outline.letterTip"), (e) => { void this.openFile(row.file, b.line, e.ctrlKey || e.metaKey); });
+      setTooltip(letter, t("outline.letterTip"));
+      const text = this.makeField(bl, "escrita-outline-beat-text", b.text, t("outline.beatPlaceholder"), { field: "beat", row, beat: i });
+      const check = bl.createDiv({ cls: "escrita-outline-check" });
+      if (b.written) { setIcon(check, "check"); setTooltip(check, t("outline.writtenTip")); }
+      this.moreButton(bl, () => this.beatMenu(row.file, i));
+      bl.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        this.beatMenu(row.file, i).showAtMouseEvent(e);
+      });
+      beats.push({ el: bl, text });
+    });
+
+    this.rowEls.push({ row, group, title, summary, meta, beats });
+  }
+
+  /** A "new chapter" line before chapter `before` (a draft), or the last line (null). */
+  private renderNewLine(list: HTMLElement, before: TFile | null): void {
+    const draft = before !== null;
+    const line = list.createDiv({ cls: "escrita-outline-new" + (draft ? " is-draft" : "") });
+    line.createDiv({ cls: "escrita-outline-plus", text: "+" });
+    this.makeField(line, "escrita-outline-new-text", "", t("outline.newChapter"), { field: "new", before });
+    if (!draft && !Platform.isMobile) line.createDiv({ cls: "escrita-outline-new-hint", text: t("outline.newChapterHint") });
+  }
+
+  /** A visible "⋯" button opening a row's menu (the touch path to every action). */
+  private moreButton(parent: HTMLElement, menu: () => Menu): void {
+    const btn = parent.createEl("button", { cls: "clickable-icon escrita-outline-more" });
+    setIcon(btn, "more-horizontal");
+    btn.setAttr("aria-label", t("outline.more"));
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const r = btn.getBoundingClientRect();
+      menu().showAtPosition({ x: r.left, y: r.bottom }, btn.doc);
+    });
+  }
+
+  /** Current 0-based position of a chapter, or -1 when it isn't in the list any more. */
+  private indexOf(file: TFile): number {
+    return this.rows.findIndex((r) => r.file === file);
+  }
+
+  /** The position a new line's chapter will take, or -1 when its neighbour is gone. */
+  private newLineAt(line: LineInfo): number {
+    return line.before ? this.indexOf(line.before) : this.rows.length;
+  }
+
+  private clearDropMarks(): void {
+    this.contentEl.querySelectorAll(".is-drop-after, .is-drop-before")
+      .forEach((n) => n.removeClass("is-drop-after", "is-drop-before"));
+  }
+
+  /**
+   * Update counts and non-focused texts in place from `rows`. False (and
+   * nothing changed) when the structure differs from what is shown.
+   */
+  private patch(rows: ChapterRow[]): boolean {
+    if (rows.length !== this.rowEls.length) return false;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i], els = this.rowEls[i];
+      if (row.file !== els.row.file || row.beats.length !== els.beats.length) return false;
+    }
+    this.rows = rows;
+    const activePath = this.app.workspace.getActiveFile()?.path;
+    const focused = this.contentEl.doc.activeElement;
+    const sync = (el: HTMLElement, value: string, line: LineInfo) => {
+      this.lines.set(el, line);
+      if (el === focused) return;
+      if (fieldText(el) !== value) el.setText(value);
+      el.dataset.original = value;
+    };
+    this.rows.forEach((row, i) => {
+      const els = this.rowEls[i];
+      els.row = row;
+      els.group.toggleClass("is-active", row.file.path === activePath);
+      this.renderMeta(els.meta, row);
+      sync(els.title, row.title, { field: "title", row });
+      sync(els.summary, row.summary, { field: "summary", row });
+      row.beats.forEach((b, j) => {
+        const be = els.beats[j];
+        be.el.toggleClass("is-written", b.written);
+        const check = be.el.querySelector<HTMLElement>(".escrita-outline-check");
+        if (check) { check.empty(); if (b.written) setIcon(check, "check"); }
+        sync(be.text, b.text, { field: "beat", row, beat: j });
+      });
+    });
+    this.renderStats();
+    return true;
+  }
+
+  // ------------------------------------------------------------------ focus
+
+  private fields(): HTMLElement[] {
+    return Array.from(this.contentEl.querySelectorAll<HTMLElement>(".escrita-outline-field"));
+  }
+
+  private applyFocus(): void {
+    const target = this.pendingFocus;
+    this.pendingFocus = null;
+    if (!target) return;
+    let el: HTMLElement | undefined;
+    if (target.kind === "new") {
+      el = this.fields().find((f) => {
+        const l = this.lines.get(f);
+        return l?.field === "new" && (l.before ?? null) === target.before;
+      });
+    } else {
+      const re = this.rowEls.find((r) => r.row.file === target.file);
+      if (re) {
+        if (target.kind === "beat") el = re.beats[target.beat]?.text;
+        else el = target.kind === "title" ? re.title : re.summary;
+      }
+    }
+    if (!el) return;
+    el.focus();
+    setCaret(el, target.kind === "new" ? "end" : target.caret ?? "end");
+    el.scrollIntoView({ block: "nearest" });
+  }
+
+  private focusSibling(el: HTMLElement, dir: -1 | 1): void {
+    const all = this.fields();
+    const i = all.indexOf(el);
+    const next = all[i + dir];
+    if (!next) return;
+    next.focus();
+    setCaret(next, dir < 0 ? "end" : "start");
+    next.scrollIntoView({ block: "nearest" });
+  }
+
+  // ------------------------------------------------------------------ editing
+
+  /** Save a field's change (title → rename, summary → frontmatter, beat → file, new → chapter). */
+  private async commit(el: HTMLElement): Promise<void> {
+    const line = this.lines.get(el);
+    if (!line || el.dataset.done === "1") return;
+    const value = fieldText(el).trim();
+    const isDraft = line.field === "new" && !!line.before && line.before === this.draftBefore;
+    if (line.field === "new" && !value) {
+      if (isDraft) {
+        this.draftBefore = null;
+        this.dirty = true;
+      }
+      return;
+    }
+    // Compare as the field shows it: a multi-line summary is shown on one
+    // line, and just passing through it must not rewrite it.
+    if (value === oneLine(el.dataset.original ?? "").trim()) return;
+
+    if (line.field === "new") {
+      el.dataset.done = "1";
+      if (isDraft) this.draftBefore = null;
+      await this.run(async () => {
+        const at = this.newLineAt(line);
+        if (!this.book || at < 0) throw new Error(t("outline.beatChanged"));
+        await this.plugin.chapterOps.createChapterAt(this.book, at, value);
+      });
+      return;
+    }
+    const row = line.row;
+    if (!row) return;
+    el.dataset.original = value;
+    if (line.field === "title") {
+      if (!value) { el.setText(row.title); el.dataset.original = row.title; return; }
+      await this.run(() => this.plugin.chapterOps.retitle(row.file, value));
+    } else if (line.field === "summary") {
+      await this.run(() => this.app.fileManager.processFrontMatter(row.file, (fm: Record<string, unknown>) => {
+        fm[this.plugin.settings.summaryProperty] = value;
+      }));
+    } else if (line.field === "beat" && line.beat !== undefined) {
+      const i = line.beat, expected = row.beats[i]?.text;
+      let saved = false;
+      await this.run(async () => { saved = await this.editBeats(row.file, i, expected, (text) => setBeatText(text, i, value)); });
+      // Remember what is on disk now, so a second edit before the next refresh still matches.
+      const b = row.beats[i];
+      if (saved && b) row.beats[i] = { ...b, text: parseBeats(beatLine(value))[0]?.text ?? value };
+    }
+  }
+
+  /**
+   * Change a chapter's text through `fn`, but only if beat `i` still has the
+   * text the outline showed (the file may have changed since).
+   */
+  private async editBeats(file: TFile, i: number, expected: string | undefined, fn: (text: string) => string): Promise<boolean> {
+    let ok = true;
+    await this.app.vault.process(file, (text) => {
+      if (expected !== undefined && parseBeats(text)[i]?.text !== expected) { ok = false; return text; }
+      return fn(text);
+    });
+    if (!ok) {
+      new Notice(t("outline.beatChanged"));
+      void this.refresh(true);
+    }
+    return ok;
+  }
+
+  /** Run a file operation, reporting errors instead of throwing. */
+  private async run(fn: () => Promise<unknown>): Promise<boolean> {
+    try {
+      await fn();
+      return true;
+    } catch (e) {
+      console.error("Escrita:", e);
+      new Notice(t("outline.error", { msg: errorMessage(e) }));
+      return false;
+    }
+  }
+
+  private onKey(e: KeyboardEvent, el: HTMLElement): void {
+    const line = this.lines.get(el);
+    if (!line) return;
+    if (e.key === "Escape") {
+      // Cancel the edit: restore the text (an unsaved new line just goes away).
+      e.preventDefault();
+      if (line.field === "new") el.empty();
+      else el.setText(el.dataset.original ?? "");
+      el.blur();
+      return;
+    }
+    const caret = caretInfo(el);
+    const row = line.row;
+    const rowEls = row ? this.rowEls.find((r) => r.row.file === row.file) : undefined;
+    const action = decideKey({
+      key: e.key,
+      shift: e.shiftKey,
+      mod: e.ctrlKey || e.metaKey || e.altKey,
+      composing: e.isComposing,
+      field: line.field,
+      value: fieldText(el),
+      ...caret,
+      chapterIndex: line.field === "new" ? Math.max(0, this.newLineAt(line)) : row ? this.indexOf(row.file) : 0,
+      words: row?.words ?? 0,
+      bodyBlank: row?.bodyBlank ?? true,
+      summaryEmpty: rowEls ? fieldText(rowEls.summary).trim() === "" : true,
+      beatWritten: line.beat !== undefined ? row?.beats[line.beat]?.written ?? false : false,
+    });
+    if (action.type === "default") return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (action.type === "swallow") return;
+    if (action.type === "focus") { this.focusSibling(el, action.dir); return; }
+    if (action.type === "blocked") {
+      const key = action.reason === "notEmpty"
+        ? (e.key === "Tab" ? "outline.blocked.notEmptyTab" : "outline.blocked.notEmptyDelete")
+        : `outline.blocked.${action.reason}`;
+      new Notice(t(key));
+      return;
+    }
+    this.trigger(action, el);
+  }
+
+  /** Run an action for a field (from a key or a menu), one at a time. */
+  private trigger(action: KeyAction, el: HTMLElement): void {
+    const line = this.lines.get(el);
+    if (!line || this.busy) return;
+    this.busy = true;
+    void this.act(action, el, line).finally(() => {
+      this.busy = false;
+    });
+  }
+
+  /**
+   * The chapter's current position. The panel may be showing an older list
+   * (a refresh couldn't patch it while you typed), so positions are always
+   * looked up by file; -1 means it's gone, and the outline reloads.
+   */
+  private locate(row: ChapterRow): number {
+    const idx = this.indexOf(row.file);
+    if (idx < 0 || !row.file.parent) {
+      new Notice(t("outline.beatChanged"));
+      void this.refresh(true);
+      return -1;
+    }
+    return idx;
+  }
+
+  private async act(action: KeyAction, el: HTMLElement, line: LineInfo): Promise<void> {
+    const book = this.book;
+    if (!book) return;
+    const row = line.row;
+    const untitled = t("common.untitled");
+
+    switch (action.type) {
+      case "newChapter": {
+        if (!row) return;
+        const idx = this.locate(row);
+        if (idx < 0) return;
+        await this.commit(el);
+        const before = action.before ? row.file : this.rows[idx + 1]?.file ?? null;
+        this.draftBefore = before;
+        this.pendingFocus = { kind: "new", before };
+        break;
+      }
+      case "createFromNew": {
+        const at = this.newLineAt(line);
+        if (at < 0) { new Notice(t("outline.beatChanged")); break; }
+        const value = fieldText(el).trim();
+        el.dataset.done = "1";
+        const ok = await this.run(() => this.plugin.chapterOps.createChapterAt(book, at, value));
+        if (!ok) { el.dataset.done = ""; return; }
+        // keep typing: a new line right after the chapter just made (still before the same chapter)
+        const before = line.before ?? null;
+        this.draftBefore = before;
+        this.pendingFocus = { kind: "new", before };
+        break;
+      }
+      case "newAsBeat": {
+        const at = this.newLineAt(line);
+        if (at < 0) { new Notice(t("outline.beatChanged")); break; }
+        const target = this.rows[at - 1];
+        if (!target) return;
+        const value = fieldText(el).trim();
+        el.dataset.done = "1";
+        if (line.before && this.draftBefore === line.before) this.draftBefore = null;
+        const ok = await this.run(() => this.app.vault.process(target.file, (text) => appendBeat(text, value)));
+        if (!ok) { el.dataset.done = ""; return; }
+        this.pendingFocus = { kind: "beat", file: target.file, beat: target.beats.length, caret: "end" };
+        break;
+      }
+      case "newBeat": {
+        if (!row || line.beat === undefined) return;
+        await this.commit(el);
+        const i = line.beat;
+        const ok = await this.run(() => this.editBeats(row.file, i, undefined, (text) => {
+          if (!parseBeats(text)[i]) throw new Error(t("outline.beatChanged"));
+          return insertBeat(text, action.before ? i - 1 : i, "");
+        }));
+        if (!ok) return;
+        this.pendingFocus = { kind: "beat", file: row.file, beat: action.before ? i : i + 1, caret: "start" };
+        break;
+      }
+      case "removeBeat": {
+        if (!row || line.beat === undefined) return;
+        const i = line.beat;
+        const expected = row.beats[i]?.text;
+        el.dataset.done = "1";
+        const ok = await this.run(() => this.editBeats(row.file, i, undefined, (text) => {
+          const cur = parseBeats(text)[i];
+          if (!cur || (cur.text !== expected && cur.text !== "")) throw new Error(t("outline.beatChanged"));
+          return removeBeat(text, i);
+        }));
+        if (!ok) { el.dataset.done = ""; return; }
+        this.pendingFocus = i > 0
+          ? { kind: "beat", file: row.file, beat: i - 1, caret: "end" }
+          : { kind: "summary", file: row.file, caret: "end" };
+        break;
+      }
+      case "beatToChapter": {
+        if (!row || line.beat === undefined) return;
+        const i = line.beat;
+        const beatText = fieldText(el).trim();
+        const original = row.beats[i]?.text;
+        // Create the chapter first, then take the beat out: a failure leaves a copy, never a loss.
+        el.dataset.done = "1";
+        const idx = this.locate(row);
+        if (idx < 0) { el.dataset.done = ""; return; }
+        let created: TFile | null = null;
+        const ok = await this.run(async () => {
+          const file = await this.plugin.chapterOps.createChapterAt(book, idx + 1, untitled);
+          created = file;
+          await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+            fm[this.plugin.settings.summaryProperty] = beatText;
+          });
+          await this.app.vault.process(row.file, (text) => {
+            const cur = parseBeats(text)[i];
+            if (!cur || cur.text !== original) throw new Error(t("outline.beatChanged"));
+            const out = moveBeatOut(text, i);
+            if (!out) throw new Error(t("outline.blocked.written"));
+            return out.text;
+          });
+        });
+        if (!ok && !created) { el.dataset.done = ""; return; }
+        if (created) this.pendingFocus = { kind: "title", file: created, caret: "all" };
+        break;
+      }
+      case "chapterToBeat": {
+        if (!row) return;
+        const idx = this.locate(row);
+        if (idx < 0) return;
+        const prev = this.rows[idx - 1];
+        if (!prev || prev.file === row.file) return;
+        const summaryEl = this.rowEls.find((r) => r.row.file === row.file)?.summary;
+        const beatText = chapterAsBeatText(fieldText(el), summaryEl ? fieldText(summaryEl) : row.summary, untitled);
+        el.dataset.done = "1";
+        if (summaryEl) summaryEl.dataset.done = "1";
+        const ok = await this.run(async () => {
+          // Re-check on disk that the chapter is still empty before trashing it.
+          const text = await this.app.vault.read(row.file);
+          if (!isBlankBody(text)) throw new Error(t("outline.blocked.notEmptyTab"));
+          await this.app.vault.process(prev.file, (p) => appendBeat(p, beatText));
+          await this.app.fileManager.trashFile(row.file);
+          await this.renumberRest(book, row.file);
+        });
+        if (!ok) { el.dataset.done = ""; if (summaryEl) summaryEl.dataset.done = ""; return; }
+        this.pendingFocus = { kind: "beat", file: prev.file, beat: prev.beats.length, caret: "end" };
+        break;
+      }
+      case "trashChapter": {
+        if (!row) return;
+        el.dataset.done = "1";
+        const before = this.previousTarget(el);
+        const ok = await this.run(async () => {
+          const text = await this.app.vault.read(row.file);
+          if (!isBlankBody(text)) throw new Error(t("outline.blocked.notEmptyDelete"));
+          await this.app.fileManager.trashFile(row.file);
+          await this.renumberRest(book, row.file);
+        });
+        if (!ok) { el.dataset.done = ""; return; }
+        this.pendingFocus = before;
+        break;
+      }
+      default:
+        return;
+    }
+    await this.refresh(true);
+  }
+
+  /** A focus target for the line before `el`, to land on after deleting it. */
+  private previousTarget(el: HTMLElement): FocusTarget | null {
+    const all = this.fields();
+    const prev = all[all.indexOf(el) - 1];
+    const l = prev ? this.lines.get(prev) : undefined;
+    if (!l || !l.row) return null;
+    if (l.field === "beat" && l.beat !== undefined) return { kind: "beat", file: l.row.file, beat: l.beat, caret: "end" };
+    return { kind: l.field === "summary" ? "summary" : "title", file: l.row.file, caret: "end" };
+  }
+
+  private async renumberRest(book: Book, removed: TFile): Promise<void> {
+    const rest = this.plugin.books.chapters(book).map((c) => c.file).filter((f) => f !== removed);
+    await this.plugin.chapterOps.renumber(book, rest);
+  }
+
+  /** Move a chapter to 0-based position `to` (in the list as shown) and renumber. */
+  private async moveChapter(file: TFile, to: number): Promise<void> {
+    const book = this.book;
+    const from = this.indexOf(file);
+    if (!book || from < 0 || from === to || to < 0 || to >= this.rows.length) return;
+    // Renumber what is really in the folder: drop files that are gone, keep new ones at the end.
+    const live = this.plugin.books.chapters(book).map((c) => c.file);
+    const liveSet = new Set(live);
+    const ordered = moveItem(this.rows.map((r) => r.file), from, to).filter((f) => liveSet.has(f));
+    for (const f of live) if (!ordered.includes(f)) ordered.push(f);
+    await this.run(() => this.plugin.chapterOps.renumber(book, ordered));
+    await this.refresh(true);
+  }
+
+  /** Add an empty beat at the end of a chapter and focus it. */
+  private async addBeat(file: TFile): Promise<void> {
+    let index = -1;
+    const ok = await this.run(() => this.app.vault.process(file, (text) => {
+      const out = appendBeat(text, "");
+      index = parseBeats(out).length - 1;
+      return out;
+    }));
+    if (ok && index >= 0) this.pendingFocus = { kind: "beat", file, beat: index, caret: "end" };
+    await this.refresh(true);
+  }
+
+  private async deleteChapter(row: ChapterRow): Promise<void> {
+    const book = this.book;
+    if (!book) return;
+    if (row.words > 0) {
+      const ok = await confirmAction(
+        this.app,
+        t("outline.delete.title"),
+        t("outline.delete.desc", { title: row.title, words: t("common.words", { n: fmt(row.words) }) }),
+        t("outline.delete.confirm"),
+      );
+      if (!ok) return;
+    }
+    await this.run(async () => {
+      await this.app.fileManager.trashFile(row.file);
+      await this.renumberRest(book, row.file);
+    });
+    await this.refresh(true);
+  }
+
+  // ------------------------------------------------------------------ menus and navigation
+
+  private chapterMenu(file: TFile): Menu {
+    const menu = new Menu();
+    menu.addItem((i) => i.setTitle(t("outline.menu.open")).setIcon("file-text")
+      .onClick(() => { void this.openFile(file); }));
+    menu.addItem((i) => i.setTitle(t("outline.menu.openTab")).setIcon("file-plus")
+      .onClick(() => { void this.openFile(file, undefined, true); }));
+    const idx = this.indexOf(file);
+    const row = this.rows[idx];
+    const els = this.rowEls.find((r) => r.row.file === file);
+    if (!row || !els) return menu;
+
+    // The keyboard actions, for touch screens (no Tab key) and discoverability.
+    menu.addSeparator();
+    menu.addItem((i) => i.setTitle(t("outline.menu.newChapterAfter")).setIcon("plus")
+      .onClick(() => this.trigger({ type: "newChapter", before: false }, els.title)));
+    menu.addItem((i) => i.setTitle(t("outline.menu.addBeat")).setIcon("list-plus")
+      .onClick(() => { void this.addBeat(file); }));
+    menu.addItem((i) => i.setTitle(t("outline.menu.toBeat")).setIcon("indent")
+      .setDisabled(idx === 0 || row.words > 0 || !row.bodyBlank)
+      .onClick(() => this.trigger({ type: "chapterToBeat" }, els.title)));
+
+    menu.addSeparator();
+    if (idx > 0) {
+      menu.addItem((i) => i.setTitle(t("outline.menu.moveUp")).setIcon("arrow-up")
+        .onClick(() => { void this.moveChapter(file, this.indexOf(file) - 1); }));
+    }
+    if (idx < this.rows.length - 1) {
+      menu.addItem((i) => i.setTitle(t("outline.menu.moveDown")).setIcon("arrow-down")
+        .onClick(() => { void this.moveChapter(file, this.indexOf(file) + 1); }));
+    }
+    menu.addSeparator();
+    menu.addItem((i) => {
+      i.setTitle(t("outline.menu.delete")).setIcon("trash").setWarning(true)
+        .onClick(() => { void this.deleteChapter(row); });
+    });
+    return menu;
+  }
+
+  private beatMenu(file: TFile, i: number): Menu {
+    const menu = new Menu();
+    const els = this.rowEls.find((r) => r.row.file === file);
+    const row = els?.row;
+    const beat = row?.beats[i];
+    menu.addItem((it) => it.setTitle(t("outline.menu.goToBeat")).setIcon("arrow-right")
+      .onClick(() => { void this.openFile(file, beat?.line); }));
+    const textEl = els?.beats[i]?.text;
+    if (textEl) {
+      menu.addItem((it) => it.setTitle(t("outline.menu.addBeatAfter")).setIcon("list-plus")
+        .onClick(() => this.trigger({ type: "newBeat", before: false }, textEl)));
+      menu.addItem((it) => it.setTitle(t("outline.menu.toChapter")).setIcon("outdent")
+        .setDisabled(!beat || beat.written)
+        .onClick(() => this.trigger({ type: "beatToChapter" }, textEl)));
+    }
+    menu.addItem((it) => it.setTitle(t("outline.menu.removeBeat")).setIcon("x")
+      .onClick(() => {
+        void (async () => {
+          await this.run(() => this.editBeats(file, i, beat?.text, (text) => removeBeat(text, i)));
+          await this.refresh(true);
+        })();
+      }));
+    return menu;
+  }
+
+  private async openFile(file: TFile, line?: number, newTab = false): Promise<void> {
+    const leaf = this.app.workspace.getLeaf(newTab ? "tab" : false);
+    await leaf.openFile(file, { active: true, eState: line !== undefined ? { line } : undefined });
+    if (line !== undefined && leaf.view instanceof MarkdownView) {
+      const editor = leaf.view.editor;
+      const pos = { line, ch: 0 };
+      editor.setCursor(pos);
+      editor.scrollIntoView({ from: pos, to: pos }, true);
+      editor.focus();
+    }
+  }
+}
+
+// -------------------------------------------------------------------- caret helpers
+
+function caretInfo(el: HTMLElement): { caret: number; selectionEmpty: boolean; atFirstLine: boolean; atLastLine: boolean } {
+  const sel = el.win.getSelection();
+  if (!sel || !sel.rangeCount || !el.contains(sel.anchorNode)) {
+    return { caret: 0, selectionEmpty: true, atFirstLine: true, atLastLine: true };
+  }
+  const range = sel.getRangeAt(0);
+  const pre = range.cloneRange();
+  pre.selectNodeContents(el);
+  pre.setEnd(range.startContainer, range.startOffset);
+  const caret = pre.toString().length;
+  let atFirstLine = true, atLastLine = true;
+  const rect = range.getClientRects()[0];
+  if (rect && (rect.height > 0 || rect.top !== 0)) {
+    const box = el.getBoundingClientRect();
+    const lh = parseFloat(el.win.getComputedStyle(el).lineHeight) || rect.height || 16;
+    atFirstLine = rect.top - box.top < lh * 0.9;
+    atLastLine = box.bottom - rect.bottom < lh * 0.9;
+  } else {
+    const len = fieldText(el).length;
+    atFirstLine = caret === 0 || len < 30;
+    atLastLine = caret === len || len < 30;
+  }
+  return { caret, selectionEmpty: range.collapsed, atFirstLine, atLastLine };
+}
+
+function setCaret(el: HTMLElement, where: "start" | "end" | "all"): void {
+  const sel = el.win.getSelection();
+  if (!sel) return;
+  const range = el.doc.createRange();
+  range.selectNodeContents(el);
+  if (where !== "all") range.collapse(where === "start");
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function insertPlainText(el: HTMLElement, text: string): void {
+  const sel = el.win.getSelection();
+  if (!sel || !sel.rangeCount || !el.contains(sel.anchorNode)) {
+    el.appendText(text);
+    return;
+  }
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  const node = el.doc.createTextNode(text);
+  range.insertNode(node);
+  range.setStartAfter(node);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  el.dispatchEvent(new Event("input"));
+}

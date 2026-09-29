@@ -1,0 +1,277 @@
+/* Placeholders: %% XXX: … %% pills in the editor, explorer dots, side panel. */
+
+/* ---- Editor pill ---- */
+.escrita-placeholder {
+  background-color: var(--escrita-placeholder-bg);
+  color: var(--escrita-placeholder-fg);
+  border-radius: var(--radius-s, 4px);
+  padding: 1px 0;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.escrita-placeholder *,
+.escrita-placeholder .cm-comment {
+  color: inherit;
+}
+
+.escrita-placeholder-raw {
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+}
+
+.escrita-placeholder-note {
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  padding-inline-end: 6px;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+
+.escrita-placeholder-label {
+  display: inline-block;
+  background-color: var(--escrita-placeholder-bg);
+  color: var(--escrita-placeholder-fg);
+  font-family: var(--font-monospace);
+  font-size: 0.7em;
+  font-weight: var(--font-semibold, 600);
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  vertical-align: 0.08em;
+  padding: 0 4px 0 6px;
+  border-start-start-radius: var(--radius-s, 4px);
+  border-end-start-radius: var(--radius-s, 4px);
+  cursor: text;
+}
+
+.escrita-placeholder-label.escrita-placeholder-empty {
+  padding: 0 6px;
+  border-radius: var(--radius-s, 4px);
+}
+
+/* ---- File explorer dot ---- */
+.nav-file-title.escrita-has-placeholder::after {
+  content: "";
+  flex: 0 0 auto;
+  align-self: center;
+  width: 6px;
+  height: 6px;
+  margin-inline-start: 6px;
+  border-radius: 50%;
+  background-color: var(--escrita-placeholder-fg);
+}
+
+/* ---- Side panel ---- */
+.escrita-placeholders {
+  padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
+}
+
+.escrita-ph-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--size-4-3, 12px);
+}
+
+.escrita-ph-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.escrita-ph-title {
+  font-weight: var(--font-semibold, 600);
+  font-size: var(--font-ui-medium);
+}
+
+.escrita-ph-total {
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  color: var(--escrita-placeholder-fg);
+  background-color: var(--escrita-placeholder-bg);
+  border-radius: var(--radius-s, 4px);
+  padding: 0 6px;
+}
+
+.escrita-ph-book {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.escrita-ph-scope {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-m, 6px);
+  background-color: var(--background-modifier-hover);
+}
+
+.escrita-ph-scope-btn {
+  flex: 1 1 0;
+  min-height: 32px;
+  font-size: var(--font-ui-small);
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  color: var(--text-muted);
+  border-radius: var(--radius-s, 4px);
+  cursor: var(--cursor, pointer);
+}
+
+.escrita-ph-scope-btn.is-active {
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+  box-shadow: var(--shadow-xs, none);
+}
+
+.escrita-ph-scope-btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.escrita-ph-scope-hint {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
+.escrita-ph-status,
+.escrita-ph-muted {
+  color: var(--text-muted);
+}
+
+.escrita-ph-empty {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+  padding: var(--size-4-2, 8px) 0;
+}
+
+.escrita-ph-empty-title {
+  color: var(--text-normal);
+  font-weight: var(--font-medium, 500);
+  margin-bottom: 6px;
+}
+
+.escrita-ph-empty p {
+  margin: 6px 0;
+}
+
+.escrita-ph-group {
+  margin-bottom: var(--size-4-3, 12px);
+}
+
+.escrita-ph-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 6px;
+  border-radius: var(--radius-s, 4px);
+  cursor: var(--cursor, pointer);
+}
+
+.escrita-ph-file:hover,
+.escrita-ph-file:focus-visible {
+  background-color: var(--background-modifier-hover);
+}
+
+.escrita-ph-file-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: var(--font-medium, 500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.escrita-ph-count {
+  flex: 0 0 auto;
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  color: var(--escrita-placeholder-fg);
+}
+
+.escrita-ph-where {
+  padding: 0 6px;
+  margin-top: -4px;
+  margin-bottom: 2px;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.escrita-ph-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--radius-s, 4px);
+}
+
+.escrita-ph-item:hover,
+.escrita-ph-item:focus-within {
+  background-color: var(--background-modifier-hover);
+}
+
+.escrita-ph-item.is-resolving {
+  opacity: 0.5;
+}
+
+/* The row's main control: a plain-looking button holding the note and line. */
+.escrita-ph-open {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 32px;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  padding: 2px 2px 2px 14px;
+  margin: 0;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  border-radius: var(--radius-s, 4px);
+  color: var(--text-normal);
+  font-weight: normal;
+  text-align: start;
+  white-space: normal;
+  cursor: var(--cursor, pointer);
+}
+
+.escrita-ph-open:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+.escrita-ph-note {
+  font-size: var(--font-ui-small);
+  overflow-wrap: anywhere;
+}
+
+.escrita-ph-line {
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+}
+
+.escrita-ph-resolve {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.escrita-ph-resolve[aria-disabled="true"] {
+  cursor: default;
+}
+
+.escrita-ph-resolve:hover {
+  color: var(--escrita-good);
+}
