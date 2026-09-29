@@ -45,6 +45,7 @@ Background research: `reports/Obsidian fiction writing gaps.md` (local only, not
 | 1 (v0.2) | Publish check · Targets per piece + days off · Outline for a single note | S + S + S |
 | 2 (v0.3) | Snapshots with word-level compare | M |
 | 3 (v0.3) | Revision lens (pt-BR and English rules) | M |
+| 4 (v0.3) | Word counts in the file explorer | S |
 
 Ship milestone 1 as one release. Snapshots and the revision lens can ship
 together or separately.
@@ -302,6 +303,52 @@ stemmers, each rule as a function `(text, options) → Match[]`, per-1,000 rate.
 as a fixture in `tests/fixtures/`), the editor stays responsive on a 10,000-word note
 (compute in the view plugin only for the visible range plus a cached full pass for the
 panel, debounced), and the no-network test still passes.
+
+---
+
+## 6. Word counts in the file explorer (v0.3)
+
+**Why.** The author uses the Novel Word Count plugin only to see lengths next to file
+names. Escrita already counts every tracked note (`counter`), so it can show the same
+thing with its own rules (prose only: no frontmatter, comments or beats), one plugin
+fewer, and counts that agree with the status bar and the outline.
+
+**What it shows**, as small muted text after the file or folder name:
+- **Contos and essays**: the note's count. When the note has `unit: characters` (feature
+  2), characters instead of words; with a `target` or `limit`, optionally
+  "4.210 / 5.000".
+- **Chapters**: the chapter's count.
+- **Novels**: the book total (sum of its chapters) next to the book note and the book
+  folder, and the chapters folder's total next to it.
+- **Other folders**: the total of the tracked notes inside (off by default; can be
+  switched on).
+
+**Rules.**
+- Only tracked notes (same `trackFolders` / `excludeFolders` as goals); nothing on
+  other files, so the explorer stays quiet outside the writing folders.
+- Numbers through `fmt()` ("18.420"), abbreviated past 10,000 when there's no room
+  ("18,4 mil" / "18.4k"), with the full count in a tooltip.
+- Update from the `counter` cache on modify/rename/delete, debounced; the first pass
+  runs after layout ready in small batches, like the placeholder index. Never re-read the
+  whole vault on each change: a folder total is the sum of cached counts.
+- Draw it in an element Escrita owns (a span added to the title, or a class plus a
+  pseudo-element on `.nav-file-title-content` / `.nav-folder-title-content`), never on
+  `.nav-file-title::after`: Novel Word Count and some themes use that pseudo-element,
+  and sharing it broke the placeholder dot in v0.2. Keep it next to the placeholder dot
+  without overlapping.
+- Private explorer API (`fileItems[path]`) behind a type guard and try/catch, re-applied
+  on `layout-change`, as the placeholder dots do.
+
+**Settings** (Goals section): "Show word counts in the file explorer" (default on),
+"Show folder totals" (default off), "Show the target next to the count" (default off).
+
+**Pure, tested:** folder and book totals from a map of counts; the label for a count,
+unit and target; abbreviation.
+
+**Done when** a vault with a novel, contos and essays shows the right counts next to
+each note, the book total next to the book, matches the status bar's numbers, updates
+within a second of typing stopping, and looks right alongside Novel Word Count
+installed (or tells the user to turn off its file counts).
 
 ---
 

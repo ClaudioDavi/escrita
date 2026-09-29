@@ -35,6 +35,10 @@ Effort: S a few days, M one to two weeks, L several weeks.
 
 ---
 
+Word counts next to chapters, the book note and book folders in the file explorer are
+planned in [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md), feature 6, together with
+contos and essays.
+
 ## 1. POV and status in the outline
 
 The design already shows status dots; "color by POV" was left out of v0.1.
