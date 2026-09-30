@@ -19,8 +19,6 @@ export interface DayRecord {
 export interface PublishRecord {
   /** the status value the note had before "Publish this note"; "Unpublish" restores it */
   previousStatus?: string;
-  /** the note's slug (URL) at its last publish, to notice URL changes */
-  slug?: string;
 }
 
 export interface EscritaData {

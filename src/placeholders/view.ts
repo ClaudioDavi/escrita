@@ -1,8 +1,9 @@
-import { ItemView, Keymap, Platform, TFile, debounce, setIcon, type ViewStateResult, type WorkspaceLeaf } from "obsidian";
+import { ItemView, Keymap, Platform, debounce, setIcon, type ViewStateResult, type WorkspaceLeaf } from "obsidian";
 import type EscritaPlugin from "../main";
 import type { Book } from "../core/books";
 import { fmt, t } from "../i18n";
-import { displayName, inFolder, orderPaths, parentPath, type IndexedMarker } from "./logic";
+import { inBook } from "../core/classify";
+import { displayName, orderPaths, parentPath, type IndexedMarker } from "./logic";
 
 export const PLACEHOLDERS_VIEW = "escrita-placeholders";
 
@@ -62,14 +63,10 @@ export class PlaceholdersView extends ItemView {
 
   private currentBook(): Book | null {
     try {
-      return this.plugin.books.bookFor(this.app.workspace.getActiveFile());
+      return this.plugin.books.classify(this.app.workspace.getActiveFile()).book;
     } catch {
       return null;
     }
-  }
-
-  private inBook(path: string, book: Book): boolean {
-    return path === book.note.path || inFolder(path, book.folder.path);
   }
 
   render(): void {
@@ -126,7 +123,7 @@ export class PlaceholdersView extends ItemView {
     let paths = mod.paths();
     let chapterOrder: string[];
     if (scope === "book" && book) {
-      paths = paths.filter((p) => this.inBook(p, book));
+      paths = paths.filter((p) => inBook(p, book));
       chapterOrder = this.plugin.books.chapters(book).map((c) => c.file.path);
     } else {
       chapterOrder = this.plugin.books.allBooks().flatMap((b) => this.plugin.books.chapters(b).map((c) => c.file.path));
@@ -246,11 +243,8 @@ export class PlaceholdersView extends ItemView {
 
   /** "Book · folder" style hint under a file in the all-notes scope. */
   private whereLabel(path: string): string {
-    const file = this.app.vault.getAbstractFileByPath(path);
-    if (file instanceof TFile) {
-      const b = this.plugin.books.bookFor(file);
-      if (b && b.note.path !== path) return b.title;
-    }
+    const p = this.plugin.books.classify(path);
+    if (p.book && (p.kind === "chapter" || p.kind === "book-file")) return p.book.title;
     return parentPath(path);
   }
 }

@@ -147,7 +147,7 @@ export class ProgressModal extends Modal {
     const current = this.plugin.app.vault.getAbstractFileByPath(file.path);
     if (!(current instanceof TFile)) { this.pieceScope = null; return; }
     // Keep values the user just typed until the metadata cache catches up.
-    const piece = this.pieceScope?.piece ?? this.goals.pieceOf(current) ?? { unit: "words" };
+    const piece = this.pieceScope?.piece ?? this.plugin.books.classify(current).piece ?? { unit: "words" };
     const { count, words } = await this.goals.measure(current, piece);
     this.pieceScope = { file: current, piece, count, words };
   }

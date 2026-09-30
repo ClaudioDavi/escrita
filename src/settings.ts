@@ -49,12 +49,6 @@ export interface EscritaSettings {
   dateProperty: string;
   /** properties a published note should have; newline/comma list (lineList); empty disables the check */
   recommendedProperties: string;
-  /** folders whose published notes share one URL space; one per line (folderList); empty turns the duplicate URL check off */
-  publishFolders: string;
-  /** property that overrides the URL slug */
-  slugProperty: string;
-  /** offer to add the old slug when a published note is renamed */
-  keepUrlOnRename: boolean;
 
   // Outline
   ghostBeats: boolean;
@@ -105,9 +99,6 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   unpublishedValue: "ready",
   dateProperty: "date",
   recommendedProperties: "description",
-  publishFolders: "",
-  slugProperty: "slug",
-  keepUrlOnRename: true,
 
   ghostBeats: true,
 
@@ -139,10 +130,6 @@ export function parseStatusColors(s: string): Record<string, string> {
 export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   s.weekdaysOff = cleanWeekdays(s.weekdaysOff);
   return s;
-}
-
-export function folderList(s: string): string[] {
-  return s.split(/[\n,]/).map((x) => x.trim().replace(/^\/+|\/+$/g, "")).filter(Boolean);
 }
 
 export class EscritaSettingTab extends PluginSettingTab {
@@ -275,21 +262,6 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setDesc(t("settings.recommendedProperties.desc"))
       .addTextArea((c) => c.setPlaceholder("description").setValue(s.recommendedProperties)
         .onChange(async (v) => { s.recommendedProperties = v; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.publishFolders"))
-      .setDesc(t("settings.publishFolders.desc"))
-      .addTextArea((c) => c.setPlaceholder("Stories\nEssays").setValue(s.publishFolders)
-        .onChange(async (v) => { s.publishFolders = v; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.slugProperty"))
-      .setDesc(t("settings.slugProperty.desc"))
-      .addText((c) => c.setPlaceholder("slug").setValue(s.slugProperty)
-        .onChange(async (v) => { s.slugProperty = v.trim() || DEFAULT_SETTINGS.slugProperty; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.keepUrlOnRename"))
-      .setDesc(t("settings.keepUrlOnRename.desc"))
-      .addToggle((c) => c.setValue(s.keepUrlOnRename)
-        .onChange(async (v) => { s.keepUrlOnRename = v; await save(); }));
 
     new Setting(containerEl).setName(t("settings.outline")).setHeading();
     new Setting(containerEl)

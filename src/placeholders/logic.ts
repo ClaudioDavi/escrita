@@ -6,7 +6,9 @@
 // this file adds what the placeholders module needs on top: spans for editor
 // decorations, insertion, safe removal, navigation and ordering.
 
-import { parsePlaceholders, placeholderRegex, type PlaceholderMarker } from "../core/markers";
+import { parsePlaceholders, type PlaceholderMarker } from "../core/markers";
+import type { Markdown } from "../core/markdown";
+import { inFolder } from "../core/classify";
 
 /** A placeholder with the exact source text it was parsed from. */
 export interface IndexedMarker extends PlaceholderMarker {
@@ -35,26 +37,22 @@ export interface PlaceholderSpan {
 }
 
 /**
- * Placeholders in `text` (usually one editor line) with the offsets needed to
- * hide the syntax around the note. `offset` is added to every position.
+ * Placeholders in a whole document (text, or its segmentation: the editor passes
+ * `segmentDoc(state.doc)`; code, frontmatter and comments are read by
+ * core/markdown, like parsePlaceholders) with the offsets needed to hide the
+ * syntax around the note. `offset` is added to every position.
  */
-export function placeholderSpans(text: string, marker: string, offset = 0): PlaceholderSpan[] {
+export function placeholderSpans(src: string | Markdown, marker: string, offset = 0): PlaceholderSpan[] {
+  const text = typeof src === "string" ? src : src.text;
   if (!marker || !text.includes("%%")) return [];
-  const out: PlaceholderSpan[] = [];
-  const re = placeholderRegex(marker);
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text))) {
-    const whole = m[0];
-    const note = m[1] ?? "";
+  return parsePlaceholders(src, marker).map((p) => {
     // The note never has leading/trailing blanks (greedy [ \t]* before, lazy note + [ \t]* after),
     // so it ends where the blanks before the closing %% begin.
-    const inner = whole.slice(0, -2).replace(/[ \t]+$/, "");
-    const noteTo = m.index + inner.length;
-    const noteFrom = noteTo - note.length;
-    out.push({ from: offset + m.index, to: offset + m.index + whole.length, noteFrom: offset + noteFrom, noteTo: offset + noteTo, note });
-    if (whole.length === 0) re.lastIndex++;
-  }
-  return out;
+    const inner = text.slice(p.from, p.to - 2).replace(/[ \t]+$/, "");
+    const noteTo = p.from + inner.length;
+    const noteFrom = noteTo - p.text.length;
+    return { from: offset + p.from, to: offset + p.to, noteFrom: offset + noteFrom, noteTo: offset + noteTo, note: p.text };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -257,15 +255,12 @@ export function stepIndex(starts: number[], cursor: number, dir: 1 | -1): number
 // ---------------------------------------------------------------------------
 // Files
 
-/** True when `path` is `folder` itself or inside it. An empty folder means the whole vault. */
-export function inFolder(path: string, folder: string): boolean {
-  const f = folder.replace(/^\/+|\/+$/g, "");
-  return f === "" || path === f || path.startsWith(`${f}/`);
-}
-
-/** Markdown files outside every excluded folder get indexed. */
+/**
+ * Markdown files outside every excluded folder get indexed. The placeholder
+ * index's own policy: it ignores the track folders and the chapter template.
+ */
 export function isIndexable(path: string, exclude: string[]): boolean {
-  return /\.md$/i.test(path) && !exclude.some((f) => f.trim() !== "" && inFolder(path, f));
+  return path.endsWith(".md") && !exclude.some((f) => f.trim().replace(/^\/+|\/+$/g, "") !== "" && inFolder(path, f));
 }
 
 /**

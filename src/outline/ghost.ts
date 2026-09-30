@@ -7,6 +7,7 @@ import { RangeSetBuilder, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 import { editorLivePreviewField } from "obsidian";
 import { t } from "../i18n";
+import { segmentDoc } from "../core/markdown";
 import { scanBeats, type GhostBeat } from "./model";
 
 class GhostBeatWidget extends WidgetType {
@@ -43,10 +44,8 @@ function isLivePreview(view: EditorView): boolean {
 }
 
 function scan(view: EditorView): GhostBeat[] {
-  const lines: string[] = [];
-  const it = view.state.doc.iterLines();
-  while (!it.next().done) lines.push(it.value);
-  return scanBeats(lines);
+  // segmented once per document version, shared with the other editor features
+  return scanBeats(segmentDoc(view.state.doc));
 }
 
 class GhostBeatsPlugin {

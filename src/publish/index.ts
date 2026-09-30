@@ -1,12 +1,11 @@
 import { MarkdownView, Notice, TFile, type TAbstractFile } from "obsidian";
 import type EscritaPlugin from "../main";
 import type { EscritaModule } from "../data";
-import { folderList } from "../settings";
 import { lineList } from "../core/lists";
+import { inFolder } from "../core/classify";
 import { writingDay } from "../core/dates";
 import { t } from "../i18n";
-import { isPublished, runChecks, type SlugEntry } from "./checks";
-import { noteUrl, slugToKeep } from "./slug";
+import { isPublished, runChecks } from "./checks";
 import { dateText, initialDate, shouldWriteDate } from "./date";
 import { PublishModal } from "./modal";
 
@@ -75,38 +74,6 @@ export class PublishModule implements EscritaModule {
     return isPublished(fm[s.statusProperty], s.publishedValue);
   }
 
-  /** The note's site address (chapters under their book's slug). */
-  private urlOf(file: TFile, fm = this.frontmatter(file)): string {
-    const slugProperty = this.plugin.settings.slugProperty;
-    const book = this.plugin.books.isChapter(file) ? this.plugin.books.bookFor(file) : null;
-    return noteUrl(
-      { path: file.path, frontmatter: fm },
-      slugProperty,
-      book ? { path: book.note.path, frontmatter: this.frontmatter(book.note) } : null,
-    );
-  }
-
-  private publishFolders(): string[] {
-    return folderList(this.plugin.settings.publishFolders);
-  }
-
-  private inFolders(path: string, folders: readonly string[]): boolean {
-    return folders.some((f) => path === f || path.startsWith(`${f}/`));
-  }
-
-  /** Other published notes in the publish folders, with their addresses; null when the check is off for this note. */
-  private otherPublished(file: TFile): SlugEntry[] | null {
-    const folders = this.publishFolders();
-    if (!folders.length || !this.inFolders(file.path, folders)) return null;
-    const out: SlugEntry[] = [];
-    for (const f of this.plugin.app.vault.getMarkdownFiles()) {
-      if (f.path === file.path || !this.inFolders(f.path, folders)) continue;
-      const fm = this.frontmatter(f);
-      if (this.published(f, fm)) out.push({ path: f.path, slug: this.urlOf(f, fm) });
-    }
-    return out;
-  }
-
   /** The note's text, from its editor when it's open there (it may not be saved yet). */
   private async textOf(file: TFile): Promise<string> {
     for (const leaf of this.plugin.app.workspace.getLeavesOfType("markdown")) {
@@ -137,16 +104,10 @@ export class PublishModule implements EscritaModule {
       return;
     }
     const fm = this.frontmatter(file);
-    const url = this.urlOf(file, fm);
-    const record = this.plugin.data.publish[file.path];
     const checks = runChecks(text, fm, {
-      path: file.path,
       placeholderMarker: s.placeholderMarker,
       recommendedProperties: lineList(s.recommendedProperties),
       piece: s,
-      url,
-      others: this.otherPublished(file) ?? undefined,
-      previousUrl: record?.slug,
     });
     const today = writingDay(new Date(), s.dayEndsAt);
     const shown = initialDate(fm[s.dateProperty], today);
@@ -157,10 +118,6 @@ export class PublishModule implements EscritaModule {
       date: shown.value,
       unparsedDate: shown.unparsed,
       onJump: (line) => { void this.jump(file, line); },
-      onOpenPath: (path) => {
-        const other = this.plugin.app.vault.getAbstractFileByPath(path);
-        if (other instanceof TFile) void this.plugin.app.workspace.getLeaf(false).openFile(other);
-      },
       onPublish: (date, dateChanged) => this.publish(file, date, dateChanged, today),
     }).open();
   }
@@ -201,9 +158,8 @@ export class PublishModule implements EscritaModule {
     } else if (!wasPublished) {
       delete record.previousStatus;
     }
-    // The metadata cache may not have the new properties yet; the slug property wasn't touched.
-    record.slug = this.urlOf(file);
-    this.plugin.data.publish[file.path] = record;
+    if (record.previousStatus !== undefined) this.plugin.data.publish[file.path] = record;
+    else delete this.plugin.data.publish[file.path];
     this.plugin.requestSave();
     new Notice(t("publish.published", { title: this.title(file), date: finalDate }));
     return true;
@@ -227,8 +183,7 @@ export class PublishModule implements EscritaModule {
       return;
     }
     if (record) {
-      // Keep the slug so a later publish can still tell when the URL changed.
-      delete record.previousStatus;
+      delete this.plugin.data.publish[file.path];
       this.plugin.requestSave();
     }
     new Notice(t("publish.unpublished", { title: this.title(file), status }));
@@ -272,57 +227,18 @@ export class PublishModule implements EscritaModule {
       }
       if (moved) this.plugin.requestSave();
     }
-
-    if (!(file instanceof TFile) || file.extension !== "md") return;
-    const s = this.plugin.settings;
-    if (!s.keepUrlOnRename) return;
-    const fm = this.frontmatter(file);
-    if (!this.published(file, fm)) return;
-    const slug = slugToKeep(oldPath, file.path, fm, s.slugProperty, this.plugin.books.isChapter(file));
-    if (slug) this.offerKeepUrl(file, slug);
   }
 
   private deleted(file: TAbstractFile): void {
     const data = this.plugin.data.publish;
-    const prefix = `${file.path}/`;
+    if (!file.path) return; // the root is never deleted; "" would mean every record
     let changed = false;
     for (const key of Object.keys(data)) {
-      if (key === file.path || key.startsWith(prefix)) {
+      if (inFolder(key, file.path)) {
         delete data[key];
         changed = true;
       }
     }
     if (changed) this.plugin.requestSave();
-  }
-
-  private offerKeepUrl(file: TFile, slug: string): void {
-    const prop = this.plugin.settings.slugProperty;
-    let notice: Notice | null = null;
-    const frag = createFragment((f) => {
-      f.createDiv({ text: t("publish.keepUrl.text", { title: this.title(file), slug }) });
-      const button = f.createEl("button", { cls: "mod-cta escrita-publish-keep", text: t("publish.keepUrl.button") });
-      button.addEventListener("click", (e) => {
-        e.stopPropagation();
-        notice?.hide();
-        void this.keepUrl(file, prop, slug);
-      });
-    });
-    notice = new Notice(frag, 20000);
-  }
-
-  private async keepUrl(file: TFile, prop: string, slug: string): Promise<void> {
-    try {
-      let added = false;
-      await this.plugin.app.fileManager.processFrontMatter(file, (fm: Frontmatter) => {
-        const cur = fm[prop];
-        if (typeof cur === "string" && cur.trim()) return;
-        fm[prop] = slug;
-        added = true;
-      });
-      if (added) new Notice(t("publish.keepUrl.done", { property: prop, slug }));
-    } catch (e) {
-      console.error("Escrita: couldn't add the slug property", file.path, e);
-      new Notice(t("publish.keepUrl.error"));
-    }
   }
 }

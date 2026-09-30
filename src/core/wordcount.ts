@@ -2,26 +2,36 @@
 // (beats, placeholders, notes to self), HTML comments, code and markup
 // don't count; only the words a reader would read.
 
+import { segment, type Markdown } from "./markdown";
+
 // Combining marks (\p{M}) belong to the word, so a decomposed "ninguém" is one word.
 const WORD = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:['’\-][\p{L}\p{M}\p{N}]+)*/gu;
 
-export function stripFrontmatter(md: string): string {
-  if (!md.startsWith("---")) return md;
-  const m = /^---\r?\n[\s\S]*?\r?\n(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/.exec(md);
-  return m ? md.slice(m[0].length) : md;
+/**
+ * The text a reader reads, markup still in place: frontmatter dropped (with the
+ * line break after it), code, %% comments and closed HTML comments replaced by a
+ * space (see core/markdown for the one rule set), then link targets, list and
+ * heading marks, rules and tags removed.
+ */
+export function proseOnly(md: string): string {
+  let s = "";
+  let afterFrontmatter = false;
+  for (const span of segment(md).spans()) {
+    if (span.kind === "prose") {
+      let from = span.from;
+      // the line break right after the frontmatter goes with it
+      if (afterFrontmatter) from += md.startsWith("\r\n", from) ? 2 : 1;
+      s += md.slice(from, span.to);
+    } else if (span.kind !== "frontmatter") {
+      s += " ";
+    }
+    afterFrontmatter = span.kind === "frontmatter";
+  }
+  return stripMarkup(s);
 }
 
-/** An inline code span: a backtick run closed by a run of the same length, on one line. */
-const INLINE_CODE = /(?<!`)(`+)(?!`)(?:[^\n]*?[^`\n])?\1(?!`)/g;
-
-export function proseOnly(md: string): string {
-  let s = stripFrontmatter(md);
-  // Code first: `%%` inside inline or fenced code is literal, not a comment
-  // (as in Obsidian), so it must not hide the rest of the note.
-  s = s.replace(/^(```|~~~)[^\n]*\n[\s\S]*?(?:^\1[ \t]*$|(?![\s\S]))/gm, " "); // fenced code
-  s = s.replace(INLINE_CODE, " ");                      // inline code, any backtick run
-  s = s.replace(/%%[\s\S]*?(?:%%|$)/g, " ");          // Obsidian comments (unclosed runs to end, like Obsidian)
-  s = s.replace(/<!--[\s\S]*?(?:-->|$)/g, " ");        // HTML comments
+/** Link targets, embeds, urls, rules, quote/heading/list marks and tags: never words. */
+function stripMarkup(s: string): string {
   s = s.replace(/!\[\[[^\]]*\]\]/g, " ");               // embeds
   s = s.replace(/!\[[^\]]*\]\([^)]*\)/g, " ");          // images
   s = s.replace(/\[\[([^\]|]*\|)?([^\]]*)\]\]/g, "$2"); // wikilinks → alias or target
@@ -40,9 +50,13 @@ export function countWords(md: string): number {
   return m ? m.length : 0;
 }
 
-/** Count words in a plain selection (no frontmatter handling). */
-export function countSelection(text: string): number {
-  const s = text.replace(/%%[\s\S]*?(?:%%|$)/g, " ");
+/**
+ * Words in the selected ranges of a segmented document, by the same rules as
+ * countWords: code, comments and frontmatter in the selection don't count.
+ */
+export function countSelection(md: Markdown, ranges: readonly { from: number; to: number }[]): number {
+  const mask = md.masked();
+  const s = stripMarkup(ranges.map((r) => mask.slice(r.from, r.to)).join("\n"));
   const m = s.match(WORD);
   return m ? m.length : 0;
 }

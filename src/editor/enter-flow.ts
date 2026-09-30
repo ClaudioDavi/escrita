@@ -8,9 +8,10 @@
 // past that turns into a scene break, and one more at the end of the chapter
 // starts a new chapter.
 
-import { SCENE_BREAK } from "../core/markers";
+import { segment, type Markdown } from "../core/markdown";
+import { SCENE_BREAK, isSceneBreakLine } from "../core/markers";
 import type { ParagraphStyle } from "../settings";
-import { blockStateAt, bodyStart, inBlock } from "./context";
+import { blockStateIn, bodyLineIn, inBlock } from "./context";
 
 export type EnterDecision = "normal" | "break" | "chapter";
 
@@ -19,7 +20,6 @@ const LIST = /^[ \t]*(?:[-*+]|\d+[.)])(?:[ \t]|$)/;
 const HEADING = /^[ \t]{0,3}#{1,6}(?:[ \t]|$)/;
 const QUOTE = /^[ \t]*>/;
 const TABLE = /^[ \t]*\|/;
-const FENCE = /^[ \t]{0,3}(?:`{3,}|~{3,})/;
 const MATH = /^[ \t]*\$\$/;
 
 export function isEmptyLine(line: string | undefined): boolean {
@@ -28,21 +28,19 @@ export function isEmptyLine(line: string | undefined): boolean {
 
 const HTML_TAG_ONLY = /^[ \t]*(?:<\/?[A-Za-z][^<>]*>[ \t]*)+$/;
 
-function count(line: string, token: string): number {
-  return line.split(token).length - 1;
-}
-
 /**
  * A line of running prose: not markup, not a break, not a comment-only line.
- * A line that opens or closes a multi-line comment (an odd number of `%%`, or
- * an unpaired `<!--` / `-->`) is not prose either.
+ * A line that opens a fence or a comment it doesn't close, or that holds an
+ * unpaired `<!--` / `-->`, is not prose either (read by core/markdown, so `%%`
+ * inside inline code is just text).
  */
 export function isProseLine(line: string): boolean {
   if (EMPTY.test(line)) return false;
   if (SCENE_BREAK.test(line) || LIST.test(line) || HEADING.test(line) || QUOTE.test(line)
-    || TABLE.test(line) || FENCE.test(line) || MATH.test(line) || HTML_TAG_ONLY.test(line)) return false;
-  if (count(line, "%%") % 2 === 1) return false;
-  const rest = line.replace(/%%.*?%%/g, "").replace(/<!--.*?-->/g, "");
+    || TABLE.test(line) || MATH.test(line) || HTML_TAG_ONLY.test(line)) return false;
+  const md = segment(line);
+  if (md.spans().some((s) => !s.closed)) return false;
+  const rest = md.masked();
   if (rest.includes("<!--") || rest.includes("-->")) return false;
   return rest.trim().length > 0;
 }
@@ -58,9 +56,30 @@ function runStart(lines: readonly string[], line: number): number {
   return i;
 }
 
-/** A scene break at `i` that really is one (not a setext heading underline or the frontmatter). */
-function isSceneBreakAt(lines: readonly string[], i: number, body: number): boolean {
-  if (i < body || !SCENE_BREAK.test(lines[i])) return false;
+/**
+ * A document as the Enter flow reads it: its lines and their segmentation.
+ * Editor callers pass `segmentDoc(state.doc)` so the pass is shared per version.
+ */
+type Doc = readonly string[] | Markdown;
+
+function read(doc: Doc): { lines: readonly string[]; md: Markdown } {
+  if (!isMarkdown(doc)) return { lines: doc, md: segment(doc.join("\n")) };
+  const lines: string[] = [];
+  for (let i = 0; i < doc.lineCount; i++) lines.push(doc.text.slice(doc.lineStart(i), doc.lineEnd(i)));
+  return { lines, md: doc };
+}
+
+function isMarkdown(doc: Doc): doc is Markdown {
+  return !Array.isArray(doc);
+}
+
+/**
+ * A scene break at `i` that really is one (core/markers.isSceneBreakLine, so not
+ * a `---` inside code or a comment), in the body, and not a setext heading
+ * underline (blank line or the body's start before it).
+ */
+function isSceneBreakAt(lines: readonly string[], i: number, body: number, md: Markdown): boolean {
+  if (i < body || !isSceneBreakLine(md, i)) return false;
   return i === body || isEmptyLine(lines[i - 1]);
 }
 
@@ -68,12 +87,13 @@ function isSceneBreakAt(lines: readonly string[], i: number, body: number): bool
  * What Enter should do on `cursorLine` (0-based) with an empty selection.
  * The caller checks the setting, the selection and that the file is a chapter.
  */
-export function decideEnter(lines: readonly string[], cursorLine: number, style: ParagraphStyle): EnterDecision {
+export function decideEnter(doc: Doc, cursorLine: number, style: ParagraphStyle): EnterDecision {
+  const { lines, md } = read(doc);
   if (cursorLine < 0 || cursorLine >= lines.length) return "normal";
   if (!isEmptyLine(lines[cursorLine])) return "normal";
-  const body = bodyStart(lines);
+  const body = bodyLineIn(md);
   if (cursorLine < body) return "normal";
-  if (inBlock(blockStateAt(lines, cursorLine))) return "normal";
+  if (inBlock(blockStateIn(md, cursorLine))) return "normal";
 
   const start = runStart(lines, cursorLine);
   const empties = cursorLine - start + 1;
@@ -81,12 +101,12 @@ export function decideEnter(lines: readonly string[], cursorLine: number, style:
   const above = start - 1;
   if (above < body) return "normal"; // nothing but properties (or nothing) above
 
-  if (isSceneBreakAt(lines, above, body)) {
+  if (isSceneBreakAt(lines, above, body, md)) {
     for (let i = cursorLine + 1; i < lines.length; i++) if (!isEmptyLine(lines[i])) return "normal";
     return "chapter";
   }
   // the line above closes (or sits in) a multi-line comment: not prose
-  if (blockStateAt(lines, above).comment) return "normal";
+  if (blockStateIn(md, above).comment) return "normal";
   return isProseLine(lines[above]) ? "break" : "normal";
 }
 
@@ -112,12 +132,14 @@ export function breakEdit(lines: readonly string[], cursorLine: number): LineEdi
  * number of lines to keep (everything up to the last non-empty line before
  * the break). Null when the text doesn't end that way.
  */
-export function trailingBreakKeep(lines: readonly string[]): number | null {
+export function trailingBreakKeep(doc: Doc): number | null {
+  const { lines, md } = read(doc);
   let i = lines.length - 1;
   while (i >= 0 && isEmptyLine(lines[i])) i--;
   if (i < 0) return null;
-  const body = bodyStart(lines);
-  if (!isSceneBreakAt(lines, i, body)) return null;
+  const body = bodyLineIn(md);
+  // never a --- inside code or a comment: that text is not ours to delete
+  if (!isSceneBreakAt(lines, i, body, md)) return null;
   let keep = i;
   while (keep > body && isEmptyLine(lines[keep - 1])) keep--;
   return keep;

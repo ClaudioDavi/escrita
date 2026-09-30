@@ -11,25 +11,39 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   Do not edit `src/main.ts`, `src/settings.ts`, `src/data.ts`, `src/i18n.ts`,
   `src/strings.ts` or `src/core/*` (exception: the outline module implements
   `src/core/chapter-ops.ts` with its pure helpers `src/core/chapter-engine.ts` and `src/core/chapter-plan.ts`). If you need a change there, say so in your final
-  report instead.
+  report instead. `src/core/classify.ts` and `src/core/books.ts` are shared core
+  that every module reads; change them only as a deliberate core-level refactor.
 - **Entry point.** `src/<module>/index.ts` exports `class <Name>Module implements EscritaModule`
   with `constructor(private plugin: EscritaPlugin)`, `load()`, optional `unload()`
   and `settingsChanged()`. `main.ts` already constructs and loads every module.
 - **Plugin services** (on `this.plugin`): `settings` (see `src/settings.ts` —
   all settings already exist, with a settings tab), `data.history` (see `src/data.ts`),
   `requestSave()` (debounced persist), `saveSettings()`, `books` (`BookService`:
-  `bookFor(file)`, `isChapter(file)`, `chapters(book)`, `allBooks()`, `frontmatter(file)`),
+  `classify(file | folder | path | null)` → `{ path, kind, markdown, book, tracked, piece }`,
+  `chapters(book)`, `allBooks()`, `frontmatter(file)`; see "File classification" below),
   `counter` (`WordCounter`: cached per-file word counts), `chapterOps` (`ChapterOps`:
   create/renumber/retitle chapters), and the other modules (`goals`, `outline`,
   `placeholders`, `darlings`, `editor`, `publish`).
-- **Pure core** (no Obsidian imports, unit tested): `core/wordcount.ts`,
+- **Pure core** (no Obsidian imports, unit tested): `core/markdown.ts` (the one
+  Markdown segmenter, see below), `core/wordcount.ts`,
   `core/markers.ts` (beat/placeholder/scene-break syntax), `core/book.ts`
   (chapter numbering), `core/dates.ts` (writing day), `core/piece.ts` (a note's
   target/limit/unit/deadline, `pieceCount`, `pieceProgress`), `core/daysoff.ts`
-  (`dayOffPredicate`, `parseDatesOff`), `core/lists.ts` (`lineList`) and
+  (`dayOffPredicate`, `parseDatesOff`), `core/classify.ts` (the `VaultTree` port,
+  `classify`, `listBooks`, `inFolder`, `inBook`; see "File classification"),
+  `core/lists.ts` (`lineList`, `folderList`; import them from here) and
   `core/merge.ts` (`mergeDefaults` for saved settings). `countCharacters(md, { spaces })`
   in `core/wordcount.ts` counts on `proseOnly` text with whitespace runs collapsed.
   Reuse these; don't duplicate.
+- **Never re-detect frontmatter, fences, inline code or comments**: ask
+  `segment(text)` or `segmentDoc(doc)` from `core/markdown.ts` (see "Markdown
+  segmentation" below). Markers inside code, frontmatter or HTML comments are not markers.
+- **Never re-derive what a file is**: ask `plugin.books.classify(file)` first for
+  chapter / book note / book file / note, the owning book, tracked and the piece.
+  Keep your module's policy (typography scope, the placeholder
+  index's exclude-only rule) and read the facts from the classifier. The only
+  `inFolder` is `core/classify.inFolder`; containment in a book by path is
+  `core/classify.inBook`.
 - **Pure logic goes in files without `obsidian` imports** so vitest can test it.
   Obsidian-facing code stays thin.
 - **i18n.** Every user-visible string goes through `t("<module>.<key>", vars)`
@@ -52,6 +66,10 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   Must look right in light and dark themes. Touch targets ≥ 32px in side panels.
 - **Data safety is the top priority.** Never lose or silently change prose. Anything
   that deletes text either moves it somewhere recoverable (darlings, trash) or asks.
+- **Standalone.** Escrita is for any writer, whether or not they publish to a
+  website. No feature may assume a site: no URLs or slugs, no site build rules, no
+  files written for a site to read. "Publish" only means checking a note and setting
+  its status and date properties. The author's own site reads the vault by itself.
 - **No network.** Escrita never contacts a server. `tests/no-network.test.ts` fails
   when any file in `src/` (or the built `main.js`) uses `fetch(`, `requestUrl`,
   `request(` from obsidian, `XMLHttpRequest`, `WebSocket`, `EventSource`, `sendBeacon`,
@@ -80,9 +98,120 @@ In-text markers (single-line Obsidian comments, hidden in Reading view and by mo
 ---                                         ← scene break (always with blank lines around it)
 ```
 
-A beat is **written** when prose follows it before the next beat, scene break or end
+A marker is a closed `%% … %%` comment on one line, as `core/markdown` segments
+the text: the same text inside code, the frontmatter, an HTML comment or a
+multi-line comment is not a marker (no dot, badge, pill, ghost or publish blocker),
+and a line holding several `%%` comments is not a beat. A scene break line must be
+entirely prose (`core/markers.isSceneBreakLine`, the one definition; the Enter
+flow adds its blank-line-before rule on top).
+
+A beat is **written** when prose (or code) follows it before the next beat, scene break or end
 of file (`core/markers.parseBeats`). Beats stay in the file after the scene is
 written; they act as invisible scene headings and keep the outline in sync.
+
+## File classification (`core/classify.ts`)
+
+`classify(tree, settings, path)` says where a path sits; `plugin.books.classify(x)`
+is the Obsidian adapter (it accepts a `TFile`, a `TFolder`, a vault path, or
+null). The adapter never normalizes a live file's own path: every lookup tries the
+path as given first and `normalizePath` only as a fallback (`lookupPath`), so a
+file named with a U+00A0 space or NFD accents is still found; a string argument is
+used as is when something exists there, else normalized, and `""` stays `none`
+(`placementPath`). Both helpers are pure and tested in `tests/classify.test.ts`;
+the rest of the adapter (the `instanceof` checks, the root folder filtered out of
+`folder`/`folders`) is covered by the manual smoke checks. The vault is reached through `VaultTree<F, D>`, a
+read-only port of four calls (`file`, `folder`, `folders`, `frontmatter`), the
+same pattern as `ChapterFs` in `core/chapter-engine.ts`; `tests/classify.test.ts`
+drives it with an in-memory tree. The result:
+
+- `kind`, structure only and a closed set: `chapter` (a `.md` file directly in
+  `<book>/<chaptersFolder>/`), `book-note`, `book-file` (any other file under a
+  book folder: `Darlings.md`, a canvas, `Chapters/Old/x.md`), `note` (a `.md` file
+  in no book), `file` (anything else in no book), `book-folder`, `chapters-folder`,
+  `folder` (the root included), `none` (null, `""`, or nothing at the path).
+- `markdown`: an existing file ending in `.md` (case-sensitive).
+- `book`: the innermost book that **owns** the path (the book note is checked first,
+  so a book note inside another book's folder belongs to its own book). A book is
+  a non-root folder `F` with a note `F.md` and a folder `F/<chaptersFolder>`
+  (`chaptersFolder` may be nested, like `Drafts/Chapters`); `listBooks` uses the
+  same rule, so `allBooks()` and `classify` always agree.
+- `tracked`: goals' rule — markdown, inside a track folder (or anywhere when there
+  is none), outside every exclude folder, not the chapter template. Independent of
+  kind: a chapter in an excluded folder is still a chapter.
+- `piece`: `readPiece` of the frontmatter for any markdown file, chapters included.
+  A standalone piece is `kind === "note" && piece`.
+
+It reads the live vault and the settings passed in every time: no cache, so
+renames and settings changes need no invalidation. Don't add one. It never throws.
+A missing path is `none` and guesses nothing from its ancestors: for deleted or
+old paths, use `inBook(path, book)`, which is **containment** by path (the note,
+the folder, anything under it, including a nested inner book's files).
+`Placement.book` is **ownership** (innermost). They differ only for nested books;
+keep both.
+
+Growth: new knowledge arrives as new fields on the result and new fields on
+`ClassifySettings`, never as new kinds and never as caller changes. The universe
+roadmap's `scopeFor(file, settings)` becomes a `scope` field computed in the same
+pass; the file explorer counts of v0.3 read `kind`, `book` and `tracked` per item.
+
+## Markdown segmentation (`core/markdown.ts`)
+
+`segment(text)` splits a note into spans — `prose`, `frontmatter`, `code`
+(fenced blocks and inline spans), `comment` (`form: "%%" | "html"`) — in one
+left-to-right pass, and answers every question the features ask: `spans(from?, to?)`,
+`startsIn(line)` (what a line starts inside: the kind of the line break before it),
+`lineOf`/`lineStart`/`lineEnd`, `bodyLine`, `unclosedFrontmatter`, and `masked()`
+(the text with every non-prose char blanked, offsets kept 1:1). `segmentDoc(doc)`
+caches per immutable document object (a CodeMirror `Text` is one per version).
+The consumers take either a text or a `Markdown` (`parseBeats`, `parsePlaceholders`,
+`outline/model.scanBeats`, `placeholders/logic.placeholderSpans`,
+`editor/enter-flow.decideEnter`/`trailingBreakKeep`, `publish/checks.unclosedComment`,
+`editor/context.blockStateIn`, `wordcount.countSelection`), and every editor
+feature passes `segmentDoc(state.doc)`, so ghost beats, placeholder pills,
+typography, the Enter flow and the selection count share one pass per document
+version. `runChecks` segments once and hands the result to each check. `segment`
+also caches the last string, a convenience for string callers, not a guarantee.
+
+A line-level question ("what is on line i") clips `md.spans(lineStart(i), lineEnd(i))`
+to the line (`lineSpans` in `core/markers`); `startsIn(i)` says what the line starts
+inside. Put a new line-level predicate next to `isSceneBreakLine` instead of
+re-deriving it in a feature.
+
+Rules (a strict left fold: the first opener wins; inside a construct only its own
+closer matters; each rule has a test in `tests/markdown.test.ts`):
+
+1. **Frontmatter** only when line 0 is `---` and a later line is `---` or `...`
+   (trailing blanks allowed). No closer → no span (counts and markers read it as
+   body) and `unclosedFrontmatter` is set; the editor alone treats that as "all
+   properties" (`editor/context.bodyLineIn`).
+2. **Fences** at the start of a line that starts in prose: ≤3 spaces, then 3+
+   backticks or tildes (a backtick info string can't contain a backtick). Closer:
+   ≤3 spaces, same char, at least as long, only blanks after. Unclosed → to the end.
+3. **In prose**: `\` escapes a backtick or backslash; a backtick run is inline code
+   when a run of the same length closes it on the same line (else literal); `%%`
+   opens a comment to the next `%%`, across lines (unclosed → to the end, like
+   Obsidian); `<!--` opens a comment to the next `-->` only if there
+   is one. An unclosed `<!--` is literal so a stray one can't hide placeholders
+   from publish; this matches CommonMark for inline HTML only: at the start of a
+   line (an HTML block) Reading view hides everything after it, so the
+   counts over-count there. Accepted: publish must not miss a placeholder.
+   `%%` inside a closed `<!-- -->` is literal (the first opener wins), so an odd
+   one there doesn't open a comment for counts or the editor; the publish check
+   still blocks on it (`unclosedComment`), because parity with Reading view is
+   unverified and either reading must be safe.
+
+Block spans end at the end of their closer's line; the line break after is prose.
+Not segmented: `$$` math (an editor-only overlay in `editor/context.ts`, counted over
+prose only, so a stray `$$` never hides a placeholder), 4-space indented code,
+fences inside quotes or lists, multi-line inline code.
+`editor/context.inlineProtected` keeps its own backtick loop on purpose: it
+predicts a span that is still being typed, which is not a parse.
+
+Open questions (each is a one-place flip pinned by a row in
+`tests/markdown-consumers.test.ts`): parity with Obsidian's Reading view for a fence inside an open `%%` comment (literal here), `%%` inside a `$$`
+block (opens a comment here), escaped backticks, and `%%` inside a closed
+`<!-- -->` (literal here; check before release, since it decides whether text
+after the comment is hidden in Reading view).
 
 ## Design reference
 
@@ -134,9 +263,9 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
   If `|delta| > settings.ignoreJumpsOver`, don't count it (still update the cache).
   Positive deltas add to `added`, negative to `deleted`, in `data.history[writingDay]`
   (and per book in `books[bookNotePath]` when the file is a chapter; also set that
-  book's `total` = sum of its chapters' counts). Tracked = inside one of
-  `folderList(trackFolders)` (or anywhere when empty), not inside `excludeFolders`,
-  and not the chapter template. Handle rename (`counter.rename`) and delete (`forget`).
+  book's `total` = sum of its chapters' counts). Tracked = `books.classify(file).tracked`:
+  inside one of `folderList(trackFolders)` (or anywhere when empty), not inside
+  `excludeFolders`, and not the chapter template (the rule lives in `core/classify.ts`). Handle rename (`counter.rename`) and delete (`forget`).
   `plugin.requestSave()` after changes.
 - **Pure functions** (`src/goals/tracker.ts`, `src/goals/pacing.ts`, tested):
   applying a delta to history; `streak(history, today)` = consecutive days with
@@ -312,7 +441,7 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
 ### editor (`src/editor/`)
 
 - **Enter, Enter, Enter** (`src/editor/enter-flow.ts`, only when `settings.enterFlow` and
-  the file is a chapter, or another note tracked by goals (`goals.tracked`), where only
+  the file is a chapter, or another tracked note (`books.classify(file).tracked`), where only
   `"break"` applies and `"chapter"` falls back to a normal Enter — use `editorInfoField` to get the file): a high-precedence
   (`Prec.high`) Enter keymap. With an empty selection on an empty line, outside
   frontmatter, code blocks and lists: let `N` = 1 when `paragraphStyle` is `single`,
@@ -348,30 +477,23 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
 - **Pure checks** (`src/publish/checks.ts`, tested): `runChecks(text, frontmatter, ctx)
   → Check[]`, each `{ id, level: blocker | warning | passed, line?, items, vars }`
   (messages are built with `t()` in the modal from the id and vars). In order:
-  `unclosedComment` (odd `%%` outside fenced and inline code; blocker, with the opening
-  line), `placeholders` (blocker, each item jumps to its line), `unwrittenBeats`
+  `unclosedComment` (the note's last span is a `%%` comment with no closer, as
+  `core/markdown` reads it: outside fenced and inline code; or a closed `<!-- -->`
+  holding an odd number of `%%`; blocker, with the opening line), `placeholders` (blocker, each item jumps to its line), `unwrittenBeats`
   (warning), `emptyBody` (`countWords` = 0; blocker), `recommended` (missing
   `recommendedProperties`, case-insensitive; warning; skipped when the list is empty),
-  `overLimit` (the piece's `limit` in its unit; warning; only when a limit is set),
-  `urlTaken` (another published note in `publishFolders` has the same address;
-  blocker; skipped when no folders), `urlChanged` (address differs from the one stored
-  at the last publish; warning). `sortChecks` puts blockers first; `hasBlockers`.
-- **URLs** (`src/publish/slug.ts`, tested): `slugify` matches the author's site (NFD,
-  strip diacritics, lowercase, runs of non `a-z0-9` → `-`). `noteUrl`: a note's slug
-  property or file stem; a book chapter is `<book slug>/<chapter slug>` with its number
-  dropped. `slugToKeep` decides whether a rename of a published note should offer to
-  keep the old URL.
+  `overLimit` (the piece's `limit` in its unit; warning; only when a limit is set).
+  `sortChecks` puts blockers first; `hasBlockers`. No check assumes a website:
+  Escrita is standalone (no URLs, slugs or site build rules).
 - **Dates** (`src/publish/date.ts`, tested): the modal's date field starts at the
   note's date or today; publishing writes the date only when the user changed it or
   the note has none, so an existing value (even non-ISO) is kept as it is.
 - **Modal** (`src/publish/modal.ts`): "Publish “<title>”", the sorted checks with an
-  icon per level, clickable items (jump to the line, or open the other note), a date
+  icon per level, clickable items (jump to the line), a date
   input, and Publish. Blockers disable Publish until "Publish anyway" is checked.
 - **Publish** sets `statusProperty` = `publishedValue` and `dateProperty` in one
   `processFrontMatter` call, then a Notice. It stores `data.publish[path] =
-  { previousStatus, slug }`. **Unpublish** restores `previousStatus`, else
-  `unpublishedValue`, else `ready`; the stored slug is kept. Records follow file and
-  folder renames and are dropped on delete. Escrita never commits or pushes.
-- **Stable URLs**: when `keepUrlOnRename` is on and a published note is renamed so its
-  address changes, a Notice offers to add `<slugProperty>: <old slug>`.
+  { previousStatus }` when there was one. **Unpublish** restores `previousStatus`, else
+  `unpublishedValue`, else `ready`, and drops the record. Records follow file and
+  folder renames and are dropped on delete. Escrita never commits, pushes or uploads.
 - **Commands** (also in the file menu): "Publish this note", "Unpublish this note".

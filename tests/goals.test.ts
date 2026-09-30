@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import type { DayRecord } from "../src/data";
 import {
   addedOn, applyDelta, bookTotalSeries, countsAsWriting, dailyAverage, dailySeries, dayStates, deletedOn,
-  ActiveFiles, goalMet, goalMetDays, inFolder, isTrackedPath, netOn, num, recordBookTotal, renameBook, streak, sumAdded,
+  ActiveFiles, goalMet, goalMetDays, netOn, num, recordBookTotal, renameBook, streak, sumAdded,
   type History,
 } from "../src/goals/tracker";
 import { normalizeDeadline, pacing, parseGoal, readNumberField } from "../src/goals/pacing";
@@ -247,25 +247,7 @@ describe("bookTotalSeries", () => {
 });
 
 describe("tracking filters", () => {
-  it("inFolder matches the folder and its descendants only", () => {
-    expect(inFolder("Novels/A.md", "Novels")).toBe(true);
-    expect(inFolder("Novels/A/B.md", "Novels/")).toBe(true);
-    expect(inFolder("Novels2/A.md", "Novels")).toBe(false);
-    expect(inFolder("A.md", "")).toBe(true);
-  });
-  it("isTrackedPath honors track, exclude and the template", () => {
-    expect(isTrackedPath("Notes/x.md", [], [])).toBe(true);
-    expect(isTrackedPath("Notes/x.canvas", [], [])).toBe(false);
-    expect(isTrackedPath("Notes/x.MD", [], [])).toBe(true);
-    expect(isTrackedPath("Notes/x.md", ["Novels"], [])).toBe(false);
-    expect(isTrackedPath("Novels/A/Chapters/01 A.md", ["Fiction", "Novels"], [])).toBe(true);
-    expect(isTrackedPath("Templates/Chapter.md", [], ["Templates"])).toBe(false);
-    expect(isTrackedPath("Novels/Templates/x.md", ["Novels"], ["Novels/Templates"])).toBe(false);
-    expect(isTrackedPath("Novels/x.md", [], [""])).toBe(true);
-    expect(isTrackedPath("Tpl/Chapter.md", [], [], "Tpl/Chapter.md")).toBe(false);
-    expect(isTrackedPath("Tpl/Chapter.md", [], [], "Tpl/Chapter")).toBe(false);
-    expect(isTrackedPath("Tpl/Chapter 2.md", [], [], "Tpl/Chapter")).toBe(true);
-  });
+  // inFolder and isTrackedPath moved into core/classify (tests/classify.test.ts).
   it("countsAsWriting skips zero and jumps bigger than the limit", () => {
     expect(countsAsWriting(0, 1500)).toBe(false);
     expect(countsAsWriting(1500, 1500)).toBe(true);

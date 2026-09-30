@@ -57,7 +57,7 @@ export class OutlineModule implements EscritaModule {
       name: t("outline.command.addBeat"),
       editorCheckCallback: (checking, editor, ctx) => {
         const file = ctx.file;
-        if (!file || !plugin.books.isChapter(file)) return false;
+        if (!file || plugin.books.classify(file).kind !== "chapter") return false;
         if (!checking) this.addBeatInEditor(editor);
         return true;
       },
@@ -66,7 +66,7 @@ export class OutlineModule implements EscritaModule {
       id: "renumber-chapters",
       name: t("outline.command.renumber"),
       checkCallback: (checking) => {
-        const book = plugin.books.bookFor(plugin.app.workspace.getActiveFile());
+        const book = plugin.books.classify(plugin.app.workspace.getActiveFile()).book;
         if (!book) return false;
         if (!checking) void this.renumber(book);
         return true;
@@ -93,7 +93,7 @@ export class OutlineModule implements EscritaModule {
   /** The active note's book, else the book shown in the outline panel. */
   private currentBook(): Book | null {
     const { books, app } = this.plugin;
-    const active = books.bookFor(app.workspace.getActiveFile());
+    const active = books.classify(app.workspace.getActiveFile()).book;
     if (active) return active;
     for (const leaf of app.workspace.getLeavesOfType(OUTLINE_VIEW)) {
       if (leaf.view instanceof OutlineView) {
@@ -222,7 +222,7 @@ export class OutlineModule implements EscritaModule {
       const note = await app.vault.create(notePath, `---\ngoal: ${NEW_BOOK_GOAL}\ndeadline: \n---\n`);
       await this.ensureFolder(folderPath);
       await this.ensureFolder(join(folderPath, settings.chaptersFolder));
-      const book = books.bookFor(note);
+      const book = books.classify(note).book;
       if (!book) throw new Error(t("outline.create.notBook", { path: notePath }));
       // The folder may already hold chapters (a book note added to existing
       // work): leave them as they are instead of inserting a chapter before them.

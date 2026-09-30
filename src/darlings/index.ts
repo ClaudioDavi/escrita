@@ -91,7 +91,7 @@ export class DarlingsModule implements EscritaModule {
   /** Darlings note for a file: its book's note, else the global one. */
   notePathFor(file: TFile | null): string {
     const s = this.plugin.settings;
-    const book = file ? this.plugin.books.bookFor(file) : null;
+    const book = this.plugin.books.classify(file).book;
     if (book) return normalizePath(`${book.folder.path}/${withMd(s.darlingsNote || "Darlings.md")}`);
     return normalizePath(withMd(s.globalDarlingsNote || "Darlings.md"));
   }

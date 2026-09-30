@@ -2,10 +2,11 @@ import { Notice, TAbstractFile, TFile, debounce } from "obsidian";
 import { EditorView, type ViewUpdate } from "@codemirror/view";
 import type EscritaPlugin from "../main";
 import type { EscritaModule } from "../data";
-import { folderList } from "../settings";
 import { writingDay } from "../core/dates";
 import { countSelection, countWords } from "../core/wordcount";
-import { pieceCount, readPiece, type Piece } from "../core/piece";
+import { segmentDoc } from "../core/markdown";
+import { pieceCount, type Piece } from "../core/piece";
+import type { FilePlacement } from "../core/books";
 import { dayOffPredicate, hasDaysOff, type DayOffPredicate } from "../core/daysoff";
 import { pieceSummary } from "./piece";
 import { fmt, t } from "../i18n";
@@ -14,7 +15,7 @@ import { Sprint, formatClock, type SprintEvent } from "./sprint";
 import { StatusBar } from "./status-bar";
 import { plural } from "./format";
 import {
-  ActiveFiles, addedOn, applyDelta, countsAsWriting, isTrackedPath, recordBookTotal, renameBook, streak,
+  ActiveFiles, addedOn, applyDelta, countsAsWriting, recordBookTotal, renameBook, streak,
 } from "./tracker";
 
 /**
@@ -47,12 +48,6 @@ export class GoalsModule implements EscritaModule {
   dayOff(): DayOffPredicate | null {
     const s = this.plugin.settings;
     return hasDaysOff(s) ? dayOffPredicate(s) : null;
-  }
-
-  /** The target/limit/unit/deadline properties of a note, or null when it has none. */
-  pieceOf(file: TFile | null): Piece | null {
-    if (!file || file.extension !== "md") return null;
-    return readPiece(this.plugin.app.metadataCache.getFileCache(file)?.frontmatter, this.plugin.settings);
   }
 
   /** Today's writing day (YYYY-MM-DD), honoring "the day ends at". */
@@ -133,18 +128,12 @@ export class GoalsModule implements EscritaModule {
     this.status?.setVisible(this.plugin.settings.showStatusBar);
     // Tracked folders may have changed: start (or stop) watching the active file.
     const active = this.plugin.app.workspace.getActiveFile();
-    if (this.tracked(active)) this.prime(active);
+    if (this.plugin.books.classify(active).tracked) this.prime(active);
     else if (active) this.baseline.delete(active.path);
     this.refreshStatus();
   }
 
   // ---------- tracking ----------
-
-  tracked(file: TAbstractFile | null): boolean {
-    if (!(file instanceof TFile) || file.extension !== "md") return false;
-    const s = this.plugin.settings;
-    return isTrackedPath(file.path, folderList(s.trackFolders), folderList(s.excludeFolders), s.chapterTemplate);
-  }
 
   private enqueue(fn: () => Promise<void>): void {
     this.queue = this.queue.then(fn).catch((e) => console.error("Escrita: word tracking failed", e));
@@ -152,7 +141,7 @@ export class GoalsModule implements EscritaModule {
 
   /** Remember the active file's current count so the next change can be measured against it. */
   private prime(file: TFile | null): void {
-    if (!file || !this.tracked(file)) return;
+    if (!file || !this.plugin.books.classify(file).tracked) return;
     this.enqueue(async () => {
       this.baseline.set(file.path, await this.plugin.counter.count(file));
     });
@@ -163,7 +152,7 @@ export class GoalsModule implements EscritaModule {
     const active = this.plugin.app.workspace.getActiveFile();
     // Only real typing counts: changes to other files (sync, git, other plugins) just reset their baseline.
     // A file left moments ago still counts, so its debounced last save isn't lost.
-    if (!this.activeFiles.accepts(file.path, active?.path ?? null, Date.now()) || !this.tracked(file)) {
+    if (!this.activeFiles.accepts(file.path, active?.path ?? null, Date.now()) || !this.plugin.books.classify(file).tracked) {
       this.baseline.delete(file.path);
       this.refreshStatus();
       return;
@@ -173,18 +162,17 @@ export class GoalsModule implements EscritaModule {
       const after = await this.plugin.counter.count(file);
       this.baseline.set(file.path, after);
       if (before === undefined || after === before) return;
-      this.record(after - before, (await this.bookChange(file)) ?? this.pieceChange(file, after));
+      // classified after the count, as before: a rename queued meanwhile has landed
+      const p = this.plugin.books.classify(file);
+      this.record(after - before, (await this.bookChange(p)) ?? this.pieceChange(p, after));
     });
     this.refreshStatus();
   }
 
-  private async bookChange(file: TFile): Promise<{ path: string; total: number } | null> {
-    const books = this.plugin.books;
-    if (!books.isChapter(file)) return null;
-    const book = books.bookFor(file);
-    if (!book) return null;
-    const total = await this.plugin.counter.total(books.chapters(book).map((c) => c.file));
-    return { path: book.note.path, total };
+  private async bookChange(p: FilePlacement): Promise<{ path: string; total: number } | null> {
+    if (p.kind !== "chapter" || !p.book) return null;
+    const total = await this.plugin.counter.total(this.plugin.books.chapters(p.book).map((c) => c.file));
+    return { path: p.book.note.path, total };
   }
 
   /**
@@ -192,9 +180,8 @@ export class GoalsModule implements EscritaModule {
    * per-day words in history the way a book does, keyed by its path, so the
    * progress modal can chart it and pace it with its own average.
    */
-  private pieceChange(file: TFile, words: number): { path: string; total: number } | null {
-    if (this.plugin.books.bookFor(file) || !this.pieceOf(file)) return null;
-    return { path: file.path, total: words };
+  private pieceChange(p: FilePlacement, words: number): { path: string; total: number } | null {
+    return p.kind === "note" && p.piece ? { path: p.path, total: words } : null;
   }
 
   private record(delta: number, book: { path: string; total: number } | null): void {
@@ -219,7 +206,7 @@ export class GoalsModule implements EscritaModule {
     this.activeFiles.rename(oldPath, file.path);
     const b = this.baseline.get(oldPath);
     this.baseline.delete(oldPath);
-    if (b !== undefined && this.tracked(file)) this.baseline.set(file.path, b);
+    if (b !== undefined && this.plugin.books.classify(file).tracked) this.baseline.set(file.path, b);
     if (file instanceof TFile && file.extension === "md" && renameBook(this.plugin.data.history, oldPath, file.path)) {
       this.plugin.requestSave();
     }
@@ -234,7 +221,8 @@ export class GoalsModule implements EscritaModule {
     const state = u.state;
     let words = 0;
     if (state.selection.ranges.some((r) => !r.empty)) {
-      words = countSelection(state.selection.ranges.map((r) => state.sliceDoc(r.from, r.to)).join("\n"));
+      // segmented once per document version, so a selection-only change costs O(selection)
+      words = countSelection(segmentDoc(state.doc), state.selection.ranges.filter((r) => !r.empty));
     }
     if (words !== this.selection) {
       this.selection = words;
@@ -247,15 +235,16 @@ export class GoalsModule implements EscritaModule {
 
   private async updateActiveCounts(): Promise<void> {
     const file = this.plugin.app.workspace.getActiveFile();
+    const p = this.plugin.books.classify(file);
     try {
       const books = this.plugin.books;
-      const book = file ? books.bookFor(file) : null;
+      const book = p.book;
       if (!file || !book) {
         this.activeCounts = { chapter: null, book: null };
       } else {
         const chapters = books.chapters(book).map((c) => c.file);
         const total = await this.plugin.counter.total(chapters);
-        const chapter = books.isChapter(file) ? await this.plugin.counter.count(file) : null;
+        const chapter = p.kind === "chapter" ? await this.plugin.counter.count(file) : null;
         this.activeCounts = { chapter, book: total };
       }
     } catch (e) {
@@ -263,7 +252,9 @@ export class GoalsModule implements EscritaModule {
       this.activeCounts = { chapter: null, book: null };
     }
     try {
-      const piece = this.pieceOf(file);
+      // shown for any note with a target or limit, chapters included (history keys only standalone pieces)
+      // re-read here, after the awaits above, so a frontmatter edit made meanwhile shows
+      const piece = file ? this.plugin.books.classify(file).piece : null;
       if (file && piece && (piece.target !== undefined || piece.limit !== undefined)) {
         const md = await this.plugin.app.vault.cachedRead(file);
         this.activePiece = { piece, count: pieceCount(md, piece.unit) };
@@ -308,9 +299,10 @@ export class GoalsModule implements EscritaModule {
   openProgress(): void {
     this.modal?.close();
     const active = this.plugin.app.workspace.getActiveFile();
-    const book = this.plugin.books.bookFor(active);
+    const p = this.plugin.books.classify(active);
+    const book = p.book;
     // Outside a book, a note with a target, limit or deadline gets a piece tile and pacing.
-    const pieceFile = !book && active && this.pieceOf(active) ? active : null;
+    const pieceFile = active && p.kind === "note" && p.piece ? active : null;
     this.modal = new ProgressModal(this.plugin, this, book, pieceFile);
     this.modal.open();
   }

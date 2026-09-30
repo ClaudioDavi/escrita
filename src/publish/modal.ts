@@ -12,7 +12,6 @@ export interface PublishModalOptions {
   /** jump to a 0-based line of the note */
   onJump(line: number): void;
   /** open another note (URL taken) */
-  onOpenPath(path: string): void;
   /** `dateChanged` false = keep whatever date the note has; resolves true when published */
   onPublish(date: string, dateChanged: boolean): Promise<boolean>;
 }
@@ -111,10 +110,6 @@ export class PublishModal extends Modal {
         el.createSpan({ cls: "escrita-publish-line", text: fmt(item.line + 1) });
         el.createSpan({ text: label });
         this.jumpable(el, item.line);
-      } else if (item.path !== undefined) {
-        const path = item.path;
-        el.setText(label);
-        this.clickable(el, t("publish.open", { path }), () => this.opts.onOpenPath(path));
       } else {
         el.setText(label);
       }

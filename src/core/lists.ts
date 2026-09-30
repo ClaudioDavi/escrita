@@ -10,3 +10,8 @@ export function lineList(s: string | null | undefined): string[] {
   }
   return out;
 }
+
+/** "Novels, /Contos/\nDrafts" → ["Novels", "Contos", "Drafts"]: folder settings, trimmed, edge slashes stripped, empties dropped. */
+export function folderList(s: string): string[] {
+  return s.split(/[\n,]/).map((x) => x.trim().replace(/^\/+|\/+$/g, "")).filter(Boolean);
+}

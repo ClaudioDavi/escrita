@@ -1,13 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { noteSlug, noteUrl, slugify, slugOverride, slugToKeep, splitNumber, stem } from "../src/publish/slug";
 import {
-  blankInlineCode, duplicateSlugs, fencedLines, hasBlockers, isFilled, isPublished, runChecks, sortChecks,
+  hasBlockers, isFilled, isPublished, runChecks, sortChecks,
   unclosedComment, type Check, type CheckContext, type CheckId,
 } from "../src/publish/checks";
 
 const PIECE = { targetProperty: "target", limitProperty: "limit", unitProperty: "unit" };
 const ctx = (over: Partial<CheckContext> = {}): CheckContext => ({
-  path: "Contos/O farol.md",
   placeholderMarker: "XXX",
   recommendedProperties: ["description"],
   piece: PIECE,
@@ -15,76 +13,6 @@ const ctx = (over: Partial<CheckContext> = {}): CheckContext => ({
 });
 const find = (checks: Check[], id: CheckId) => checks.find((c) => c.id === id);
 const CLEAN = "---\nstatus: pronto\ndescription: Um farol.\n---\nA luz girava sobre o mar.\n";
-
-describe("slugify (same as the site)", () => {
-  it("strips Portuguese accents and punctuation", () => {
-    expect(slugify("O Coração do Mar")).toBe("o-coracao-do-mar");
-    expect(slugify("Ação, reação & emoção!")).toBe("acao-reacao-emocao");
-    expect(slugify("À beira do caminho — crônica")).toBe("a-beira-do-caminho-cronica");
-    expect(slugify("Pão de açúcar: 1º capítulo")).toBe("pao-de-acucar-1-capitulo");
-    expect(slugify("  Última   estação...  ")).toBe("ultima-estacao");
-  });
-  it("handles decomposed input, ç, ñ and non-Latin letters", () => {
-    expect(slugify("coração")).toBe("coracao");
-    expect(slugify("Niño")).toBe("nino");
-    expect(slugify("Ωmega")).toBe("mega");
-    expect(slugify("???")).toBe("");
-  });
-});
-
-describe("stem, splitNumber, slugOverride", () => {
-  it("takes the file name without folder or .md", () => {
-    expect(stem("Contos/O farol.md")).toBe("O farol");
-    expect(stem("O farol.md")).toBe("O farol");
-  });
-  it("splits chapter numbers", () => {
-    expect(splitNumber("03 A chegada")).toEqual({ number: 3, name: "A chegada" });
-    expect(splitNumber("03-A chegada")).toEqual({ number: 3, name: "A chegada" });
-    expect(splitNumber("1984")).toEqual({ number: Infinity, name: "1984" });
-  });
-  it("only honors a non-empty string slug", () => {
-    expect(slugOverride({ slug: "farol" }, "slug")).toBe("farol");
-    expect(slugOverride({ slug: "" }, "slug")).toBeUndefined();
-    expect(slugOverride({ slug: null }, "slug")).toBeUndefined();
-    expect(slugOverride({ slug: 12 }, "slug")).toBeUndefined();
-    expect(slugOverride(null, "slug")).toBeUndefined();
-  });
-});
-
-describe("noteSlug / noteUrl", () => {
-  it("uses the file stem, slugified", () => {
-    expect(noteSlug("Contos/O Coração do Mar.md", {}, "slug")).toBe("o-coracao-do-mar");
-  });
-  it("prefers the slug property, slugified too", () => {
-    expect(noteSlug("Contos/O farol.md", { slug: "Farol Antigo" }, "slug")).toBe("farol-antigo");
-    expect(noteSlug("Contos/O farol.md", { endereco: "velho" }, "endereco")).toBe("velho");
-  });
-  it("keeps numbers for notes, strips them for chapters", () => {
-    expect(noteSlug("Contos/03 A chegada.md", {}, "slug")).toBe("03-a-chegada");
-    expect(noteSlug("Romances/A Casa/Capítulos/03 A chegada.md", {}, "slug", true)).toBe("a-chegada");
-  });
-  it("puts chapters under their book", () => {
-    expect(noteUrl({ path: "Contos/O farol.md" }, "slug")).toBe("o-farol");
-    expect(noteUrl(
-      { path: "Romances/A Casa/Capítulos/01 Chegada.md", frontmatter: {} },
-      "slug",
-      { path: "Romances/A Casa.md", frontmatter: { slug: "casa" } },
-    )).toBe("casa/chegada");
-  });
-});
-
-describe("fencedLines and blankInlineCode", () => {
-  it("marks fenced blocks, fences included, and runs unclosed fences to the end", () => {
-    expect(fencedLines(["a", "```js", "x", "```", "b"])).toEqual([false, true, true, true, false]);
-    expect(fencedLines(["~~~~", "```", "~~~", "~~~~", "b"])).toEqual([true, true, true, true, false]);
-    expect(fencedLines(["```", "x"])).toEqual([true, true]);
-  });
-  it("blanks inline code spans only when closed by an equal run", () => {
-    expect(blankInlineCode("a `%%` b")).toBe("a      b");
-    expect(blankInlineCode("a ``x ` %%`` b")).toBe("a            b");
-    expect(blankInlineCode("a ` %% b")).toBe("a ` %% b");
-  });
-});
 
 describe("unclosedComment", () => {
   it("is null when every comment is closed, even across lines", () => {
@@ -111,19 +39,6 @@ describe("unclosedComment", () => {
   it("ignores %% inside fenced code", () => {
     expect(unclosedComment("a\n```\n%% not a comment\n```\nb")).toBeNull();
     expect(unclosedComment("a\n~~~\n%%\n~~~\n%% open")).toBe(4);
-  });
-});
-
-describe("duplicateSlugs", () => {
-  it("finds addresses shared by different notes", () => {
-    expect(duplicateSlugs([
-      { path: "Contos/O farol.md", slug: "o-farol" },
-      { path: "Textos/O Farol.md", slug: "o-farol" },
-      { path: "Textos/Outro.md", slug: "outro" },
-    ])).toEqual([{ slug: "o-farol", paths: ["Contos/O farol.md", "Textos/O Farol.md"] }]);
-  });
-  it("doesn't count the same note twice", () => {
-    expect(duplicateSlugs([{ path: "a.md", slug: "a" }, { path: "a.md", slug: "a" }])).toEqual([]);
   });
 });
 
@@ -240,48 +155,9 @@ describe("runChecks", () => {
     expect(find(runChecks(text, { limit: 1 }, ctx({ piece: undefined })), "overLimit")).toBeUndefined();
   });
 
-  it("blocks when another published note has the same URL", () => {
-    const others = [
-      { path: "Textos/O Farol.md", slug: "o-farol" },
-      { path: "Contos/O farol.md", slug: "o-farol" }, // itself: ignored
-      { path: "Textos/Mar.md", slug: "mar" },
-    ];
-    const c = find(runChecks(CLEAN, {}, ctx({ url: "o-farol", others })), "urlTaken")!;
-    expect(c.level).toBe("blocker");
-    expect(c.items).toEqual([{ text: "Textos/O Farol.md", path: "Textos/O Farol.md" }]);
-    expect(find(runChecks(CLEAN, {}, ctx({ url: "farol-novo", others })), "urlTaken")!.level).toBe("passed");
-    expect(find(runChecks(CLEAN, {}, ctx({ url: "o-farol" })), "urlTaken")).toBeUndefined();
-  });
-
-  it("counts chapters by their full address", () => {
-    const others = [{ path: "Romances/A Casa/Capítulos/01 Chegada.md", slug: "a-casa/chegada" }];
-    expect(find(runChecks(CLEAN, {}, ctx({ url: "chegada", others })), "urlTaken")!.level).toBe("passed");
-  });
-
-  it("warns when the URL changed since the last publish", () => {
-    const c = find(runChecks(CLEAN, {}, ctx({ url: "o-farol-novo", previousUrl: "o-farol" })), "urlChanged")!;
-    expect(c.level).toBe("warning");
-    expect(c.vars).toEqual({ from: "o-farol", to: "o-farol-novo" });
-    expect(find(runChecks(CLEAN, {}, ctx({ url: "o-farol", previousUrl: "o-farol" })), "urlChanged")!.level).toBe("passed");
-    expect(find(runChecks(CLEAN, {}, ctx({ url: "o-farol" })), "urlChanged")).toBeUndefined();
-  });
-
   it("sorts blockers first, keeping the order otherwise", () => {
     const checks = runChecks("%% beat: A %%\n", {}, ctx());
     expect(sortChecks(checks).map((c) => c.level)).toEqual(["blocker", "warning", "warning", "passed", "passed"]);
     expect(sortChecks(checks)[0].id).toBe("emptyBody");
-  });
-});
-
-describe("slugToKeep", () => {
-  it("offers the old slug when a rename changes the address", () => {
-    expect(slugToKeep("Contos/O farol.md", "Contos/O farol velho.md", {}, "slug")).toBe("o-farol");
-    expect(slugToKeep("Contos/Coração.md", "Contos/Coracao.md", {}, "slug")).toBeNull();
-  });
-  it("offers nothing for moves, renumbered chapters or notes with a slug", () => {
-    expect(slugToKeep("Contos/O farol.md", "Textos/O farol.md", {}, "slug")).toBeNull();
-    expect(slugToKeep("R/A/Capítulos/01 Chegada.md", "R/A/Capítulos/02 Chegada.md", {}, "slug", true)).toBeNull();
-    expect(slugToKeep("Contos/O farol.md", "Contos/Outro.md", { slug: "o-farol" }, "slug")).toBeNull();
-    expect(slugToKeep("Contos/O farol.md", "Contos/Outro.md", {}, "")).toBeNull();
   });
 });

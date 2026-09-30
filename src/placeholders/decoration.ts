@@ -6,7 +6,8 @@
 import { editorLivePreviewField } from "obsidian";
 import type { Extension, Range as CMRange } from "@codemirror/state";
 import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate, WidgetType } from "@codemirror/view";
-import { placeholderSpans } from "./logic";
+import { segmentDoc } from "../core/markdown";
+import { placeholderSpans, type PlaceholderSpan } from "./logic";
 
 class LabelWidget extends WidgetType {
   constructor(private marker: string, private empty: boolean) { super(); }
@@ -42,56 +43,56 @@ function livePreview(view: EditorView): boolean {
   }
 }
 
-function build(view: EditorView, marker: string): DecorationSet {
-  if (!marker) return Decoration.none;
+function build(view: EditorView, marker: string, spans: readonly PlaceholderSpan[]): DecorationSet {
+  if (!marker || spans.length === 0) return Decoration.none;
   const lp = livePreview(view);
   const sel = view.state.selection.ranges;
-  const doc = view.state.doc;
   const out: CMRange<Decoration>[] = [];
-  for (const { from, to } of view.visibleRanges) {
-    let pos = from;
-    while (pos <= to) {
-      const line = doc.lineAt(pos);
-      for (const s of placeholderSpans(line.text, marker, line.from)) {
-        const touched = sel.some((r) => r.from <= s.to && r.to >= s.from);
-        if (!lp || touched) {
-          out.push(rawMark.range(s.from, s.to));
-        } else if (s.noteFrom === s.noteTo) {
-          out.push(Decoration.replace({ widget: new LabelWidget(marker, true) }).range(s.from, s.to));
-        } else {
-          out.push(Decoration.replace({ widget: new LabelWidget(marker, false) }).range(s.from, s.noteFrom));
-          out.push(noteMark.range(s.noteFrom, s.noteTo));
-          out.push(hide.range(s.noteTo, s.to));
-        }
-      }
-      if (line.to >= to) break;
-      pos = line.to + 1;
+  const visible = view.visibleRanges;
+  for (const s of spans) {
+    if (!visible.some((r) => s.to >= r.from && s.from <= r.to)) continue;
+    const touched = sel.some((r) => r.from <= s.to && r.to >= s.from);
+    if (!lp || touched) {
+      out.push(rawMark.range(s.from, s.to));
+    } else if (s.noteFrom === s.noteTo) {
+      out.push(Decoration.replace({ widget: new LabelWidget(marker, true) }).range(s.from, s.to));
+    } else {
+      out.push(Decoration.replace({ widget: new LabelWidget(marker, false) }).range(s.from, s.noteFrom));
+      out.push(noteMark.range(s.noteFrom, s.noteTo));
+      out.push(hide.range(s.noteTo, s.to));
     }
   }
   return Decoration.set(out, true);
 }
 
-/** `marker` is read on every rebuild, so a settings change applies on the next update. */
+/**
+ * `marker` is read on every rebuild, so a settings change applies on the next update.
+ * Placeholders are found in the whole document (so code blocks and comments are
+ * read right) once per change; viewport and selection changes only redecorate.
+ */
 export function placeholderDecorations(marker: () => string): Extension {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
       private marker: string;
       private lp: boolean;
+      private spans: PlaceholderSpan[];
 
       constructor(view: EditorView) {
         this.marker = marker();
         this.lp = livePreview(view);
-        this.decorations = build(view, this.marker);
+        this.spans = placeholderSpans(segmentDoc(view.state.doc), this.marker);
+        this.decorations = build(view, this.marker, this.spans);
       }
 
       update(u: ViewUpdate): void {
         const m = marker();
         const lp = livePreview(u.view);
+        if (u.docChanged || m !== this.marker) this.spans = placeholderSpans(segmentDoc(u.state.doc), m);
         if (u.docChanged || u.viewportChanged || u.selectionSet || m !== this.marker || lp !== this.lp) {
           this.marker = m;
           this.lp = lp;
-          this.decorations = build(u.view, m);
+          this.decorations = build(u.view, m, this.spans);
         }
       }
     },

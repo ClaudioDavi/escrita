@@ -2,7 +2,8 @@
 // decisions, beat letters, reordering, the ghost-beat scan, the canvas board
 // and what the panel shows (a book, one note or nothing).
 
-import { BEAT_LINE, bodyStartLine } from "../core/markers";
+import { parseBeats } from "../core/markers";
+import type { Markdown } from "../core/markdown";
 import { pieceProgress } from "../core/piece";
 
 /** 0 → "a", 25 → "z", 26 → "aa", 27 → "ab"… */
@@ -147,15 +148,16 @@ export interface GhostBeat {
   letter: string;
 }
 
-/** Beat lines of a document (frontmatter excluded), lettered by their order. */
-export function scanBeats(lines: readonly string[]): GhostBeat[] {
-  const out: GhostBeat[] = [];
-  const start = bodyStartLine(lines as string[]);
-  for (let i = start; i < lines.length; i++) {
-    const m = BEAT_LINE.exec(lines[i]);
-    if (m) out.push({ line: i, text: m[1], letter: beatLetter(out.length) });
-  }
-  return out;
+function isLines(doc: readonly string[] | Markdown): doc is readonly string[] {
+  return Array.isArray(doc);
+}
+
+/**
+ * Beat lines of a document (as parseBeats reads them), lettered by their order like
+ * the outline. The editor passes `segmentDoc(state.doc)` to share its segmentation.
+ */
+export function scanBeats(doc: readonly string[] | Markdown): GhostBeat[] {
+  return parseBeats(isLines(doc) ? doc.join("\n") : doc).map((b, i) => ({ line: b.line, text: b.text, letter: beatLetter(i) }));
 }
 
 // ---------------------------------------------------------------- canvas board

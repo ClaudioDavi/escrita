@@ -2,7 +2,7 @@ import { MarkdownView, Notice, TFile, debounce, type Editor, type PaneType, type
 import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
 import type { EscritaModule } from "../data";
-import { folderList } from "../settings";
+import { folderList } from "../core/lists";
 import { t } from "../i18n";
 import { isIndexable, locate, planInsert, resolvePlaceholder, scan, stepIndex, type IndexedMarker } from "./logic";
 import { PlaceholderStore } from "./store";

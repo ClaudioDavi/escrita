@@ -1,16 +1,13 @@
-import { App, TFile, TFolder, normalizePath } from "obsidian";
+import { App, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 import type { EscritaSettings } from "../settings";
 import { chapterTitle, compareChapters, chapterNumber } from "./book";
+import { classify, listBooks, lookupPath, placementPath, type BookOf, type Placement, type VaultTree } from "./classify";
 
-export interface Book {
-  /** the book note, e.g. Novels/A Casa.md */
-  note: TFile;
-  /** Novels/A Casa */
-  folder: TFolder;
-  /** Novels/A Casa/Chapters */
-  chaptersFolder: TFolder;
-  title: string;
-}
+/** A book: its note (Novels/A Casa.md), folder (Novels/A Casa), chapters folder (Novels/A Casa/Chapters) and title. */
+export type Book = BookOf<TFile, TFolder>;
+
+/** Where a file or folder sits: see core/classify.ts. */
+export type FilePlacement = Placement<TFile, TFolder>;
 
 export interface Chapter {
   file: TFile;
@@ -20,43 +17,34 @@ export interface Chapter {
   title: string;
 }
 
-/** Finds books and chapters in the vault, following the folder convention in core/book.ts. */
+/**
+ * The Obsidian adapter of core/classify.ts, plus the book queries that need the
+ * vault. Every module asks `classify` first instead of re-deriving what a file is.
+ */
 export class BookService {
-  constructor(private app: App, private settings: () => EscritaSettings) {}
+  private tree: VaultTree<TFile, TFolder>;
 
-  private bookFromFolder(folder: TFolder | null): Book | null {
-    if (!folder || folder.isRoot()) return null;
-    const note = this.app.vault.getAbstractFileByPath(normalizePath(`${folder.path}.md`));
-    const ch = this.app.vault.getAbstractFileByPath(normalizePath(`${folder.path}/${this.settings().chaptersFolder}`));
-    if (note instanceof TFile && ch instanceof TFolder) {
-      return { note, folder, chaptersFolder: ch, title: note.basename };
-    }
-    return null;
+  constructor(private app: App, private settings: () => EscritaSettings) {
+    // As given first, so a live file whose own path normalizePath would change (U+00A0) is still found.
+    const get = lookupPath((p) => this.app.vault.getAbstractFileByPath(p), normalizePath);
+    this.tree = {
+      file: (p) => { const f = get(p); return f instanceof TFile ? f : null; },
+      folder: (p) => { const f = get(p); return f instanceof TFolder && !f.isRoot() ? f : null; },
+      folders: () => this.app.vault.getAllLoadedFiles().filter((f): f is TFolder => f instanceof TFolder && !f.isRoot()),
+      frontmatter: (f) => this.app.metadataCache.getFileCache(f)?.frontmatter as Record<string, unknown> | undefined,
+    };
   }
 
-  /** The book a file belongs to: the book note itself, or anything inside the book's folder. */
-  bookFor(file: TFile | null): Book | null {
-    if (!file) return null;
-    if (file.extension === "md") {
-      const folder = this.app.vault.getAbstractFileByPath(file.path.replace(/\.md$/, ""));
-      if (folder instanceof TFolder) {
-        const b = this.bookFromFolder(folder);
-        if (b) return b;
-      }
-    }
-    let f: TFolder | null = file.parent;
-    while (f && !f.isRoot()) {
-      const b = this.bookFromFolder(f);
-      if (b) return b;
-      f = f.parent;
-    }
-    return null;
-  }
-
-  isChapter(file: TFile | null): boolean {
-    if (!file || file.extension !== "md") return false;
-    const b = this.bookFor(file);
-    return !!b && file.parent?.path === b.chaptersFolder.path;
+  /**
+   * The one question every module asks first: is this a chapter, a book note,
+   * another file of a book, a loose note; which book owns it; is it tracked; its
+   * piece. Takes a file, a folder, a vault path or null. Never throws. A path
+   * that no longer exists is kind "none": for deleted or renamed-away paths,
+   * test containment with core/classify.inBook against a known book.
+   */
+  classify(x: TAbstractFile | string | null): FilePlacement {
+    const path = placementPath(x, normalizePath, (p) => this.app.vault.getAbstractFileByPath(p) !== null);
+    return classify(this.tree, this.settings(), path);
   }
 
   chapters(book: Book): Chapter[] {
@@ -68,16 +56,9 @@ export class BookService {
     }));
   }
 
+  /** Every book in the vault, by the same rule as classify, sorted by title. */
   allBooks(): Book[] {
-    const out: Book[] = [];
-    const name = this.settings().chaptersFolder;
-    for (const f of this.app.vault.getAllLoadedFiles()) {
-      if (f instanceof TFolder && f.name === name && f.parent) {
-        const b = this.bookFromFolder(f.parent);
-        if (b) out.push(b);
-      }
-    }
-    return out.sort((a, b) => a.title.localeCompare(b.title));
+    return listBooks(this.tree, this.settings());
   }
 
   /** Frontmatter of a file from the metadata cache (may be undefined right after creation). */

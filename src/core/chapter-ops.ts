@@ -41,7 +41,7 @@ export class ChapterOps {
    */
   async createChapterAfter(file: TFile, title: string, body?: string): Promise<TFile> {
     return this.queue.run(() => {
-      const book = this.plugin.books.bookFor(file);
+      const book = this.plugin.books.classify(file).book;
       const chapter = book ? this.plugin.books.chapters(book).find((c) => c.file === file) : undefined;
       if (!book || !chapter) throw new ChapterError("notFound", file.basename);
       const s = this.plugin.settings;

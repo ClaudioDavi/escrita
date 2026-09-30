@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   scan, placeholderSpans, sanitizeNote, placeholderText, planInsert, locate,
-  removalRange, resolvePlaceholder, stepIndex, inFolder, isIndexable, orderPaths,
+  removalRange, resolvePlaceholder, stepIndex, isIndexable, orderPaths,
   displayName, parentPath, type IndexedMarker,
 } from "../src/placeholders/logic";
 import { PlaceholderStore } from "../src/placeholders/store";
@@ -412,21 +412,17 @@ describe("stepIndex", () => {
 });
 
 describe("files", () => {
-  it("inFolder matches the folder and its contents only", () => {
-    expect(inFolder("Templates/a.md", "Templates")).toBe(true);
-    expect(inFolder("Templates", "Templates")).toBe(true);
-    expect(inFolder("Templates2/a.md", "Templates")).toBe(false);
-    expect(inFolder("x/Templates/a.md", "Templates")).toBe(false);
-    expect(inFolder("a.md", "")).toBe(true);
-    expect(inFolder("Templates/a.md", "/Templates/")).toBe(true);
-  });
-
   it("isIndexable accepts markdown outside excluded folders", () => {
     expect(isIndexable("Novels/A.md", ["Templates"])).toBe(true);
-    expect(isIndexable("Novels/A.MD", [])).toBe(true);
+    // B4: an exact ".md", as the rebuild (getMarkdownFiles) already required
+    expect(isIndexable("Novels/A.MD", [])).toBe(false);
+    expect(isIndexable("Templates2/a.md", ["Templates"])).toBe(true);
+    expect(isIndexable("Templates/a.md", ["/Templates/"])).toBe(false);
+    expect(isIndexable("Novels/A.md", ["  "])).toBe(true);
     expect(isIndexable("Templates/Chapter.md", ["Templates"])).toBe(false);
     expect(isIndexable("Novels/board.canvas", [])).toBe(false);
     expect(isIndexable("Novels/A.md", [""])).toBe(true);
+    expect(isIndexable("Novels/A.md", ["/", " // "])).toBe(true); // blank after edge slashes, like folderList
   });
 
   it("orderPaths puts chapters first in chapter order, then the rest naturally", () => {

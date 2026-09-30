@@ -265,29 +265,6 @@ export function dayStates(
   });
 }
 
-/** Whether `path` is `folder` itself or inside it. */
-export function inFolder(path: string, folder: string): boolean {
-  const f = folder.replace(/^\/+|\/+$/g, "");
-  if (!f) return true;
-  return path === f || path.startsWith(f + "/");
-}
-
-/**
- * Whether writing in `path` counts: a Markdown file inside one of `track` (or
- * anywhere when `track` is empty), not inside `exclude`, and not the chapter template.
- */
-export function isTrackedPath(path: string, track: string[], exclude: string[], template = ""): boolean {
-  if (!/\.md$/i.test(path)) return false;
-  if (track.length > 0 && !track.some((f) => inFolder(path, f))) return false;
-  if (exclude.some((f) => f.replace(/^\/+|\/+$/g, "") && inFolder(path, f))) return false;
-  const tpl = template.trim().replace(/^\/+/, "");
-  if (tpl) {
-    const withExt = /\.md$/i.test(tpl) ? tpl : `${tpl}.md`;
-    if (path === withExt) return false;
-  }
-  return true;
-}
-
 /**
  * Whether a single change should count as writing: jumps bigger than
  * `ignoreOver` words (pastes, imports, syncs) don't.

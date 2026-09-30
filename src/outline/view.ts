@@ -4,10 +4,11 @@ import {
 } from "obsidian";
 import type EscritaPlugin from "../main";
 import type { Book } from "../core/books";
+import { inBook } from "../core/classify";
 import { beatLine, parseBeats, parsePlaceholders, type BeatMarker } from "../core/markers";
 import { parseStatusColors } from "../settings";
 import { fmt, t } from "../i18n";
-import { readPiece, pieceCount, type Piece, type PieceUnit } from "../core/piece";
+import { pieceCount, type Piece, type PieceUnit } from "../core/piece";
 import { appendBeat, insertBeat, insertFirstBeat, isBlankBody, moveBeatOut, removeBeat, setBeatText } from "./beats-edit";
 import {
   beatLetter, chapterAsBeatText, decideKey, decideNoteKey, dropIndex, moveItem, noteGoal, resolveTarget,
@@ -213,7 +214,7 @@ export class OutlineView extends ItemView {
     if (this.target.mode === "note") return path === this.target.path;
     const b = this.book;
     if (!b) return false;
-    return path === b.note.path || path.startsWith(`${b.folder.path}/`);
+    return inBook(path, b);
   }
 
   private fieldFocused(): boolean {
@@ -226,22 +227,17 @@ export class OutlineView extends ItemView {
   /** Decide what to show (see `resolveTarget`) and remember it. */
   private resolve(): OutlineTarget {
     const { books } = this.plugin;
-    const { vault, workspace } = this.app;
-    const file = workspace.getActiveFile();
+    const file = this.app.workspace.getActiveFile();
+    const p = books.classify(file);
     const active: ActiveFile | null = file
-      ? { path: file.path, markdown: file.extension === "md", bookPath: books.bookFor(file)?.note.path ?? null }
+      ? { path: p.path, markdown: p.markdown, bookPath: p.book?.note.path ?? null }
       : null;
     const r = resolveTarget({
       active,
       lastActive: this.lastActive,
       shown: this.target,
       bookPath: this.bookPath,
-      valid: (mode, path) => {
-        const f = vault.getAbstractFileByPath(path);
-        if (!(f instanceof TFile) || f.extension !== "md") return false;
-        const b = books.bookFor(f);
-        return mode === "book" ? b?.note.path === path : !b;
-      },
+      valid: (mode, path) => books.classify(path).kind === (mode === "book" ? "book-note" : "note"),
     });
     this.lastActive = r.lastActive;
     if (r.target.mode === "book") {
@@ -253,17 +249,13 @@ export class OutlineView extends ItemView {
   }
 
   private bookAt(path: string): Book | null {
-    const note = this.app.vault.getAbstractFileByPath(path);
-    if (!(note instanceof TFile)) return null;
-    const b = this.plugin.books.bookFor(note);
-    return b && b.note.path === note.path ? b : null;
+    const p = this.plugin.books.classify(path);
+    return p.kind === "book-note" ? p.book : null;
   }
 
   private async loadNote(file: TFile): Promise<NoteState> {
-    const s = this.plugin.settings;
     const text = await this.app.vault.cachedRead(file);
-    const fm = this.plugin.books.frontmatter(file);
-    const piece = readPiece(fm, s);
+    const piece = this.plugin.books.classify(file).piece;
     return {
       piece,
       count: pieceCount(text, piece?.unit ?? "words"),

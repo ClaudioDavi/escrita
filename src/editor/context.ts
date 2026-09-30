@@ -1,7 +1,9 @@
 // Pure Markdown context detection for the editor features (no Obsidian imports).
-// A light line scanner: good enough to keep Enter, Enter, Enter and smart
-// typography out of frontmatter, code, math and multi-line comments without
-// depending on the editor's syntax tree.
+// Built on core/markdown (frontmatter, fences, comments) plus a $$ math overlay:
+// enough to keep Enter, Enter, Enter and smart typography out of frontmatter,
+// code, math and multi-line comments without depending on the editor's syntax tree.
+
+import { segment, type Markdown } from "../core/markdown";
 
 export interface BlockState {
   /** inside the YAML frontmatter (including its closing line) */
@@ -10,69 +12,70 @@ export interface BlockState {
   code: boolean;
   /** inside a $$ math block */
   math: boolean;
-  /** inside a multi-line %% comment */
+  /** inside a multi-line comment (%% or a closed <!-- -->) */
   comment: boolean;
 }
 
-const FM_OPEN = /^---[ \t]*$/;
-const FM_CLOSE = /^(?:---|\.\.\.)[ \t]*$/;
-const FENCE = /^[ \t]{0,3}(`{3,}|~{3,})/;
+/** Parity of `$$` at each line start, over prose text only (see mathAt). */
+const mathParity = new WeakMap<Markdown, Uint8Array>();
 
-function count(line: string, token: string): number {
-  let n = 0;
-  for (let i = line.indexOf(token); i !== -1; i = line.indexOf(token, i + token.length)) n++;
-  return n;
+/**
+ * Whether line `at` starts inside a $$ math block. Math is an editor-local overlay,
+ * not part of core/markdown: `$$` is counted in prose only (never in code,
+ * comments or frontmatter), so a stray `$$` can't hide anything else.
+ */
+function mathAt(md: Markdown, at: number): boolean {
+  let parity = mathParity.get(md);
+  if (!parity) {
+    parity = new Uint8Array(md.lineCount + 1);
+    const mask = md.masked();
+    for (let l = 0; l < md.lineCount; l++) {
+      let odd = 0;
+      if (l >= md.bodyLine) {
+        const line = mask.slice(md.lineStart(l), md.lineEnd(l));
+        for (let i = line.indexOf("$$"); i !== -1; i = line.indexOf("$$", i + 2)) odd ^= 1;
+      }
+      parity[l + 1] = parity[l] ^ odd;
+    }
+    mathParity.set(md, parity);
+  }
+  return parity[Math.max(0, Math.min(at, md.lineCount))] === 1;
 }
 
 /**
- * Block context at the start of line `at` (0-based), scanning `lines[0..at)`.
+ * Block context at the start of line `at` (0-based) of a segmented document.
  * An unclosed frontmatter counts as frontmatter all the way down (conservative:
  * we'd rather skip a feature than touch properties).
  */
-export function blockStateAt(lines: readonly string[], at: number): BlockState {
+export function blockStateIn(md: Markdown, at: number): BlockState {
   const st: BlockState = { frontmatter: false, code: false, math: false, comment: false };
-  let i = 0;
-  if (lines.length > 0 && FM_OPEN.test(lines[0])) {
-    if (at === 0) return st;
-    let close = -1;
-    for (let j = 1; j < lines.length; j++) {
-      if (FM_CLOSE.test(lines[j])) { close = j; break; }
-    }
-    if (close === -1 || at <= close) { st.frontmatter = true; return st; }
-    i = close + 1;
+  if (at > 0 && (md.unclosedFrontmatter || at < md.bodyLine)) {
+    st.frontmatter = true;
+    return st;
   }
-  let fence: { ch: string; len: number } | null = null;
-  for (; i < at && i < lines.length; i++) {
-    const line = lines[i];
-    if (fence) {
-      const m = FENCE.exec(line);
-      if (m && m[1][0] === fence.ch && m[1].length >= fence.len && line.trim() === m[1]) fence = null;
-      continue;
-    }
-    if (st.comment) {
-      if (count(line, "%%") % 2 === 1) st.comment = false;
-      continue;
-    }
-    if (st.math) {
-      if (count(line, "$$") % 2 === 1) st.math = false;
-      continue;
-    }
-    const f = FENCE.exec(line);
-    if (f) { fence = { ch: f[1][0], len: f[1].length }; continue; }
-    if (count(line, "%%") % 2 === 1) { st.comment = true; continue; }
-    if (count(line, "$$") % 2 === 1) st.math = true;
-  }
-  st.code = fence !== null;
+  const kind = md.startsIn(at);
+  st.code = kind === "code";
+  st.comment = kind === "comment";
+  st.math = mathAt(md, at);
   return st;
 }
 
-/** First body line: after a closed frontmatter, else 0 (unclosed: everything counts as properties). */
+/** Block context at the start of line `at` (0-based) of a document given as lines. */
+export function blockStateAt(lines: readonly string[], at: number): BlockState {
+  return blockStateIn(segment(lines.join("\n")), at);
+}
+
+/**
+ * The editor's first body line of a segmented document: after a closed
+ * frontmatter, else 0; an unclosed one makes every line properties (lineCount).
+ */
+export function bodyLineIn(md: Markdown): number {
+  return md.unclosedFrontmatter ? md.lineCount : md.bodyLine;
+}
+
+/** bodyLineIn for a document given as lines. */
 export function bodyStart(lines: readonly string[]): number {
-  if (lines.length > 0 && FM_OPEN.test(lines[0])) {
-    for (let i = 1; i < lines.length; i++) if (FM_CLOSE.test(lines[i])) return i + 1;
-    return lines.length;
-  }
-  return 0;
+  return bodyLineIn(segment(lines.join("\n")));
 }
 
 /** True when line `at` is part of the properties block, its opening and closing `---` included. */
@@ -90,7 +93,9 @@ export function inBlock(st: BlockState): boolean {
  * a link or wikilink target, a URL, an HTML tag, or a table row.
  */
 export function inlineProtected(before: string): boolean {
-  // inline code: backtick runs open/close only with equal length
+  // inline code: backtick runs open/close only with equal length. This keeps its
+  // own loop instead of asking core/markdown: it predicts a span that is still
+  // being typed (an open run counts), which is not a parse of finished text.
   let open = 0;
   for (let i = 0; i < before.length;) {
     if (before[i] === "`") {

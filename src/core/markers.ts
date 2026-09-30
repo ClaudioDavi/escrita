@@ -1,16 +1,19 @@
 // Pure parsing of the plugin's in-text markers. All markers are single-line
-// Obsidian comments so they are hidden in Reading view and by most publishers:
+// Obsidian comments so they are hidden in Reading view and by most publishers
+// (text segmented by core/markdown, so markers in code or frontmatter don't count):
 //
 //   %% beat: As cartas na caixa de lata %%      ← a scene beat from the outline
 //   %% XXX: conferir se o porão tem janela %%   ← a placeholder (marker configurable)
 //
 // Scene breaks are a line holding only `---` (or `***`, `* * *`) with blank lines around.
 
+import { segment, type Markdown, type Span } from "./markdown";
+
 export interface BeatMarker {
   /** 0-based line index of the beat comment */
   line: number;
   text: string;
-  /** true when non-blank prose exists after the beat, before the next beat/break/end */
+  /** true when non-blank prose or code exists after the beat, before the next beat/break/end */
   written: boolean;
 }
 
@@ -33,61 +36,133 @@ export function placeholderRegex(marker: string): RegExp {
   return new RegExp(`%%[ \\t]*${escapeRe(marker)}(?![\\p{L}\\p{N}_-]):?[ \\t]*([^\\n]*?)[ \\t]*%%`, "gu");
 }
 
-/** Index of the first body line (after frontmatter), 0-based. */
+/** Index of the first body line (after a closed frontmatter), 0-based. */
 export function bodyStartLine(lines: string[]): number {
-  if (lines[0] !== undefined && /^---[ \t]*$/.test(lines[0])) {
-    for (let i = 1; i < lines.length; i++) if (/^(---|\.\.\.)[ \t]*$/.test(lines[i])) return i + 1;
+  return segment(lines.join("\n")).bodyLine;
+}
+
+// Markers are read through core/markdown: a marker is a closed, single-line %%
+// comment span, so `%% … %%` inside code, frontmatter, an HTML comment or a
+// multi-line comment is not a marker (the same rule as the publish check).
+
+/** Closed single-line %% comments in the body, in order, with their line. */
+function markerComments(md: Markdown): { span: Span; line: number }[] {
+  const out: { span: Span; line: number }[] = [];
+  for (const span of md.spans()) {
+    if (span.kind !== "comment" || span.form !== "%%" || !span.closed) continue;
+    const line = md.lineOf(span.from);
+    if (line < md.bodyLine || md.lineOf(span.to) !== line) continue;
+    out.push({ span, line });
   }
-  return 0;
+  return out;
 }
 
 /**
- * Text of a line that sits outside `%%` comments, given whether the line
- * starts inside a comment that an earlier line opened. Returns the state at
- * the end of the line, so comments that span several lines are skipped.
+ * The spans on line `i` with their text clipped to the line: the idiom for a
+ * line-level question ("what is on line i") over core/markdown's spans, which
+ * are unclipped and may run across lines.
  */
-function outsideComments(line: string, inComment: boolean): { text: string; inComment: boolean } {
-  const parts = line.split("%%");
-  let text = "";
-  for (let k = 0; k < parts.length; k++) {
-    if (k > 0) inComment = !inComment;
-    if (!inComment) text += " " + parts[k];
-  }
-  return { text, inComment };
+function lineSpans(md: Markdown, i: number): { span: Span; text: string }[] {
+  const from = md.lineStart(i);
+  const to = md.lineEnd(i);
+  if (from === to) return [];
+  return md.spans(from, to).map((span) => ({
+    span,
+    text: md.text.slice(Math.max(from, span.from), Math.min(to, span.to)),
+  }));
 }
 
-export function parseBeats(text: string): BeatMarker[] {
-  const lines = text.split(/\r?\n/);
-  const start = bodyStartLine(lines);
-  const beats: BeatMarker[] = [];
-  for (let i = start; i < lines.length; i++) {
-    const m = BEAT_LINE.exec(lines[i]);
-    if (!m) continue;
-    let written = false;
-    let inComment = false;
-    for (let j = i + 1; j < lines.length; j++) {
-      if (!inComment && (BEAT_LINE.test(lines[j]) || SCENE_BREAK.test(lines[j]))) break;
-      const r = outsideComments(lines[j], inComment);
-      inComment = r.inComment;
-      const t = r.text.trim();
-      if (t.length > 0 && !SCENE_BREAK.test(t)) { written = true; break; }
+/**
+ * The beat text when line `i` is a beat line: it starts in prose and holds one
+ * closed %% comment matching BEAT_LINE with only blanks around it. Null otherwise,
+ * so a line of several comments ("%% beat: a %% %% beat: b %%") is no beat.
+ */
+function beatAt(md: Markdown, i: number): string | null {
+  if (i < md.bodyLine || md.startsIn(i) !== "prose") return null;
+  let beat: string | null = null;
+  for (const { span, text } of lineSpans(md, i)) {
+    if (span.kind === "prose") {
+      if (text.trim() !== "") return null;
+    } else if (span.kind === "comment" && span.form === "%%" && span.closed && beat === null
+      && span.from >= md.lineStart(i) && span.to <= md.lineEnd(i)) {
+      const m = BEAT_LINE.exec(text);
+      if (!m) return null;
+      beat = m[1];
+    } else {
+      return null;
     }
-    beats.push({ line: i, text: m[1], written });
+  }
+  return beat;
+}
+
+/**
+ * Whether line `i` is a scene-break line: it starts in prose, holds only prose
+ * (no code, comment or frontmatter on it) and matches SCENE_BREAK. The one
+ * definition for the outline, the publish check and the Enter flow (which adds
+ * its own blank-line-before and body rules on top).
+ */
+export function isSceneBreakLine(md: Markdown, i: number): boolean {
+  if (i < 0 || i >= md.lineCount || md.startsIn(i) !== "prose") return false;
+  const parts = lineSpans(md, i);
+  return parts.length === 1 && parts[0].span.kind === "prose" && SCENE_BREAK.test(parts[0].text);
+}
+
+/** Whether line `i` holds something a reader sees (prose or code) other than a scene break. */
+function hasContent(md: Markdown, i: number): boolean {
+  let t = "";
+  for (const { span, text } of lineSpans(md, i)) if (span.kind === "prose" || span.kind === "code") t += " " + text;
+  t = t.trim();
+  return t.length > 0 && !SCENE_BREAK.test(t);
+}
+
+/** A text, or its segmentation (pass one from `segmentDoc` to reuse it). */
+export type Source = string | Markdown;
+
+function segmented(src: Source): Markdown {
+  return typeof src === "string" ? segment(src) : src;
+}
+
+export function parseBeats(src: Source): BeatMarker[] {
+  if (!(typeof src === "string" ? src : src.text).includes("%%")) return [];
+  const md = segmented(src);
+  const beats: BeatMarker[] = [];
+  let last = -1;
+  for (const { line: i } of markerComments(md)) {
+    if (i === last) continue;
+    last = i;
+    const beat = beatAt(md, i);
+    if (beat === null) continue;
+    let written = false;
+    for (let j = i + 1; j < md.lineCount; j++) {
+      if (beatAt(md, j) !== null || isSceneBreakLine(md, j)) break;
+      if (hasContent(md, j)) { written = true; break; }
+    }
+    beats.push({ line: i, text: beat, written });
   }
   return beats;
 }
 
-export function parsePlaceholders(text: string, marker: string): PlaceholderMarker[] {
+const anchored = new Map<string, RegExp>();
+
+/** placeholderRegex(marker) matching a whole comment, not a search. */
+function wholePlaceholder(marker: string): RegExp {
+  let re = anchored.get(marker);
+  if (!re) {
+    re = new RegExp(`^(?:${placeholderRegex(marker).source})$`, "u");
+    if (anchored.size > 16) anchored.clear();
+    anchored.set(marker, re);
+  }
+  return re;
+}
+
+export function parsePlaceholders(src: Source, marker: string): PlaceholderMarker[] {
+  const text = typeof src === "string" ? src : src.text;
+  if (!text.includes("%%")) return [];
+  const re = wholePlaceholder(marker);
   const out: PlaceholderMarker[] = [];
-  const re = placeholderRegex(marker);
-  let m: RegExpExecArray | null;
-  // Count newlines incrementally so large notes with many markers stay linear.
-  let line = 0;
-  let scanned = 0;
-  while ((m = re.exec(text))) {
-    for (let i = text.indexOf("\n", scanned); i !== -1 && i < m.index; i = text.indexOf("\n", i + 1)) line++;
-    scanned = m.index;
-    out.push({ line, from: m.index, to: m.index + m[0].length, text: m[1] });
+  for (const { span, line } of markerComments(segmented(src))) {
+    const m = re.exec(text.slice(span.from, span.to));
+    if (m) out.push({ line, from: span.from, to: span.to, text: m[1] });
   }
   return out;
 }

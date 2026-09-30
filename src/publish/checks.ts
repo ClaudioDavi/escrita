@@ -1,9 +1,10 @@
 // Pure publish checks (no Obsidian imports). runChecks looks at a note's text
-// and properties and reports what could go wrong on the published page.
+// and properties and reports what isn't ready before it's published.
 // Messages are not translated here: each Check carries an id, a level and
 // variables, and the modal turns them into text with t().
 
-import { bodyStartLine, parseBeats, parsePlaceholders } from "../core/markers";
+import { segment, type Markdown } from "../core/markdown";
+import { parseBeats, parsePlaceholders } from "../core/markers";
 import { countWords } from "../core/wordcount";
 import { pieceCount, pieceProgress, readPiece, type PieceProperties } from "../core/piece";
 
@@ -15,17 +16,13 @@ export type CheckId =
   | "unwrittenBeats"
   | "emptyBody"
   | "recommended"
-  | "overLimit"
-  | "urlTaken"
-  | "urlChanged";
+  | "overLimit";
 
 export interface CheckItem {
-  /** raw text from the note (a placeholder's note, a beat, a path); "" = nothing to show */
+  /** raw text from the note (a placeholder's note, a beat); "" = nothing to show */
   text: string;
   /** 0-based line in the whole file, to jump to */
   line?: number;
-  /** another note this item points to (URL taken) */
-  path?: string;
 }
 
 export interface Check {
@@ -37,120 +34,48 @@ export interface Check {
   vars: Record<string, string | number>;
 }
 
-export interface SlugEntry {
-  path: string;
-  /** the note's address (see slug.noteUrl) */
-  slug: string;
-}
-
 export interface CheckContext {
-  /** the note being checked */
-  path: string;
   placeholderMarker: string;
   /** property names that should be filled in; empty = check off */
   recommendedProperties: readonly string[];
   /** where the target/limit/unit live; omitted = no limit check */
   piece?: PieceProperties;
-  /** this note's address; omitted = no URL checks */
-  url?: string;
-  /** other published notes in the publish folders; omitted = no "URL taken" check */
-  others?: readonly SlugEntry[];
-  /** the address stored at the last publish; omitted = no "URL changed" check */
-  previousUrl?: string;
 }
 
 export const BLOCKER_FIRST: Record<CheckLevel, number> = { blocker: 0, warning: 1, passed: 2 };
-
-// ------------------------------------------------------------------ code ranges
-
-const FENCE_OPEN = /^[ \t]{0,3}(`{3,}|~{3,})/;
-
-/**
- * For each line, whether it is part of a fenced code block (fence lines included),
- * for lines from `start` on. Unclosed fences run to the end, like Markdown.
- */
-export function fencedLines(lines: readonly string[], start = 0): boolean[] {
-  const out = lines.map(() => false);
-  let fence: string | null = null;
-  for (let i = start; i < lines.length; i++) {
-    const line = lines[i];
-    if (fence) {
-      out[i] = true;
-      const m = FENCE_OPEN.exec(line);
-      if (m && m[1][0] === fence[0] && m[1].length >= fence.length && line.slice(m[0].length).trim() === "") fence = null;
-      continue;
-    }
-    const m = FENCE_OPEN.exec(line);
-    // A backtick fence's info string can't contain backticks.
-    if (m && !(m[1][0] === "`" && line.slice(m[0].length).includes("`"))) {
-      fence = m[1];
-      out[i] = true;
-    }
-  }
-  return out;
-}
-
-/** The line with inline code spans blanked out (same length), so `%%` inside them isn't counted. */
-export function blankInlineCode(line: string): string {
-  let out = "";
-  let i = 0;
-  while (i < line.length) {
-    if (line[i] !== "`") { out += line[i++]; continue; }
-    let n = 0;
-    while (line[i + n] === "`") n++;
-    const run = "`".repeat(n);
-    // The closing run has exactly n backticks.
-    let j = i + n;
-    let close = -1;
-    while ((j = line.indexOf(run, j)) !== -1) {
-      if (line[j + n] !== "`" && line[j - 1] !== "`") { close = j; break; }
-      while (line[j] === "`") j++;
-    }
-    if (close === -1) { out += run; i += n; continue; }
-    out += " ".repeat(close + n - i);
-    i = close + n;
-  }
-  return out;
-}
 
 // ------------------------------------------------------------------ comments
 
 /**
  * The 0-based line where an unclosed `%%` comment opens, or null when every
- * comment is closed. `%%` pairs are counted in the body only, outside inline
- * and fenced code, across lines (a comment may span paragraphs).
+ * comment is closed. Comments are read by core/markdown: in the body, outside
+ * inline and fenced code, across lines (a comment may span paragraphs).
+ *
+ * Also a blocker: an odd number of `%%` inside a closed `<!-- -->`. core/markdown
+ * reads them as literal (the first opener wins), but whether Reading view and
+ * other Markdown renderers do is unverified, and if they don't, text after the comment is hidden while
+ * it still counts here. Blocking until the writer pairs them keeps publish safe
+ * under either reading (docs/ARCHITECTURE.md, "Markdown segmentation").
  */
-export function unclosedComment(text: string): number | null {
-  const lines = text.split(/\r?\n/);
-  const start = bodyStartLine(lines);
-  const fenced = fencedLines(lines, start);
-  let open: number | null = null;
-  for (let i = start; i < lines.length; i++) {
-    if (fenced[i]) continue;
-    const line = blankInlineCode(lines[i]);
-    for (let at = line.indexOf("%%"); at !== -1; at = line.indexOf("%%", at + 2)) {
-      open = open === null ? i : null;
+export function unclosedComment(src: string | Markdown): number | null {
+  const md = typeof src === "string" ? segment(src) : src;
+  const spans = md.spans();
+  const last = spans[spans.length - 1];
+  if (last && last.kind === "comment" && last.form === "%%" && !last.closed) return md.lineOf(last.from);
+  for (const s of spans) {
+    if (s.kind !== "comment" || s.form !== "html") continue;
+    let odd = -1;
+    for (let at = md.text.indexOf("%%", s.from); at !== -1 && at + 2 <= s.to; at = md.text.indexOf("%%", at + 2)) {
+      odd = odd === -1 ? at : -1;
     }
+    if (odd !== -1) return md.lineOf(odd);
   }
-  return open;
-}
-
-// ------------------------------------------------------------------ URLs
-
-/** Addresses shared by two or more different notes, each with the notes that share it. */
-export function duplicateSlugs(entries: readonly SlugEntry[]): { slug: string; paths: string[] }[] {
-  const by = new Map<string, string[]>();
-  for (const e of entries) {
-    const paths = by.get(e.slug) ?? [];
-    if (!paths.includes(e.path)) paths.push(e.path);
-    by.set(e.slug, paths);
-  }
-  return [...by.entries()].filter(([, p]) => p.length > 1).map(([slug, paths]) => ({ slug, paths }));
+  return null;
 }
 
 // ------------------------------------------------------------------ status
 
-/** Whether a status property value equals the published value (trimmed, case-insensitive, like the site). */
+/** Whether a status property value equals the published value (trimmed, case-insensitive). */
 export function isPublished(status: unknown, publishedValue: string): boolean {
   if (typeof status !== "string" && typeof status !== "number") return false;
   const want = publishedValue.trim().toLowerCase();
@@ -182,21 +107,15 @@ export function runChecks(
 ): Check[] {
   const fm = frontmatter ?? {};
   const out: Check[] = [];
-  const lines = text.split(/\r?\n/);
-  const start = bodyStartLine(lines);
-  const fenced = fencedLines(lines, start);
-
-  const open = unclosedComment(text);
+  // Every check below reads the same segmentation, so markers in code,
+  // frontmatter or comments are already left out.
+  const md = segment(text);
+  const open = unclosedComment(md);
   out.push(open === null
     ? { id: "unclosedComment", level: "passed", items: [], vars: {} }
     : { id: "unclosedComment", level: "blocker", line: open, items: [], vars: { line: open + 1 } });
 
-  const lineStarts = [0];
-  for (let i = text.indexOf("\n"); i !== -1; i = text.indexOf("\n", i + 1)) lineStarts.push(i + 1);
-  const inInlineCode = (line: number, from: number) =>
-    blankInlineCode(lines[line] ?? "").slice(from - lineStarts[line], from - lineStarts[line] + 2) !== "%%";
-  const placeholders = parsePlaceholders(text, ctx.placeholderMarker)
-    .filter((p) => p.line >= start && !fenced[p.line] && !inInlineCode(p.line, p.from));
+  const placeholders = parsePlaceholders(md, ctx.placeholderMarker);
   out.push({
     id: "placeholders",
     level: placeholders.length ? "blocker" : "passed",
@@ -205,7 +124,7 @@ export function runChecks(
     vars: { n: placeholders.length },
   });
 
-  const beats = parseBeats(text).filter((b) => !b.written && !fenced[b.line]);
+  const beats = parseBeats(md).filter((b) => !b.written);
   out.push({
     id: "unwrittenBeats",
     level: beats.length ? "warning" : "passed",
@@ -236,28 +155,6 @@ export function runChecks(
       level: p.state === "over" ? "warning" : "passed",
       items: [],
       vars: { count, limit: piece.limit, over: p.over, unit: piece.unit },
-    });
-  }
-
-  if (ctx.url !== undefined && ctx.others) {
-    const self: SlugEntry = { path: ctx.path, slug: ctx.url };
-    const taken = duplicateSlugs([self, ...ctx.others.filter((o) => o.path !== ctx.path)])
-      .find((d) => d.slug === ctx.url);
-    const paths = taken ? taken.paths.filter((p) => p !== ctx.path) : [];
-    out.push({
-      id: "urlTaken",
-      level: paths.length ? "blocker" : "passed",
-      items: paths.map((p) => ({ text: p, path: p })),
-      vars: { url: ctx.url, n: paths.length },
-    });
-  }
-
-  if (ctx.url !== undefined && ctx.previousUrl !== undefined && ctx.previousUrl !== "") {
-    out.push({
-      id: "urlChanged",
-      level: ctx.previousUrl === ctx.url ? "passed" : "warning",
-      items: [],
-      vars: { from: ctx.previousUrl, to: ctx.url },
     });
   }
 

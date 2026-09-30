@@ -2,6 +2,7 @@
 // Everything works on basenames (file names without ".md").
 
 import { numberedName, type RenamePlan } from "./book";
+import { segment } from "./markdown";
 
 const PREFIX = /^(\d+)(?:[ \t._-]+|$)/;
 
@@ -154,7 +155,7 @@ export function renderTemplate(template: string, vars: TemplateVars): string {
 }
 
 export function hasFrontmatter(text: string): boolean {
-  return /^---[ \t]*\r?\n(?:[\s\S]*?\r?\n)?(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/.test(text);
+  return segment(text).bodyLine > 0;
 }
 
 function yamlKey(k: string): string {

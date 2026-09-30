@@ -4,7 +4,8 @@ import { EditorView, keymap } from "@codemirror/view";
 import type EscritaPlugin from "../main";
 import type { EscritaModule } from "../data";
 import { t } from "../i18n";
-import { blockStateAt, inBlock, inProperties } from "./context";
+import { segmentDoc } from "../core/markdown";
+import { blockStateIn, inBlock, inProperties } from "./context";
 import { breakEdit, decideEnter, trailingBreakKeep } from "./enter-flow";
 import { typographyFor } from "./typography";
 import { sceneBreakEdit } from "./scene-break";
@@ -121,17 +122,18 @@ export class EditorModule implements EscritaModule {
     if (!file) return false;
     // Chapters get breaks and new chapters; other tracked writing (a conto,
     // an essay) gets scene breaks only.
-    const chapter = this.plugin.books.isChapter(file);
-    if (!chapter && !this.plugin.goals.tracked(file)) return false;
+    const p = this.plugin.books.classify(file);
+    const chapter = p.kind === "chapter";
+    if (!chapter && !p.tracked) return false;
 
-    const lines = state.doc.toJSON();
     const cursorLine = state.doc.lineAt(sel.main.head).number - 1;
-    const decision = decideEnter(lines, cursorLine, this.plugin.settings.paragraphStyle);
+    // segmented once per document version (shared with the other editor features)
+    const decision = decideEnter(segmentDoc(state.doc), cursorLine, this.plugin.settings.paragraphStyle);
     if (decision === "normal" || (decision === "chapter" && !chapter)) return false;
     if (this.creatingChapter) return true; // swallow repeats while the chapter is being made
 
     if (decision === "break") {
-      const edit = breakEdit(lines, cursorLine);
+      const edit = breakEdit(state.doc.toJSON(), cursorLine);
       const from = state.doc.line(edit.fromLine + 1).from;
       const to = state.doc.line(edit.toLine + 1).to;
       view.dispatch({
@@ -151,7 +153,7 @@ export class EditorModule implements EscritaModule {
   }
 
   private async nextChapter(view: EditorView, file: TFile, leaf: WorkspaceLeaf): Promise<void> {
-    if (!this.plugin.books.isChapter(file)) return;
+    if (this.plugin.books.classify(file).kind !== "chapter") return;
     this.creatingChapter = true;
     try {
       // create first: if that fails, the current chapter is left untouched
@@ -196,7 +198,7 @@ export class EditorModule implements EscritaModule {
   private async removeTrailingBreak(view: EditorView, file: TFile): Promise<void> {
     if (fileOf(view.state)?.path === file.path) {
       const doc = view.state.doc;
-      const keep = trailingBreakKeep(doc.toJSON());
+      const keep = trailingBreakKeep(segmentDoc(doc));
       if (keep === null) return;
       const from = keep > 0 ? doc.line(keep).to : 0;
       view.dispatch({ changes: { from, to: doc.length, insert: keep > 0 ? "\n" : "" }, userEvent: "delete" });
@@ -215,9 +217,9 @@ export class EditorModule implements EscritaModule {
 
   private typographyApplies(state: EditorState): boolean {
     const s = this.plugin.settings;
-    const file = fileOf(state);
-    if (!file || file.extension !== "md") return false;
-    return s.typographyScope === "all" || this.plugin.books.isChapter(file);
+    // the scope is the editor's policy; what the file is comes from the classifier
+    const p = this.plugin.books.classify(fileOf(state));
+    return p.markdown && (s.typographyScope === "all" || p.kind === "chapter");
   }
 
   private onInput(view: EditorView, from: number, to: number, text: string): boolean {
@@ -230,9 +232,8 @@ export class EditorModule implements EscritaModule {
     // cheap line-level decision first; the file and block checks only run when it fires
     const r = typographyFor(before, text, { quoteStyle: s.quoteStyle, dialogueDash: s.dialogueDash });
     if (!r || !this.typographyApplies(state)) return false;
-    const above: string[] = [];
-    for (const l of state.doc.iterLines(1, line.number)) above.push(l);
-    if (inBlock(blockStateAt(above, above.length))) return false;
+    // segmented once per document version (shared with the other editor features)
+    if (inBlock(blockStateIn(segmentDoc(state.doc), line.number - 1))) return false;
 
     const start = from - r.deleteBefore;
     view.dispatch({
