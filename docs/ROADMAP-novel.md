@@ -1,6 +1,6 @@
 # Roadmap: novel writing (later)
 
-None of these is scheduled yet; versions are decided in [ROADMAP.md](ROADMAP.md).
+Versions are decided in [ROADMAP.md](ROADMAP.md); the table below mirrors them.
 
 Features for when the author starts a novel. They build on the book convention
 already in place (a book note next to a folder with a chapters subfolder; see
@@ -22,16 +22,16 @@ mobile-safe manuscript tool with first-class Portuguese.
 
 | # | Feature | Tier | Effort |
 |---|---|---|---|
-| 1 | POV and status in the outline | Quick win | S |
-| 2 | Per-chapter targets | Quick win | S |
+| 1 | POV and status in the outline (v0.6) | Quick win | S |
+| 2 | Per-chapter targets (v0.6) | Quick win | S |
 | 3 | ~~Dialogue focus~~ (moved to short fiction, feature 7, v0.3) | — | — |
-| 4 | Book-wide publish check and serial dashboard | Quick win | S |
-| 5 | Longform importer | Quick win | S–M |
-| 6 | Companion-plugin guide | Quick win | S |
-| 7 | Book compile: Markdown → DOCX → EPUB | Big bet | L |
-| 8 | "Read the book" view | Big bet | M |
-| 9 | Codex-lite: names, mentions, presence charts | Big bet | L |
-| 10 | Book-wide snapshots and revision reports | Big bet | M |
+| 4 | Book-wide publish check and serial dashboard (v0.9) | Quick win | S |
+| 5 | Longform importer (after 1.0) | Quick win | S–M |
+| 6 | Companion-plugin guide (v0.7) | Quick win | S |
+| 7 | Book compile: Markdown and DOCX (v0.7), EPUB (v0.9) | Big bet | L |
+| 8 | "Read the book" view (v0.9) | Big bet | M |
+| 9 | ~~Codex-lite~~ (replaced by the universe's "appears in", v0.6) | — | — |
+| 10 | Book-wide snapshots and revision reports (after 1.0) | Big bet | M |
 
 Effort: S a few days, M one to two weeks, L several weeks.
 
@@ -42,7 +42,7 @@ planned in [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md), feature 6 (v0.3
 with contos and essays. Snapshots of a single chapter come with feature 4 (v0.3); feature 10
 below extends them to the whole book.
 
-## 1. POV and status in the outline
+## 1. POV and status in the outline (v0.6)
 
 The design already shows status dots; "color by POV" was left out of v0.1.
 
@@ -53,7 +53,7 @@ The design already shows status dots; "color by POV" was left out of v0.1.
 - Filter by status and POV (chips in the header).
 - Header summary: "3 rascunho · 2 revisão · 4 publicado".
 
-## 2. Per-chapter targets
+## 2. Per-chapter targets (v0.6)
 
 Reuse the `target` / `limit` / `unit` properties from the short-fiction roadmap on
 chapters. The outline shows a small bar per chapter when a target exists. A book-level
@@ -65,20 +65,20 @@ applies when a chapter has none.
 Moved to [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md), feature 7, and scheduled
 for v0.3: it works on any note, so contos get it too.
 
-## 4. Book-wide publish check and serial dashboard
+## 4. Book-wide publish check and serial dashboard (v0.9)
 
-Extends feature 1 of the short-fiction roadmap to chapters, which the author publishes
-one at a time:
+Extends feature 1 of the short-fiction roadmap to chapters, for writers who release a
+book one chapter at a time (a newsletter, a serial platform, a blog):
 
 - "Publish next chapter": the first chapter in order that isn't published, through the
   same check modal.
 - The outline header shows the next chapter to publish and the date of the last one.
 - Check that published chapters are contiguous (no gap: chapter 5 published while 4
-  isn't) — a warning, since the site orders by file name.
-- Book-level checks: two chapters with the same URL (the site fails the build on this).
-- Scheduling: a future `date` is allowed; the site already decides what to show.
+  isn't) — a warning, since readers would skip a chapter.
+- Scheduling: a future `date` is allowed; Escrita only records it.
+- Nothing about URLs or a particular site (ARCHITECTURE.md, "Standalone").
 
-## 5. Longform importer
+## 5. Longform importer (after 1.0)
 
 Longform stores a project in the index note's frontmatter (`longform:` with `format`,
 `title`, `draftTitle`, `scenes` as a nested list, `sceneFolder`, `ignoredFiles`).
@@ -89,7 +89,7 @@ Longform stores a project in the index note's frontmatter (`longform:` with `for
   (copy by default; move only on explicit choice).
 - Never delete the Longform files. Tests on real Longform frontmatter samples.
 
-## 6. Companion-plugin guide
+## 6. Companion-plugin guide (v0.7)
 
 A settings section and README page recommending healthy plugins instead of rebuilding
 them: LanguageTool (the only real pt-BR grammar checker; can point to a self-hosted
@@ -97,9 +97,14 @@ server), Typewriter Mode, Continuous Mode, Enhancing Export (print PDF), Chronos
 Calendarium (timelines), Excalidraw and Canvas (boards), Obsidian Git (history).
 Re-check maintenance status before each release; list the date checked.
 
-## 7. Book compile
+## 7. Book compile (stages 1–2 in v0.7, stage 3 in v0.9)
 
 The step Scrivener users miss most, and Longform's oldest open requests.
+
+**Single notes too.** The same export works on one note outside a book: a conto sent to
+a magazine or contest needs standard manuscript format as much as a novel does. For a
+single note, "choose chapters" is skipped, there are no chapter headings, and the title
+page uses the note's title and count.
 
 **Stage 1 — Markdown manuscript.** Command "Compile the book": choose chapters
 (all, a range, or checked), then write one Markdown file with chapter headings
@@ -124,14 +129,18 @@ may use Java; the plugin itself stays offline).
 
 Print-ready PDF is out of scope: recommend Enhancing Export or Vellum/Atticus.
 
-## 8. "Read the book" view
+## 8. "Read the book" view (v0.9)
 
 A read-only view of all chapters in order, rendered with Obsidian's Markdown renderer,
 with chapter headings, scene breaks, and markers hidden; remembers the reading position;
 clicking a paragraph opens that chapter at that line for editing. Editing stitched
 chapters (true Scrivenings) is XL and fragile; recommend Continuous Mode for that.
 
-## 9. Codex-lite
+## 9. Codex-lite (replaced)
+
+Replaced by [ROADMAP-universe.md](ROADMAP-universe.md) 1.2 "Appears in" (v0.6), which
+covers the same ground at universe scope and also works per book. Kept below for
+reference.
 
 Novelcrafter's Codex without AI, and with Portuguese-aware matching.
 
@@ -150,7 +159,7 @@ Novelcrafter's Codex without AI, and with Portuguese-aware matching.
   chapters give computed ages per chapter, and a warning when a character appears in a
   chapter dated after a `died` property.
 
-## 10. Book-wide snapshots and revision reports
+## 10. Book-wide snapshots and revision reports (after 1.0)
 
 - "Snapshot the whole book" (one named snapshot across all chapters) and a
   "what changed since snapshot X" table: words added/removed per chapter.
@@ -161,9 +170,9 @@ Novelcrafter's Codex without AI, and with Portuguese-aware matching.
 
 ## Out of scope for the plugin
 
-- **Beta readers**: belongs on the author's site (private chapter links, inline
-  comments, how far each reader got), feeding back into the vault as notes. The site
-  would also need to strip CriticMarkup if comments are ever kept in chapters.
+- **Beta readers**: needs hosting (private chapter links, inline comments, how far each
+  reader got), which a local plugin can't provide. Readers' notes can come back into
+  the vault as ordinary notes.
 - **Comments / suggestion mode**: Commentator exists (beta); don't build a competing editor.
 - **Maps, fantasy calendars, relationship graphs, plot-template libraries**: other
   plugins do these, and they matter little for literary fiction.

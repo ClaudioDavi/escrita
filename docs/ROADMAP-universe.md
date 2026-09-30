@@ -6,7 +6,8 @@ events carry over between works. Today characters and places live inside one nov
 folder (`Romances/<Book>/Personagens/`), so contos can't share them. This roadmap
 makes the **universe** the container and every work a part of it.
 
-Not scheduled yet; versions are decided in [ROADMAP.md](ROADMAP.md).
+Versions are decided in [ROADMAP.md](ROADMAP.md): 1.1, 1.3 and 1.5 in v0.5; 1.2 and 1.4 in
+v0.6; phase 2 in v0.8, which completes the universe for v1.0.
 
 It is independent of [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md) and
 [ROADMAP-novel.md](ROADMAP-novel.md); where features overlap (character tracking in the
@@ -59,7 +60,6 @@ The author's vault uses **Universe** mode.
 |---|---|---|
 | 1 | Universe container and entry types · "Appears in" across works · Create entry from selection · Names into spellcheck and revision lens · Open threads | M–L |
 | 2 | Story timeline · Facts that change over time · Continuity checks · Canon status | L |
-| 3 | Site integration: "Also in this universe", story-order reading, public wiki | L (mostly on the site) |
 
 Phase 1 is useful as soon as contos start sharing characters, so it can run alongside
 the short-fiction roadmap.
@@ -68,7 +68,7 @@ the short-fiction roadmap.
 
 ## Phase 1
 
-### 1.1 Universe container and entry types
+### 1.1 Universe container and entry types (v0.5)
 
 **Convention** (all names configurable):
 
@@ -98,12 +98,12 @@ Romances/A Casa.md              ← a book: universe: "[[Universo]]", form: roma
 - **Migration command** "Move this book's characters and places to the universe":
   moves `Romances/<Book>/Personagens/*` and `Lugares/*` into the universe folders with
   `fileManager.renameFile` (links update), after a preview. Name clashes are listed, never
-  overwritten. The site ignores these folders, so publishing is unaffected.
+  overwritten.
 - **Universe panel** (`ItemView`, type `escrita-universe`): entries grouped by type,
   searchable, each with its type, aliases and number of works it appears in; a works tab
   listing all works in the universe by form and status.
 
-### 1.2 "Appears in" across works
+### 1.2 "Appears in" across works (v0.6)
 
 Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
 
@@ -111,9 +111,10 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
   of every work in the universe (`core/wordcount.proseOnly` text, so comments and
   frontmatter don't count). Case-insensitive by default; per-entry `caseSensitive`.
 - **Portuguese inflection**: plural, feminine, diminutive and augmentative forms
-  (*Maria / Mariazinha*, *menino / meninos / menina*) through the stemmer built for the
-  revision lens (short-fiction roadmap, feature 5, scheduled for v0.4), or a small shared one in `core/` if
-  this ships first. English: plural and possessive (`Teo's`).
+  (*Maria / Mariazinha*, *menino / meninos / menina*) through the Portuguese stemmer in
+  `core/stem/` (built in v0.4 with the revision lens, short-fiction roadmap feature 5).
+  English: plural and possessive (`Teo's`) through the English stemmer from the same
+  module.
 - **Ignore list** per entry (`ignore` property) for names that are also common words
   (a character named "Rosa", a place called "Porto").
 - **Explicit links count too**: a `[[Teo]]` link is a mention even if the text differs.
@@ -128,7 +129,7 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
   - Optional subtle underline of recognized names in the editor (setting, off by default).
   - "Unlinked mentions" list per work, so the author can add links if wanted.
 
-### 1.3 Create entry from selection
+### 1.3 Create entry from selection (v0.5)
 
 - Editor menu and command "Create universe entry from selection": pick the type, then
   create the note in the type's folder from its template (setting per type; the vault
@@ -137,7 +138,7 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
 - Options in the same modal: link this occurrence, and add another alias.
 - If an entry with that name or alias exists, offer to open it instead.
 
-### 1.4 Names into spellcheck and the revision lens
+### 1.4 Names into spellcheck and the revision lens (v0.6)
 
 - Every entry name and alias in the universe is added to the editor's spellcheck
   dictionary so invented names stop being flagged. Obsidian doesn't expose a dictionary
@@ -146,12 +147,12 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
 - The revision lens's name-variant rule reads names from the universe instead of (or in
   addition to) its word-list note: *Marianna* when the entry is *Mariana*.
 
-### 1.5 Open threads
+### 1.5 Open threads (v0.5)
 
 Hooks planted in one story for future stories.
 
 - Syntax: `%% thread: quem escreveu as cartas? %%` (keyword configurable), a single-line
-  comment like beats and placeholders, so the site strips it.
+  comment like beats and placeholders, so it never shows in Reading view or an export.
 - Parser in `core/markers.ts` next to beats and placeholders; tests.
 - Threads panel (a tab in the universe panel): all open threads in the universe, grouped
   by work, with the text and date first seen; click to jump.
@@ -161,7 +162,7 @@ Hooks planted in one story for future stories.
 
 ---
 
-## Phase 2
+## Phase 2 (v0.8)
 
 ### 2.1 Story timeline
 
@@ -171,7 +172,7 @@ Hooks planted in one story for future stories.
 - Timeline view: all dated works and events in story order, with publication order as a
   second column; filter by character or place (uses "appears in").
 - Reading-order suggestion: "read in story order" list for the universe, exportable as a
-  note (and usable by the site in phase 3).
+  note.
 
 ### 2.2 Facts that change over time
 
@@ -208,22 +209,12 @@ Hooks planted in one story for future stories.
 
 ---
 
-## Phase 3 — the site (`~/projects/website`, Astro)
+## Not in the plugin: website integration
 
-These are changes to the site, driven by the vault data; the plugin only provides
-properties and conventions.
-
-- **"Also in this universe"** at the end of a published work: other published works that
-  share characters or places (the site can compute mentions itself from names and
-  aliases, or read a small index file the plugin writes on publish, e.g.
-  `Universo/.escrita-index.json`, which must only list published works).
-- **Story-order reading**: a universe page listing published works in story order next to
-  newest-first.
-- **Public wiki (optional)**: character and place pages built only from what readers can
-  already know — an entry is public when it has `public: true`, and it shows only facts
-  and appearances from published works (no unpublished works, no sections dated after the
-  latest published story's `when`). Spoiler safety is the main risk: default off, and a
-  preview in `npm run dev` before enabling.
+Escrita is standalone (ARCHITECTURE.md, "Standalone"), so it writes nothing for a
+website. A writer who publishes online can build "also in this universe" links,
+story-order reading pages or a public wiki on their own site, reading the vault's
+`universe`, `type`, `aliases`, `when` and status properties directly.
 
 ---
 

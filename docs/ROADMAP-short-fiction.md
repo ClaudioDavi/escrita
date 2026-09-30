@@ -4,7 +4,7 @@ Which version each feature ships in is decided in [ROADMAP.md](ROADMAP.md); the
 table below mirrors it.
 
 Plan for the next six months of the author's writing: **contos (short stories) and
-textos (essays, chronicles)**, one note each, published whole to a personal site.
+textos (essays, chronicles)**, one note each, finished and published whole.
 Novel features wait for [ROADMAP-novel.md](ROADMAP-novel.md).
 
 Read [ARCHITECTURE.md](ARCHITECTURE.md) first. Every convention there still applies:
@@ -21,6 +21,9 @@ Background research: `reports/Obsidian fiction writing gaps.md` (local only, not
 - **Generic first.** The author's vault is the first user, not the only one. Every
   property name, status value, folder and word list is a setting, with English
   defaults and the author's values set in the author's own `data.json`.
+- **Standalone.** Escrita works for any writer, whether they publish to a website, send
+  work to magazines, or never publish at all. No feature assumes a website: no URLs,
+  slugs, site build rules or files written for a site. See ARCHITECTURE.md, "Standalone".
 - **Design first.** Before building each feature's UI, add mockups to the design canvas
   (https://claude.ai/artifact/DGww2xWiadXRuWqVv2jFv6) and get them approved. The existing
   boards set the look: Obsidian dark theme, Source Serif 4 prose, IBM Plex Sans UI, accent
@@ -31,14 +34,9 @@ Background research: `reports/Obsidian fiction writing gaps.md` (local only, not
 
 - Vault: `~/projects/website/escrita/`. Contos in `Contos/`, essays in `Textos/`, one note each.
 - Properties: `status` (`ideia`, `rascunho`, `revisão`, `pronto`, `publicado`), `date`
-  (publication date), `description` (one line for the index and RSS), optional `slug`
-  and `title`.
-- The site (`~/projects/website`) publishes a note when `status` is `publicado`; it
-  **fails the build** when a published note has no `date`, and when two notes resolve
-  to the same URL. The URL is the file name slugified (see `src/lib/slug.ts` there:
-  NFD, strip diacritics, lowercase, non-alphanumerics → `-`), unless `slug` is set.
-  `%% … %%` comments are stripped; an unclosed `%%` hides everything after it.
-- Obsidian Git auto-commits and pushes; the site deploys from `main`.
+  (publication date), `description` (one line).
+- The author happens to publish to a personal site that reads the vault; that's the
+  site's business, and nothing in Escrita depends on it.
 
 ## Versions
 
@@ -68,7 +66,7 @@ Sections keep their original numbers so references from the other roadmaps stay 
 
 **Why.** Every conto and texto is published whole, so publishing happens weekly. Today
 it is a manual property edit, and the mistakes it can make are silent (a leftover
-`XXX`, an unclosed `%%`) or break the site build (no `date`, duplicate URL).
+`XXX`, an unclosed `%%` that hides the rest of the text).
 
 **What it does.** A command, "Publish this note", plus a button in the status bar menu
 or file menu. It runs checks on the active note and shows the result in a modal:
@@ -81,39 +79,30 @@ or file menu. It runs checks on the active note and shows the result in a modal:
 | Empty body | Blocker | `countWords` = 0. |
 | Missing `description` | Warning | Property names from settings; empty list of "recommended properties" disables it. |
 | Over the piece's limit | Warning | From feature 2 (e.g. contest character limit). |
-| URL taken | Blocker | Another published note in the publish folders has the same slug. |
-| URL changed since last publish | Warning | See "Stable URLs" below. |
 
 Blockers disable the "Publish" button but can be overridden with a checkbox
-("Publish anyway"), because the plugin can't know every site's rules.
+("Publish anyway"), because the plugin can't know every case.
 
 **Publishing** sets `status` to the configured published value and `date` to today
 (or keeps an existing date; a date picker in the modal allows scheduling), via
-`processFrontMatter`, in one operation. It then shows a Notice. It never commits or
-pushes; Obsidian Git or the user does that.
+`processFrontMatter`, in one operation. It then shows a Notice. It never commits,
+pushes or uploads anything.
 
 **Unpublish.** A command "Unpublish this note" sets `status` back to a configured value
 (default: the value it had before publishing, stored in plugin data; fallback `ready`).
 
-**Stable URLs.** When a note whose status is the published value is renamed, offer
-(Notice with a button, or a modal) to add `slug: <old slug>` so links to it keep
-working. The slug function must match the site's; make it a pure function in
-`src/publish/slug.ts` with the same algorithm as the site's `slugify`, tested with
-accented Portuguese titles.
+**Removed after 0.2.0:** the "URL taken" and "URL changed" checks, "keep the old URL on
+rename", and the publish folders and slug property settings. They copied one website's
+URL rules, which breaks the standalone rule.
 
 **Settings** (new section "Publishing"):
 - Status property (reuse `statusProperty`), published value (default `published`;
   author: `publicado`), unpublished value (default `ready`; author: `pronto`).
 - Date property (default `date`).
 - Recommended properties (default `description`).
-- Publish folders, one per line (default empty = checks for duplicate URLs are off;
-  author: `Contos`, `Textos`). Chapters of books count too when their folder matches.
-- Slug property (default `slug`), and "Offer to keep the URL when renaming published
-  notes" (default on).
 
 **Pure, tested** (`src/publish/checks.ts`): `runChecks(text, frontmatter, context) →
-Check[]` with the table above; `unclosedComment(text)` returning the opening line;
-`slugify(name)`; `duplicateSlugs(entries)`.
+Check[]` with the table above; `unclosedComment(text)` returning the opening line.
 
 **UI.** Modal: title "Publish “O farol”", the list of checks with an icon per level
 (blocker, warning, passed), clickable items that jump to the line, the date field, and
@@ -205,6 +194,10 @@ folders). An index file per note (`index.json`) holds name, date, word count, an
 note's path at the time. On note rename, move its snapshot folder (listen to
 `vault.on("rename")`).
 
+**Open question: sync.** Obsidian Sync and some other sync tools skip dot folders, so
+snapshots in `.escrita/snapshots` wouldn't reach other devices for those users (git is
+fine). Decide before building: a visible default folder, or a warning in the setting.
+
 **Taking snapshots.**
 - Command "Take a snapshot" (asks for an optional name; default "Snapshot").
 - Automatically before "Publish this note" (feature 1), named "Before publishing".
@@ -266,11 +259,18 @@ steps through its matches. It only suggests; it never changes text.
 | Name variants | Words within edit distance 1–2 of a name in the name list (not the name itself) | same |
 | Long sentences | Sentences over N words (default 45) | same |
 
-**Stemming.** A small Portuguese suffix-stripping stemmer (RSLP-style: plural, feminine,
-augmentative/diminutive, adverb, noun and verb suffix steps) in pure TypeScript, so
-*olhar / olhou / olhando / olhares* share a stem. English uses a light Porter-style
-stemmer. Write both as pure modules with tests on real word lists; accept imperfection,
-prefer missing a match over a wrong one.
+**Stemming.** Two stemmers ship in this version, both in `core/stem/` so the universe
+(U 1.2, 1.4) can reuse them without depending on the revision lens:
+
+- **Portuguese**: a small suffix-stripping stemmer (RSLP-style: plural, feminine,
+  augmentative/diminutive, adverb, noun and verb suffix steps), so
+  *olhar / olhou / olhando / olhares* share a stem, and *Mariazinha* shares a stem with *Maria*.
+- **English**: a light Porter-style stemmer (plural, possessive, `-ed`, `-ing`, `-ly`,
+  common noun and verb suffixes), so *walk / walks / walked / walking* share a stem.
+
+One interface for both, `stem(word, lang)`, picked by the revision language setting.
+Pure TypeScript, tests on real word lists in each language; accept imperfection, prefer
+missing a match over a wrong one.
 
 **User lists in the vault.** One note, path in settings (author: `Modelos/Revisão.md`),
 with headed sections the plugin reads:
@@ -297,7 +297,7 @@ edits elsewhere in the note.
 
 **Pure, tested:** tokenizer (Portuguese letters, hyphenated words, apostrophes),
 sentence splitter (handles `…`, `—` dialogue, abbreviations like `Sr.` and `Dra.`),
-stemmers, each rule as a function `(text, options) → Match[]`, per-1,000 rate.
+Portuguese and English stemmers, each rule as a function `(text, options) → Match[]`, per-1,000 rate.
 
 **Done when** the rules produce stable, explainable matches on a sample conto (keep one
 as a fixture in `tests/fixtures/`), the editor stays responsive on a 10,000-word note
@@ -390,8 +390,6 @@ speech, toggling off restores the view, and a 10,000-word note stays responsive.
 | | Unpublished value | `ready` | `pronto` |
 | | Date property | `date` | `date` |
 | | Recommended properties | `description` | `description` |
-| | Publish folders | (empty) | `Contos`, `Textos` |
-| | Slug property / keep URLs on rename | `slug` / on | same |
 | Goals | Target, limit, unit properties | `target`, `limit`, `unit` | same |
 | | Weekdays off / dates off | none | (author's choice) |
 | Snapshots | Folder | `.escrita/snapshots` | same |

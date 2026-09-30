@@ -8,6 +8,10 @@ feature live in the three topic roadmaps:
 - [ROADMAP-novel.md](ROADMAP-novel.md): features that need a book.
 - [ROADMAP-universe.md](ROADMAP-universe.md): a shared world across works (opt-in).
 
+Every feature follows the rules in [ARCHITECTURE.md](ARCHITECTURE.md), including
+**standalone**: Escrita is for any writer, whether or not they publish to a website,
+so nothing here assumes one.
+
 Feature references below use the short names **SF** (short fiction), **N** (novel) and
 **U** (universe), followed by the section number in that file.
 
@@ -37,23 +41,36 @@ Suggested order: 1 and 2 first (small, independent), then 3.
 
 | Feature | Ref | Effort | Note |
 |---|---|---|---|
-| Revision lens (pt-BR and English rules) | SF 5 | M–L | Largest item: stemmer, six rules, performance on long notes. Design the stemmer with U 1.2 in mind, which reuses it for name matching. |
+| Portuguese and English stemmers in `core/stem/` | SF 5 | M | Shared: the revision lens uses them here, and the universe reuses them for name matching (U 1.2, 1.4: *Maria / Mariazinha*, *Teo's*). |
+| Revision lens (pt-BR and English rules) | SF 5 | M | Six rules, per-1,000 rates, performance on long notes. |
 
-## Not yet scheduled
+## 0.5 to 1.0
 
-Pick from here when planning 0.5 and later.
+1.0 is the full release: **the shared universe and manuscript export**. The versions
+before it build toward those two, contos first (the author's next months are short
+fiction), then the universe, then book features.
 
-| Feature | Ref | Effort | Depends on |
+| Version | Contents | Ref | Effort | Theme |
+|---|---|---|---|---|
+| 0.5 | Universe modes and container, migration command, universe panel · Create entry from selection · Open threads (work without a universe too) | U 1.1, U 1.3, U 1.5 | M | Universe foundations |
+| 0.6 | "Appears in" · Names into spellcheck and the revision lens · POV and status in the outline (POV can link to a character entry) · Per-chapter targets | U 1.2, U 1.4, N 1, N 2 | M + S + S + S | Characters across works |
+| 0.7 | Export stages 1–2: Markdown manuscript and DOCX (Shunn and pt-BR presets), for a single note and for a book · Companion-plugin guide | N 7, N 6 | M–L + S | Submitting work |
+| 0.8 | Universe phase 2: timeline, facts over time, continuity checks, canon | U 2.1–2.4 | L | A consistent world |
+| 0.9 | Export stage 3: EPUB 3, validated by EPUBCheck in CI · Book-wide publish check and serial dashboard · "Read the book" view | N 7, N 4, N 8 | M + S + M | Books |
+| 1.0 | Stabilization: mobile pass, docs in English and pt-BR, migrations tested on the author's vault, community plugin submission | — | M | Full release |
+
+Notes:
+
+- U 1.1, 1.3 and 1.5 don't need the stemmers, so they come before U 1.2 and 1.4.
+- Export ships DOCX first (0.7): a conto in standard manuscript format is what contests
+  and magazines ask for. EPUB matters mostly for a finished book (0.9).
+- Per-chapter targets (N 2) is small: chapters already take `target` / `limit` since 0.2;
+  what's left is the bar in the outline and a book default.
+- The universe's "appears in" (U 1.2) replaces Codex-lite (N 9), which is dropped.
+
+## After 1.0
+
+| Feature | Ref | Effort | Note |
 |---|---|---|---|
-| POV and status in the outline | N 1 | S | |
-| Per-chapter targets (bar in the outline, book default) | N 2 | S | SF 2 (shipped) |
-| Book-wide publish check and serial dashboard | N 4 | S | SF 1 (shipped) |
-| Longform importer | N 5 | S–M | |
-| Companion-plugin guide | N 6 | S | |
-| Book compile: Markdown → DOCX → EPUB | N 7 | L | |
-| "Read the book" view | N 8 | M | |
-| Codex-lite | N 9 | L | Superseded by U 1.2 if the universe ships first |
-| Book-wide snapshots and revision reports | N 10 | M | SF 4, SF 5 |
-| Universe phase 1: container, appears in, entry from selection, names, open threads | U 1.1–1.5 | M–L | SF 5 stemmer (for 1.2, 1.4) |
-| Universe phase 2: timeline, facts over time, continuity, canon | U 2.1–2.4 | L | U phase 1 |
-| Universe phase 3: site integration | U phase 3 | L | Mostly on the site |
+| Book-wide snapshots and revision reports | N 10 | M | Builds on SF 4, SF 5 |
+| Longform importer | N 5 | S–M | Not wanted for 1.0 |
