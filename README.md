@@ -35,7 +35,7 @@ Choose weekdays off and specific dates off. A day off never breaks your streak, 
 
 ### Publish check
 
-**Publish this note** checks the active note before you publish it: an unclosed `%%` comment, placeholders left, unwritten beats, an empty body, missing recommended properties such as `description`, a length over the piece's limit, and a URL that another published note already uses or that changed since the last publish. Blockers can be overridden. Publishing sets the status property to your published value and the date property to today (or a date you choose). **Unpublish this note** puts the earlier status back. Escrita never commits or pushes; your sync or Git plugin does that.
+**Publish this note** checks the active note before you publish it: an unclosed `%%` comment, placeholders left, unwritten beats, an empty body, missing recommended properties such as `description`, and a length over the piece's limit. Blockers can be overridden. Publishing sets the status property to your published value and the date property to today (or a date you choose). **Unpublish this note** puts the earlier status back. Escrita doesn't publish anywhere: it only checks the note and updates its properties, so it works whether you post to a blog, send to a magazine, or just mark a piece as done.
 
 ### Sprints
 
@@ -94,7 +94,7 @@ A beat counts as written when prose follows it before the next beat, scene break
 - **Books**: chapters folder name, chapter template (`{{title}}`, `{{date}}` and `{{time}}` are filled in), how many digits chapter numbers get (`01`, `001`…), the status and summary property names, and the status colors used in the outline.
 - **Goals**: daily word goal, the hour the writing day ends, folders to track and to ignore, the size of a change that is ignored as a paste or sync, the default sprint length and word target, and whether to show the status bar.
 - **Goals** (continued): the property names for a piece's target, limit and unit, weekdays off and dates off.
-- **Publishing**: the status values for published and unpublished notes (the status property is the one under Books), the date property, recommended properties, the folders whose published notes must not share a URL, the slug property, and whether to offer keeping the URL when a published note is renamed.
+- **Publishing**: the status values for published and unpublished notes (the status property is the one under Books), the date property, and recommended properties.
 - **Outline**: ghost beats on or off.
 - **Placeholders**: the marker word, and whether to mark files in the file explorer.
 - **Darlings**: the darlings note inside a book, and the note used for everything else.
@@ -150,6 +150,14 @@ To try your build, link or copy the repository folder into a test vault's `.obsi
 To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updates `manifest.json` and `versions.json`), commit, then push a tag with the bare version number (for example `git tag 0.1.1 && git push --tags`). The release workflow builds the plugin and drafts a GitHub release with `main.js`, `manifest.json` and `styles.css`; publish the draft when it looks right.
 
 ## Changelog
+
+### 0.2.1
+
+- **Standalone**: Escrita no longer assumes you publish to a website. Removed the "URL taken" and "URL changed" checks, the offer to keep a URL when renaming a published note, and the publish folders, slug property and keep-URL settings. Saved values for them are ignored. Publishing still checks the note and sets its status and date.
+- **Beats and placeholders**: a `%% beat %%` or `%% XXX %%` inside a code block, the properties or another comment no longer counts anywhere (outline, ghost beats, placeholder dots and pills, publish check). Before, the editor and the publish check disagreed. Each beat or placeholder must be alone in its own `%% … %%` on its line.
+- **Word counts**: the note, the selection and the publish check now read code blocks, comments and properties the same way. A selection's count no longer includes code or properties, and a code block indented with a tab is no longer treated as code.
+- **Books with a nested chapters folder** (such as `Drafts/Chapters`) are now found by every feature, not only some of them.
+- Internal: one Markdown segmenter (`core/markdown`) and one file classifier (`core/classify`) replace the copies each module kept; about 200 new tests.
 
 ### 0.2.0
 
