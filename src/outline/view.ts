@@ -4,18 +4,17 @@ import {
 } from "obsidian";
 import type EscritaPlugin from "../main";
 import type { Book } from "../core/books";
-import { inBook } from "../core/classify";
+import { inBook, inSnapshots } from "../core/classify";
 import { beatLine, parseBeats, parsePlaceholders, type BeatMarker } from "../core/markers";
 import { parseStatusColors } from "../settings";
-import { fmt, t } from "../i18n";
-import { pieceCount, type Piece, type PieceUnit } from "../core/piece";
+import { fmt, plural, t, unitAmount } from "../i18n";
+import { noteProgress, type Piece, type Progress } from "../core/measure";
 import { appendBeat, insertBeat, insertFirstBeat, isBlankBody, moveBeatOut, removeBeat, setBeatText } from "./beats-edit";
 import {
-  beatLetter, chapterAsBeatText, decideKey, decideNoteKey, dropIndex, moveItem, noteGoal, resolveTarget,
+  beatLetter, chapterAsBeatText, decideKey, decideNoteKey, dropIndex, moveItem, resolveTarget,
   type ActiveFile, type Field, type KeyAction, type OutlineTarget,
 } from "./model";
 import { confirmAction } from "./modals";
-import { pluralKey, unitKey } from "./units";
 import { errorMessage } from "./errors";
 
 export const OUTLINE_VIEW = "escrita-outline";
@@ -65,8 +64,8 @@ interface RowEls {
 interface NoteState {
   row: ChapterRow;
   piece: Piece | null;
-  /** length in the piece's unit (words without a piece) */
-  count: number;
+  /** its length in its unit (the piece's, else its unit property, else words) against a target or limit */
+  progress: Progress;
 }
 
 function str(v: unknown): string {
@@ -92,15 +91,6 @@ function buttonize(el: HTMLElement, label: string, onActivate: (e: KeyboardEvent
   el.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onActivate(e); }
   });
-}
-
-function plural(n: number, key: string): string {
-  return t(pluralKey(key, n), { n: fmt(n) });
-}
-
-/** "1 word", "1,234 characters", "1 character (no spaces)"… */
-function unitText(n: number, unit: PieceUnit): string {
-  return plural(n, unitKey(unit));
 }
 
 /**
@@ -176,6 +166,10 @@ export class OutlineView extends ItemView {
     this.registerEvent(workspace.on("file-open", () => this.requestRefresh()));
     this.registerEvent(metadataCache.on("changed", (file) => { if (this.concerns(file.path)) this.requestRefresh(); }));
     const onFs = (file: TAbstractFile, oldPath?: string) => {
+      // Snapshots are never part of a book or a note's outline (classify's
+      // snapshot rule, by path so deleted snapshot files count too).
+      const s = this.plugin.settings;
+      if (inSnapshots(file.path, s) && (oldPath === undefined || inSnapshots(oldPath, s))) return;
       // A single note renamed: keep showing it under its new path.
       if (oldPath !== undefined && this.target.mode === "note" && this.target.path === oldPath) {
         this.target = { mode: "note", path: file.path };
@@ -254,11 +248,15 @@ export class OutlineView extends ItemView {
   }
 
   private async loadNote(file: TFile): Promise<NoteState> {
+    const mtime = file.stat.mtime;
     const text = await this.app.vault.cachedRead(file);
     const piece = this.plugin.books.classify(file).piece;
+    const unit = piece?.unit ?? this.plugin.measure.unit(file);
+    // the text just read seeds the count, so a miss doesn't read the file again
+    const counts = await this.plugin.measure.counts(file, { text, mtime }, unit);
     return {
       piece,
-      count: pieceCount(text, piece?.unit ?? "words"),
+      progress: noteProgress(counts, piece, unit),
       row: {
         file,
         index: 0,
@@ -266,7 +264,7 @@ export class OutlineView extends ItemView {
         title: file.basename,
         summary: "",
         status: "",
-        words: await this.plugin.counter.count(file),
+        words: counts.words,
         beats: parseBeats(text),
         placeholders: 0,
         bodyBlank: isBlankBody(text),
@@ -278,6 +276,7 @@ export class OutlineView extends ItemView {
     const s = this.plugin.settings;
     const chapters = this.plugin.books.chapters(book);
     return Promise.all(chapters.map(async (ch, i): Promise<ChapterRow> => {
+      const mtime = ch.file.stat.mtime;
       const text = await this.app.vault.cachedRead(ch.file);
       const fm = this.plugin.books.frontmatter(ch.file);
       return {
@@ -287,7 +286,7 @@ export class OutlineView extends ItemView {
         title: ch.title,
         summary: str(fm[s.summaryProperty]),
         status: str(fm[s.statusProperty]),
-        words: await this.plugin.counter.count(ch.file),
+        words: (await this.plugin.measure.counts(ch.file, { text, mtime }, "words")).words,
         beats: parseBeats(text),
         placeholders: parsePlaceholders(text, s.placeholderMarker).length,
         bodyBlank: isBlankBody(text),
@@ -508,26 +507,24 @@ export class OutlineView extends ItemView {
 
   private renderNoteStats(note: NoteState): void {
     if (!this.statsEl || !this.progressEl) return;
-    this.statsEl.setText(plural(note.row.beats.length, "outline.beats"));
-    const unit = note.piece?.unit ?? "words";
-    const g = noteGoal(note.count, note.piece);
+    this.statsEl.setText(plural("outline.beats", note.row.beats.length));
+    const g = note.progress;
     const p = this.progressEl;
     p.empty();
     p.toggleClass("is-near", g.state === "near");
     p.toggleClass("is-over", g.state === "over");
     p.toggleClass("is-reached", g.reached);
-    if (g.goal === undefined) {
-      p.createDiv({ cls: "escrita-outline-progress-text", text: unitText(g.count, unit) });
+    if (g.of === null) {
+      p.createDiv({ cls: "escrita-outline-progress-text", text: unitAmount(g.unit, g.count) });
       return;
     }
-    let text = t("outline.progress", { words: fmt(g.count), goal: unitText(g.goal, unit) });
+    let text = t("outline.progress", { words: fmt(g.count), goal: unitAmount(g.unit, g.of) });
     if (g.kind === "limit") text += ` ${t("outline.note.limitOnly")}`;
-    if (g.limit !== undefined) text += ` · ${t("outline.note.limit", { n: fmt(g.limit) })}`;
+    if (g.kind === "target" && g.limit !== undefined) text += ` · ${t("outline.note.limit", { n: fmt(g.limit) })}`;
     const line = p.createDiv({ cls: "escrita-outline-progress-text", text });
-    const over = note.count - (note.piece?.limit ?? Infinity);
-    if (g.state === "over" && over > 0) line.createSpan({ cls: "escrita-outline-over", text: ` · ${t("outline.note.over", { n: fmt(over) })}` });
+    if (g.state === "over" && g.over > 0) line.createSpan({ cls: "escrita-outline-over", text: ` · ${t("outline.note.over", { n: fmt(g.over) })}` });
     const bar = p.createDiv({ cls: "escrita-outline-bar" });
-    bar.createDiv({ cls: "escrita-outline-bar-fill" }).setCssProps({ width: `${(g.fill * 100).toFixed(1)}%` });
+    bar.createDiv({ cls: "escrita-outline-bar-fill" }).setCssProps({ width: `${(g.fraction * 100).toFixed(1)}%` });
   }
 
   /** Update a single note's counts and non-focused beat texts in place; false when its beats changed shape. */
@@ -569,16 +566,16 @@ export class OutlineView extends ItemView {
   private renderStats(): void {
     if (!this.statsEl || !this.progressEl || !this.book) return;
     const beats = this.rows.reduce((n, r) => n + r.beats.length, 0);
-    this.statsEl.setText(`${plural(this.rows.length, "outline.chapters")} · ${plural(beats, "outline.beats")}`);
+    this.statsEl.setText(`${plural("outline.chapters", this.rows.length)} · ${plural("outline.beats", beats)}`);
     const words = this.rows.reduce((n, r) => n + r.words, 0);
-    const goal = Number(this.plugin.books.frontmatter(this.book.note).goal);
+    const { goal } = this.plugin.measure.bookGoal(this.book);
     this.progressEl.empty();
-    if (Number.isFinite(goal) && goal > 0) {
+    if (goal) {
       this.progressEl.createDiv({ cls: "escrita-outline-progress-text", text: t("outline.progress", { words: fmt(words), goal: fmt(goal) }) });
       const bar = this.progressEl.createDiv({ cls: "escrita-outline-bar" });
       bar.createDiv({ cls: "escrita-outline-bar-fill" }).setCssProps({ width: `${Math.min(100, (words / goal) * 100).toFixed(1)}%` });
     } else {
-      this.progressEl.createDiv({ cls: "escrita-outline-progress-text", text: t("common.words", { n: fmt(words) }) });
+      this.progressEl.createDiv({ cls: "escrita-outline-progress-text", text: unitAmount("words", words) });
     }
   }
 
@@ -1168,7 +1165,7 @@ export class OutlineView extends ItemView {
       const ok = await confirmAction(
         this.app,
         t("outline.delete.title"),
-        t("outline.delete.desc", { title: row.title, words: t("common.words", { n: fmt(row.words) }) }),
+        t("outline.delete.desc", { title: row.title, words: unitAmount("words", row.words) }),
         t("outline.delete.confirm"),
       );
       if (!ok) return;

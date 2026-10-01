@@ -5,7 +5,7 @@
 // folder through `ChapterFs`; core/books.ts adapts the real vault to it.
 
 import { folderList } from "./lists";
-import { readPiece, type Piece, type PieceProperties } from "./piece";
+import { readPiece, type Piece, type PieceProperties } from "./measure";
 
 /** Anything with a vault path. TFile/TFolder satisfy it; test fakes are `{ path }` objects that keep their identity. */
 export interface Named { path: string }
@@ -39,7 +39,12 @@ export interface ClassifySettings extends PieceProperties {
   /** raw folderList text */
   excludeFolders: string;
   chapterTemplate: string;
+  /** where Escrita keeps snapshots; read through snapshotsRoot(), so "" means the default */
+  snapshotsFolder: string;
 }
+
+/** The snapshots folder when the setting is empty or unusable. */
+export const DEFAULT_SNAPSHOTS_FOLDER = "Escrita/Snapshots";
 
 /**
  * Structure only, and a closed set: future knowledge (scope, universe entry,
@@ -95,12 +100,65 @@ export interface Placement<F extends Named, D extends Named> {
   tracked: boolean;
   /** readPiece(frontmatter) for any markdown file, chapters included; null otherwise. A standalone piece is `kind === "note" && piece`. */
   piece: Piece | null;
+  /**
+   * The path is the snapshots folder or inside it (see snapshotsRoot). Such a
+   * path is never tracked, never a piece and never part of a book: a file there
+   * is a "note" or a "file", a folder there is a "folder".
+   */
+  snapshot: boolean;
 }
 
 /** Whether `path` is `folder` itself or inside it. Slashes at the folder's edges are ignored, "" means the whole vault, case-sensitive. */
 export function inFolder(path: string, folder: string): boolean {
   const f = folder.replace(/^\/+|\/+$/g, "");
   return f === "" || path === f || path.startsWith(`${f}/`);
+}
+
+/**
+ * The snapshots folder setting as a vault path: trimmed, backslashes and
+ * repeated slashes turned into single slashes, edge slashes stripped. Empty (or
+ * not a string) gives DEFAULT_SNAPSHOTS_FOLDER, so the result is never "" and
+ * never means the whole vault. The one place this normalization lives: settings,
+ * classify and the snapshots module all go through it.
+ */
+export function snapshotsRoot(setting: unknown): string {
+  const s = str(setting).trim().replace(/\\/g, "/").replace(/\/{2,}/g, "/").replace(/^\/+|\/+$/g, "").trim();
+  return s === "" ? DEFAULT_SNAPSHOTS_FOLDER : s;
+}
+
+/** Whether `path` is the snapshots folder or inside it. */
+export function inSnapshots(path: string, settings: Pick<ClassifySettings, "snapshotsFolder">): boolean {
+  return inFolder(path, snapshotsRoot(settings.snapshotsFolder));
+}
+
+/** What is wrong with a snapshots folder setting, if anything (see snapshotsFolderProblem). */
+export type SnapshotsFolderProblem =
+  /** a ".." or "." segment: not a plain folder inside the vault */
+  | { reason: "path" }
+  /** the config folder (.obsidian) or inside it */
+  | { reason: "config"; folder: string }
+  /** inside a track folder, or holding one: notes there would stop being tracked */
+  | { reason: "tracked"; folder: string }
+  /** the folder already holds .md notes, which would stop being tracked */
+  | { reason: "notes"; folder: string };
+
+/**
+ * Checks a snapshots folder value before it is saved. `hasNotes(root)` answers
+ * whether the vault already has .md notes inside `root`. With no track folders
+ * the whole vault is tracked, so only existing notes matter there.
+ */
+export function snapshotsFolderProblem(
+  value: string, configDir: string, trackFolders: string, hasNotes: (root: string) => boolean,
+): SnapshotsFolderProblem | null {
+  const root = snapshotsRoot(value);
+  if (root.split("/").some((seg) => seg.trim() === ".." || seg.trim() === ".")) return { reason: "path" };
+  const config = configDir.trim().replace(/^\/+|\/+$/g, "");
+  if (config !== "" && (inFolder(root, config) || inFolder(config, root))) return { reason: "config", folder: config };
+  for (const track of folderList(str(trackFolders))) {
+    if (inFolder(root, track) || inFolder(track, root)) return { reason: "tracked", folder: track };
+  }
+  if (hasNotes(root)) return { reason: "notes", folder: root };
+  return null;
 }
 
 /**
@@ -144,6 +202,13 @@ export function placementPath(
 function parentOf(path: string): string {
   const i = path.lastIndexOf("/");
   return i < 0 ? "" : path.slice(0, i);
+}
+
+/** The folders containing `path`, nearest first, never the root: "A/B/c.md" gives ["A/B", "A"], "c.md" gives []. */
+export function ancestors(path: string): string[] {
+  const out: string[] = [];
+  for (let dir = parentOf(path); dir !== "" && dir !== "/"; dir = parentOf(dir)) out.push(dir);
+  return out;
 }
 
 function str(v: unknown): string {
@@ -201,26 +266,34 @@ function pieceOf<F extends Named, D extends Named>(tree: VaultTree<F, D>, file: 
 export function classify<F extends Named, D extends Named>(
   tree: VaultTree<F, D>, settings: ClassifySettings, path: string | null,
 ): Placement<F, D> {
-  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null };
+  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, snapshot: false };
   if (typeof path !== "string" || path === "") return none;
   if (path === "/") return { ...none, kind: "folder" };
   try {
     const ch = chaptersRel(settings);
     const file = tree.file(path);
+    // Snapshots are never writing: checked before any book lookup, so a
+    // snapshots folder placed inside a book never yields chapters or book files.
+    const snapshot = inSnapshots(path, settings);
+    if (file && snapshot) {
+      const markdown = path.endsWith(".md");
+      return { ...none, path, kind: markdown ? "note" : "file", markdown, snapshot };
+    }
+    if (!file && snapshot && tree.folder(path)) return { ...none, path, kind: "folder", snapshot };
     if (file) {
       const markdown = path.endsWith(".md");
       const tracked = markdown && isTracked(path, settings);
       const piece = markdown ? pieceOf(tree, file, settings) : null;
       // The book note comes first: a book note inside another book's folder belongs to its own book.
       const own = markdown ? bookAt(tree, path.slice(0, -3), ch) : null;
-      if (own) return { path, kind: "book-note", markdown, book: own, tracked, piece };
+      if (own) return { path, kind: "book-note", markdown, book: own, tracked, piece, snapshot: false };
       const book = ancestorBook(tree, path, ch);
       if (book) {
         // compare against the handle's path, never the settings string
         const kind: Kind = markdown && parentOf(path) === book.chaptersFolder.path ? "chapter" : "book-file";
-        return { path, kind, markdown, book, tracked, piece };
+        return { path, kind, markdown, book, tracked, piece, snapshot: false };
       }
-      return { path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece };
+      return { path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, snapshot: false };
     }
     if (tree.folder(path)) {
       const own = bookAt(tree, path, ch);
@@ -244,6 +317,7 @@ export function listBooks<F extends Named, D extends Named>(tree: VaultTree<F, D
   const out: BookOf<F, D>[] = [];
   try {
     for (const d of tree.folders()) {
+      if (inSnapshots(d.path, settings)) continue;
       const b = bookAt(tree, d.path, ch);
       if (b) out.push(b);
     }

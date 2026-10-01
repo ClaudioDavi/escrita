@@ -10,6 +10,7 @@ import { breakEdit, decideEnter, trailingBreakKeep } from "./enter-flow";
 import { typographyFor } from "./typography";
 import { sceneBreakEdit } from "./scene-break";
 import { spellcheckExtensions, spellcheckSuppressed } from "./spellcheck";
+import { DialogueFocus } from "./dialogue-focus";
 
 /** The last automatic typography replacement, so Backspace can undo it. */
 interface LastReplacement {
@@ -42,8 +43,17 @@ export class EditorModule implements EscritaModule {
   private spellcheckExt: Extension[] = [];
   /** A chapter is being created by Enter, Enter, Enter. */
   private creatingChapter = false;
+  /** Notes with dialogue focus on (paths, this session only). */
+  private dialogueOn = new Set<string>();
+  private dialogue: DialogueFocus;
 
-  constructor(private plugin: EscritaPlugin) {}
+  constructor(private plugin: EscritaPlugin) {
+    this.dialogue = new DialogueFocus(
+      (s) => fileOf(s)?.path ?? null,
+      (p) => this.dialogueOn.has(p),
+      () => ({ quoteStyle: this.plugin.settings.quoteStyle, paragraphStyle: this.plugin.settings.paragraphStyle }),
+    );
+  }
 
   load(): void {
     this.rebuildSpellcheck();
@@ -54,6 +64,7 @@ export class EditorModule implements EscritaModule {
         { key: "Backspace", run: (view) => this.onBackspace(view) },
       ])),
       Prec.high(EditorView.inputHandler.of((view, from, to, text) => this.onInput(view, from, to, text))),
+      this.dialogue.extension,
     ]);
     this.plugin.registerEditorExtension(this.spellcheckExt);
 
@@ -67,10 +78,48 @@ export class EditorModule implements EscritaModule {
       name: t("editor.cmd.insertSceneBreak"),
       editorCallback: (editor) => this.insertSceneBreak(editor),
     });
+    this.plugin.addCommand({
+      id: "toggle-dialogue-focus",
+      name: t("editor.cmd.toggleDialogueFocus"),
+      checkCallback: (checking) => {
+        const v = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!v?.file) return false;
+        if (!checking) this.toggleDialogueFocus(v);
+        return true;
+      },
+    });
+    // the toggle follows the note (this session only)
+    this.plugin.registerEvent(this.plugin.app.vault.on("rename", (f, old) => {
+      if (this.dialogueOn.delete(old)) this.dialogueOn.add(f.path);
+      // a folder rename moves the notes inside it
+      for (const p of [...this.dialogueOn]) {
+        if (p.startsWith(old + "/")) {
+          this.dialogueOn.delete(p);
+          this.dialogueOn.add(f.path + p.slice(old.length));
+        }
+      }
+    }));
+    this.plugin.registerEvent(this.plugin.app.vault.on("delete", (f) => {
+      this.dialogueOn.delete(f.path);
+    }));
   }
 
   settingsChanged(): void {
     if (this.rebuildSpellcheck()) this.plugin.app.workspace.updateOptions();
+    // quote and paragraph style drive the dimming
+    if (this.dialogueOn.size > 0) this.dialogue.refresh();
+  }
+
+  // ---- dialogue focus -------------------------------------------------------
+
+  private toggleDialogueFocus(v: MarkdownView): void {
+    const path = v.file!.path;
+    const on = !this.dialogueOn.has(path);
+    if (on) this.dialogueOn.add(path);
+    else this.dialogueOn.delete(path);
+    this.dialogue.refresh();
+    if (on && v.getMode() === "preview") new Notice(t("editor.dialogueFocusReading"));
+    else new Notice(t(on ? "editor.dialogueFocusOn" : "editor.dialogueFocusOff"));
   }
 
   // ---- spellcheck on demand -------------------------------------------------

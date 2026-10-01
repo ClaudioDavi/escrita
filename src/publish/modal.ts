@@ -1,5 +1,6 @@
 import { App, Modal, setIcon } from "obsidian";
-import { fmt, t } from "../i18n";
+import { fmt, t, unitAmount } from "../i18n";
+import { parseUnit } from "../core/measure";
 import { hasBlockers, sortChecks, type Check, type CheckLevel } from "./checks";
 
 export interface PublishModalOptions {
@@ -141,6 +142,9 @@ export class PublishModal extends Modal {
 export function checkText(check: Check): string {
   const vars: Record<string, string | number> = {};
   for (const [k, v] of Object.entries(check.vars)) vars[k] = typeof v === "number" ? fmt(v) : v;
-  if (check.id === "overLimit") vars.unit = t(`publish.unit.${String(check.vars.unit)}`);
+  if (check.id === "overLimit") {
+    vars.limit = unitAmount(parseUnit(check.vars.unit), Number(check.vars.limit));
+    delete vars.unit;
+  }
   return t(`publish.check.${check.id}.${check.level === "passed" ? "ok" : "bad"}`, vars);
 }

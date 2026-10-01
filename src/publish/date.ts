@@ -1,4 +1,4 @@
-import { parseDeadline } from "../core/piece";
+import { parseDeadline } from "../core/measure";
 
 /** Whether a frontmatter date value is there at all (any value but missing, null or blank). */
 export function hasDate(raw: unknown): boolean {

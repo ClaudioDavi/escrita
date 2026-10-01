@@ -4,7 +4,6 @@
 
 import { parseBeats } from "../core/markers";
 import type { Markdown } from "../core/markdown";
-import { pieceProgress } from "../core/piece";
 
 /** 0 → "a", 25 → "z", 26 → "aa", 27 → "ab"… */
 export function beatLetter(i: number): string {
@@ -446,34 +445,4 @@ export function decideNoteKey(k: KeyInput): KeyAction {
     default:
       return { type: "swallow" };
   }
-}
-
-/** The numbers in a single note's header: its count in the piece's unit against a target or limit. */
-export interface NoteGoal {
-  count: number;
-  /** what the count is shown against: the target, else the limit */
-  goal?: number;
-  kind: "target" | "limit" | "none";
-  /** the limit, when there is also a target */
-  limit?: number;
-  state: "none" | "under" | "near" | "over";
-  /** 0–1, for the bar */
-  fill: number;
-  reached: boolean;
-}
-
-export function noteGoal(count: number, piece: { target?: number; limit?: number } | null): NoteGoal {
-  const target = piece?.target, limit = piece?.limit;
-  const p = pieceProgress({ count, target, limit });
-  const goal = target ?? limit;
-  const out: NoteGoal = {
-    count: Number.isFinite(count) && count > 0 ? count : 0,
-    kind: target !== undefined ? "target" : limit !== undefined ? "limit" : "none",
-    state: p.state,
-    fill: Math.max(0, Math.min(1, p.ratio)),
-    reached: p.reached,
-  };
-  if (goal !== undefined) out.goal = goal;
-  if (target !== undefined && limit !== undefined) out.limit = limit;
-  return out;
 }

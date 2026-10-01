@@ -1,0 +1,21 @@
+/* Word counts in the file explorer: a span Escrita owns inside the item's
+   title (see core/explorer-decorations.ts), after the name and any dot. */
+.escrita-explorer-count {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  padding-inline-start: var(--size-4-2);
+  color: var(--escrita-ghost);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  align-self: center;
+}
+.escrita-explorer-count.is-near {
+  color: var(--escrita-warn);
+}
+.escrita-explorer-count.is-over {
+  color: var(--escrita-bad);
+}
+.escrita-explorer-dot + .escrita-explorer-count {
+  padding-inline-start: 6px;
+}

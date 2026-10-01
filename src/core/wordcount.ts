@@ -7,6 +7,11 @@ import { segment, type Markdown } from "./markdown";
 // Combining marks (\p{M}) belong to the word, so a decomposed "ninguém" is one word.
 const WORD = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:['’\-][\p{L}\p{M}\p{N}]+)*/gu;
 
+/** A fresh copy of the word rule (global, unicode), for tokenizers that need their own lastIndex. */
+export function wordRegex(): RegExp {
+  return new RegExp(WORD.source, "gu");
+}
+
 /**
  * The text a reader reads, markup still in place: frontmatter dropped (with the
  * line break after it), code, %% comments and closed HTML comments replaced by a
@@ -45,9 +50,14 @@ function stripMarkup(s: string): string {
   return s;
 }
 
-export function countWords(md: string): number {
-  const m = proseOnly(md).match(WORD);
+/** Number of words in text already passed through proseOnly. */
+export function wordsIn(prose: string): number {
+  const m = prose.match(WORD);
   return m ? m.length : 0;
+}
+
+export function countWords(md: string): number {
+  return wordsIn(proseOnly(md));
 }
 
 /**
@@ -75,8 +85,13 @@ const ESCAPED = /\\([\\`*_{}[\]()#+\-.!~=|<>])/g;
 
 /** Prose-only text with inline markup removed: what a reader reads. */
 export function readerText(md: string): string {
+  return readerTextOf(proseOnly(md));
+}
+
+/** readerText from text proseOnly already produced (no second segment pass). */
+export function readerTextOf(prose: string): string {
   const kept: string[] = [];
-  let s = proseOnly(md).replace(ESCAPED, (_, c: string) => {
+  let s = prose.replace(ESCAPED, (_, c: string) => {
     kept.push(c);
     return `${kept.length - 1}`;
   });

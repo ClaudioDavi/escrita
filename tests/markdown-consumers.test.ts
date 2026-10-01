@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { segment } from "../src/core/markdown";
 import { countCharacters, countSelection, countWords } from "../src/core/wordcount";
+import { measureText } from "../src/core/measure";
 import { bodyStartLine, isSceneBreakLine, parseBeats, parsePlaceholders } from "../src/core/markers";
-import { blockStateAt } from "../src/editor/context";
+import { blockStateAt, bodyLineIn } from "../src/editor/context";
+import { dialogueInDoc } from "../src/editor/dialogue";
 import { decideEnter, trailingBreakKeep } from "../src/editor/enter-flow";
 import { scanBeats } from "../src/outline/model";
 import { insertBeat } from "../src/outline/beats-edit";
@@ -1366,6 +1368,16 @@ describe("characterization table", () => {
       expect(countSelection(segment(row.text), [{ from: 0, to: row.text.length }]), row.name).toBe(countWords(row.text));
     }
   });
+
+  it("measureText agrees with countWords and countCharacters", () => {
+    for (const row of ROWS) {
+      expect(measureText(row.text), row.name).toEqual({
+        words: countWords(row.text),
+        characters: countCharacters(row.text, { spaces: true }),
+        charactersNoSpaces: countCharacters(row.text, { spaces: false }),
+      });
+    }
+  });
 });
 
 describe("editor entry points", () => {
@@ -1473,5 +1485,27 @@ describe("countSelection (D12): partial and multiple ranges", () => {
     const text = "a\r\n%% x\r\ny %%\r\nb c";
     expect(sel(text, [range(text, "y %%\r\nb c")])).toBe(2);
     expect(sel(text, [range(text, "x\r\ny")])).toBe(0);
+  });
+});
+
+describe("dialogue focus over the fixtures", () => {
+  it("speech lies in prose, after the properties, sorted and single-line", () => {
+    for (const row of ROWS) {
+      const text = row.text.replace(/\r\n/g, "\n"); // an editor document has LF lines
+      const md = segment(text);
+      const body = bodyLineIn(md);
+      let prev = -1;
+      for (const style of ["blank", "single"] as const) {
+        prev = -1;
+        for (const r of dialogueInDoc(md, 0, md.lineCount - 1, { quoteStyle: "curly", paragraphStyle: style })) {
+          expect(md.spans(r.from, r.from + 1)[0].kind, row.name).toBe("prose");
+          expect(md.lineOf(r.from), row.name).toBeGreaterThanOrEqual(body);
+          expect(r.from, row.name).toBeGreaterThan(prev);
+          expect(r.to, row.name).toBeGreaterThan(r.from);
+          expect(/[\r\n]/.test(text.slice(r.from, r.to)), row.name).toBe(false);
+          prev = r.to;
+        }
+      }
+    }
   });
 });

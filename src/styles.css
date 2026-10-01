@@ -9,6 +9,11 @@ body {
   /* near a limit, warnings (amber) and over a limit, blockers (red) */
   --escrita-warn: var(--color-orange);
   --escrita-bad: var(--color-red);
+  /* snapshot compare: inserted, deleted and moved text */
+  --escrita-diff-ins-bg: rgba(var(--color-green-rgb), 0.18);
+  --escrita-diff-del-bg: rgba(var(--color-red-rgb), 0.14);
+  --escrita-diff-del-fg: var(--text-muted);
+  --escrita-diff-move-bg: rgba(var(--color-blue-rgb), 0.12);
 }
 
 /* Settings tab: weekdays off. Seven checkboxes don't fit beside the label,
@@ -39,4 +44,8 @@ body {
 .escrita-setting-warning {
   color: var(--escrita-warn);
   margin-top: var(--size-4-1);
+}
+/* A settings input whose value was not saved (see the warning under it). */
+input.escrita-invalid {
+  border-color: var(--escrita-warn);
 }

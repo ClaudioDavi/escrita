@@ -1,2 +1,12 @@
 /* Escrita: editor module. Enter flow, smart typography and spellcheck on demand
-   change text and attributes only; no styles are needed yet. */
+   change text and attributes only. Dialogue focus dims everything but speech:
+   opacity is theme-neutral and also dims syntax-coloured spans inside. */
+.escrita-dialogue-dim {
+  opacity: 0.35;
+}
+
+/* block widgets (embeds, the properties box) that line decorations can't reach */
+.escrita-dialogue-focus .cm-embed-block,
+.escrita-dialogue-focus .metadata-container {
+  opacity: 0.35;
+}

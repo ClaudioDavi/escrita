@@ -3,6 +3,7 @@
 // Adding a language = adding one key to each strings file.
 
 import { moment } from "obsidian";
+import { pluralKey, unitKey, type PieceUnit } from "./core/measure";
 
 export type Dict = Record<string, string>;
 export type Strings = { en: Dict } & Record<string, Dict>;
@@ -32,4 +33,14 @@ export function t(key: string, vars?: Record<string, string | number>): string {
 /** Locale-aware number: 18420 → "18,420" / "18.420". */
 export function fmt(n: number): string {
   return Math.round(n).toLocaleString(lang());
+}
+
+/** plural("goals.days", 1) → t("goals.days.one", { n: "1" }); anything else → ".other" (right for en and pt-BR, including 0). */
+export function plural(base: string, n: number, vars: Record<string, string | number> = {}): string {
+  return t(pluralKey(base, n), { n: fmt(n), ...vars });
+}
+
+/** An amount in a unit: "5,000 words", "1 character", "15.000 caracteres sem espaços". */
+export function unitAmount(unit: PieceUnit, n: number): string {
+  return plural(unitKey(unit), n);
 }

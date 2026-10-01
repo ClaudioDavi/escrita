@@ -12,6 +12,8 @@
 // escaped with one leading backslash (and unescaped on parse), mbox-style, so
 // every passage round-trips exactly.
 
+import { matchLineEndings } from "../core/note-text";
+
 export interface DarlingMeta {
   id: string;
   /** vault path of the note the passage was cut from */
@@ -370,11 +372,8 @@ export function alreadyRestored(
   return (e.before + e.after).length > 0 && source.includes(e.before + full + e.after);
 }
 
-/** `text` with the line endings `doc` uses (CRLF when `doc` has any, else LF). */
-export function matchLineEndings(text: string, doc: string): string {
-  const lf = text.replace(/\r\n/g, "\n");
-  return doc.includes("\r\n") ? lf.replace(/\n/g, "\r\n") : lf;
-}
+// matchLineEndings lives in core/note-text (the note text port); re-exported for existing callers.
+export { matchLineEndings };
 
 /** The text to insert when restoring: the passage with the whitespace tidied away around it. */
 export function restoreText(e: Pick<DarlingMeta, "pre" | "post"> & { text: string }): string {

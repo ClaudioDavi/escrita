@@ -10,6 +10,10 @@ export const editorStrings: Strings = {
     "editor.noBreakInProperties": "Scene breaks go in the text, not in the properties.",
     "editor.chapterFailed": "Couldn't create the next chapter: {error}",
     "editor.chapterOpenFailed": "Created “{name}”, but couldn't open it.",
+    "editor.cmd.toggleDialogueFocus": "Toggle dialogue focus",
+    "editor.dialogueFocusOn": "Dialogue focus on",
+    "editor.dialogueFocusOff": "Dialogue focus off",
+    "editor.dialogueFocusReading": "Dialogue focus on. It shows in the editor (Live Preview or Source), not in Reading view.",
   },
   "pt-BR": {
     "editor.cmd.toggleSpellcheck": "Ligar/desligar corretor",
@@ -20,5 +24,9 @@ export const editorStrings: Strings = {
     "editor.noBreakInProperties": "Quebras de cena vão no texto, não nas propriedades.",
     "editor.chapterFailed": "Não deu para criar o próximo capítulo: {error}",
     "editor.chapterOpenFailed": "“{name}” foi criado, mas não deu para abri-lo.",
+    "editor.cmd.toggleDialogueFocus": "Ligar/desligar foco no diálogo",
+    "editor.dialogueFocusOn": "Foco no diálogo ligado",
+    "editor.dialogueFocusOff": "Foco no diálogo desligado",
+    "editor.dialogueFocusReading": "Foco no diálogo ligado. Ele aparece no editor (Visualização ao vivo ou Código-fonte), não no modo de leitura.",
   },
 };

@@ -5,8 +5,7 @@
 
 import { segment, type Markdown } from "../core/markdown";
 import { parseBeats, parsePlaceholders } from "../core/markers";
-import { countWords } from "../core/wordcount";
-import { pieceCount, pieceProgress, readPiece, type PieceProperties } from "../core/piece";
+import { countIn, measureText, pieceProgress, readPiece, type PieceProperties } from "../core/measure";
 
 export type CheckLevel = "blocker" | "warning" | "passed";
 
@@ -133,7 +132,9 @@ export function runChecks(
     vars: { n: beats.length },
   });
 
-  const words = countWords(text);
+  // measured on the text given (the editor's, maybe unsaved), never a cache
+  const counts = measureText(text);
+  const words = counts.words;
   out.push({ id: "emptyBody", level: words === 0 ? "blocker" : "passed", items: [], vars: { n: words } });
 
   if (ctx.recommendedProperties.length) {
@@ -148,7 +149,7 @@ export function runChecks(
 
   const piece = ctx.piece ? readPiece(fm, ctx.piece) : null;
   if (piece?.limit !== undefined) {
-    const count = pieceCount(text, piece.unit);
+    const count = countIn(counts, piece.unit);
     const p = pieceProgress({ count, limit: piece.limit });
     out.push({
       id: "overLimit",

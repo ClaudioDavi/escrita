@@ -116,7 +116,11 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
   English: plural and possessive (`Teo's`) through the English stemmer from the same
   module.
 - **Ignore list** per entry (`ignore` property) for names that are also common words
-  (a character named "Rosa", a place called "Porto").
+  (a character named "Rosa", a place called "Porto"). An ignore entry can be a phrase
+  ("Rosa dos ventos"), so the name still counts elsewhere.
+- **First name as an alias**: for a character entry with a full name, its first word
+  counts as an alias unless it's a title (*Dona*, *Seu*, *Dr.*, *Mr.*; list in
+  settings). Per-entry `firstName: false` turns it off.
 - **Explicit links count too**: a `[[Teo]]` link is a mention even if the text differs.
 - **Index**: built after layout ready in small batches, kept current on modify, rename
   and delete (the placeholders index is the pattern). Pure matcher in
@@ -137,6 +141,10 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
   title, `type` and `universe` set.
 - Options in the same modal: link this occurrence, and add another alias.
 - If an entry with that name or alias exists, offer to open it instead.
+- **Names without an entry** (a tab in the universe panel, from v0.6 when the matcher
+  exists): capitalized words that recur across works, aren't at a sentence start, and
+  match no entry or alias, each with a Create button that opens this modal. A dismiss
+  list keeps ordinary words out.
 
 ### 1.4 Names into spellcheck and the revision lens (v0.6)
 
@@ -173,6 +181,12 @@ Hooks planted in one story for future stories.
   second column; filter by character or place (uses "appears in").
 - Reading-order suggestion: "read in story order" list for the universe, exportable as a
   note.
+- **Shift dates**: select several works or events and move them together, either to
+  a new start date (keeping the gaps) or by an amount (days, months, years), with a
+  preview before writing the `when` properties.
+- **Narrative mode** on a work or chapter (`mode`: `linear`, `flashback`, `flash-forward`,
+  `dream`, `frame`; configurable): shown on the timeline, and used by the continuity
+  checks (2.3).
 
 ### 2.2 Facts that change over time
 
@@ -200,6 +214,9 @@ Hooks planted in one story for future stories.
 - Conflicting stable facts: the same property with different values in two entries that
   are aliases of each other, or an entry fact contradicted by a `%% fact: … %%` marker
   (optional, later).
+- Works or chapters in a `dream` mode are skipped by the date checks, and `flashback` /
+  `flash-forward` ones aren't flagged for being out of publication order, so a
+  non-linear book doesn't drown in false warnings.
 - Pure, tested checker in `src/universe/continuity.ts`; results in a "Continuity" tab.
 
 ### 2.4 Canon status

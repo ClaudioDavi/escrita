@@ -201,19 +201,8 @@ export function beatAtLine(text: string, line: number): number {
   return idx;
 }
 
-/**
- * The smallest single replacement turning `a` into `b`: replace
- * `a.slice(from, to)` with `insert`. Used to apply whole-text edits through
- * an editor as one small change (keeps undo and the cursor sane).
- */
-export function minimalChange(a: string, b: string): { from: number; to: number; insert: string } {
-  let s = 0;
-  const max = Math.min(a.length, b.length);
-  while (s < max && a.charCodeAt(s) === b.charCodeAt(s)) s++;
-  let ea = a.length, eb = b.length;
-  while (ea > s && eb > s && a.charCodeAt(ea - 1) === b.charCodeAt(eb - 1)) { ea--; eb--; }
-  return { from: s, to: ea, insert: b.slice(s, eb) };
-}
+// minimalChange lives in core/note-text (the note text port); re-exported for existing callers.
+export { minimalChange } from "../core/note-text";
 
 /**
  * The first beat of a note that has none: at the top of the body, after the

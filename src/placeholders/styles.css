@@ -50,17 +50,20 @@
 }
 
 /* ---- File explorer dot ---- */
-/* On the name, not on .nav-file-title::after: word-count plugins and themes
-   write into that pseudo-element and would stretch the dot into a bar. */
-.nav-file-title.escrita-has-placeholder .nav-file-title-content::after {
-  content: "";
-  display: inline-block;
+/* A span Escrita owns in the item's title (core/explorer-decorations.ts), not a
+   pseudo-element: word-count plugins and themes write into ::after. */
+.escrita-explorer-dot {
+  flex: 0 0 auto;
   width: 6px;
   height: 6px;
   margin-inline-start: 6px;
-  vertical-align: middle;
   border-radius: 50%;
   background-color: var(--escrita-placeholder-fg);
+  align-self: center;
+}
+/* keep the dot right after the name even where the name grows to fill the row */
+.nav-file-title:has(> .escrita-explorer-dot) > .nav-file-title-content {
+  flex-grow: 0;
 }
 
 /* ---- Side panel ---- */

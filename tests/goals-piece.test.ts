@@ -3,8 +3,8 @@ import type { DayRecord } from "../src/data";
 import { dailyAverage, dayStates, goalMetSummary, streak, type History } from "../src/goals/tracker";
 import { afterWritingDays, pacing } from "../src/goals/pacing";
 import { chartGeometry } from "../src/goals/chart";
-import { paceInUnit, pieceBar, pieceSummary } from "../src/goals/piece";
-import { pieceCount, pieceProgress, readPiece } from "../src/core/piece";
+import { paceInUnit, pieceBar } from "../src/goals/piece";
+import { measureText, pieceProgress, progressOf, readPiece } from "../src/core/measure";
 import { dayOffPredicate } from "../src/core/daysoff";
 import { lastDays } from "../src/core/dates";
 
@@ -38,43 +38,45 @@ describe("a conto with a character limit (hand-checked)", () => {
   it("counts characters with spaces on what a reader sees", () => {
     // Reader text: "O porão A casa tinha um porão — e ninguém descia lá. Ela abriu a porta."
     //   "O porão" 7 + 1 space + "A casa tinha um porão — e ninguém descia lá." 44 + 1 space + "Ela abriu a porta." 18 = 71
-    expect(pieceCount(md, "characters")).toBe(71);
+    expect(measureText(md).characters).toBe(71);
     // 15 spaces in all: 1 + 1 + 9 + 1 + 3
-    expect(pieceCount(md, "characters-no-spaces")).toBe(56);
-    // countWords doesn't yet treat a combining mark as part of a word (core/wordcount), so words are checked on NFC text.
-    expect(pieceCount(md, "words")).toBe(15);
+    expect(measureText(md).charactersNoSpaces).toBe(56);
+    expect(measureText(md).words).toBe(15);
+    expect(measureText(md)).toEqual({ words: 15, characters: 71, charactersNoSpaces: 56 });
   });
 
   it("is well under its limit, with the right numbers for the status bar", () => {
-    const s = pieceSummary(71, piece);
-    expect(s).toEqual({ count: 71, of: 15000, state: "under", over: 0, reached: false, fraction: 71 / 15000 });
+    const s = progressOf(71, piece);
+    expect(s).toEqual({
+      unit: "characters", count: 71, of: 15000, kind: "limit", limit: 15000, state: "under", over: 0, reached: false, fraction: 71 / 15000,
+    });
   });
 });
 
-describe("pieceSummary", () => {
+describe("progressOf", () => {
   it("shows the count against the target when there is one, else the limit", () => {
-    expect(pieceSummary(4210, { target: 5000, limit: 6000 }).of).toBe(5000);
-    expect(pieceSummary(12800, { limit: 15000 }).of).toBe(15000);
-    expect(pieceSummary(10, {}).of).toBeNull();
-    expect(pieceSummary(10, {}).state).toBe("none");
+    expect(progressOf(4210, { target: 5000, limit: 6000 }).of).toBe(5000);
+    expect(progressOf(12800, { limit: 15000 }).of).toBe(15000);
+    expect(progressOf(10, {}).of).toBeNull();
+    expect(progressOf(10, {}).state).toBe("none");
   });
   it("turns near at 95% of the limit and over past it, with the excess", () => {
-    expect(pieceSummary(14249, { limit: 15000 }).state).toBe("under");
-    expect(pieceSummary(14250, { limit: 15000 }).state).toBe("near");
-    expect(pieceSummary(15000, { limit: 15000 }).state).toBe("near");
-    const over = pieceSummary(15312, { limit: 15000 });
+    expect(progressOf(14249, { limit: 15000 }).state).toBe("under");
+    expect(progressOf(14250, { limit: 15000 }).state).toBe("near");
+    expect(progressOf(15000, { limit: 15000 }).state).toBe("near");
+    const over = progressOf(15312, { limit: 15000 });
     expect(over.state).toBe("over");
     expect(over.over).toBe(312);
     expect(over.fraction).toBe(1);
   });
   it("flags a reached target and guards bad counts", () => {
-    expect(pieceSummary(5000, { target: 5000 }).reached).toBe(true);
-    expect(pieceSummary(NaN, { target: 5000 })).toMatchObject({ count: 0, fraction: 0, reached: false });
-    expect(pieceSummary(-4, { limit: 10 })).toMatchObject({ count: 0, state: "under" });
+    expect(progressOf(5000, { target: 5000 }).reached).toBe(true);
+    expect(progressOf(NaN, { target: 5000 })).toMatchObject({ count: 0, fraction: 0, reached: false });
+    expect(progressOf(-4, { limit: 10 })).toMatchObject({ count: 0, state: "under" });
   });
   it("agrees with pieceProgress", () => {
     const p = pieceProgress({ count: 4210, target: 5000, limit: 6000 });
-    const s = pieceSummary(4210, { target: 5000, limit: 6000 });
+    const s = progressOf(4210, { target: 5000, limit: 6000 });
     expect(s.state).toBe(p.state);
     expect(s.fraction).toBeCloseTo(p.ratio);
   });

@@ -21,13 +21,13 @@ Your books stay plain Markdown. Everything Escrita adds to a chapter is an Obsid
 ### Goals, progress and pacing
 
 - Escrita counts the words you type in the active note. Pastes, imports and sync changes above a size you choose are not counted.
-- A daily goal for all your writing, and a word goal and deadline for each book (stored as `goal` and `deadline` in the book note's properties).
+- A daily goal for all your writing, and a word goal and deadline for each book (stored as `goal` and `deadline` in the book note's properties; the names are settings).
 - The **Progress** window shows today, the book and your streak, a 30-day chart of words per day with the book's running total, and pacing: words per day needed to hit the deadline, and the finish date projected from your 7-day average.
 - Words written after midnight can count toward the day before, up to an hour you choose.
 
 ### Targets for a single piece
 
-Any note can have its own length goal, not just books. Set `target` (the length you're aiming for), `limit` (a hard maximum, like a contest's), `unit` (`words`, `characters` with spaces, or `characters-no-spaces`) and `deadline` (YYYY-MM-DD) in its properties. Characters are counted on the text a reader sees: no properties, comments, code or formatting marks, with runs of spaces counted as one. An accented letter or an em dash counts as one character.
+Any note can have its own length goal, not just books. Set `target` (the length you're aiming for), `limit` (a hard maximum, like a contest's), `unit` (`words`, `characters` with spaces, or `characters-no-spaces`) and `deadline` (YYYY-MM-DD) in its properties. A note with only `unit: characters` is still counted in characters. Characters are counted on the text a reader sees: no properties, comments, code or formatting marks, with runs of spaces counted as one. An accented letter or an em dash counts as one character.
 
 ### Days off
 
@@ -65,6 +65,22 @@ As you type: `--` becomes an em dash, `...` becomes an ellipsis, and straight qu
 
 Hide spelling squiggles while you draft, then turn them on with **Toggle spellcheck** when you revise.
 
+### Dialogue focus
+
+**Toggle dialogue focus** dims everything in the note except speech, so you can read a scene's dialogue on its own. Speech is a line that opens with a dash (—, – or ―), switched to narration and back by spaced dashes inside the paragraph (`— Vem cá — disse ela. — Agora.`), plus anything in double quotes of your quote style (and straight `"`). A hard-wrapped line inside a paragraph stays speech. Code, properties and comments are never speech. It works in Live Preview and Source mode, not in Reading view, and stays on for that note until you turn it off or restart Obsidian.
+
+### Word counts in the file explorer
+
+Tracked notes and chapters show their length next to their name, in the note's own unit (words, or characters for a note with `unit: characters`). A book's note, folder and chapters folder show the book's total. Past 10,000 the number is shortened (`12.3k`, or `12,3 mil` in Portuguese), and the full count is in the tooltip. Optionally, show a note's target or limit beside it (`4,210 / 5,000`) and folder totals for your other folders. A note near or past its limit is marked. The placeholder dot sits next to the name too.
+
+### Snapshots
+
+A snapshot is a copy of a note's text you can go back to. **Take a snapshot** (command or the file menu) saves one with a name you choose, like "Sent to the magazine". Escrita also takes automatic ones: **Before publishing**, **Before restoring** (every time you restore, so a restore can always be undone), and, if you turn it on, **Before the day's first edit** of a tracked note. Automatic snapshots are trimmed to the newest 20 per note (older ones go to the trash); the ones you take yourself are never removed.
+
+The **Snapshots** panel lists the active note's snapshots with their length and how much the note changed since. From there you can view a snapshot's full text, compare it with the note now or with another snapshot (inline or side by side, word by word, with unchanged paragraphs folded), restore the whole note, rename or delete it. In a comparison, **Use the old version** puts back one passage (or the properties). Snapshots follow their note when you rename or move it, and are kept when you delete it: **Browse snapshots of deleted notes** opens them so you can copy the text back.
+
+Snapshots are plain `.txt` files in `Escrita/Snapshots/<note path>/` (the folder is a setting), so search, graph and links ignore them. **Obsidian Sync** copies them only with "Sync all other types" turned on in its settings; git, iCloud, Dropbox and Syncthing copy them as they are.
+
 ## How books are organized
 
 A note is a book when a folder with the same name sits next to it and holds a chapters folder:
@@ -93,12 +109,14 @@ A beat counts as written when prose follows it before the next beat, scene break
 
 - **Books**: chapters folder name, chapter template (`{{title}}`, `{{date}}` and `{{time}}` are filled in), how many digits chapter numbers get (`01`, `001`…), the status and summary property names, and the status colors used in the outline.
 - **Goals**: daily word goal, the hour the writing day ends, folders to track and to ignore, the size of a change that is ignored as a paste or sync, the default sprint length and word target, and whether to show the status bar.
-- **Goals** (continued): the property names for a piece's target, limit and unit, weekdays off and dates off.
+- **Goals** (continued): the property names for a piece's target, limit, unit and deadline, the property name for a book's goal, weekdays off and dates off. Write amounts as `15000`, or quote them when they have separators (`"15.000"`): unquoted, `15.000` is the decimal number 15.
+- **Goals** (file explorer): word counts on or off, the target next to the count, folder totals.
 - **Publishing**: the status values for published and unpublished notes (the status property is the one under Books), the date property, and recommended properties.
 - **Outline**: ghost beats on or off.
 - **Placeholders**: the marker word, and whether to mark files in the file explorer.
 - **Darlings**: the darlings note inside a book, and the note used for everything else.
 - **Editor**: Enter, Enter, Enter; paragraph style; smart typography, where it applies, quote style and dialogue dash; spellcheck on demand.
+- **Snapshots**: the snapshots folder (default `Escrita/Snapshots`; a folder that holds notes or sits inside a tracked folder is refused; a folder starting with a dot is hidden, but Obsidian Sync skips it; changing it doesn't move existing snapshots), the snapshot before the day's first edit, and how many automatic snapshots to keep per note.
 
 ## Commands
 
@@ -108,7 +126,8 @@ A beat counts as written when prose follows it before the next beat, scene break
 | Goals | Open progress, Start a sprint, Stop the sprint |
 | Placeholders | Insert placeholder, Next placeholder in this note, Previous placeholder in this note, Open placeholders |
 | Darlings | Move selection to darlings, Open darlings |
-| Editor | Toggle spellcheck, Insert scene break |
+| Editor | Toggle spellcheck, Insert scene break, Toggle dialogue focus |
+| Snapshots | Take a snapshot, Open snapshots, Compare with the last snapshot, Browse snapshots of deleted notes |
 | Publishing | Publish this note, Unpublish this note |
 
 Escrita sets no hotkeys. Bind the ones you use often in Settings → Hotkeys. For example, Ctrl/Cmd+Shift+X for **Insert placeholder**.
@@ -150,6 +169,16 @@ To try your build, link or copy the repository folder into a test vault's `.obsi
 To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updates `manifest.json` and `versions.json`), commit, then push a tag with the bare version number (for example `git tag 0.1.1 && git push --tags`). The release workflow builds the plugin and drafts a GitHub release with `main.js`, `manifest.json` and `styles.css`; publish the draft when it looks right.
 
 ## Changelog
+
+### 0.3.0
+
+- **Snapshots**: take named snapshots of a note, automatic ones before publishing, before restoring and (optionally) before the day's first edit; a panel to view, compare, restore, rename and delete them; a compare tab with inline, side-by-side and full-text views and **Use the old version** for one passage. Stored as `.txt` files in `Escrita/Snapshots` (see the note on Obsidian Sync above). Known limits: a note created at a deleted note's path inherits that note's snapshots; two notes whose names differ only in special spaces or accents can't both have snapshots (Escrita says so instead of mixing them).
+- **Dialogue focus**: dims everything but speech in the editor.
+- **Word counts in the file explorer**, in each note's unit, with book totals and optional folder totals and targets. The placeholder dot is now drawn the same way.
+- **Settings for the goal and deadline property names** of books and notes.
+- **Counting fixes**: one counter for the status bar, outline, progress window, explorer and publish check. The outline reads a book goal of `"80.000"` as 80,000 (it showed 80), a goal of `"80.5"` now reads as 81 (it was 805), and `"1.000,5"` is ignored. Deadlines must be real dates (`2026-02-31` is ignored), and a YAML date no longer shifts a day in time zones west of UTC. A note with only `unit: characters` is counted in characters. "1 word", not "1 words".
+- Bundles [jsdiff](https://github.com/kpdecker/jsdiff) (BSD-3-Clause) for comparing snapshots: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- Internal: one measure module (`core/measure`) for counts, targets and goals, one file explorer decoration adapter (`core/explorer-decorations`), and one way to edit a note's text through the editor or the vault (`core/note-text`).
 
 ### 0.2.1
 

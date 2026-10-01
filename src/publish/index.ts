@@ -41,7 +41,7 @@ export class PublishModule implements EscritaModule {
     });
 
     p.registerEvent(p.app.workspace.on("file-menu", (menu, file) => {
-      if (!(file instanceof TFile) || file.extension !== "md") return;
+      if (!(file instanceof TFile) || !this.publishable(file)) return;
       menu.addItem((item) => item
         .setTitle(t("publish.menu"))
         .setIcon("send")
@@ -60,9 +60,14 @@ export class PublishModule implements EscritaModule {
 
   // ------------------------------------------------------------------ helpers
 
+  /** A Markdown note, not a copy inside the snapshots folder. */
+  private publishable(file: TFile): boolean {
+    return file.extension === "md" && !this.plugin.books.classify(file).snapshot;
+  }
+
   private activeNote(): TFile | null {
     const file = this.plugin.app.workspace.getActiveFile();
-    return file && file.extension === "md" ? file : null;
+    return file && this.publishable(file) ? file : null;
   }
 
   private frontmatter(file: TFile): Frontmatter {
@@ -74,13 +79,9 @@ export class PublishModule implements EscritaModule {
     return isPublished(fm[s.statusProperty], s.publishedValue);
   }
 
-  /** The note's text, from its editor when it's open there (it may not be saved yet). */
-  private async textOf(file: TFile): Promise<string> {
-    for (const leaf of this.plugin.app.workspace.getLeavesOfType("markdown")) {
-      const view = leaf.view;
-      if (view instanceof MarkdownView && view.file?.path === file.path) return view.editor.getValue();
-    }
-    return this.plugin.app.vault.cachedRead(file);
+  /** The note's text as the writer sees it: its editor's (maybe unsaved) text, else the file. */
+  private textOf(file: TFile): Promise<string> {
+    return this.plugin.notes.text(file).read();
   }
 
   private title(file: TFile): string {
@@ -133,6 +134,8 @@ export class PublishModule implements EscritaModule {
     let previous: unknown;
     let wasPublished = false;
     let finalDate = picked;
+    // The text as it was, before the properties change. Never blocks publishing.
+    await this.plugin.snapshots.beforePublish(file);
     try {
       await this.plugin.app.fileManager.processFrontMatter(file, (fm: Frontmatter) => {
         previous = fm[s.statusProperty];

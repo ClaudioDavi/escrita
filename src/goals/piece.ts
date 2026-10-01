@@ -1,37 +1,9 @@
 // Pure helpers for showing a piece's progress (no Obsidian imports): the
 // status bar segment, the tile's bar with its target and limit marks, and the
-// pace in the piece's own unit. The counting and the target/limit rules live
-// in core/piece.ts.
+// pace in the piece's own unit. The counting, the target/limit rules and the
+// status bar's Progress live in core/measure.ts.
 
-import { pieceProgress, type Piece, type PieceState, type PieceUnit } from "../core/piece";
-
-export interface PieceSummary {
-  count: number;
-  /** what the count is shown against: the target, else the limit; null with neither */
-  of: number | null;
-  state: PieceState;
-  /** count − limit when over it, else 0 */
-  over: number;
-  /** count ≥ target */
-  reached: boolean;
-  /** 0–1, count against `of` (for a small bar) */
-  fraction: number;
-}
-
-/** What the status bar and the tile need to know about a piece at `count`. */
-export function pieceSummary(count: number, piece: Pick<Piece, "target" | "limit">): PieceSummary {
-  const p = pieceProgress({ count, target: piece.target, limit: piece.limit });
-  const c = Number.isFinite(count) && count > 0 ? count : 0;
-  const of = piece.target && piece.target > 0 ? piece.target : piece.limit && piece.limit > 0 ? piece.limit : null;
-  return {
-    count: c,
-    of,
-    state: p.state,
-    over: p.over,
-    reached: p.reached,
-    fraction: Math.min(1, Math.max(0, p.ratio)),
-  };
-}
+import type { Piece, PieceUnit } from "../core/measure";
 
 export interface PieceBar {
   /** 0–1: how much of the bar is filled */

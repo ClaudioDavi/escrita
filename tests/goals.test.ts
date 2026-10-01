@@ -5,7 +5,7 @@ import {
   ActiveFiles, goalMet, goalMetDays, netOn, num, recordBookTotal, renameBook, streak, sumAdded,
   type History,
 } from "../src/goals/tracker";
-import { normalizeDeadline, pacing, parseGoal, readNumberField } from "../src/goals/pacing";
+import { pacing, readNumberField } from "../src/goals/pacing";
 import { chartGeometry, CHART_PAD } from "../src/goals/chart";
 import { Sprint, formatClock, sprintMinutes, wordsPerHour } from "../src/goals/sprint";
 import { lastDays } from "../src/core/dates";
@@ -394,23 +394,9 @@ describe("pacing", () => {
     expect(q.average).toBe(0);
   });
 
-  it("parseGoal accepts numbers and formatted strings", () => {
-    expect(parseGoal(80000)).toBe(80000);
-    expect(parseGoal(80000.4)).toBe(80000);
-    expect(parseGoal("80,000")).toBe(80000);
-    expect(parseGoal("80.000")).toBe(80000);
-    expect(parseGoal(" 80 000 ")).toBe(80000);
-    expect(parseGoal("")).toBeNull();
-    expect(parseGoal("abc")).toBeNull();
-    expect(parseGoal("-5")).toBeNull();
-    expect(parseGoal(0)).toBeNull();
-    expect(parseGoal(null)).toBeNull();
-    expect(parseGoal(Infinity)).toBeNull();
-  });
-
   it("readNumberField reads number inputs with '.' as a decimal point", () => {
     expect(readNumberField("80000")).toEqual({ kind: "value", n: 80000 });
-    // Regression: parseGoal would read this as 800005.
+    // Regression: the old frontmatter goal parser read this as 800005 (core/measure.parseAmount reads 80001).
     expect(readNumberField("80000.5")).toEqual({ kind: "value", n: 80001 });
     expect(readNumberField("80000.4")).toEqual({ kind: "value", n: 80000 });
     expect(readNumberField("1e5")).toEqual({ kind: "value", n: 100000 });
@@ -422,19 +408,6 @@ describe("pacing", () => {
     expect(readNumberField("-5")).toEqual({ kind: "invalid" });
     expect(readNumberField("abc")).toEqual({ kind: "invalid" });
     expect(readNumberField("Infinity")).toEqual({ kind: "invalid" });
-  });
-
-  it("normalizeDeadline accepts days and dates, rejects impossible ones", () => {
-    expect(normalizeDeadline("2027-03-01")).toBe("2027-03-01");
-    expect(normalizeDeadline(" 2027-03-01 ")).toBe("2027-03-01");
-    expect(normalizeDeadline("2027-03-01T10:00")).toBe("2027-03-01");
-    expect(normalizeDeadline(new Date(2027, 2, 1))).toBe("2027-03-01");
-    expect(normalizeDeadline(new Date(NaN))).toBeNull();
-    expect(normalizeDeadline("2026-02-31")).toBeNull();
-    expect(normalizeDeadline("March 1")).toBeNull();
-    expect(normalizeDeadline("")).toBeNull();
-    expect(normalizeDeadline(undefined)).toBeNull();
-    expect(normalizeDeadline(20270301)).toBeNull();
   });
 });
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { countCharacters, countWords, charLength, readerText } from "../src/core/wordcount";
-import { readPiece, pieceCount, pieceProgress, parseAmount, parseUnit, parseDeadline, NEAR_LIMIT } from "../src/core/piece";
+import { readPiece, countIn, measureText, pieceProgress, parseAmount, parseUnit, parseDeadline, NEAR_LIMIT } from "../src/core/measure";
 import { dayOffPredicate, weekdayOf, parseDatesOff, invalidDatesOff, hasDaysOff } from "../src/core/daysoff";
 import { mergeDefaults, cleanWeekdays } from "../src/core/merge";
 import { lineList } from "../src/core/lists";
@@ -100,9 +100,9 @@ describe("piece", () => {
     expect(parseDeadline("15/10/2026")).toBeUndefined();
   });
   it("counts in the piece's unit", () => {
-    expect(pieceCount("um dois", "words")).toBe(2);
-    expect(pieceCount("um dois", "characters")).toBe(7);
-    expect(pieceCount("um dois", "characters-no-spaces")).toBe(6);
+    expect(countIn(measureText("um dois"), "words")).toBe(2);
+    expect(countIn(measureText("um dois"), "characters")).toBe(7);
+    expect(countIn(measureText("um dois"), "characters-no-spaces")).toBe(6);
   });
   it("computes progress and limit states", () => {
     expect(pieceProgress({ count: 4210, target: 5000 })).toMatchObject({ ratio: 0.842, state: "under", over: 0, reached: false });

@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
-  classify, inBook, inFolder, listBooks, lookupPath, placementPath, type BookOf, type ClassifySettings, type Kind, type VaultTree,
+  ancestors, classify, DEFAULT_SNAPSHOTS_FOLDER, inBook, inFolder, inSnapshots, listBooks, lookupPath, placementPath,
+  snapshotsFolderProblem, snapshotsRoot, type BookOf, type ClassifySettings, type Kind, type VaultTree,
 } from "../src/core/classify";
-import { readPiece, type Piece } from "../src/core/piece";
+import { readPiece, type Piece } from "../src/core/measure";
 import { folderList } from "../src/core/lists";
 
 // ---------------------------------------------------------------------------
@@ -77,6 +78,7 @@ class FakeTree implements VaultTree<FakeFile, FakeDir> {
 const BASE: ClassifySettings = {
   chaptersFolder: "Chapters", trackFolders: "", excludeFolders: "", chapterTemplate: "",
   targetProperty: "target", limitProperty: "limit", unitProperty: "unit",
+  snapshotsFolder: "Escrita/Snapshots",
 };
 
 const ENTRIES = [
@@ -642,5 +644,119 @@ describe("adapter: placementPath", () => {
     expect(pp("/")).toBe("/");
     expect(classify(tree, BASE, pp("/"))).toMatchObject({ kind: "folder" });
     expect(classify(tree, BASE, pp("Novels//Livro.md"))).toMatchObject({ kind: "book-note" });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Snapshots: one folder per note (the note path, .md included) of .txt files.
+
+describe("snapshotsRoot", () => {
+  it("trims, collapses and strips slashes", () => {
+    expect(snapshotsRoot("Escrita/Snapshots")).toBe("Escrita/Snapshots");
+    expect(snapshotsRoot("  /Arquivo//Instantâneos/ ")).toBe("Arquivo/Instantâneos");
+    expect(snapshotsRoot("Arquivo\\Snaps")).toBe("Arquivo/Snaps");
+    expect(snapshotsRoot(".escrita/snapshots")).toBe(".escrita/snapshots");
+  });
+  it("never means the whole vault: empty or not a string gives the default", () => {
+    for (const v of ["", "   ", "/", "//", null, undefined, 3]) expect(snapshotsRoot(v)).toBe(DEFAULT_SNAPSHOTS_FOLDER);
+    expect(DEFAULT_SNAPSHOTS_FOLDER).toBe("Escrita/Snapshots");
+  });
+  it("inSnapshots matches the folder and what is inside it only", () => {
+    const s = { snapshotsFolder: "/Escrita/Snapshots/" };
+    expect(inSnapshots("Escrita/Snapshots", s)).toBe(true);
+    expect(inSnapshots("Escrita/Snapshots/Novels/Livro.md/2026-09-30 1200.txt", s)).toBe(true);
+    expect(inSnapshots("Escrita/Snapshots2/x.md", s)).toBe(false);
+    expect(inSnapshots("Escrita/x.md", s)).toBe(false);
+    expect(inSnapshots("x.md", { snapshotsFolder: "" })).toBe(false);
+  });
+});
+
+describe("ancestors", () => {
+  it("lists containing folders, nearest first, never the root", () => {
+    expect(ancestors("A/B/c.md")).toEqual(["A/B", "A"]);
+    expect(ancestors("A/B")).toEqual(["A"]);
+    expect(ancestors("c.md")).toEqual([]);
+    expect(ancestors("")).toEqual([]);
+  });
+});
+
+describe("classify: the snapshots folder", () => {
+  const snaps = new FakeTree([
+    "Novels/Livro.md", "Novels/Livro/Chapters/01.md",
+    "Escrita/Snapshots/Novels/Livro.md/2026-09-30 1200.txt",
+    "Escrita/Snapshots/Novels/Livro.md/index.json",
+    "Escrita/Snapshots/Stray.md",
+    // a snapshot dir X.md beside a stray X.md.md with a Chapters folder must never form a book
+    "Escrita/Snapshots/Contos/A.md.md", "Escrita/Snapshots/Contos/A.md/Chapters/x.txt",
+    // a snapshots folder placed inside a book
+    "Novels/Livro/Snaps/Novels/Livro/Chapters/01.md/2026-09-30 1200.txt",
+    "Novels/Livro/Snaps/Novels/Livro/Chapters/01.md/old.md",
+  ], { "Escrita/Snapshots/Stray.md": { target: 100 } });
+  const c = (path: string, s: Partial<ClassifySettings> = {}) => classify(snaps, { ...BASE, ...s }, path);
+
+  it("flags files and folders there, and never tracks them", () => {
+    const txt = c("Escrita/Snapshots/Novels/Livro.md/2026-09-30 1200.txt");
+    expect(txt).toMatchObject({ kind: "file", snapshot: true, tracked: false, book: null, piece: null, markdown: false });
+    expect(c("Escrita/Snapshots/Stray.md")).toMatchObject({ kind: "note", snapshot: true, tracked: false, piece: null, markdown: true });
+    expect(c("Escrita/Snapshots/Novels/Livro.md")).toMatchObject({ kind: "folder", snapshot: true, book: null });
+    expect(c("Escrita/Snapshots")).toMatchObject({ kind: "folder", snapshot: true });
+  });
+
+  it("leaves everything else alone", () => {
+    expect(c("Novels/Livro.md")).toMatchObject({ kind: "book-note", snapshot: false, tracked: true });
+    expect(c("Novels/Livro/Chapters/01.md")).toMatchObject({ kind: "chapter", snapshot: false });
+    expect(c("Escrita")).toMatchObject({ kind: "folder", snapshot: false });
+    expect(c("nothing/here.md")).toMatchObject({ kind: "none", snapshot: false });
+    expect(classify(snaps, BASE, null).snapshot).toBe(false);
+  });
+
+  it("wins over books: a snapshots folder inside a book yields no chapters or book files", () => {
+    const s = { snapshotsFolder: "Novels/Livro/Snaps" };
+    expect(c("Novels/Livro/Snaps/Novels/Livro/Chapters/01.md/old.md", s))
+      .toMatchObject({ kind: "note", book: null, tracked: false, snapshot: true });
+    expect(c("Novels/Livro/Snaps", s)).toMatchObject({ kind: "folder", book: null, snapshot: true });
+    // without that setting the same file is an ordinary book file
+    expect(c("Novels/Livro/Snaps/Novels/Livro/Chapters/01.md/old.md"))
+      .toMatchObject({ kind: "book-file", snapshot: false, tracked: true });
+  });
+
+  it("the default applies when the setting is empty", () => {
+    expect(c("Escrita/Snapshots/Stray.md", { snapshotsFolder: "" }).snapshot).toBe(true);
+  });
+
+  it("listBooks skips folders inside the snapshots folder", () => {
+    expect(listBooks(snaps, BASE).map((b) => b.note.path)).toEqual(["Novels/Livro.md"]);
+    expect(listBooks(snaps, { ...BASE, snapshotsFolder: "Elsewhere" }).map((b) => b.note.path))
+      .toEqual(["Escrita/Snapshots/Contos/A.md.md", "Novels/Livro.md"]);
+  });
+});
+
+describe("snapshotsFolderProblem", () => {
+  const none = () => false;
+  it("accepts a plain or hidden folder", () => {
+    expect(snapshotsFolderProblem("Escrita/Snapshots", ".obsidian", "", none)).toBeNull();
+    expect(snapshotsFolderProblem(".escrita/snapshots", ".obsidian", "Novels", none)).toBeNull();
+    expect(snapshotsFolderProblem("", ".obsidian", "", none)).toBeNull();
+  });
+  it("rejects .. and . segments", () => {
+    expect(snapshotsFolderProblem("../outside", ".obsidian", "", none)).toEqual({ reason: "path" });
+    expect(snapshotsFolderProblem("a/./b", ".obsidian", "", none)).toEqual({ reason: "path" });
+  });
+  it("rejects the config folder, inside it or holding it", () => {
+    expect(snapshotsFolderProblem(".obsidian", ".obsidian", "", none)).toEqual({ reason: "config", folder: ".obsidian" });
+    expect(snapshotsFolderProblem("/.obsidian/snaps/", ".obsidian", "", none)).toEqual({ reason: "config", folder: ".obsidian" });
+    expect(snapshotsFolderProblem(".obsidian2", ".obsidian", "", none)).toBeNull();
+  });
+  it("rejects a folder inside a track folder, or holding one", () => {
+    expect(snapshotsFolderProblem("Novels/Snaps", ".obsidian", "Contos\n/Novels/", none)).toEqual({ reason: "tracked", folder: "Novels" });
+    expect(snapshotsFolderProblem("Writing", ".obsidian", "Writing/Novels", none)).toEqual({ reason: "tracked", folder: "Writing/Novels" });
+    expect(snapshotsFolderProblem("Novels2", ".obsidian", "Novels", none)).toBeNull();
+  });
+  it("rejects a folder that already has notes", () => {
+    const seen: string[] = [];
+    const has = (root: string) => { seen.push(root); return root === "Contos"; };
+    expect(snapshotsFolderProblem(" Contos/ ", ".obsidian", "", has)).toEqual({ reason: "notes", folder: "Contos" });
+    expect(seen).toEqual(["Contos"]);
+    expect(snapshotsFolderProblem("Escrita/Snapshots", ".obsidian", "", has)).toBeNull();
   });
 });

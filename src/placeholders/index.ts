@@ -3,11 +3,12 @@ import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
 import type { EscritaModule } from "../data";
 import { folderList } from "../core/lists";
+import { snapshotsRoot } from "../core/classify";
+import type { Applied } from "../core/note-text";
 import { t } from "../i18n";
 import { isIndexable, locate, planInsert, resolvePlaceholder, scan, stepIndex, type IndexedMarker } from "./logic";
 import { PlaceholderStore } from "./store";
 import { placeholderDecorations } from "./decoration";
-import { applyDots, clearDots } from "./explorer";
 import { PLACEHOLDERS_VIEW, PlaceholdersView } from "./view";
 
 export { PLACEHOLDERS_VIEW } from "./view";
@@ -35,8 +36,11 @@ export class PlaceholdersModule implements EscritaModule {
   private nextSeq = 0;
   private lastMarker = "";
   private lastExclude = "";
+  private lastSnapshots = "";
   private lastDots = true;
   private dotsSoon = debounce(() => this.applyDots(), 100, true);
+  /** removes the explorer dot drawer and its dots */
+  private undraw: (() => void) | null = null;
 
   constructor(private plugin: EscritaPlugin) {}
 
@@ -84,6 +88,7 @@ export class PlaceholdersModule implements EscritaModule {
     this.loaded = true;
     this.lastMarker = this.marker();
     this.lastExclude = p.settings.excludeFolders;
+    this.lastSnapshots = p.settings.snapshotsFolder;
     this.lastDots = p.settings.showExplorerDots;
 
     p.registerView(PLACEHOLDERS_VIEW, (leaf) => new PlaceholdersView(leaf, p));
@@ -112,6 +117,9 @@ export class PlaceholdersModule implements EscritaModule {
       callback: () => { void this.openView(); },
     });
 
+    // A small dot after files with placeholders in the file explorer (silent: no tooltip).
+    this.undraw = p.decorations.add("dot", (it) =>
+      !it.folder && p.settings.showExplorerDots && this.store.countFor(it.path) > 0 ? {} : null);
     p.register(this.store.onChange(() => this.dotsSoon()));
 
     p.app.workspace.onLayoutReady(() => {
@@ -122,7 +130,6 @@ export class PlaceholdersModule implements EscritaModule {
       p.registerEvent(vault.on("create", (f) => this.reindex(f)));
       p.registerEvent(vault.on("delete", (f) => this.forget(f.path)));
       p.registerEvent(vault.on("rename", (f, oldPath) => this.renamed(f, oldPath)));
-      p.registerEvent(p.app.workspace.on("layout-change", () => this.dotsSoon()));
       void this.rebuild();
     });
   }
@@ -131,16 +138,19 @@ export class PlaceholdersModule implements EscritaModule {
     this.loaded = false;
     this.generation++;
     this.dotsSoon.cancel();
-    clearDots(this.plugin.app);
+    this.undraw?.();
+    this.undraw = null;
   }
 
   settingsChanged(): void {
     const s = this.plugin.settings;
     const marker = this.marker();
-    const reindex = marker !== this.lastMarker || s.excludeFolders !== this.lastExclude;
+    const reindex = marker !== this.lastMarker || s.excludeFolders !== this.lastExclude
+      || s.snapshotsFolder !== this.lastSnapshots;
     const dots = s.showExplorerDots !== this.lastDots;
     this.lastMarker = marker;
     this.lastExclude = s.excludeFolders;
+    this.lastSnapshots = s.snapshotsFolder;
     this.lastDots = s.showExplorerDots;
     if (reindex) {
       // Editors read the marker on each update; this makes them update now.
@@ -156,8 +166,10 @@ export class PlaceholdersModule implements EscritaModule {
     return this.plugin.settings.placeholderMarker || "XXX";
   }
 
+  /** Markdown outside the exclude folders and the snapshots folder. */
   private indexable(path: string): boolean {
-    return isIndexable(path, folderList(this.plugin.settings.excludeFolders));
+    const s = this.plugin.settings;
+    return isIndexable(path, [...folderList(s.excludeFolders), snapshotsRoot(s.snapshotsFolder)]);
   }
 
   private async rebuild(): Promise<void> {
@@ -241,7 +253,7 @@ export class PlaceholdersModule implements EscritaModule {
   }
 
   private applyDots(): void {
-    applyDots(this.plugin.app, this.plugin.settings.showExplorerDots, (p) => this.store.countFor(p) > 0);
+    this.plugin.decorations.refresh("dot");
   }
 
   // ---------------------------------------------------------------- commands
@@ -361,8 +373,9 @@ export class PlaceholdersModule implements EscritaModule {
 
   /**
    * Remove a placeholder, only if its exact text is still where the index says
-   * (or appears exactly once in the file). Goes through an open editor when there
-   * is one, so undo works; otherwise `vault.process`. Resolves to true when removed.
+   * (or appears exactly once in the file). Goes through the note text port:
+   * an open editor when there is one (undo works), else `vault.process`.
+   * Resolves to true when removed.
    */
   async resolve(path: string, m: IndexedMarker): Promise<boolean> {
     const marker = this.marker();
@@ -372,46 +385,25 @@ export class PlaceholdersModule implements EscritaModule {
       new Notice(t("placeholders.notFound"));
       return false;
     }
-    const leaf = this.markdownLeafFor(path);
-    if (leaf && leaf.view instanceof MarkdownView) {
-      const editor = leaf.view.editor;
-      const text = editor.getValue();
-      const r = resolvePlaceholder(text, m, marker);
-      if (!r) {
-        new Notice(t("placeholders.notFound"));
-        this.bump(path);
-        this.store.set(path, scan(text, marker));
-        return false;
-      }
-      editor.replaceRange("", editor.offsetToPos(r.from), editor.offsetToPos(r.to));
-      // Reflect it right away; the vault "modify" follows when the editor saves.
-      this.bump(path);
-      this.store.set(path, scan(editor.getValue(), marker));
-      return true;
-    }
-    let after: string | null = null;
-    let current = "";
+    let res: Applied;
     try {
-      await this.plugin.app.vault.process(file, (text) => {
-        current = text;
-        after = null;
+      res = await this.plugin.notes.text(file).apply((text) => {
         const r = resolvePlaceholder(text, m, marker);
-        if (!r) return text;
-        after = r.text;
-        return r.text;
+        return r ? { from: r.from, to: r.to, insert: "" } : null;
       });
     } catch (e) {
       console.error(`Escrita: could not resolve a placeholder in ${path}`, e);
       new Notice(t("placeholders.notFound"));
       return false;
     }
+    // Reflect it right away; with an editor the vault "modify" follows when it saves.
     this.bump(path);
-    if (after === null) {
+    if (!res.ok) {
       new Notice(t("placeholders.notFound"));
-      this.store.set(path, scan(current, marker));
+      this.store.set(path, scan(res.current, marker));
       return false;
     }
-    this.store.set(path, scan(after, marker));
+    this.store.set(path, scan(res.after, marker));
     return true;
   }
 }

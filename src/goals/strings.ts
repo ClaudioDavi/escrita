@@ -1,22 +1,16 @@
 import type { Strings } from "../i18n";
 
-// Plurals use ".one" / ".other" suffixes; see plural() in ./format.ts.
+// Plurals use ".one" / ".other" suffixes; see plural() in src/i18n.ts.
 export const goalsStrings: Strings = {
   en: {
     "goals.cmd.open": "Open progress",
     "goals.cmd.start": "Start a sprint",
     "goals.cmd.stop": "Stop the sprint",
 
-    "goals.words.one": "{n} word",
-    "goals.words.other": "{n} words",
     "goals.days.one": "{n} day",
     "goals.days.other": "{n} days",
     "goals.chapters.one": "{n} chapter",
     "goals.chapters.other": "{n} chapters",
-    "goals.chars.one": "{n} character",
-    "goals.chars.other": "{n} characters",
-    "goals.charsNoSpaces.one": "{n} character (no spaces)",
-    "goals.charsNoSpaces.other": "{n} characters (no spaces)",
     "goals.writingDays.one": "{n} writing day",
     "goals.writingDays.other": "{n} writing days",
 
@@ -126,16 +120,10 @@ export const goalsStrings: Strings = {
     "goals.cmd.start": "Começar um sprint",
     "goals.cmd.stop": "Parar o sprint",
 
-    "goals.words.one": "{n} palavra",
-    "goals.words.other": "{n} palavras",
     "goals.days.one": "{n} dia",
     "goals.days.other": "{n} dias",
     "goals.chapters.one": "{n} capítulo",
     "goals.chapters.other": "{n} capítulos",
-    "goals.chars.one": "{n} caractere",
-    "goals.chars.other": "{n} caracteres",
-    "goals.charsNoSpaces.one": "{n} caractere sem espaços",
-    "goals.charsNoSpaces.other": "{n} caracteres sem espaços",
     "goals.writingDays.one": "{n} dia de escrita",
     "goals.writingDays.other": "{n} dias de escrita",
 

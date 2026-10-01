@@ -1,0 +1,298 @@
+/* Snapshots panel */
+.escrita-snapshots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  padding: var(--size-4-3);
+}
+
+.escrita-snapshots-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+}
+
+.escrita-snapshots-titles {
+  min-width: 0;
+}
+
+.escrita-snapshots-title {
+  font-weight: var(--font-semibold);
+  font-size: var(--font-ui-medium);
+  color: var(--text-normal);
+}
+
+.escrita-snapshots-note {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.escrita-snapshots-icon-btn {
+  min-width: 32px;
+  min-height: 32px;
+  flex-shrink: 0;
+}
+
+.escrita-snapshots-empty {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  padding: var(--size-4-4) 0;
+  text-align: center;
+}
+
+.escrita-snapshots-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+}
+
+.escrita-snapshot-card {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background-color: var(--background-primary);
+  padding: var(--size-4-2) var(--size-4-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+}
+
+.escrita-snapshot-card.is-busy {
+  opacity: 0.6;
+}
+
+.escrita-snapshot-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--size-4-2);
+  min-width: 0;
+}
+
+.escrita-snapshot-name {
+  font-weight: var(--font-medium);
+  color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.escrita-snapshot-kind {
+  flex-shrink: 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  background-color: var(--background-modifier-hover);
+  border-radius: var(--radius-s);
+  padding: 0 var(--size-4-1);
+}
+
+.escrita-snapshot-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--size-4-2);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.escrita-snapshot-meta > span + span::before {
+  content: "·";
+  margin-right: var(--size-4-2);
+}
+
+.escrita-snapshot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-1);
+  justify-content: flex-end;
+}
+
+/* Compare tab */
+.escrita-compare {
+  font-family: var(--font-interface);
+  container-type: inline-size;
+}
+
+.escrita-compare-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+  padding-bottom: var(--size-4-2);
+  border-bottom: 1px solid var(--background-modifier-border);
+  margin-bottom: var(--size-4-2);
+}
+
+.escrita-compare-heading {
+  font-weight: var(--font-semibold);
+  min-width: 0;
+}
+
+.escrita-compare-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-4-2);
+}
+
+.escrita-compare-against {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+
+.escrita-compare-against select {
+  max-width: 16em;
+}
+
+.escrita-compare-modes {
+  display: inline-flex;
+}
+
+.escrita-compare-modes button {
+  border-radius: 0;
+  min-height: 32px;
+}
+
+.escrita-compare-modes button:first-child {
+  border-radius: var(--radius-s) 0 0 var(--radius-s);
+}
+
+.escrita-compare-modes button:last-child {
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+}
+
+.escrita-compare-modes button.is-active {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.escrita-compare-controls .clickable-icon {
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.escrita-compare-summary {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  margin-bottom: var(--size-4-2);
+}
+
+.escrita-compare-degraded {
+  color: var(--escrita-warn);
+}
+
+.escrita-compare-empty {
+  color: var(--text-muted);
+  padding: var(--size-4-4);
+}
+
+.escrita-compare-fm {
+  margin-bottom: var(--size-4-3);
+  font-size: var(--font-ui-small);
+}
+
+.escrita-compare-fm summary {
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.escrita-compare-fm-lines {
+  font-family: var(--font-monospace);
+  white-space: pre-wrap;
+  margin: var(--size-4-1) 0;
+}
+
+.escrita-compare-fm-line {
+  display: block;
+  text-decoration: none;
+}
+
+.escrita-compare-full,
+.escrita-compare-text {
+  font-family: var(--font-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: var(--line-height-normal);
+  /* the only reader of a snapshot's text: it must be copyable */
+  user-select: text;
+}
+
+.escrita-compare-block {
+  margin: 0 0 var(--size-4-3);
+}
+
+.escrita-compare-block.is-changed,
+.escrita-compare-block.is-inserted,
+.escrita-compare-block.is-deleted,
+.escrita-diff-moved {
+  border-left: 2px solid var(--background-modifier-border);
+  padding-left: var(--size-4-2);
+}
+
+.escrita-diff-ins {
+  background-color: var(--escrita-diff-ins-bg);
+  text-decoration: none;
+}
+
+.escrita-diff-del {
+  background-color: var(--escrita-diff-del-bg);
+  color: var(--escrita-diff-del-fg);
+  text-decoration: line-through;
+}
+
+.escrita-diff-moved {
+  background-color: var(--escrita-diff-move-bg);
+}
+
+.escrita-diff-moved .escrita-diff-ins,
+.escrita-diff-moved .escrita-diff-del {
+  background-color: transparent;
+}
+
+.escrita-compare-moved-label {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.escrita-compare-useold {
+  margin-top: var(--size-4-1);
+  font-size: var(--font-ui-smaller);
+  min-height: 32px;
+}
+
+.escrita-compare-collapsed {
+  display: block;
+  width: 100%;
+  margin: 0 0 var(--size-4-3);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  min-height: 32px;
+}
+
+.escrita-compare-side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--size-4-4);
+}
+
+.escrita-compare-cur {
+  border-left: 1px solid var(--background-modifier-border);
+  padding-left: var(--size-4-4);
+}
+
+@container (max-width: 560px) {
+  .escrita-compare-side {
+    grid-template-columns: 1fr;
+    gap: var(--size-4-1);
+  }
+  .escrita-compare-cur {
+    border-left: none;
+    padding-left: 0;
+  }
+}

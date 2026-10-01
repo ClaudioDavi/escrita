@@ -3,17 +3,15 @@ import { EditorView, type ViewUpdate } from "@codemirror/view";
 import type EscritaPlugin from "../main";
 import type { EscritaModule } from "../data";
 import { writingDay } from "../core/dates";
-import { countSelection, countWords } from "../core/wordcount";
+import { countSelection } from "../core/wordcount";
 import { segmentDoc } from "../core/markdown";
-import { pieceCount, type Piece } from "../core/piece";
+import type { Progress } from "../core/measure";
 import type { FilePlacement } from "../core/books";
 import { dayOffPredicate, hasDaysOff, type DayOffPredicate } from "../core/daysoff";
-import { pieceSummary } from "./piece";
-import { fmt, t } from "../i18n";
+import { fmt, t, unitAmount } from "../i18n";
 import { ProgressModal } from "./progress-modal";
 import { Sprint, formatClock, type SprintEvent } from "./sprint";
 import { StatusBar } from "./status-bar";
-import { plural } from "./format";
 import {
   ActiveFiles, addedOn, applyDelta, countsAsWriting, recordBookTotal, renameBook, streak,
 } from "./tracker";
@@ -32,8 +30,8 @@ export class GoalsModule implements EscritaModule {
   private status: StatusBar | null = null;
   private selection = 0;
   private activeCounts: { chapter: number | null; book: number | null } = { chapter: null, book: null };
-  /** the active note's piece (target/limit/unit) and its length in that unit, when it has a target or limit */
-  private activePiece: { piece: Piece; count: number } | null = null;
+  /** the active note's progress in its piece's unit, when it has a target or limit */
+  private activePiece: Progress | null = null;
   private currentSprint: Sprint | null = null;
   private sprintTimer: number | null = null;
   private modal: ProgressModal | null = null;
@@ -100,8 +98,8 @@ export class GoalsModule implements EscritaModule {
       if (file.path === workspace.getActiveFile()?.path) this.refreshStatus();
     }));
     plugin.registerEvent(vault.on("rename", (file, oldPath) => this.onRename(file, oldPath)));
+    // plugin.measure drops and moves cached counts itself (its handlers run first)
     plugin.registerEvent(vault.on("delete", (file) => {
-      this.plugin.counter.forget(file.path);
       this.baseline.delete(file.path);
       this.activeFiles.forget(file.path);
       this.refreshStatus();
@@ -143,7 +141,7 @@ export class GoalsModule implements EscritaModule {
   private prime(file: TFile | null): void {
     if (!file || !this.plugin.books.classify(file).tracked) return;
     this.enqueue(async () => {
-      this.baseline.set(file.path, await this.plugin.counter.count(file));
+      this.baseline.set(file.path, (await this.plugin.measure.counts(file)).words);
     });
   }
 
@@ -159,7 +157,7 @@ export class GoalsModule implements EscritaModule {
     }
     this.enqueue(async () => {
       const before = this.baseline.get(file.path);
-      const after = await this.plugin.counter.count(file);
+      const after = (await this.plugin.measure.counts(file)).words;
       this.baseline.set(file.path, after);
       if (before === undefined || after === before) return;
       // classified after the count, as before: a rename queued meanwhile has landed
@@ -171,7 +169,7 @@ export class GoalsModule implements EscritaModule {
 
   private async bookChange(p: FilePlacement): Promise<{ path: string; total: number } | null> {
     if (p.kind !== "chapter" || !p.book) return null;
-    const total = await this.plugin.counter.total(this.plugin.books.chapters(p.book).map((c) => c.file));
+    const total = (await this.plugin.measure.book(p.book)).counts.words;
     return { path: p.book.note.path, total };
   }
 
@@ -202,7 +200,6 @@ export class GoalsModule implements EscritaModule {
   }
 
   private onRename(file: TAbstractFile, oldPath: string): void {
-    this.plugin.counter.rename(oldPath, file.path);
     this.activeFiles.rename(oldPath, file.path);
     const b = this.baseline.get(oldPath);
     this.baseline.delete(oldPath);
@@ -237,14 +234,12 @@ export class GoalsModule implements EscritaModule {
     const file = this.plugin.app.workspace.getActiveFile();
     const p = this.plugin.books.classify(file);
     try {
-      const books = this.plugin.books;
       const book = p.book;
       if (!file || !book) {
         this.activeCounts = { chapter: null, book: null };
       } else {
-        const chapters = books.chapters(book).map((c) => c.file);
-        const total = await this.plugin.counter.total(chapters);
-        const chapter = p.kind === "chapter" ? await this.plugin.counter.count(file) : null;
+        const total = (await this.plugin.measure.book(book)).counts.words;
+        const chapter = p.kind === "chapter" ? (await this.plugin.measure.counts(file)).words : null;
         this.activeCounts = { chapter, book: total };
       }
     } catch (e) {
@@ -253,25 +248,14 @@ export class GoalsModule implements EscritaModule {
     }
     try {
       // shown for any note with a target or limit, chapters included (history keys only standalone pieces)
-      // re-read here, after the awaits above, so a frontmatter edit made meanwhile shows
-      const piece = file ? this.plugin.books.classify(file).piece : null;
-      if (file && piece && (piece.target !== undefined || piece.limit !== undefined)) {
-        const md = await this.plugin.app.vault.cachedRead(file);
-        this.activePiece = { piece, count: pieceCount(md, piece.unit) };
-      } else {
-        this.activePiece = null;
-      }
+      // measure.note reads the piece after its count, so a frontmatter edit made meanwhile shows
+      const n = file && p.markdown ? await this.plugin.measure.note(file) : null;
+      this.activePiece = n?.piece && (n.piece.target !== undefined || n.piece.limit !== undefined) ? n.progress : null;
     } catch (e) {
       console.error("Escrita: couldn't count the active note", e);
       this.activePiece = null;
     }
     this.renderStatus();
-  }
-
-  /** The active note's length in its unit and in words (for the progress modal). */
-  async measure(file: TFile, piece: Piece): Promise<{ count: number; words: number }> {
-    const md = await this.plugin.app.vault.cachedRead(file);
-    return { count: pieceCount(md, piece.unit), words: countWords(md) };
   }
 
   private renderStatus(): void {
@@ -284,9 +268,7 @@ export class GoalsModule implements EscritaModule {
       selection: this.selection,
       chapter: this.activeCounts.chapter,
       book: this.activeCounts.book,
-      piece: this.activePiece
-        ? { ...pieceSummary(this.activePiece.count, this.activePiece.piece), unit: this.activePiece.piece.unit }
-        : null,
+      piece: this.activePiece,
       today: addedOn(history, today),
       goal: this.plugin.settings.dailyGoal,
       streak: streak(history, today, this.dayOff()),
@@ -328,7 +310,7 @@ export class GoalsModule implements EscritaModule {
     this.sprintTimer = window.setInterval(() => this.tickSprint(), 1000);
     this.plugin.registerInterval(this.sprintTimer);
     new Notice(sprint.target > 0
-      ? t("goals.sprint.started", { min: fmt(sprint.minutes), target: plural("goals.words", sprint.target) })
+      ? t("goals.sprint.started", { min: fmt(sprint.minutes), target: unitAmount("words", sprint.target) })
       : t("goals.sprint.startedNoTarget", { min: fmt(sprint.minutes) }));
     this.renderStatus();
     this.refreshModal();
@@ -350,13 +332,13 @@ export class GoalsModule implements EscritaModule {
 
   private sprintEvent(ev: SprintEvent): void {
     if (ev.type === "target") {
-      new Notice(t("goals.sprint.targetReached", { words: plural("goals.words", ev.words) }));
+      new Notice(t("goals.sprint.targetReached", { words: unitAmount("words", ev.words) }));
       this.renderStatus();
       return;
     }
     this.clearSprintTimer();
     this.currentSprint = null;
-    new Notice(t("goals.sprint.done", { words: plural("goals.words", ev.words), min: fmt(ev.minutes), rate: fmt(ev.perHour) }), 10000);
+    new Notice(t("goals.sprint.done", { words: unitAmount("words", ev.words), min: fmt(ev.minutes), rate: fmt(ev.perHour) }), 10000);
     this.renderStatus();
     this.refreshModal();
   }

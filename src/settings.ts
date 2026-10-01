@@ -3,6 +3,7 @@ import type EscritaPlugin from "./main";
 import { t } from "./i18n";
 import { cleanWeekdays } from "./core/merge";
 import { invalidDatesOff } from "./core/daysoff";
+import { DEFAULT_SNAPSHOTS_FOLDER, inFolder, snapshotsFolderProblem, snapshotsRoot, type SnapshotsFolderProblem } from "./core/classify";
 
 export type ParagraphStyle = "single" | "blank";
 export type Scope = "books" | "all";
@@ -29,12 +30,22 @@ export interface EscritaSettings {
   /** single changes bigger than this (pastes, imports, syncs) are not counted as writing */
   ignoreJumpsOver: number;
   showStatusBar: boolean;
+  /** word counts next to tracked notes, chapters and books in the file explorer */
+  explorerCounts: boolean;
+  /** other folders show the sum of the tracked notes inside them */
+  explorerFolderTotals: boolean;
+  /** "4,210 / 5,000" for notes with a target or limit */
+  explorerShowTarget: boolean;
   sprintMinutes: number;
   sprintTarget: number;
-  /** property names for a piece's target length, hard limit and unit (see core/piece) */
+  /** property names for a piece's target length, hard limit and unit (see core/measure) */
   targetProperty: string;
   limitProperty: string;
   unitProperty: string;
+  /** property holding a book's or a note's deadline */
+  deadlineProperty: string;
+  /** property in a book's note holding its word goal */
+  goalProperty: string;
   /** weekdays off, 0 = Sunday … 6 = Saturday (see core/daysoff) */
   weekdaysOff: number[];
   /** specific days off, YYYY-MM-DD, one per line */
@@ -49,6 +60,14 @@ export interface EscritaSettings {
   dateProperty: string;
   /** properties a published note should have; newline/comma list (lineList); empty disables the check */
   recommendedProperties: string;
+
+  // Snapshots
+  /** vault folder holding one folder of snapshots per note; always read through core/classify.snapshotsRoot */
+  snapshotsFolder: string;
+  /** take an automatic snapshot before the first change of each writing day to a tracked note */
+  snapshotBeforeFirstEdit: boolean;
+  /** automatic snapshots kept per note (manual ones are never removed); at least 1 */
+  snapshotsKeepAuto: number;
 
   // Outline
   ghostBeats: boolean;
@@ -87,11 +106,16 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   excludeFolders: "Templates",
   ignoreJumpsOver: 1500,
   showStatusBar: true,
+  explorerCounts: true,
+  explorerFolderTotals: false,
+  explorerShowTarget: false,
   sprintMinutes: 25,
   sprintTarget: 500,
   targetProperty: "target",
   limitProperty: "limit",
   unitProperty: "unit",
+  deadlineProperty: "deadline",
+  goalProperty: "goal",
   weekdaysOff: [],
   datesOff: "",
 
@@ -99,6 +123,10 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   unpublishedValue: "ready",
   dateProperty: "date",
   recommendedProperties: "description",
+
+  snapshotsFolder: DEFAULT_SNAPSHOTS_FOLDER,
+  snapshotBeforeFirstEdit: false,
+  snapshotsKeepAuto: 20,
 
   ghostBeats: true,
 
@@ -129,8 +157,14 @@ export function parseStatusColors(s: string): Record<string, string> {
 /** Settings as saved, with defaults filled in and list fields cleaned (used by loadAll). */
 export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   s.weekdaysOff = cleanWeekdays(s.weekdaysOff);
+  for (const k of PROPERTY_KEYS) s[k] = (typeof s[k] === "string" ? s[k].trim() : "") || DEFAULT_SETTINGS[k];
+  s.snapshotsFolder = snapshotsRoot(s.snapshotsFolder);
+  s.snapshotsKeepAuto = Number.isFinite(s.snapshotsKeepAuto) ? Math.max(1, Math.round(s.snapshotsKeepAuto)) : DEFAULT_SETTINGS.snapshotsKeepAuto;
   return s;
 }
+
+/** Frontmatter property names a piece or book is read from; normalizeSettings trims them and restores empty ones. */
+const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadlineProperty", "goalProperty"] as const;
 
 export class EscritaSettingTab extends PluginSettingTab {
   constructor(app: App, private plugin: EscritaPlugin) {
@@ -215,6 +249,21 @@ export class EscritaSettingTab extends PluginSettingTab {
       .addToggle((c) => c.setValue(s.showStatusBar)
         .onChange(async (v) => { s.showStatusBar = v; await save(); }));
     new Setting(containerEl)
+      .setName(t("settings.explorerCounts"))
+      .setDesc(t("settings.explorerCounts.desc"))
+      .addToggle((c) => c.setValue(s.explorerCounts)
+        .onChange(async (v) => { s.explorerCounts = v; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.explorerFolderTotals"))
+      .setDesc(t("settings.explorerFolderTotals.desc"))
+      .addToggle((c) => c.setValue(s.explorerFolderTotals)
+        .onChange(async (v) => { s.explorerFolderTotals = v; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.explorerShowTarget"))
+      .setDesc(t("settings.explorerShowTarget.desc"))
+      .addToggle((c) => c.setValue(s.explorerShowTarget)
+        .onChange(async (v) => { s.explorerShowTarget = v; await save(); }));
+    new Setting(containerEl)
       .setName(t("settings.targetProperty"))
       .setDesc(t("settings.pieceProperties.desc"))
       .addText((c) => c.setPlaceholder("target").setValue(s.targetProperty)
@@ -227,6 +276,15 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setName(t("settings.unitProperty"))
       .addText((c) => c.setPlaceholder("unit").setValue(s.unitProperty)
         .onChange(async (v) => { s.unitProperty = v.trim() || DEFAULT_SETTINGS.unitProperty; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.deadlineProperty"))
+      .addText((c) => c.setPlaceholder("deadline").setValue(s.deadlineProperty)
+        .onChange(async (v) => { s.deadlineProperty = v.trim() || DEFAULT_SETTINGS.deadlineProperty; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.goalProperty"))
+      .setDesc(t("settings.goalProperty.desc"))
+      .addText((c) => c.setPlaceholder("goal").setValue(s.goalProperty)
+        .onChange(async (v) => { s.goalProperty = v.trim() || DEFAULT_SETTINGS.goalProperty; await save(); }));
     this.weekdaysSetting(containerEl, save);
     const datesOff = new Setting(containerEl)
       .setName(t("settings.datesOff"))
@@ -262,6 +320,8 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setDesc(t("settings.recommendedProperties.desc"))
       .addTextArea((c) => c.setPlaceholder("description").setValue(s.recommendedProperties)
         .onChange(async (v) => { s.recommendedProperties = v; await save(); }));
+
+    this.snapshotsSettings(containerEl, save, num);
 
     new Setting(containerEl).setName(t("settings.outline")).setHeading();
     new Setting(containerEl)
@@ -339,6 +399,43 @@ export class EscritaSettingTab extends PluginSettingTab {
         .onChange(async (v) => { s.spellcheckOnDemand = v; await save(); }));
   }
 
+  /**
+   * The Snapshots section. The folder is saved only when it passes
+   * snapshotsFolderProblem; otherwise the saved value stays and a warning under
+   * the setting says why (no notices while typing).
+   */
+  private snapshotsSettings(containerEl: HTMLElement, save: () => Promise<void>, num: (v: string, fallback: number, min?: number) => number): void {
+    const s = this.plugin.settings;
+    new Setting(containerEl).setName(t("settings.snapshots")).setHeading();
+    const folder = new Setting(containerEl)
+      .setName(t("settings.snapshotsFolder"))
+      .setDesc(t("settings.snapshotsFolder.desc"));
+    const hint = folder.descEl.createDiv({ cls: "escrita-setting-warning" });
+    hint.toggle(false);
+    folder.addText((c) => c.setPlaceholder(DEFAULT_SNAPSHOTS_FOLDER).setValue(s.snapshotsFolder)
+      .onChange(async (v) => {
+        const root = snapshotsRoot(v);
+        const problem = snapshotsFolderProblem(v, this.app.vault.configDir, s.trackFolders, (r) =>
+          r !== s.snapshotsFolder && this.app.vault.getMarkdownFiles().some((f) => inFolder(f.path, r)));
+        c.inputEl.toggleClass("escrita-invalid", problem !== null);
+        hint.setText(problem ? snapshotsProblemText(problem) : "");
+        hint.toggle(problem !== null);
+        if (problem || root === s.snapshotsFolder) return;
+        s.snapshotsFolder = root;
+        await save();
+      }));
+    new Setting(containerEl)
+      .setName(t("settings.snapshotBeforeFirstEdit"))
+      .setDesc(t("settings.snapshotBeforeFirstEdit.desc"))
+      .addToggle((c) => c.setValue(s.snapshotBeforeFirstEdit)
+        .onChange(async (v) => { s.snapshotBeforeFirstEdit = v; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.snapshotsKeepAuto"))
+      .setDesc(t("settings.snapshotsKeepAuto.desc"))
+      .addText((c) => c.setValue(String(s.snapshotsKeepAuto))
+        .onChange(async (v) => { s.snapshotsKeepAuto = num(v, DEFAULT_SETTINGS.snapshotsKeepAuto, 1); await save(); }));
+  }
+
   /** One labeled checkbox per weekday, in the locale's week order. */
   private weekdaysSetting(containerEl: HTMLElement, save: () => Promise<void>): void {
     const s = this.plugin.settings;
@@ -364,5 +461,14 @@ export class EscritaSettingTab extends PluginSettingTab {
         void save();
       });
     }
+  }
+}
+
+function snapshotsProblemText(p: SnapshotsFolderProblem): string {
+  switch (p.reason) {
+    case "path": return t("settings.snapshotsFolder.path");
+    case "config":
+    case "tracked": return t("settings.snapshotsFolder.invalid", { folder: p.folder });
+    case "notes": return t("settings.snapshotsFolder.notes", { folder: p.folder });
   }
 }

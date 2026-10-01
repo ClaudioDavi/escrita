@@ -7,6 +7,8 @@ import { placeholdersStrings } from "../src/placeholders/strings";
 import { darlingsStrings } from "../src/darlings/strings";
 import { editorStrings } from "../src/editor/strings";
 import { publishStrings } from "../src/publish/strings";
+import { explorerStrings } from "../src/explorer/strings";
+import { snapshotsStrings } from "../src/snapshots/strings";
 
 const all: Record<string, Strings> = {
   core: coreStrings,
@@ -16,6 +18,8 @@ const all: Record<string, Strings> = {
   darlings: darlingsStrings,
   editor: editorStrings,
   publish: publishStrings,
+  explorer: explorerStrings,
+  snapshots: snapshotsStrings,
 };
 
 const vars = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();

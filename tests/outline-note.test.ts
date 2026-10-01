@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { insertFirstBeat, insertBeat, setBeatText, removeBeat } from "../src/outline/beats-edit";
 import {
-  resolveTarget, decideNoteKey, decideKey, noteGoal, type TargetInput, type OutlineTarget, type KeyInput,
+  resolveTarget, decideNoteKey, decideKey, type TargetInput, type OutlineTarget, type KeyInput,
 } from "../src/outline/model";
 import { parseBeats } from "../src/core/markers";
 
@@ -160,29 +160,5 @@ describe("decideNoteKey", () => {
     expect(decideNoteKey(k({ field: "title" }))).toEqual({ type: "newBeat", before: false });
     expect(decideNoteKey(k({ composing: true }))).toEqual({ type: "default" });
     expect(decideNoteKey(k({ mod: true }))).toEqual({ type: "default" });
-  });
-});
-
-describe("noteGoal", () => {
-  it("plain count without a target or limit", () => {
-    expect(noteGoal(1234, null)).toEqual({ count: 1234, kind: "none", state: "none", fill: 0, reached: false });
-    expect(noteGoal(-3, { })).toMatchObject({ count: 0, kind: "none" });
-  });
-
-  it("against the target", () => {
-    expect(noteGoal(1500, { target: 3000 })).toEqual({ count: 1500, goal: 3000, kind: "target", state: "under", fill: 0.5, reached: false });
-    expect(noteGoal(3500, { target: 3000 })).toMatchObject({ fill: 1, reached: true, state: "under" });
-  });
-
-  it("against the limit when there is no target", () => {
-    expect(noteGoal(960, { limit: 1000 })).toMatchObject({ goal: 1000, kind: "limit", state: "near", fill: 0.96 });
-    expect(noteGoal(1000, { limit: 1000 })).toMatchObject({ state: "near" });
-    expect(noteGoal(1001, { limit: 1000 })).toMatchObject({ state: "over", fill: 1 });
-  });
-
-  it("target and limit: shown against the target, limit kept for the state", () => {
-    expect(noteGoal(2000, { target: 1800, limit: 2000 })).toEqual({
-      count: 2000, goal: 1800, kind: "target", limit: 2000, state: "near", fill: 1, reached: true,
-    });
   });
 });

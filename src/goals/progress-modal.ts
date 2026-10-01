@@ -2,13 +2,13 @@ import { Modal, Notice, TFile } from "obsidian";
 import type EscritaPlugin from "../main";
 import type { Book } from "../core/books";
 import { lastDays } from "../core/dates";
-import { DEADLINE_PROPERTY, PIECE_UNITS, type Piece, type PieceUnit } from "../core/piece";
-import { fmt, t } from "../i18n";
+import { PIECE_UNITS, countIn, parseDeadline, progressOf, type Counts, type Piece, type PieceUnit } from "../core/measure";
+import { fmt, plural, t, unitAmount } from "../i18n";
 import type { GoalsModule } from "./index";
 import { chartGeometry } from "./chart";
-import { fmtDay, fmtShortDay, plural, unitAmount } from "./format";
-import { normalizeDeadline, pacing, parseGoal, readNumberField, type Pacing } from "./pacing";
-import { paceInUnit, pieceBar, pieceSummary } from "./piece";
+import { fmtDay, fmtShortDay } from "./format";
+import { pacing, readNumberField, type Pacing } from "./pacing";
+import { paceInUnit, pieceBar } from "./piece";
 import { setWidth } from "./status-bar";
 import {
   addedOn, bookTotalSeries, dailyAverage, dailySeries, dayStates, deletedOn, goalMetSummary, streak, sumAdded,
@@ -23,10 +23,8 @@ const SPRINT_OPTIONS = [15, 25, 45];
 interface PieceScope {
   file: TFile;
   piece: Piece;
-  /** length in the piece's unit */
-  count: number;
-  /** length in words (history is kept in words) */
-  words: number;
+  /** the note's length (history is kept in words; the tile shows the piece's unit) */
+  counts: Counts;
 }
 
 const UNIT_LABELS: Record<PieceUnit, string> = {
@@ -127,17 +125,15 @@ export class ProgressModal extends Modal {
     }
     const note = this.plugin.app.vault.getAbstractFileByPath(book.note.path);
     if (!(note instanceof TFile)) { this.bookScope = null; return; }
-    const files = this.plugin.books.chapters(book).map((c) => c.file);
-    const total = await this.plugin.counter.total(files);
-    const fm = this.plugin.books.frontmatter(note);
+    const b = await this.plugin.measure.book(book);
     // Keep values the user just typed until the metadata cache catches up.
     const prev = this.bookScope;
     this.bookScope = {
       book,
-      chapters: files.length,
-      total,
-      goal: prev ? prev.goal : parseGoal(fm.goal),
-      deadline: prev ? prev.deadline : normalizeDeadline(fm.deadline),
+      chapters: b.chapters,
+      total: b.counts.words,
+      goal: prev ? prev.goal : b.goal,
+      deadline: prev ? prev.deadline : b.deadline,
     };
   }
 
@@ -147,9 +143,8 @@ export class ProgressModal extends Modal {
     const current = this.plugin.app.vault.getAbstractFileByPath(file.path);
     if (!(current instanceof TFile)) { this.pieceScope = null; return; }
     // Keep values the user just typed until the metadata cache catches up.
-    const piece = this.pieceScope?.piece ?? this.plugin.books.classify(current).piece ?? { unit: "words" };
-    const { count, words } = await this.goals.measure(current, piece);
-    this.pieceScope = { file: current, piece, count, words };
+    const n = await this.plugin.measure.note(current, this.pieceScope?.piece);
+    this.pieceScope = { file: current, piece: n.piece ?? { unit: n.unit }, counts: n.counts };
   }
 
   /** The history key the chart and pacing follow: the book note or the piece note. */
@@ -216,7 +211,7 @@ export class ProgressModal extends Modal {
     dayStates(history, week, goal, off).forEach((state, i) => {
       const label = state === "off"
         ? t("goals.chart.dayOff", { date: fmtDay(week[i]) })
-        : `${fmtDay(week[i])}: ${plural("goals.words", addedOn(history, week[i]))}`;
+        : `${fmtDay(week[i])}: ${unitAmount("words", addedOn(history, week[i]))}`;
       segs.createSpan({ cls: `escrita-streak-seg is-${state}`, attr: { role: "listitem", "aria-label": label } });
     });
     const month = lastDays(today, CHART_DAYS);
@@ -233,9 +228,10 @@ export class ProgressModal extends Modal {
   }
 
   private renderPieceTile(tiles: HTMLElement, scope: PieceScope): void {
-    const { piece, count } = scope;
+    const { piece } = scope;
+    const count = countIn(scope.counts, piece.unit);
     const tile = this.tile(tiles, t("goals.tile.piece"));
-    const sum = pieceSummary(count, piece);
+    const sum = progressOf(count, piece);
 
     const v = tile.createDiv({ cls: "escrita-tile-value" });
     v.toggleClass("is-met", sum.reached && sum.state !== "near" && sum.state !== "over");
@@ -326,7 +322,7 @@ export class ProgressModal extends Modal {
     let totals: number[] | null = null;
     const live = this.bookScope?.total
       // A piece's running total is in words (like its history), so only drawn for word pieces.
-      ?? (this.pieceScope?.piece.unit === "words" ? this.pieceScope.count : null);
+      ?? (this.pieceScope?.piece.unit === "words" ? this.pieceScope.counts.words : null);
     if (live !== null && live !== undefined && bookPath) {
       totals = bookTotalSeries(history, days, bookPath, live);
       totals[totals.length - 1] = live; // today's point is the live count
@@ -374,7 +370,7 @@ export class ProgressModal extends Modal {
         cls: `escrita-chart-bar${b.met ? " is-met" : ""}`,
         attr: { x: b.x, y: b.y, width: b.width, height: b.height, rx: Math.min(2, b.width / 2) },
       });
-      rect.createSvg("title").textContent = `${fmtDay(days[b.index])}: ${plural("goals.words", b.value)}`;
+      rect.createSvg("title").textContent = `${fmtDay(days[b.index])}: ${unitAmount("words", b.value)}`;
     }
     if (g.goalY !== null) {
       svg.createSvg("line", {
@@ -460,7 +456,7 @@ export class ProgressModal extends Modal {
     callout.addClass(p.onTrack ? "is-good" : "is-behind");
     callout.createSpan({ cls: "escrita-pacing-verdict", text: t(p.onTrack ? "goals.pace.onTrack" : "goals.pace.behind") });
     callout.appendText(" ");
-    callout.appendText(this.needText(p, (n) => plural("goals.words", n)));
+    callout.appendText(this.needText(p, (n) => unitAmount("words", n)));
     callout.appendText(` ${finish()}`);
   }
 
@@ -482,8 +478,9 @@ export class ProgressModal extends Modal {
   private renderPiecePacing(parent: HTMLElement, scope: PieceScope): void {
     const history = this.plugin.data.history;
     const today = this.goals.today();
-    const { piece, count, words } = scope;
+    const { piece } = scope;
     const unit = piece.unit;
+    const count = countIn(scope.counts, unit);
     const callout = parent.createDiv({ cls: "escrita-pacing" });
     if (!piece.target) {
       callout.setText(t("goals.pace.pieceNoTarget"));
@@ -493,7 +490,7 @@ export class ProgressModal extends Modal {
     const path = scope.file.path;
     // History is kept in words; a character piece converts with its own characters per word.
     const wordsAvg = dailyAverage(history, today, { bookPath: path, net: true, isDayOff: off });
-    const avg = paceInUnit(wordsAvg, unit, count, words) ?? 0;
+    const avg = paceInUnit(wordsAvg, unit, count, scope.counts.words) ?? 0;
     const p = pacing({ total: count, goal: piece.target, deadline: piece.deadline ?? null, today, average: avg, isDayOff: off });
     if (!p) {
       callout.setText(t("goals.pace.pieceNoTarget"));
@@ -582,8 +579,8 @@ export class ProgressModal extends Modal {
         const n = f.kind === "value" && f.n > 0 ? f.n : null;
         bookGoal.value = n ? String(n) : "";
         if (await this.writeFrontmatter(scope.book, (fm) => {
-          if (n) fm.goal = n;
-          else delete fm.goal;
+          if (n) fm[s.goalProperty] = n;
+          else delete fm[s.goalProperty];
         })) {
           if (this.bookScope) this.bookScope.goal = n;
           this.renderSummary();
@@ -593,10 +590,10 @@ export class ProgressModal extends Modal {
       const deadline = field(t("goals.set.deadline")).createEl("input", { type: "date" });
       deadline.value = scope.deadline ?? "";
       deadline.addEventListener("change", this.guard(async () => {
-        const d = normalizeDeadline(deadline.value);
+        const d = parseDeadline(deadline.value) ?? null;
         if (await this.writeFrontmatter(scope.book, (fm) => {
-          if (d) fm.deadline = d;
-          else delete fm.deadline;
+          if (d) fm[s.deadlineProperty] = d;
+          else delete fm[s.deadlineProperty];
         })) {
           if (this.bookScope) this.bookScope.deadline = d;
           this.renderSummary();
@@ -632,9 +629,8 @@ export class ProgressModal extends Modal {
       const scope = this.pieceScope;
       if (!scope) return;
       update(scope.piece);
-      const { count, words } = await this.goals.measure(scope.file, scope.piece);
-      scope.count = count;
-      scope.words = words;
+      // the unit just chosen: the metadata cache may not have caught up yet
+      scope.counts = await this.plugin.measure.counts(scope.file, undefined, scope.piece.unit);
       this.renderSummary();
       this.goals.refreshStatus();
     };
@@ -685,10 +681,10 @@ export class ProgressModal extends Modal {
     const deadline = field(t("goals.set.deadline")).createEl("input", { type: "date" });
     deadline.value = current().deadline ?? "";
     deadline.addEventListener("change", this.guard(async () => {
-      const d = normalizeDeadline(deadline.value);
+      const d = parseDeadline(deadline.value);
       await apply((fm) => {
-        if (d) fm[DEADLINE_PROPERTY] = d;
-        else delete fm[DEADLINE_PROPERTY];
+        if (d) fm[s.deadlineProperty] = d;
+        else delete fm[s.deadlineProperty];
       }, (p) => {
         if (d) p.deadline = d;
         else delete p.deadline;
@@ -714,8 +710,8 @@ export class ProgressModal extends Modal {
     if (!s) return "";
     const time = formatClock(s.remainingMs(Date.now()));
     return s.target > 0
-      ? t("goals.sprint.running", { time, words: fmt(s.words), target: plural("goals.words", s.target) })
-      : t("goals.sprint.runningNoTarget", { time, words: plural("goals.words", s.words) });
+      ? t("goals.sprint.running", { time, words: fmt(s.words), target: unitAmount("words", s.target) })
+      : t("goals.sprint.runningNoTarget", { time, words: unitAmount("words", s.words) });
   }
 
   private renderSprint(): void {

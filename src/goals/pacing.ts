@@ -11,7 +11,8 @@
 // passed in should then be per writing day too (dailyAverage with isDayOff).
 // When every day left is a day off, today is the only writing day left.
 
-import { addDays, daysBetween, parseDay, isoDay } from "../core/dates";
+import { addDays, daysBetween } from "../core/dates";
+import { parseDeadline } from "../core/measure";
 
 export interface PacingInput {
   /** the book's current word count */
@@ -65,7 +66,7 @@ export function pacing(input: PacingInput): Pacing | null {
   const average = Math.max(0, finite(input.average));
   const remaining = Math.max(0, goal - total);
   const done = remaining === 0;
-  const deadline = normalizeDeadline(input.deadline);
+  const deadline = (typeof input.deadline === "string" ? parseDeadline(input.deadline) : undefined) ?? null;
   const until = deadline ? daysBetween(input.today, deadline) : null;
   const daysLeft = until === null ? null : until === 0 ? 1 : until;
   const overdue = !done && daysLeft !== null && daysLeft <= 0;
@@ -117,23 +118,12 @@ export function afterWritingDays(today: string, n: number, isDayOff: (day: strin
   return null;
 }
 
-/** A frontmatter `goal` value → a positive whole number, or null. Accepts "80,000", "80.000", "80 000". */
-export function parseGoal(v: unknown): number | null {
-  if (typeof v === "number") return Number.isFinite(v) && v > 0 ? Math.round(v) : null;
-  if (typeof v !== "string") return null;
-  const s = v.trim();
-  if (!/^\d[\d.,\s_]*$/.test(s)) return null;
-  const digits = s.replace(/[.,\s_]/g, "");
-  const n = Number(digits);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
-
 export type NumberField = { kind: "clear" } | { kind: "invalid" } | { kind: "value"; n: number };
 
 /**
  * Read an `<input type="number">`: its `.value` is a plain decimal string (or ""
  * when the browser couldn't parse what was typed, flagged by `validity.badInput`).
- * Unlike parseGoal, "." is a decimal point here. "" typed on purpose = clear;
+ * Unlike core/measure.parseAmount, "." is a decimal point here. "" typed on purpose = clear;
  * bad input, negatives and non-numbers = invalid (keep the old value); anything
  * else is rounded to a whole number.
  */
@@ -144,15 +134,4 @@ export function readNumberField(value: string, badInput = false): NumberField {
   const n = Number(s);
   if (!Number.isFinite(n) || n < 0) return { kind: "invalid" };
   return { kind: "value", n: Math.round(n) };
-}
-
-/** A frontmatter `deadline` value (string or Date) → YYYY-MM-DD, or null. */
-export function normalizeDeadline(v: unknown): string | null {
-  if (v instanceof Date) return isNaN(v.getTime()) ? null : isoDay(v);
-  if (typeof v !== "string") return null;
-  const d = parseDay(v);
-  if (!d) return null;
-  const iso = isoDay(d);
-  // Reject rollovers like 2026-02-31.
-  return v.trim().startsWith(iso) ? iso : null;
 }

@@ -19,19 +19,30 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
 - **Plugin services** (on `this.plugin`): `settings` (see `src/settings.ts` —
   all settings already exist, with a settings tab), `data.history` (see `src/data.ts`),
   `requestSave()` (debounced persist), `saveSettings()`, `books` (`BookService`:
-  `classify(file | folder | path | null)` → `{ path, kind, markdown, book, tracked, piece }`,
+  `classify(file | folder | path | null)` → `{ path, kind, markdown, book, tracked, piece, snapshot }`,
   `chapters(book)`, `allBooks()`, `frontmatter(file)`; see "File classification" below),
-  `counter` (`WordCounter`: cached per-file word counts), `chapterOps` (`ChapterOps`:
+  `measure` (`Measurer`, `core/measurer.ts`: counts per file and per book, cached
+  by mtime; see "Measuring" below), `notes` (`NoteService`, `core/notes.ts`: every
+  write into a note's text; see "Note text" below), `decorations`
+  (`ExplorerDecorations`, `core/explorer-decorations.ts`: the one thing that draws in
+  the file explorer; see the explorer spec), `chapterOps` (`ChapterOps`:
   create/renumber/retitle chapters), and the other modules (`goals`, `outline`,
-  `placeholders`, `darlings`, `editor`, `publish`).
+  `placeholders`, `explorer`, `darlings`, `editor`, `snapshots`, `publish`).
 - **Pure core** (no Obsidian imports, unit tested): `core/markdown.ts` (the one
   Markdown segmenter, see below), `core/wordcount.ts`,
   `core/markers.ts` (beat/placeholder/scene-break syntax), `core/book.ts`
-  (chapter numbering), `core/dates.ts` (writing day), `core/piece.ts` (a note's
-  target/limit/unit/deadline, `pieceCount`, `pieceProgress`), `core/daysoff.ts`
+  (chapter numbering), `core/dates.ts` (writing day), `core/measure.ts` (`measureText`,
+  `countIn`, a note's target/limit/unit/deadline via `readPiece`/`readUnit`, a book's
+  goal via `readBookGoal`, the only amount and deadline parsers `parseAmount`/`parseDeadline`,
+  `progressOf`/`noteProgress`, `unitKey`/`pluralKey`), `core/measure-cache.ts`
+  (`MeasureCache`, per-file counts by mtime), `core/daysoff.ts`
   (`dayOffPredicate`, `parseDatesOff`), `core/classify.ts` (the `VaultTree` port,
-  `classify`, `listBooks`, `inFolder`, `inBook`; see "File classification"),
-  `core/lists.ts` (`lineList`, `folderList`; import them from here) and
+  `classify`, `listBooks`, `inFolder`, `inBook`, `ancestors`, and the snapshots folder:
+  `snapshotsRoot`, `inSnapshots`, `snapshotsFolderProblem`; see "File classification"),
+  `core/lists.ts` (`lineList`, `folderList`; import them from here),
+  `core/note-text.ts` (the note text port: `Change`, `checkedChange`, `minimalChange`,
+  `matchLineEndings`), `core/explorer-decorations.ts` (the explorer walk, over fake
+  elements in tests) and
   `core/merge.ts` (`mergeDefaults` for saved settings). `countCharacters(md, { spaces })`
   in `core/wordcount.ts` counts on `proseOnly` text with whitespace runs collapsed.
   Reuse these; don't duplicate.
@@ -60,6 +71,19 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   built paths; no Node or Electron APIs (`isDesktopOnly: false`); no global `app`;
   no `console.log` (use `console.error` only for real errors); private APIs only
   behind type guards and try/catch.
+- **Documented exceptions to those rules** (each one is deliberate; don't copy them
+  elsewhere without adding a line here):
+  - **Empty snapshot folders are removed with `vault.delete` / `adapter.rmdir`**, not
+    `trashFile`: only a folder left empty by a snapshot move, which holds nothing to lose.
+  - **The snapshots `vault.adapter`**: a snapshots folder with a hidden segment (`.x`)
+    isn't indexed by Obsidian, so `snapshots/fs.ts` reaches it through the adapter (trash
+    is `trashSystem`, then `trashLocal`). The one place Escrita uses the adapter.
+  - **Restoring a snapshot's properties is a raw text replace** of the frontmatter block
+    (through the note text port, anchored and checked), not `processFrontMatter`: a
+    restore must give back the old text byte for byte, comments and key order included.
+  - **Writes into a note's text go through `plugin.notes`** (the editor when the note is
+    open in source or Live Preview, else `vault.process`), never straight to
+    `vault.process` or an editor.
 - **Styling.** Classes prefixed `escrita-`, CSS in the module's `styles.css`, colors only
   from Obsidian CSS variables or the tokens in `src/styles.css` (`--escrita-accent`,
   `--escrita-ghost`, `--escrita-placeholder-bg/fg`, `--escrita-good`, `--escrita-bar-bg`).
@@ -83,7 +107,7 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
 ## File conventions (users' vaults)
 
 ```
-Novels/A Casa.md                  ← book note. Frontmatter: goal (number), deadline (YYYY-MM-DD)
+Novels/A Casa.md                  ← book note. Frontmatter: goal (number), deadline (YYYY-MM-DD); names from settings
 Novels/A Casa/Chapters/           ← folder name = settings.chaptersFolder
     01 Chegada.md                 ← frontmatter: status, summary (names configurable)
     02 A porta fechada.md
@@ -140,6 +164,16 @@ drives it with an in-memory tree. The result:
   kind: a chapter in an excluded folder is still a chapter.
 - `piece`: `readPiece` of the frontmatter for any markdown file, chapters included.
   A standalone piece is `kind === "note" && piece`.
+- `snapshot`: the path is the snapshots folder or inside it (`inSnapshots`). Such a
+  path is never a book, a chapter or tracked, even when the folder sits inside a book
+  (a snapshot folder is named like its note, `x.md/`). The outline and the explorer
+  skip it through this field, goals through `tracked`, and the placeholder index
+  excludes `snapshotsRoot` like an exclude folder.
+
+The snapshots folder setting is read only through `snapshotsRoot(setting)` (trimmed,
+slashes cleaned, empty → `Escrita/Snapshots`), and checked before saving with
+`snapshotsFolderProblem`: not `..`, not the config folder, not inside (or holding) a
+track folder, not a folder that already has `.md` notes.
 
 It reads the live vault and the settings passed in every time: no cache, so
 renames and settings changes need no invalidation. Don't add one. It never throws.
@@ -252,12 +286,79 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
    selection: "84 words selected" replaces the chapter/book counts. Sprint end:
    a Notice "Sprint done: 540 words in 25 min (1,296 an hour)".
 
+## Measuring (`core/measure.ts`, `core/measure-cache.ts`, `core/measurer.ts`)
+
+Every count shown or recorded comes from here; don't count notes anywhere else.
+`plugin.measure.counts(file, seed?, unit?)` gives a note's `Counts` (`words`,
+`characters`, `charactersNoSpaces`), cached by mtime (`seed` is `{ text, mtime }`, the
+file as the caller already read it with the mtime seen before the read; a seed older
+than the file is ignored and the file read again); `peek(path, unit?)` is the sync last
+known value; `note(file)` adds the live piece, unit and `Progress`; `book(book)`
+sums the chapters and reads the goal and deadline (`bookGoal`), `bookPeek(book)` is
+the sync sum; `unit(file)` is the unit the note is counted in. `onChange(paths[])` fires when counts are added, change, are dropped,
+or move (a rename lists old and new paths). The interface is documented at the top
+of `src/core/measurer.ts`.
+
+- **Upkeep.** The measurer handles vault `rename` and `delete` (folders too) and
+  recounts, debounced, any `.md` `modify` or `create` (sync, git, other plugins,
+  Escrita's own `vault.process`) for files already counted or tracked. It is built
+  in `main.ts` before the modules so its handlers run first. Frontmatter-only edits
+  don't change counts: listen to `metadataCache` `changed` for those.
+- **Piece and unit are read live**, never cached: the metadata cache lags behind
+  `modify`. A note's unit is its piece's, else `readUnit` (a note with only
+  `unit: characters` is still counted in characters), else words.
+- **Characters only where needed.** Measured on a 30,000-word chapter, the character
+  counts cost about three times the word count (≈ 3 ms for words, ≈ 12 ms for both),
+  so a vault-wide first pass counting both eagerly would far more than double the
+  cost. The cache (kept for the whole session, for every counted note) holds numbers
+  only, never a note's text: characters are counted for notes counted in characters
+  (`counts` asks for them from the note's unit, or the `unit` argument), and kept on
+  recounts once counted. A words-only entry is a miss for a caller that needs
+  characters (one more read), and reading its character fields throws
+  `CharactersNotCountedError`: pass the unit. `measureText` itself (publish, the
+  explorer's live count of the active note) stays lazy: short-lived callers pay for
+  the characters only when they read them.
+- **Property names** come from settings: `targetProperty`, `limitProperty`,
+  `unitProperty`, `deadlineProperty` (notes and books) and `goalProperty` (books).
+- **Publish** measures the editor's text with `measureText` (maybe unsaved), never
+  the cache.
+- **Labels** go through `unitAmount(unit, n)` and `plural(key, n)` in `src/i18n.ts`
+  (`common.unit.*` strings), so "1 word" is never "1 words".
+
+## Note text (`core/note-text.ts`, `core/notes.ts`)
+
+Every Escrita write into a note's text is one plan applied through one port:
+`plugin.notes.text(file)` → `NoteText { via, read(), apply(plan) }`, where `plan(current)`
+answers with one `Change { from, to, insert }` against exactly that text, or null to
+refuse.
+
+- **Which adapter.** The editor (`editorText`) when a `MarkdownView` shows the file in
+  source or Live Preview mode: it reads the buffer (maybe unsaved) and applies one
+  transaction, so the change joins the undo history and typing can't slip in between.
+  Otherwise the vault (`vaultText`): the plan runs inside `vault.process`. Reading-mode
+  views are saved first (`view.save()`), so their pending text is never lost.
+- **Bound to its note.** Obsidian reuses a view's editor when its tab opens another
+  note. The editor port checks, on every read and apply, that its view still shows the
+  file in source mode; if not, `read()` rejects (`EditorMovedError`) and `apply()`
+  refuses. Ask for a fresh port after any await (snapshot restore does).
+- **Anchored changes.** A change computed earlier (a compare view's "Use the old
+  version") carries the text it expects plus context (`anchor`), and `checkedChange`
+  applies it only where that is still true: at its offsets, else at the one place the
+  context occurs. A compare view also passes the whole text it showed (`revertPlan`):
+  a pure insert's context can be as short as a paragraph gap, so a stale view refuses
+  instead of reverting at a shifted offset.
+- **Folders.** `plugin.notes.ensureFolder(path)` creates missing folders and throws
+  `FolderBlockedError` when a segment is a file; darlings, outline and snapshots use it.
+- Users: placeholders (resolve), darlings (cut and restore), publish (read), snapshots
+  (read, restore, "Use the old version"). The outline's four hand-made beat re-checks
+  are not migrated yet (IMPROVEMENTS 3, partial).
+
 ## Module specs
 
 ### goals (`src/goals/`)
 
 - **Tracking.** Count only real typing in tracked files: on `workspace` `file-open`
-  (and at layout ready for the active file) prime `counter` with the active file's
+  (and at layout ready for the active file) prime `measure` with the active file's
   count. On `vault` `modify` of a tracked Markdown file **that is the active file**
   (so sync/git pulls of other files don't count), recount; `delta = after - before`.
   If `|delta| > settings.ignoreJumpsOver`, don't count it (still update the cache).
@@ -265,7 +366,8 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
   (and per book in `books[bookNotePath]` when the file is a chapter; also set that
   book's `total` = sum of its chapters' counts). Tracked = `books.classify(file).tracked`:
   inside one of `folderList(trackFolders)` (or anywhere when empty), not inside
-  `excludeFolders`, and not the chapter template (the rule lives in `core/classify.ts`). Handle rename (`counter.rename`) and delete (`forget`).
+  `excludeFolders`, and not the chapter template (the rule lives in `core/classify.ts`). `plugin.measure` moves and drops cached counts on rename and delete by itself;
+  goals only keeps its baselines and history keys in step.
   `plugin.requestSave()` after changes.
 - **Pure functions** (`src/goals/tracker.ts`, `src/goals/pacing.ts`, tested):
   applying a delta to history; `streak(history, today)` = consecutive days with
@@ -283,20 +385,20 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
 - **Progress modal** (`src/goals/progress-modal.ts`): as in the design. Scope = the
   active file's book, else "All writing" (vault-wide bars, no book tile/line/pacing;
   replace the book tile with "This week" words). Book goal and deadline are read from and
-  written to the book note's frontmatter (`goal`, `deadline`) with
+  written to the book note's frontmatter (`goalProperty`, `deadlineProperty`, default `goal`, `deadline`) with
   `processFrontMatter`. Chart as inline SVG (`createSvg` / `createElementNS`), sized to
   the modal width, geometry computed by a pure tested function (`src/goals/chart.ts`).
 - **Sprints** (`src/goals/sprint.ts`): duration + target; words = vault-wide `added`
   since start (tracked files); ticks every second via `registerInterval` updating the status bar;
   target reached → Notice once; time up → Notice with words, minutes, words/hour; stop
   early from the status bar or command. Sprint state is not persisted across reloads.
-- **Targets per piece** (`core/piece.ts`, display helpers in `src/goals/piece.ts`):
+- **Targets per piece** (`core/measure.ts`, display helpers in `src/goals/piece.ts`):
   any note can have `target`, `limit`, `unit` (`words` | `characters` |
   `characters-no-spaces`; names from `targetProperty`/`limitProperty`/`unitProperty`)
   and `deadline`. `readPiece` returns null when none is set. `pieceProgress` gives the
   state `none | under | near (≥ 95% of the limit) | over`. Status bar: when the active
   note has a target or limit, a piece segment "4,210 / 5,000 words" with a bar, amber
-  near the limit, red with "+312 over the limit" past it (`pieceSummary`). Outside a
+  near the limit, red with "+312 over the limit" past it (`progressOf`). Outside a
   book, a note with a target, limit or deadline records its per-day words in
   `history` under its own path (like a book), and the progress modal replaces the
   book tile with a piece tile (count against target, limit mark, `pieceBar`) and
@@ -338,7 +440,7 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
   active file's book; when the active file isn't in a book, keeps the last book shown,
   or lists books to pick, or shows an empty state explaining the folder convention
   with a "Create a book" button. Reads chapter titles from file names, status/summary
-  from frontmatter (settings property names), words from `counter`, beats with
+  from frontmatter (settings property names), words from `measure`, beats with
   `parseBeats`, placeholders with `parsePlaceholders`. Editable inline
   (`contenteditable` plaintext or inputs): chapter title (→ `retitle` on blur/Enter),
   summary (→ `processFrontMatter`), beat text (→ `vault.process` + `setBeatText`).
@@ -370,7 +472,7 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
 - **Outline for a single note**: `resolveTarget` (`src/outline/model.ts`, tested)
   decides what the panel shows: `book`, `note` or `empty`. A book file shows its book;
   any other Markdown note shows its own beats (header: note title, beat count, length
-  against its target/limit in the piece's unit via `outline/units.ts`); anything else
+  against its target/limit in the note's unit via `measure.note`/`noteProgress` and `unitAmount`); anything else
   becoming active (the panel, a PDF, nothing) keeps the last target. Keys follow
   `decideNoteKey`: Enter adds a beat after, Backspace on an empty beat removes it,
   text edits rewrite the comment line, Tab/Shift+Tab do nothing. Clicking a letter
@@ -401,9 +503,10 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
   (removes the marker via `vault.process`, verifying the exact text is still at that
   offset first). Empty state explains ⌘/Ctrl+P → Insert placeholder and suggests binding
   a hotkey like Ctrl/Cmd+Shift+X.
-- **Explorer dots** (`showExplorerDots`): add/remove class `escrita-has-placeholder` on
-  file explorer items (private API `view.fileItems[path].selfEl`, guarded) + CSS dot.
-  Re-apply on index change and when the explorer re-renders (layout-change).
+- **Explorer dots** (`showExplorerDots`): a `plugin.decorations` drawer (id `"dot"`) that
+  returns an empty decoration for a file with placeholders, drawn as a small span after
+  the name (no pseudo-element). Silent: no tooltip, no text. Redrawn on index change
+  and on a settings change; `main.ts` redraws everything on layout-change.
 - **Commands**: "Next placeholder in this note", "Previous placeholder in this note".
 
 ### darlings (`src/darlings/`)
@@ -497,3 +600,89 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
   `unpublishedValue`, else `ready`, and drops the record. Records follow file and
   folder renames and are dropped on delete. Escrita never commits, pushes or uploads.
 - **Commands** (also in the file menu): "Publish this note", "Unpublish this note".
+
+### explorer (`src/explorer/` + `src/core/explorer-decorations.ts`)
+
+- **Decoration adapter** (`plugin.decorations`, `core/explorer-decorations.ts`): the only
+  code that touches the file explorer. It walks the private `view.fileItems[path].selfEl`
+  behind type guards; a future Obsidian change turns decorations off (logged once)
+  instead of breaking. Features register a drawer per id (`"dot"`, `"count"`) that maps
+  `{ path, folder }` to `{ text?, tooltip?, cls? }` or null, cheaply and without I/O. Each
+  id owns one `<span class="escrita-explorer-<id>">` after the name, in a fixed order,
+  written only when it changed. `main.ts` calls `refresh()` on layout-change.
+- **Counts** (`explorerCounts`, default on): tracked notes and chapters show their
+  length in the note's own unit; a book's note, folder and chapters folder show the
+  book's words (`explorerTotals`); with `explorerFolderTotals`, other folders show the
+  words of the tracked notes inside them; with `explorerShowTarget`, "4,210 / 5,000";
+  `is-near` / `is-over` classes from the piece's limit. The tooltip holds the full
+  amount (`unitAmount`). Numbers come from `plugin.measure` (`peek`), never a read.
+- **Abbreviation (spec deviation).** SF 6 abbreviates "when there's no room"; the
+  explorer's width can't be measured, so counts are **always** abbreviated from 10,000
+  (`12.3k`, `12,3 mil`), with the full count in the tooltip (`explorer/counts.abbreviate`).
+- **Upkeep.** A first pass after layout ready counts every tracked note and every
+  chapter of a tracked book in batches, then draws once. Afterwards it follows
+  `measure.onChange` (counts), `metadataCache` `changed` (a new target, limit or unit;
+  a note now counted in characters is counted again), create/delete/rename (books and
+  the tracked set), and the editor for the active note (debounced, from the buffer).
+  Snapshot paths (`classify().snapshot`) are skipped.
+- Pure parts in `explorer/counts.ts` (`abbreviate`, `countLabel`, `explorerTotals`), tested.
+
+### dialogue focus (`src/editor/dialogue.ts`, `src/editor/dialogue-focus.ts`)
+
+- **Command** "Toggle dialogue focus": per note, per session (not saved); the on-set
+  follows renames. A Notice says when the note is in Reading view (the dimming only
+  shows in the editor).
+- **What is speech** (`dialogue.ts`, pure, tested): a line-leading dash (`— – ―`, after
+  any blockquote `>`) opens speech; a spaced dash toggles speech and narration inside
+  the paragraph, including one that ends a hard-wrapped line when the paragraph goes
+  on; a dash with nothing after it in the paragraph is the speaker cut off and stays
+  speech. Text in the style's double quotes (and straight `"`) is speech, and dashes
+  inside an open quote toggle nothing. Hard-wrapped continuation lines stay speech;
+  a line-leading dash on a continuation line opens speech again (a new speaker). With
+  `paragraphStyle` `single` every line is its own paragraph. Frontmatter, code,
+  comments, math, headings and scene breaks are never speech (`segmentDoc`'s mask).
+- **Editor** (`dialogue-focus.ts`): a ViewPlugin that dims the complement of speech on
+  the visible lines only (`dimPlan`, paragraph widening capped at 200 lines each way);
+  zero work while off. Toggling dispatches a `StateEffect` to every editor, not
+  `updateOptions()`. No cursor un-dim.
+
+### snapshots (`src/snapshots/`)
+
+- **Storage** (`paths.ts`, `store.ts`, `fs.ts`): `<root>/<note path, .md kept>/<YYYY-MM-DD
+  HHmm> <label>.txt` plus an `index.json` (entries: file, name, kind, taken, day, words,
+  note path at the time, hash, length). Root from `snapshotsFolder` through core's
+  `snapshotsRoot` (default `Escrita/Snapshots`); settings refuse a folder inside a track
+  folder or already holding `.md` notes. `.txt`, so links, search and graph ignore
+  them and a rename never rewrites a snapshot. The files are the truth: every load
+  reconciles the index with them (strays are adopted as manual, never pruned).
+- **One serial queue** for takes, renames, deletes and folder moves; a take reads its
+  note's path (a live `TFile`) inside the queue, so a rename queued first moves the
+  folder first. Renames of notes and folders move the snapshot folders; **deletes keep
+  them**. A note created later at a deleted note's path inherits its snapshots (restore
+  stays safe: "Before restoring" is always taken). Snapshots of deleted notes are
+  reached with "Browse snapshots of deleted notes" (read-only full text in the compare
+  tab). Two notes whose paths differ only in characters Obsidian's `normalizePath` or
+  the file system folds (NBSP, U+202F, NFD) share one folder: the store sees another
+  existing note in `index.json` and refuses (`SharedFolderError`) instead of mixing.
+- **Kinds.** Manual (named, never pruned) and automatic: "Before publishing" (publish
+  calls `beforePublish`), "Before restoring" (before every restore and every "Use the old
+  version"), "Before the day's first edit" (tracked notes, `snapshotBeforeFirstEdit`; the
+  disk read starts before anything is awaited). Automatic ones are pruned to
+  `snapshotsKeepAuto` (default 20) per note, oldest first, to the trash; the snapshot
+  being restored or compared is protected. A take identical to the latest snapshot
+  writes nothing; a named manual take identical to an automatic one promotes it.
+- **Panel** (`view.ts`, type `escrita-snapshots`): the active note's snapshots, newest
+  first, with words (`unitAmount`) and the difference from now; View, Compare, Restore,
+  Rename, Delete.
+- **Compare tab** (`compare.ts` pure and tested, `compare-view.ts`): jsdiff's
+  `diffArrays` over paragraphs, then over core's word tokens inside changed ones; moves
+  detected; inline, side by side, or the snapshot's full text; unchanged runs fold; the
+  properties diff shown apart. "Use the old version" per passage goes through
+  `revertBlock` (see "Note text": anchored, checked against the text the view showed,
+  after a "Before restoring" snapshot). Restore-all confirms, snapshots, and replaces
+  only if the note didn't change meanwhile.
+- **Commands**: "Take a snapshot" (also in the file menu), "Open snapshots", "Compare with
+  the last snapshot", "Browse snapshots of deleted notes".
+- jsdiff (`diff`, BSD-3-Clause) is the first runtime dependency; its license travels in
+  an esbuild banner at the top of `main.js` (release assets don't include
+  `THIRD_PARTY_NOTICES.md`).

@@ -97,6 +97,12 @@ server), Typewriter Mode, Continuous Mode, Enhancing Export (print PDF), Chronos
 Calendarium (timelines), Excalidraw and Canvas (boards), Obsidian Git (history).
 Re-check maintenance status before each release; list the date checked.
 
+Running Escrita next to **StoryLine**: say what to watch. StoryLine writes `status`
+(idea → final), `wordcount` and `charcount` into scene files, which can clash with
+Escrita's status values and fill its "modified" events while typing. Suggest pointing
+Escrita's status property elsewhere or keeping StoryLine's scenes out of the track
+folders, and check both together before 0.7 ships.
+
 ## 7. Book compile (stages 1–2 in v0.7, stage 3 in v0.9)
 
 The step Scrivener users miss most, and Longform's oldest open requests.
@@ -110,7 +116,11 @@ page uses the note's title and count.
 (all, a range, or checked), then write one Markdown file with chapter headings
 ("Capítulo 1 — Título", format configurable, with a "Prologue/Epilogue" rule for
 unnumbered chapters), scene breaks normalized, and all Escrita markers removed (beats,
-placeholders, `%%` comments). Warns when placeholders remain. Front matter (title page,
+placeholders, `%%` comments). Warns when placeholders remain. Scene breaks
+come out as the chosen separator (blank line, `#`, `* * *` or custom text; the presets
+set one), never at a chapter boundary. A chapter with `compile: false` (property name
+configurable) stays out without being moved or deleted, for drafts parked inside the
+book. Front matter (title page,
 dedication, epigraph) from optional notes named in the book note's properties.
 
 **Stage 2 — DOCX.** Built in the plugin with a small, offline DOCX writer (a zip of

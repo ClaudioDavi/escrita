@@ -1,5 +1,5 @@
 import {
-  Editor, MarkdownView, Menu, Notice, TFile, TFolder, normalizePath,
+  Editor, MarkdownView, Menu, Notice, TFile, normalizePath,
   type MarkdownFileInfo, type WorkspaceLeaf,
 } from "obsidian";
 import type EscritaPlugin from "../main";
@@ -7,6 +7,7 @@ import type { EscritaModule } from "../data";
 import { t } from "../i18n";
 import { writingDay } from "../core/dates";
 import { chapterTitle } from "../core/book";
+import { FolderBlockedError } from "../core/notes";
 import {
   alreadyRestored, appendEntry, appendText, baseName, findRestoreOffset, formatEntry,
   matchLineEndings, newId, parseEntries, planCut, removeEntry, restoreText, withMd,
@@ -184,13 +185,12 @@ export class DarlingsModule implements EscritaModule {
     const existing = vault.getAbstractFileByPath(path);
     if (existing instanceof TFile) return existing;
     if (existing) throw new Error(t("darlings.error.notAFile", { path }));
-    const parts = path.split("/").slice(0, -1);
-    let dir = "";
-    for (const p of parts) {
-      dir = dir ? `${dir}/${p}` : p;
-      const f = vault.getAbstractFileByPath(dir);
-      if (!f) await vault.createFolder(dir);
-      else if (!(f instanceof TFolder)) throw new Error(t("darlings.error.notAFolder", { path: dir }));
+    const parent = path.split("/").slice(0, -1).join("/");
+    try {
+      await this.plugin.notes.ensureFolder(parent);
+    } catch (e) {
+      if (e instanceof FolderBlockedError) throw new Error(t("darlings.error.notAFolder", { path: e.path }));
+      throw e;
     }
     return vault.create(path, `${t("darlings.intro")}\n`);
   }
@@ -280,15 +280,6 @@ export class DarlingsModule implements EscritaModule {
     return entry ? { note, entry } : null;
   }
 
-  /** An open editor showing `file` (editing mode), so restores go through its undo history. */
-  private editorFor(file: TFile): Editor | null {
-    for (const leaf of this.plugin.app.workspace.getLeavesOfType("markdown")) {
-      const v = leaf.view;
-      if (v instanceof MarkdownView && v.file?.path === file.path && v.getMode() === "source") return v.editor;
-    }
-    return null;
-  }
-
   /** The most recent note in the main area with an editor, for pasting. */
   private recentEditor(): { editor: Editor; file: TFile } | null {
     const leaf = this.plugin.app.workspace.getMostRecentLeaf();
@@ -365,17 +356,18 @@ export class DarlingsModule implements EscritaModule {
       where = "context";
       return { at, text: matchLineEndings(restoreText(e), doc) };
     };
-    const editor = this.editorFor(file);
-    if (editor) {
-      const { at, text } = place(editor.getValue());
-      const pos = editor.offsetToPos(at);
-      if (text) editor.transaction({ changes: [{ from: pos, to: pos, text }] });
-      editor.scrollIntoView({ from: pos, to: editor.offsetToPos(at + text.length) }, true);
-    } else {
-      await this.plugin.app.vault.process(file, (doc) => {
-        const { at, text } = place(doc);
-        return text ? doc.slice(0, at) + text + doc.slice(at) : doc;
-      });
+    // Through the note text port: the editor when one is editing the file
+    // (undo works), else vault.process. `place` never refuses.
+    const res = await this.plugin.notes.text(file).apply((doc) => {
+      const { at, text } = place(doc);
+      return { from: at, to: at, insert: text };
+    });
+    if (!res.ok) throw new Error(`could not insert into ${file.path}`);
+    const view = res.via === "editor" ? this.plugin.notes.editorView(file) : null;
+    if (view) {
+      const { editor } = view;
+      const { from, insert } = res.change;
+      editor.scrollIntoView({ from: editor.offsetToPos(from), to: editor.offsetToPos(from + insert.length) }, true);
     }
     return where;
   }

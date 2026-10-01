@@ -1,9 +1,10 @@
-import { Notice, TFile, TFolder, normalizePath, type Editor } from "obsidian";
+import { Notice, TFile, normalizePath, type Editor } from "obsidian";
 import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
 import type { EscritaModule } from "../data";
 import type { Book } from "../core/books";
 import { safeFileName } from "../core/book";
+import { FolderBlockedError } from "../core/notes";
 import { parseBeats } from "../core/markers";
 import { parseStatusColors } from "../settings";
 import { t } from "../i18n";
@@ -219,7 +220,9 @@ export class OutlineModule implements EscritaModule {
     }
     try {
       if (base) await this.ensureFolder(base);
-      const note = await app.vault.create(notePath, `---\ngoal: ${NEW_BOOK_GOAL}\ndeadline: \n---\n`);
+      // the configured property names, quoted when YAML needs it
+      const key = (k: string) => (/^[\p{L}\p{N}_-]+$/u.test(k) ? k : JSON.stringify(k));
+      const note = await app.vault.create(notePath, `---\n${key(settings.goalProperty)}: ${NEW_BOOK_GOAL}\n${key(settings.deadlineProperty)}: \n---\n`);
       await this.ensureFolder(folderPath);
       await this.ensureFolder(join(folderPath, settings.chaptersFolder));
       const book = books.classify(note).book;
@@ -236,15 +239,13 @@ export class OutlineModule implements EscritaModule {
     }
   }
 
+  /** plugin.notes.ensureFolder, with the outline's message when a segment is a file. */
   private async ensureFolder(path: string): Promise<void> {
-    const { vault } = this.plugin.app;
-    let cur = "";
-    for (const part of normalizePath(path).split("/")) {
-      cur = cur ? `${cur}/${part}` : part;
-      const f = vault.getAbstractFileByPath(cur);
-      if (f instanceof TFolder) continue;
-      if (f) throw new Error(t("outline.create.exists", { path: cur }));
-      await vault.createFolder(cur);
+    try {
+      await this.plugin.notes.ensureFolder(path);
+    } catch (e) {
+      if (e instanceof FolderBlockedError) throw new Error(t("outline.create.exists", { path: e.path }));
+      throw e;
     }
   }
 

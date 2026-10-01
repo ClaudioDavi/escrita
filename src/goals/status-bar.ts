@@ -1,8 +1,6 @@
 import { setIcon, setTooltip } from "obsidian";
-import { fmt, t } from "../i18n";
-import type { PieceUnit } from "../core/piece";
-import { plural, unitAmount } from "./format";
-import type { PieceSummary } from "./piece";
+import { fmt, plural, t, unitAmount } from "../i18n";
+import type { Progress } from "../core/measure";
 
 /** Registers a DOM listener so plugin unload removes it (plugin.registerDomEvent). */
 export type RegisterDom = <K extends keyof HTMLElementEventMap>(
@@ -19,7 +17,7 @@ export interface StatusState {
   /** words in the active file's book, or null outside a book */
   book: number | null;
   /** the active note's length against its target or limit, or null when it has neither */
-  piece: (PieceSummary & { unit: PieceUnit }) | null;
+  piece: Progress | null;
   today: number;
   goal: number;
   streak: number;
