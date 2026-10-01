@@ -175,7 +175,7 @@ export const goalsStrings: Strings = {
     "goals.chart.dayOff": "{date}: folga",
 
     "goals.pace.onTrack": "No ritmo.",
-    "goals.pace.behind": "Atrasado.",
+    "goals.pace.behind": "Abaixo do ritmo.",
     "goals.pace.need.one": "Falta {days} até {date}: você precisa de {words} por dia.",
     "goals.pace.need.other": "Faltam {days} até {date}: você precisa de {words} por dia.",
     "goals.pace.finish": "No seu ritmo atual ({avg}/dia, média de 7 dias), você termina em {date}.",
