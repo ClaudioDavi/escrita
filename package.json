@@ -1,6 +1,6 @@
 {
   "name": "obsidian-escrita",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Obsidian plugin for fiction writers: outline with ghost beats, word goals, sprints, placeholders, darlings.",
   "main": "main.js",
   "type": "module",

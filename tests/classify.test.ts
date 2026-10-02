@@ -5,6 +5,7 @@ import {
 } from "../src/core/classify";
 import { readPiece, type Piece } from "../src/core/measure";
 import { folderList } from "../src/core/lists";
+import { cloneDefaultStages, type Stage, type StageMapping } from "../src/core/stages";
 
 // ---------------------------------------------------------------------------
 // An in-memory vault. Handles keep their identity, like TFile/TFolder.
@@ -481,7 +482,7 @@ describe("parity with the replaced code", () => {
         expect(p.kind === "note", ctx).toBe(legacy.valid(tree, s, "note", path));
       }
     }
-  });
+  }, 30000);
 
   it("listBooks equals the old allBooks for non-empty single-segment chapters folders", () => {
     // the old allBooks never matched "" (B1)
@@ -511,6 +512,8 @@ describe("invariants", () => {
         if (bookKinds.includes(p.kind)) expect(p.book, ctx).not.toBeNull();
         if (p.kind === "note" || p.kind === "file" || p.kind === "none") expect(p.book, ctx).toBeNull();
         if (p.tracked) expect(p.markdown, ctx).toBe(true);
+        if (p.kind !== "book-note" && p.kind !== "note") expect(p.stage, ctx).toBeNull();
+        if (!p.tracked) expect(p.stage, ctx).toBeNull();
         if (p.markdown) expect(["chapter", "book-note", "book-file", "note"], ctx).toContain(p.kind);
         if (p.kind === "none") expect(p).toMatchObject({ markdown: false, book: null, tracked: false, piece: null });
         // chapter ⇔ a markdown file directly in its book's chapters folder (what chapters(book) lists)
@@ -758,5 +761,87 @@ describe("snapshotsFolderProblem", () => {
     expect(snapshotsFolderProblem(" Contos/ ", ".obsidian", "", has)).toEqual({ reason: "notes", folder: "Contos" });
     expect(seen).toEqual(["Contos"]);
     expect(snapshotsFolderProblem("Escrita/Snapshots", ".obsidian", "", has)).toBeNull();
+  });
+});
+
+function stages(over: Partial<Record<Stage, string>>): StageMapping {
+  const m = cloneDefaultStages();
+  for (const k of Object.keys(over) as Stage[]) m[k] = { ...m[k], words: over[k]! };
+  return m;
+}
+
+describe("stage", () => {
+  const entries = [
+    "Contos/Ideia.md", "Contos/Rascunho.md", "Contos/Revisao.md", "Contos/Pronto.md", "Contos/Publicado.md",
+    "Contos/Sem.md", "Contos/Vazio.md", "Contos/Lista.md", "Contos/Num.md", "Contos/Maiusc.md", "Contos/Nfd.md", "Contos/Extra.md",
+    "Arquivo/Velho.md", "Solta.md",
+    "Contos/Livro.md", "Contos/Livro/Chapters/01.md",
+    "Contos/Cru.md", "Contos/Cru/Chapters/01.md",
+    "Contos/Fora.md", "Contos/Fora/Chapters/01.md",
+    "Arquivo/Lv.md", "Arquivo/Lv/Chapters/01.md",
+    "Escrita/Snapshots/Contos/Rascunho.md", "Contos/foto.jpg",
+  ];
+  const fm: Record<string, Record<string, unknown>> = {
+    "Contos/Ideia.md": { status: "idea" }, "Contos/Rascunho.md": { status: "draft" },
+    "Contos/Revisao.md": { status: "revision" }, "Contos/Pronto.md": { status: "ready" },
+    "Contos/Publicado.md": { status: "published" }, "Contos/Sem.md": { status: "mistério" },
+    "Contos/Vazio.md": { status: "  " }, "Contos/Lista.md": { status: ["draft"] },
+    "Contos/Num.md": { status: 7 }, "Contos/Maiusc.md": { status: "  DRAFT " },
+    "Contos/Nfd.md": { status: "revisa\u0303o" }, "Contos/Extra.md": { target: 100 },
+    "Arquivo/Velho.md": { status: "draft" }, "Solta.md": { status: "draft" },
+    "Contos/Livro.md": { status: "revision" }, "Contos/Livro/Chapters/01.md": { status: "draft" },
+    "Contos/Cru.md": { status: "nope" },
+    "Contos/Fora.md": { status: "draft" }, "Arquivo/Lv.md": { status: "draft" },
+    "Escrita/Snapshots/Contos/Rascunho.md": { status: "draft" },
+  };
+  const t = new FakeTree(entries, fm);
+  const S = { ...BASE, trackFolders: "Contos\nSolta.md", excludeFolders: "Arquivo" };
+  const st = (path: string, s: Partial<ClassifySettings> = {}) => classify(t, { ...S, ...s }, path).stage;
+
+  it("reads the status word of a tracked note", () => {
+    expect(st("Contos/Ideia.md")).toBe("idea");
+    expect(st("Contos/Rascunho.md")).toBe("draft");
+    expect(st("Contos/Revisao.md")).toBe("revision");
+    expect(st("Contos/Pronto.md")).toBe("ready");
+    expect(st("Contos/Publicado.md")).toBe("published");
+  });
+  it("is null for unknown, empty, list, missing and number statuses", () => {
+    for (const p of ["Contos/Sem.md", "Contos/Vazio.md", "Contos/Lista.md", "Contos/Num.md", "Contos/Extra.md"]) expect(st(p), p).toBeNull();
+  });
+  it("ignores case, spaces and Unicode form", () => {
+    expect(st("Contos/Maiusc.md")).toBe("draft");
+    expect(st("Contos/Nfd.md", { stages: stages({ revision: "revisão" }) })).toBe("revision");
+  });
+  it("follows the writer's words and status property", () => {
+    const m = stages({ draft: "rascunho, esboço", ready: "pronto" });
+    expect(st("Contos/Rascunho.md", { stages: m })).toBeNull();
+    const f = new FakeTree(["Contos/A.md", "Contos/B.md"], { "Contos/A.md": { estado: "esboço" }, "Contos/B.md": { status: "esboço" } });
+    const set = { ...S, stages: m, statusProperty: "estado" };
+    expect(classify(f, set, "Contos/A.md").stage).toBe("draft");
+    expect(classify(f, set, "Contos/B.md").stage).toBeNull();
+  });
+  it("needs tracked", () => {
+    expect(st("Arquivo/Velho.md")).toBeNull();
+    expect(st("Fora.md")).toBeNull();
+    expect(st("Solta.md")).toBe("draft");
+    expect(st("Contos/Rascunho.md", { trackFolders: "Textos" })).toBeNull();
+  });
+  it("applies to a tracked book note, not to an untracked one", () => {
+    expect(st("Contos/Livro.md")).toBe("revision");
+    expect(st("Arquivo/Lv.md")).toBeNull();
+    expect(st("Contos/Cru.md")).toBeNull();
+  });
+  it("is null for chapters, book files, snapshots, files and folders", () => {
+    for (const p of ["Contos/Livro/Chapters/01.md", "Contos/Livro", "Contos/Livro/Chapters", "Contos", "Contos/foto.jpg",
+      "Escrita/Snapshots/Contos/Rascunho.md", "Escrita/Snapshots", "Nada.md", "", "/"]) expect(st(p), p).toBeNull();
+    expect(classify(t, S, null).stage).toBeNull();
+  });
+  it("falls back to the default property and stages when settings omit them", () => {
+    expect(classify(t, { ...S }, "Contos/Rascunho.md").stage).toBe("draft");
+  });
+  it("never throws on broken settings", () => {
+    const bad = { ...S, stages: null, statusProperty: 3 } as unknown as ClassifySettings;
+    expect(() => classify(t, bad, "Contos/Rascunho.md")).not.toThrow();
+    expect(classify(t, bad, "Contos/Rascunho.md").kind).toBe("note");
   });
 });

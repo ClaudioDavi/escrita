@@ -1,0 +1,172 @@
+/* The home block (escrita-works). Obsidian variables only. */
+.escrita-desk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-4);
+  margin: var(--size-4-2) 0;
+}
+
+.escrita-desk-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.escrita-desk-heading {
+  padding: 0 var(--size-4-2) var(--size-2-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.escrita-desk-note {
+  padding: 0 var(--size-4-2);
+  font-size: var(--font-ui-small);
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* a work: title, dotted leader, fact */
+.escrita-desk .escrita-desk-row,
+.escrita-desk .escrita-desk-sub {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  width: 100%;
+  height: auto;
+  min-height: 34px;
+  padding: 0 var(--size-4-2);
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-normal);
+  font-size: var(--font-ui-medium);
+  text-align: left;
+  cursor: pointer;
+}
+.escrita-desk .escrita-desk-sub {
+  min-height: 32px;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+.escrita-desk .escrita-desk-row:hover,
+.escrita-desk .escrita-desk-sub:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+.escrita-desk .escrita-desk-row:focus-visible,
+.escrita-desk .escrita-desk-sub:focus-visible,
+.escrita-desk .escrita-desk-count:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+}
+
+.escrita-desk-title {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.escrita-desk-leader {
+  flex-grow: 1;
+  min-width: 20px;
+  height: 0;
+  margin-top: 0.5em;
+  border-bottom: 1px dotted var(--background-modifier-border-hover);
+}
+.escrita-desk-fact {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: var(--font-ui-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+/* states: color on the number or the deadline only, no badge */
+.escrita-desk-reached { color: var(--color-green); }
+.theme-light .escrita-desk-reached { color: color-mix(in srgb, var(--color-green) 85%, black); }
+/* one coral for over the limit and past the deadline, darker in the light theme */
+.escrita-desk {
+  --escrita-desk-coral: var(--color-red);
+}
+.theme-light .escrita-desk {
+  --escrita-desk-coral: color-mix(in srgb, var(--color-red) 85%, black);
+}
+.escrita-desk-over,
+.escrita-desk-past { color: var(--escrita-desk-coral); }
+
+/* the counts line */
+.escrita-desk-counts-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-2);
+}
+.escrita-desk-counts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 0 2px;
+}
+.escrita-desk-dot {
+  padding: 0 2px;
+  color: var(--text-faint);
+}
+.escrita-desk .escrita-desk-count {
+  height: auto;
+  min-height: 32px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+  text-decoration: underline dotted var(--text-faint);
+  text-underline-offset: 4px;
+}
+.escrita-desk .escrita-desk-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.escrita-desk-stage-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--escrita-dot);
+}
+.escrita-desk .escrita-desk-count:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+.escrita-desk .escrita-desk-count[aria-expanded="true"] {
+  color: var(--text-normal);
+  text-decoration-color: var(--interactive-accent);
+}
+.escrita-desk-items {
+  display: flex;
+  flex-direction: column;
+  margin: 2px 0 0 var(--size-4-2);
+  padding-left: 10px;
+  border-left: 1px solid var(--background-modifier-border);
+}
+
+/* phone: a fact that does not fit drops to its own line, aligned right */
+body.is-mobile .escrita-desk .escrita-desk-row,
+body.is-mobile .escrita-desk .escrita-desk-sub {
+  flex-wrap: wrap;
+  row-gap: 0;
+  padding-block: 6px;
+}
+body.is-mobile .escrita-desk-title { flex: 1 1 auto; }
+body.is-mobile .escrita-desk-leader { display: none; }
+body.is-mobile .escrita-desk-fact { margin-left: auto; }
+
+/* touch targets */
+body.is-mobile .escrita-desk .escrita-desk-row,
+body.is-mobile .escrita-desk .escrita-desk-sub,
+body.is-mobile .escrita-desk .escrita-desk-count {
+  min-height: 44px;
+}

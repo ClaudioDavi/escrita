@@ -1,8 +1,9 @@
-import { MarkdownView, Notice, TFile, type TAbstractFile } from "obsidian";
+import { MarkdownView, Notice, TFile } from "obsidian";
 import type EscritaPlugin from "../main";
 import type { EscritaModule } from "../data";
 import { lineList } from "../core/lists";
-import { inFolder } from "../core/classify";
+import { writtenWord } from "../core/stages";
+import { dropKeys, renameKeys } from "../core/path-keys";
 import { writingDay } from "../core/dates";
 import { t } from "../i18n";
 import { isPublished, runChecks } from "./checks";
@@ -54,8 +55,10 @@ export class PublishModule implements EscritaModule {
       }
     }));
 
-    p.registerEvent(p.app.vault.on("rename", (file, oldPath) => this.renamed(file, oldPath)));
-    p.registerEvent(p.app.vault.on("delete", (file) => this.deleted(file)));
+    p.register(p.index.follow({
+      moved: (oldPath, newPath) => this.renamed(oldPath, newPath),
+      deleted: (path) => this.deleted(path),
+    }));
   }
 
   // ------------------------------------------------------------------ helpers
@@ -76,7 +79,7 @@ export class PublishModule implements EscritaModule {
 
   private published(file: TFile, fm = this.frontmatter(file)): boolean {
     const s = this.plugin.settings;
-    return isPublished(fm[s.statusProperty], s.publishedValue);
+    return isPublished(fm[s.statusProperty], s.stages);
   }
 
   /** The note's text as the writer sees it: its editor's (maybe unsaved) text, else the file. */
@@ -92,7 +95,7 @@ export class PublishModule implements EscritaModule {
 
   async openPublish(file: TFile): Promise<void> {
     const s = this.plugin.settings;
-    if (!s.statusProperty.trim() || !s.publishedValue.trim()) {
+    if (!s.statusProperty.trim()) {
       new Notice(t("publish.noStatus"));
       return;
     }
@@ -139,8 +142,8 @@ export class PublishModule implements EscritaModule {
     try {
       await this.plugin.app.fileManager.processFrontMatter(file, (fm: Frontmatter) => {
         previous = fm[s.statusProperty];
-        wasPublished = isPublished(previous, s.publishedValue);
-        fm[s.statusProperty] = s.publishedValue;
+        wasPublished = isPublished(previous, s.stages);
+        fm[s.statusProperty] = writtenWord(s.stages, "published");
         // Decided on the note's current frontmatter, not the (maybe stale) cache.
         if (shouldWriteDate(fm[s.dateProperty], dateChanged)) {
           fm[s.dateProperty] = picked;
@@ -175,7 +178,7 @@ export class PublishModule implements EscritaModule {
       return;
     }
     const record = this.plugin.data.publish[file.path];
-    const status = record?.previousStatus?.trim() || s.unpublishedValue.trim() || "ready";
+    const status = record?.previousStatus?.trim() || writtenWord(s.stages, "ready");
     try {
       await this.plugin.app.fileManager.processFrontMatter(file, (fm: Frontmatter) => {
         fm[s.statusProperty] = status;
@@ -212,36 +215,11 @@ export class PublishModule implements EscritaModule {
 
   // ------------------------------------------------------------------ vault events
 
-  private renamed(file: TAbstractFile, oldPath: string): void {
-    const data = this.plugin.data.publish;
-    if (oldPath in data) {
-      data[file.path] = data[oldPath];
-      delete data[oldPath];
-      this.plugin.requestSave();
-    } else {
-      // A folder rename: move the records of the notes inside it.
-      const prefix = `${oldPath}/`;
-      let moved = false;
-      for (const key of Object.keys(data)) {
-        if (!key.startsWith(prefix)) continue;
-        data[`${file.path}/${key.slice(prefix.length)}`] = data[key];
-        delete data[key];
-        moved = true;
-      }
-      if (moved) this.plugin.requestSave();
-    }
+  private renamed(oldPath: string, newPath: string): void {
+    if (renameKeys(this.plugin.data.publish, oldPath, newPath)) this.plugin.requestSave();
   }
 
-  private deleted(file: TAbstractFile): void {
-    const data = this.plugin.data.publish;
-    if (!file.path) return; // the root is never deleted; "" would mean every record
-    let changed = false;
-    for (const key of Object.keys(data)) {
-      if (inFolder(key, file.path)) {
-        delete data[key];
-        changed = true;
-      }
-    }
-    if (changed) this.plugin.requestSave();
+  private deleted(path: string): void {
+    if (dropKeys(this.plugin.data.publish, path)) this.plugin.requestSave();
   }
 }

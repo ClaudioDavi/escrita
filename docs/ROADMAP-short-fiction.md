@@ -48,8 +48,10 @@ scores, but readability is English only and dialogue is found by quote marks alo
 |---|---|---|---|
 | 0.2.0 | No-network guard (0) · Publish check (1) · Targets per piece + days off (2) · Outline for a single note (3) | XS + S + S + S | Shipped |
 | 0.3.0 | Word counts in the file explorer (6) · Dialogue focus (7) · Snapshots with word-level compare (4) | S + S + M | Shipped |
-| 0.4 | Revision lens, pt-BR and English rules, with dialogue share and readability (5) · Move a paragraph or scene (8) | M–L + S | Planned |
-| 0.5 | Insert from a template (9) | S | Planned |
+| 0.4.0 | The writing desk: stages, stage snapshot, home block (11) · Move a paragraph or scene (8) | S–M + S | Shipped |
+| 0.5 | Revision lens, pt-BR and English rules, with dialogue share and readability (5) | M–L | Planned |
+| 0.6 | Insert from a template (9) | S | Planned |
+| 0.8 | Submissions (12), with export (novel roadmap, 7) | S | Planned |
 | 1.0 | Set up a writing vault (10) | S | Planned |
 
 Sections keep their original numbers so references from the other roadmaps stay valid.
@@ -248,7 +250,8 @@ moved from the end to the start.
 ("Before restoring"), so it's always reversible.
 
 **Retention.** Setting "Keep at most N automatic snapshots per note" (default 20);
-named manual snapshots are never deleted automatically.
+named manual snapshots are never deleted automatically. Stage snapshots (feature 11,
+shipped in 0.4) are never pruned either, and don't count toward N.
 
 **Done when** a round-trip (take, edit, compare, restore one passage, restore all, undo
 by restoring "Before restoring") loses nothing, with tests on the pure parts and a
@@ -256,7 +259,7 @@ manual check on mobile.
 
 ---
 
-## 5. Revision lens (v0.4)
+## 5. Revision lens (v0.5)
 
 **Why.** Short fiction and essays are revised sentence by sentence. Style checkers
 (ProWritingAid, iA Writer Style Check, Harper) are English-only or need a server. This
@@ -424,7 +427,7 @@ speech, toggling off restores the view, and a 10,000-word note stays responsive.
 
 ---
 
-## 8. Move a paragraph or scene (v0.4)
+## 8. Move a paragraph or scene (v0.4, shipped)
 
 **Why.** Rearranging prose without cut and paste is one of the things Tris singles out
 in Obsidian, but Obsidian only moves lines, and Escrita's outline moves whole chapters.
@@ -451,7 +454,7 @@ in Live Preview and Source mode, on desktop and mobile.
 
 ---
 
-## 9. Insert from a template (v0.5)
+## 9. Insert from a template (v0.6)
 
 **Why.** Writers reuse small scaffolds: a scene with its beats, a revision checklist, a
 note for a contest entry. Tris uses Hotkeys for Templates for this. Escrita only knows
@@ -485,12 +488,158 @@ a novel, both) and their language, then shows what it will create before creatin
 - One example conto and one example book with two chapters, with beats, a placeholder
   and a target, so every feature has something to show. Marked as examples and safe to
   delete.
-- Settings to match (language, quote style, status values, paragraph style).
+- Settings to match (language, quote style, stage values, paragraph style).
+- A home note with the works block (feature 11), set to open on startup.
+- A writing layout, applied once: the home note in the main tab and Escrita's views
+  docked in the sidebars (the outline on the right). After that the layout is the
+  writer's: Obsidian keeps whatever they change in its own workspace file, and Escrita
+  never rearranges it again. Escrita doesn't save layouts of its own.
 
 It never touches existing notes; if a folder exists, it is used as it is and listed.
+The layout step is listed with the rest and can be unticked; in a vault with a layout
+already set up it is unticked by default.
+
+**Design first.** A mockup of the layout (desktop and phone) on the design canvas
+before it is built.
 
 **Done when** an empty vault goes from install to a working book and conto in one
-command, and running it in a vault with notes changes none of them.
+command, laid out for writing; the writer's later layout changes survive a restart;
+and running it in a vault with notes changes none of them.
+
+---
+
+## 11. The writing desk (v0.4, shipped)
+
+**Shipped in 0.4.0:** stages, the stage snapshot, the home block, where you left off
+and open on startup. The legacy settings keys stay in `data.json` for a downgrade;
+the old status colors that match no stage live on as `otherStatusColors`.
+
+**Why.** Escrita had many features and no workflow: nothing said what to write today,
+and the `status` property only colored a dot in the outline and changed at publish.
+The goal is to open the vault, see what you're writing, click, and be typing. Decided
+in a design review on 2026-10-01; the rules it set are in ARCHITECTURE.md, "Workflow".
+
+**Stages.** Five fixed stages, each mapped in settings to the writer's own words
+(the first word is the one Escrita writes; more words are accepted):
+
+| Stage | Default | Author's vault |
+|---|---|---|
+| idea | `idea` | `ideia` |
+| draft | `draft` | `rascunho` |
+| revision | `revision` | `revisão` |
+| ready | `ready` | `pronto` |
+| published | `published` | `publicado` |
+
+- Planning has no stage of its own: beats and the outline happen on an idea.
+  Submitted isn't a stage either: a work out at three magazines is still ready
+  (submissions are records, feature 12).
+- The mapping replaces `publishedValue`, `unpublishedValue` and `statusColors`, with a
+  color per stage. Migration: the published value becomes the published stage, the
+  unpublished value the ready stage, colors are matched to stages by value, and colors
+  that match no stage are kept as extra values, so nothing set is lost.
+- Stages change nothing by themselves: every command works in every stage, and words
+  count in every stage.
+
+**Works.** A work is what moves through the stages: a book (its stage is the book
+note's `status`, set by hand, never derived from the chapters) or a tracked
+standalone note whose status is a known stage. A note with no status, or an unknown
+one, isn't a work. Chapters aren't works: their status is progress inside the book.
+`classify` gains a `stage` field (`string | null`); no new kind.
+
+**Stage snapshot.** On any status change of a work (properties panel, sync, a hand
+edit, detected through `metadataCache` `changed` against the last known stage),
+take a snapshot named after the transition, "rascunho → revisão". A new kind,
+**stage**, never pruned. An unchanged note takes nothing (the usual identical-take
+rule). The only automatic action tied to a stage; it gives "compare with the first
+draft" for free.
+
+**Home block.** A code block in any note the writer owns:
+
+````
+```escrita-works
+```
+````
+
+Escrita draws it live (`registerMarkdownCodeBlockProcessor`) and never writes to the
+note; text around the block is the writer's. Without Escrita it is an empty code
+block.
+
+```
+  Escrevendo
+  O porão ............ 4,210 / 5,000 · prazo 15 out
+  Carta à mãe ........ 1,020
+
+  Revisando
+  A casa ............. 7 de 12 capítulos prontos
+
+  4 ideias · 1 pronto · 6 publicados · 3 sem estágio
+```
+
+- Only draft and revision works get a line: the title and at most one fact. Writing:
+  length against target (a book: words against its `goal`), plus the deadline when one
+  is set. No target, just the count. A book in revision: chapters whose status is ready
+  or later, out of all chapters.
+- Every other stage is one count in the last line; clicking a count expands its list
+  in place. "sem estágio" (tracked notes with an unknown status) appears only when
+  there are some.
+- No bars, buttons, dropdowns or badges. The stage is changed in the note's
+  properties, as before.
+- Optional `folder:` line in the block to show one area (Contos, Textos, a book).
+- Clicks must not put the cursor into the block in Live Preview.
+
+**Where you left off.** Clicking a work opens it at:
+
+1. the writer's last edit in it: a position plus some context around it, recorded
+   when the note is left or closed (never per keystroke), kept in `data.json` for
+   works only, following renames through the vault index; found again with the
+   darlings' `findRestoreOffset` rule, so sync and outside edits don't lose it;
+2. else the first unwritten beat;
+3. else the end of the text.
+
+A book opens its last edited chapter at its last edit; with no record, the first
+chapter with an unwritten beat, else the last chapter. The spot is scrolled to the
+middle, with no highlight; a lost context falls through quietly.
+
+**Open on startup.** Setting "Home note" (a path, empty by default) and "Open it on
+startup" (off by default). When on, the home note opens in the active tab after the
+workspace is restored, or is focused if already open. Command "Open the home note"
+offers to create `Home.md` (`Inicio.md` when Obsidian is in Portuguese, no accent) with
+the block when there is none.
+
+**Pure, tested:** stage mapping and migration, `stageOf(status, mapping)`, the works
+list and its lines from classified notes and counts, the "left off" resolution.
+
+**Design first.** A mockup of the block on the design canvas (light and dark, narrow
+and phone) before it is built.
+
+**Done when** the author's vault opens on the home note, it lists the contos in
+rascunho and revisão with the right counts, a click lands at the last edit, moving a
+conto to revisão takes a stage snapshot, and existing status settings carry over.
+
+---
+
+## 12. Submissions (v0.8)
+
+**Why.** Sending a conto to contests and magazines, and tracking where it went and
+what came back, is a large part of short fiction. It ships with export (novel
+roadmap, 7), since export is how a work gets sent.
+
+**What it does.** One note per submission, in a folder (setting, default
+`Submissions/`), with plain properties: `work` (a link to the work, so renames are
+followed by Obsidian), `market` (plain text; a link to a market note works too, with
+no market features), `sent`, `result` (`pending`, `accepted`, `rejected`,
+`withdrawn`, values from settings), `responded`. The body is free: the editor's
+note, the contract. Bases or Dataview can table them without Escrita.
+
+- Command "Record a submission" for the active work: asks for the market, fills the
+  date, creates the note.
+- The home block's ready count can show "2 pendentes" when submissions are pending.
+  Nothing more in the block.
+- `classify` gains a `submission` field, like `snapshot`; submission notes are never
+  works or tracked.
+
+**Done when** recording a submission for a conto creates a note that links back to it,
+renaming the conto updates the link, and the notes read well with Escrita turned off.
 
 ---
 
@@ -498,9 +647,11 @@ command, and running it in a vault with notes changes none of them.
 
 | Section | Setting | Default | Author's vault |
 |---|---|---|---|
-| Publishing | Published value | `published` | `publicado` |
-| | Unpublished value | `ready` | `pronto` |
-| | Date property | `date` | `date` |
+| Stages | Idea / draft / revision / ready / published values (replace published and unpublished values, status colors) | `idea`, `draft`, `revision`, `ready`, `published` | `ideia`, `rascunho`, `revisao`, `pronto`, `publicado` |
+| | Other status colors (`otherStatusColors`: one `word: color` per line, for statuses that are not a stage, such as chapter ones) | (empty) | (migrated from the old status colors) |
+| | Home note / open it on startup | (empty) / off | `Início.md` (their existing note) / on |
+| Submissions | Folder / result values | `Submissions` / `pending`, `accepted`, `rejected`, `withdrawn` | (author's choice) |
+| Publishing | Date property | `date` | `date` |
 | | Recommended properties | `description` | `description` |
 | Goals | Target, limit, unit properties | `target`, `limit`, `unit` | same |
 | | Deadline property, book goal property | `deadline`, `goal` | same |

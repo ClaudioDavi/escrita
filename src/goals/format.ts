@@ -1,4 +1,5 @@
 import { moment } from "obsidian";
+import { fmtShortDay } from "../i18n";
 
 /** YYYY-MM-DD → a short localized date ("Mar 1, 2027" / "1 de mar. de 2027"). */
 export function fmtDay(day: string): string {
@@ -6,12 +7,4 @@ export function fmtDay(day: string): string {
   return m.isValid() ? m.format("ll") : day;
 }
 
-/** YYYY-MM-DD → "Sep 29" / "29 de set." for chart labels. */
-export function fmtShortDay(day: string): string {
-  const m = moment(day, "YYYY-MM-DD", true);
-  if (!m.isValid()) return day;
-  const long = m.localeData().longDateFormat("ll");
-  // Drop the year from the locale's "ll" format.
-  const noYear = long.replace(/[\s,]*(?:\[[^\]]*\]\s*)?Y+[\s,.]*/g, " ").trim();
-  return m.format(noYear || "MMM D");
-}
+export { fmtShortDay };

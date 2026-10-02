@@ -35,7 +35,7 @@ Choose weekdays off and specific dates off. A day off never breaks your streak, 
 
 ### Publish check
 
-**Publish this note** checks the active note before you publish it: an unclosed `%%` comment, placeholders left, unwritten beats, an empty body, missing recommended properties such as `description`, and a length over the piece's limit. Blockers can be overridden. Publishing sets the status property to your published value and the date property to today (or a date you choose). **Unpublish this note** puts the earlier status back. Escrita doesn't publish anywhere: it only checks the note and updates its properties, so it works whether you post to a blog, send to a magazine, or just mark a piece as done.
+**Publish this note** checks the active note before you publish it: an unclosed `%%` comment, placeholders left, unwritten beats, an empty body, missing recommended properties such as `description`, and a length over the piece's limit. Blockers can be overridden. Publishing sets the status property to your word for the published stage and the date property to today (or a date you choose). **Unpublish this note** puts the earlier status back. Escrita doesn't publish anywhere: it only checks the note and updates its properties, so it works whether you post to a blog, send to a magazine, or just mark a piece as done.
 
 ### Sprints
 
@@ -68,6 +68,27 @@ Hide spelling squiggles while you draft, then turn them on with **Toggle spellch
 ### Dialogue focus
 
 **Toggle dialogue focus** dims everything in the note except speech, so you can read a scene's dialogue on its own. Speech is a line that opens with a dash (—, – or ―), switched to narration and back by spaced dashes inside the paragraph (`— Vem cá — disse ela. — Agora.`), plus anything in double quotes of your quote style (and straight `"`). A hard-wrapped line inside a paragraph stays speech. Code, properties and comments are never speech. It works in Live Preview and Source mode, not in Reading view, and stays on for that note until you turn it off or restart Obsidian.
+
+### Home note and where you left off
+
+Put a code block like this in any note, then set it as your **Home note** in the settings:
+
+````
+```escrita-works
+```
+````
+
+Escrita draws it and never writes to it. It lists the works you are writing (status in the draft stage) and revising, each with its length against its target or limit, its deadline, or a book's chapters ready. Ideas, ready and published works are only counted. Add `folder: Contos` lines to show only the works in those folders. Click a work to open it where you left off: a note at the spot you last edited, a book at the chapter you last edited. If there is no such spot, a note opens at its first unwritten beat, else its end. **Open the home note** opens the note (and offers to create it if it doesn't exist; with no home note set, it adopts an existing `Home.md` or `Inicio.md`); **Open on startup** does it for you when Obsidian starts.
+
+A work is a book, or a tracked note, whose status is one of your stage words. Chapters are not works. Escrita remembers where you left off only for works and a work's chapters.
+
+### Move a paragraph or scene
+
+**Move paragraph up/down** and **Move scene up/down** swap the paragraph (or the scene between `---` breaks) under your cursor with its neighbour, in one undo step. Beats, comments, code and math blocks stay where they are, and a move that would change how the note reads is refused. They work in the editor (Live Preview or Source), and have no default hotkeys.
+
+### Stage snapshots
+
+When you change a work's status to another stage, Escrita takes a snapshot named for the change (for example "Draft → Revision"), once the status has stopped changing for a few seconds. For a book it saves the book note and each chapter. Stage snapshots are never trimmed. A status you change while Obsidian is closed is not snapshotted.
 
 ### Word counts in the file explorer
 
@@ -107,11 +128,14 @@ A beat counts as written when prose follows it before the next beat, scene break
 
 ## Settings
 
-- **Books**: chapters folder name, chapter template (`{{title}}`, `{{date}}` and `{{time}}` are filled in), how many digits chapter numbers get (`01`, `001`…), the status and summary property names, and the status colors used in the outline.
+- **Books**: chapters folder name, chapter template (`{{title}}`, `{{date}}` and `{{time}}` are filled in), how many digits chapter numbers get (`01`, `001`…), and the status and summary property names.
+- **Stages**: the five stages of a work (idea, draft, revision, ready, published), the status words you use for each (separate several with commas; the first is the one Escrita writes) and a color for each, used in the outline and its board (a chapter's dot; a single note's stage in the outline header) and as a key on the home block's counts line. Your existing published and unpublished values and status colors carry over the first time you open 0.4.
+- **Other status colors**: colors for statuses that are not a stage, such as chapter ones. One per line, `word: color`.
+- **Home note**: the note that holds your `escrita-works` block, and **Open on startup**, which opens it in the active tab when Obsidian starts (off by default; it replaces the tab Obsidian restored).
 - **Goals**: daily word goal, the hour the writing day ends, folders to track and to ignore, the size of a change that is ignored as a paste or sync, the default sprint length and word target, and whether to show the status bar.
 - **Goals** (continued): the property names for a piece's target, limit, unit and deadline, the property name for a book's goal, weekdays off and dates off. Write amounts as `15000`, or quote them when they have separators (`"15.000"`): unquoted, `15.000` is the decimal number 15.
 - **Goals** (file explorer): word counts on or off, the target next to the count, folder totals.
-- **Publishing**: the status values for published and unpublished notes (the status property is the one under Books), the date property, and recommended properties.
+- **Publishing**: the date property and recommended properties (the status words are under Stages, and the status property under Books).
 - **Outline**: ghost beats on or off.
 - **Placeholders**: the marker word, and whether to mark files in the file explorer.
 - **Darlings**: the darlings note inside a book, and the note used for everything else.
@@ -126,7 +150,8 @@ A beat counts as written when prose follows it before the next beat, scene break
 | Goals | Open progress, Start a sprint, Stop the sprint |
 | Placeholders | Insert placeholder, Next placeholder in this note, Previous placeholder in this note, Open placeholders |
 | Darlings | Move selection to darlings, Open darlings |
-| Editor | Toggle spellcheck, Insert scene break, Toggle dialogue focus |
+| Editor | Toggle spellcheck, Insert scene break, Toggle dialogue focus, Move paragraph up, Move paragraph down, Move scene up, Move scene down |
+| Home | Open the home note |
 | Snapshots | Take a snapshot, Open snapshots, Compare with the last snapshot, Browse snapshots of deleted notes |
 | Publishing | Publish this note, Unpublish this note |
 
@@ -169,6 +194,15 @@ To try your build, link or copy the repository folder into a test vault's `.obsi
 To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updates `manifest.json` and `versions.json`), commit, then push a tag with the bare version number (for example `git tag 0.1.1 && git push --tags`). The release workflow builds the plugin and drafts a GitHub release with `main.js`, `manifest.json` and `styles.css`; publish the draft when it looks right.
 
 ## Changelog
+
+### 0.4.0
+
+- **Stages**: a work moves through five stages (idea, draft, revision, ready, published), each mapped to the status words you already use. New **Stages** settings with a color for each. Your published and unpublished values and status colors carry over the first time you open 0.4: the old settings stay in `data.json`, and an edit to them made after upgrading (for example in 0.3.x) is ignored. Status words are matched ignoring case, and an accent typed as a combining mark still matches. Any of your published words now counts as published, not only the first. Publishing writes the first word of the published stage, and unpublishing restores the earlier status.
+- **Stage snapshot**: when a work's status changes to another stage, Escrita takes a snapshot of it ("Draft → Revision"). Stage snapshots are never trimmed.
+- **Home block**: an `escrita-works` code block in a note you own lists what you are writing and revising, and counts the rest. A click opens the work where you left off. New **Open the home note** command and an **Open on startup** setting.
+- **Where you left off**: Escrita remembers the last place you edited in each work (and in a book's chapters), and the home block opens there. It follows renames.
+- **Move a paragraph or scene**: **Move paragraph up/down** and **Move scene up/down**, in one undo step.
+- Internal: a reusable vault index (`core/vault-index`) that follows renames, deletes and edits, now behind placeholders, publish records, dialogue focus, goals history, the works list, where you left off and the home note path. The measurer, the explorer and the snapshots store still keep their own path-keyed state.
 
 ### 0.3.1
 

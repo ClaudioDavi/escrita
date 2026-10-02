@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { countWords, proseOnly } from "../src/core/wordcount";
-import { parseBeats, parsePlaceholders } from "../src/core/markers";
+import { parseBeats, parsePlaceholders, isBeatLine, isSceneBreakAt } from "../src/core/markers";
+import { segment } from "../src/core/markdown";
 import { planRenumber, chapterTitle, compareChapters } from "../src/core/book";
 import { writingDay, daysBetween, lastDays } from "../src/core/dates";
 
@@ -66,5 +67,37 @@ describe("dates", () => {
     expect(writingDay(new Date(2026, 8, 30, 1, 30), 0)).toBe("2026-09-30");
     expect(daysBetween("2026-09-29", "2027-03-01")).toBe(153);
     expect(lastDays("2026-09-29", 3)).toEqual(["2026-09-27", "2026-09-28", "2026-09-29"]);
+  });
+});
+
+describe("marker line predicates", () => {
+  it("isBeatLine: a lone beat comment", () => {
+    const md = segment("a\n\n%% beat: cena %%\ntexto");
+    expect(isBeatLine(md, 2)).toBe(true);
+    expect(isBeatLine(md, 0)).toBe(false);
+    expect(isBeatLine(md, 3)).toBe(false);
+    expect(isBeatLine(md, 99)).toBe(false);
+  });
+  it("isBeatLine: two comments, code and frontmatter are no beat", () => {
+    expect(isBeatLine(segment("%% beat: a %% %% beat: b %%"), 0)).toBe(false);
+    expect(isBeatLine(segment("```\n%% beat: a %%\n```"), 1)).toBe(false);
+    expect(isBeatLine(segment("---\n%% beat: a %%\n---\nx"), 1)).toBe(false);
+  });
+  it("isSceneBreakAt: needs a blank line before, or the body start", () => {
+    const md = segment("um\n---\n\ndois\n\n---\n\ntres");
+    expect(isSceneBreakAt(md, 1)).toBe(false); // setext underline
+    expect(isSceneBreakAt(md, 5)).toBe(true);
+    expect(isSceneBreakAt(md, 0)).toBe(false);
+  });
+  it("isSceneBreakAt: first body line, and lines before the body", () => {
+    const md = segment("---\nstatus: x\n---\n---\n\ntexto");
+    expect(md.bodyLine).toBe(3);
+    expect(isSceneBreakAt(md, 3)).toBe(true);
+    expect(isSceneBreakAt(md, 0)).toBe(false);
+    expect(isSceneBreakAt(md, 2)).toBe(false);
+    expect(isSceneBreakAt(md, 2, 0)).toBe(false); // line 2 is a frontmatter fence, not prose
+  });
+  it("isSceneBreakAt: not inside code", () => {
+    expect(isSceneBreakAt(segment("```\n\n---\n```"), 2)).toBe(false);
   });
 });

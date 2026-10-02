@@ -1,0 +1,150 @@
+# Escrita: context for working on this repo
+
+Read this first. It says what Escrita is, where each decision is written down, and
+the rules that decide most questions. It points to the docs instead of copying
+them; when this file and a doc disagree, the doc wins (and fix this file).
+
+## What it is
+
+An Obsidian plugin for fiction writers (TypeScript, CodeMirror 6, esbuild, vitest),
+inspired by NEO. Public and generic: any vault, any language, theme-friendly,
+mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English strings).
+It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
+beat sheets) belong to StoryLine, and Escrita doesn't compete there.
+
+Current version: see `manifest.json` (0.4.0 at the time of writing). The author's
+next months are short fiction (contos, essays), so short-fiction features come first.
+
+## Where things are written down
+
+| Question | Read |
+|---|---|
+| What ships in which version, what's next | `docs/ROADMAP.md` (the index; start here) |
+| Details of a feature (refs like SF 5, N 7, U 1.2) | `docs/ROADMAP-short-fiction.md` (SF), `docs/ROADMAP-novel.md` (N), `docs/ROADMAP-universe.md` (U), by section number |
+| How the code is organized, module specs, conventions | `docs/ARCHITECTURE.md` |
+| Code improvements to schedule | `docs/IMPROVEMENTS.md` |
+| User-facing features, settings, commands, changelog, release steps | `README.md` |
+| Background research (local only, git-ignored) | `reports/Obsidian fiction writing gaps.md`, `research_notes/` |
+| Approved UI design (mockups) | design canvas https://claude.ai/artifact/DGww2xWiadXRuWqVv2jFv6 |
+
+## Non-negotiable rules
+
+These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
+
+1. **Data safety first.** Never lose or silently change prose. Anything that removes
+   text moves it somewhere recoverable (darlings, trash, a snapshot) or asks.
+2. **Suggest, never rewrite.** No feature changes prose without an explicit click.
+3. **Fewer things to manage.** The writer should sit down and write, not run the
+   plugin. A feature that needs upkeep from the writer has to earn it; prefer reading
+   what they already do (a `status`, a target) over asking for more. This rule cut a
+   works tab and a library view down to one plain block in a note.
+4. **No network, no AI.** Never contact a server or a model. `tests/no-network.test.ts`
+   fails on network APIs anywhere in `src/` (and in `main.js` via `npm run test:bundle`),
+   even in a trailing comment.
+5. **Standalone.** No feature assumes a website: no URLs, slugs, site build rules or
+   files written for a site. "Publish" only checks a note and sets status and date.
+6. **Generic first.** Every property name, status value, folder and word list is a
+   setting with English defaults. The author's values live in their vault's
+   `data.json`, never in code.
+7. **Design first.** UI work gets mockups on the design canvas and approval before it
+   is built.
+8. **Obsidian community guidelines** (the plugin will be submitted): no `innerHTML`,
+   no default hotkeys, `register*` for everything, `vault.process` /
+   `processFrontMatter` / `fileManager.renameFile` / `trashFile`, `normalizePath`, no
+   Node or Electron APIs, no `console.log`. Exceptions are listed in ARCHITECTURE.md;
+   don't add one without listing it there.
+
+## How the code is shaped
+
+- `src/main.ts` builds the services, then each module (`src/<module>/index.ts`,
+  `class <Name>Module implements EscritaModule`). Modules: goals, outline,
+  placeholders, darlings, editor, publish, explorer, snapshots, desk.
+- **Shared services on `plugin`** (use them; never re-derive):
+  - `books.classify(x)`: what a file is (chapter, book note, note…), its book,
+    `tracked`, `piece`, `snapshot`, `stage`. Backed by `core/classify.ts`.
+  - `measure`: every count shown or recorded (`core/measurer.ts`, cached by mtime).
+  - `notes`: every write into a note's text (editor when open, else `vault.process`;
+    check-then-replace through `core/note-text.ts`).
+  - `decorations`: the only code that draws in the file explorer.
+  - `chapterOps`: create, renumber, retitle chapters.
+  - `index`: the vault index hub (`core/index-hub.ts`): add a spec for a per-file
+    index, or `follow` renames and deletes for path-keyed data. `works`: the live
+    list of works, built on it.
+- **Markdown questions** (frontmatter, code, comments, what a line is) go through
+  `segment(text)` / `segmentDoc(doc)` in `core/markdown.ts`. Line predicates live next
+  to `isSceneBreakLine` in `core/markers.ts`.
+- **Pure logic in files without `obsidian` imports**, tested with vitest in
+  `tests/<module>*.test.ts`. Obsidian-facing code stays thin.
+- **Strings**: `t("<module>.<key>")` with English and pt-BR in
+  `src/<module>/strings.ts`; numbers through `fmt`, units through `unitAmount`/`plural`.
+  Sentence case.
+- **Styles**: `escrita-` class prefix, module `styles.css`, Obsidian CSS variables or
+  the tokens in `src/styles.css`. Light and dark themes; touch targets ≥ 32px.
+- `src/core/*`, `main.ts`, `settings.ts`, `data.ts`, `i18n.ts`, `strings.ts` are
+  shared core: change them as a deliberate refactor, not as a side effect of a feature.
+- Growth rule for the classifier: new knowledge arrives as new fields on the result,
+  never as new kinds (the universe's `scope` will be a field).
+
+## Vocabulary
+
+- **Book**: a folder `F` with a note `F.md` and a chapters folder inside it.
+- **Chapter**: a `.md` file directly in a book's chapters folder.
+- **Piece**: any note with `target`, `limit`, `unit` or `deadline` (a conto, an essay).
+- **Work** (0.4): what moves through the stages: a book, or a tracked standalone note
+  whose `status` is a known stage. Chapters are not works.
+- **Stage** (0.4): idea, draft, revision, ready, published, each mapped to the writer's
+  `status` words (`ideia`, `rascunho`, `revisão`, `pronto`, `publicado`). Code reads
+  the stage, never the word. Submitted is not a stage.
+- **Home note** (0.4): a note the writer owns with an `escrita-works` block that
+  Escrita draws (never writes): what to write today, and a click lands where you left off.
+- **Beat**: `%% beat: … %%` on its own line; "ghost" until prose follows it.
+- **Placeholder**: `%% XXX: … %%` (marker word from settings); blocks publish.
+- **Scene break**: a `---` line with blank lines around it.
+- **Darlings**: cut passages kept in a note, restorable to where they came from.
+- **Snapshot**: a `.txt` copy of a note under `Escrita/Snapshots`, comparable word by word.
+- **Tracked**: counted by goals (inside track folders, outside exclude folders).
+- Deep/shallow module, seam, locality: as defined at the top of IMPROVEMENTS.md.
+
+## Working process
+
+- **Checks before calling something done**: `npm run typecheck`, `npm test`,
+  `npm run build` (and `npm run test:bundle` after a build). CI runs all four.
+- **Every release includes at least one improvement** from IMPROVEMENTS.md, named in
+  ROADMAP.md under the version, preferably one the version's features lean on.
+- **When a version ships**: move its row to "Shipped" in ROADMAP.md, add the changelog
+  entry to README.md, move the improvement to "Done" in IMPROVEMENTS.md, mark the
+  feature shipped in its topic roadmap, and plan the next version in ROADMAP.md before
+  editing the topic roadmaps.
+- **Release mechanics**: `npm version <patch|minor> --no-git-tag-version` (updates
+  `manifest.json` and `versions.json`), commit as the bare version (`0.3.0`), tag the
+  bare version, push the tag; the workflow drafts a GitHub release with `main.js`,
+  `manifest.json`, `styles.css`.
+- **Docs style**: plain English, short sentences, sentence-case headings. Keep the
+  version index in ROADMAP.md current whenever plans change.
+- Testing vault: the author's vault at `~/projects/website/escrita/` (contos in
+  `Contos/`, essays in `Textos/`; status values `ideia`, `rascunho`, `revisão`,
+  `pronto`, `publicado`).
+
+## Where the project is heading
+
+Escrita is a writing **system**: every feature serves a stage of a work's life
+(ARCHITECTURE.md, "Workflow"). When proposing a feature, say which stage it serves
+and what upkeep it asks of the writer.
+
+- **0.4 (shipped), the writing desk**: stages, the stage snapshot, the home block with
+  "where you left off" (SF 11), moving a paragraph or scene (SF 8), the vault index.
+- **0.5 (next), revision**: stemmers in `core/stem/` (shared with the universe) and the revision lens
+  (SF 5). Improvement: the 0.2.1 editor loose ends.
+- **0.6–0.9**: the shared universe (opt-in, off by default), DOCX/Markdown export
+  with submissions (0.8, SF 12), universe phase 2.
+- **0.10**: EPUB, book-wide publish check, "Read the book".
+- **1.0**: universe + manuscript export complete, mobile pass, docs in both
+  languages, community plugin submission.
+
+Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and
+`goals/progress-modal.ts` are large and mostly untested (IMPROVEMENTS 5); path-keyed
+data follows renames in three separate places, the measurer, the explorer's tracked
+set and the snapshots store (IMPROVEMENTS 2, done in 0.4 for everything else, which
+follows through `plugin.index.follow`); the outline's beat
+re-checks still bypass the note text port (IMPROVEMENTS 3); a few Markdown parity
+questions with Reading view are pinned in `tests/markdown-consumers.test.ts`.

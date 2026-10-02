@@ -66,7 +66,7 @@ class MemFs implements SnapshotFs {
 
 const ROOT = "Escrita/Snapshots";
 const labels: Record<SnapshotKind, string> = {
-  manual: "Snapshot", publish: "Before publishing", restore: "Before restoring", daily: "Before the day's first edit",
+  manual: "Snapshot", publish: "Before publishing", restore: "Before restoring", daily: "Before the day's first edit", stage: "Stage change",
 };
 
 function setup(keepAuto = 20, notes: Set<string> | null = null) {
@@ -116,6 +116,50 @@ describe("SnapshotStore.take", () => {
     const list = await store.list("A.md");
     expect(list).toHaveLength(1);
     expect(list[0]).toMatchObject({ kind: "manual", name: "Enviado ao concurso", file: "2026-09-30 1001 Enviado ao concurso.txt" });
+  });
+
+  it("a stage take keeps its name and the stage field, and names the file", async () => {
+    const { store } = setup();
+    await store.take("A.md", "texto", { kind: "stage", name: "rascunho → revisão", stage: { from: "draft", to: "revision" }, day: "2026-09-30", words: 1 });
+    const list = await store.list("A.md");
+    expect(list[0]).toMatchObject({ kind: "stage", name: "rascunho → revisão", stage: { from: "draft", to: "revision" }, file: "2026-09-30 1001 rascunho → revisão.txt" });
+  });
+
+  it("an identical daily is promoted by a stage take", async () => {
+    const { store, take } = setup();
+    await take("A.md", "texto", "daily");
+    const r = await store.take("A.md", "texto", { kind: "stage", name: "rascunho → revisão", stage: { from: "draft", to: "revision" }, day: "2026-09-30", words: 1 });
+    expect(r.status).toBe("promoted");
+    const list = await store.list("A.md");
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ kind: "stage", name: "rascunho → revisão", stage: { from: "draft", to: "revision" } });
+    expect(list[0].file).toBe("2026-09-30 1001 rascunho → revisão.txt");
+  });
+
+  it("an identical older manual makes a stage take write nothing", async () => {
+    const { fs, store, take } = setup();
+    await take("A.md", "texto", "manual", "Marco");
+    await take("A.md", "outro texto", "daily");
+    const before = fs.files.size;
+    const r = await store.take("A.md", "texto", { kind: "stage", name: "a → b", stage: { from: "draft", to: "revision" }, day: "2026-09-30", words: 1 });
+    expect(r.status).toBe("unchanged");
+    expect(fs.files.size).toBe(before);
+    expect((await store.list("A.md")).map((e) => e.kind).sort()).toEqual(["daily", "manual"]);
+  });
+
+  it("stage entries are never pruned and renaming keeps the kind", async () => {
+    const { store, take } = setup(1);
+    await store.take("A.md", "texto", { kind: "stage", name: "a → b", stage: { from: "draft", to: "revision" }, day: "2026-09-30", words: 1 });
+    for (let i = 0; i < 4; i++) await take("A.md", `daily ${i}`, "daily");
+    let list = await store.list("A.md");
+    expect(list.filter((e) => e.kind === "stage")).toHaveLength(1);
+    expect(list.filter((e) => e.kind === "daily")).toHaveLength(1);
+    const st = list.find((e) => e.kind === "stage")!;
+    const renamed = await store.rename("A.md", st.file, "Versão final");
+    expect(renamed.kind).toBe("stage");
+    expect(renamed.name).toBe("Versão final");
+    list = await store.list("A.md");
+    expect(list.find((e) => e.file === renamed.file)?.stage).toEqual({ from: "draft", to: "revision" });
   });
 
   it("take, edit, take gives two entries, newest first", async () => {

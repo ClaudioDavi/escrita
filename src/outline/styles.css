@@ -431,3 +431,10 @@ body:not(.is-mobile) .escrita-outline-chapter:not(:focus-within):not(.is-active)
 .escrita-outline-progress.is-over .escrita-outline-bar-fill {
   background: var(--escrita-bad);
 }
+
+.escrita-outline-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-normal);
+}

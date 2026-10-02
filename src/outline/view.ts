@@ -6,7 +6,7 @@ import type EscritaPlugin from "../main";
 import type { Book } from "../core/books";
 import { inBook, inSnapshots } from "../core/classify";
 import { beatLine, parseBeats, parsePlaceholders, type BeatMarker } from "../core/markers";
-import { parseStatusColors } from "../settings";
+import { statusColor } from "../core/stages";
 import { fmt, plural, t, unitAmount } from "../i18n";
 import { noteProgress, type Piece, type Progress } from "../core/measure";
 import { appendBeat, insertBeat, insertFirstBeat, isBlankBody, moveBeatOut, removeBeat, setBeatText } from "./beats-edit";
@@ -507,7 +507,20 @@ export class OutlineView extends ItemView {
 
   private renderNoteStats(note: NoteState): void {
     if (!this.statsEl || !this.progressEl) return;
-    this.statsEl.setText(plural("outline.beats", note.row.beats.length));
+    const stats = this.statsEl;
+    stats.empty();
+    // a standalone work shows its stage, in the stage's color, before the beats
+    const stage = this.plugin.books.classify(note.row.file).stage;
+    if (stage) {
+      const st = stats.createSpan({ cls: "escrita-outline-stage" });
+      const dot = st.createSpan({ cls: "escrita-outline-dot" });
+      dot.setAttr("aria-hidden", "true");
+      const color = this.plugin.settings.stages[stage]?.color;
+      if (color) dot.setCssProps({ "--escrita-dot": color });
+      st.createSpan({ text: t(`stage.${stage}`) });
+      stats.createSpan({ cls: "escrita-outline-sep", text: " · " });
+    }
+    stats.createSpan({ text: plural("outline.beats", note.row.beats.length) });
     const g = note.progress;
     const p = this.progressEl;
     p.empty();
@@ -590,7 +603,7 @@ export class OutlineView extends ItemView {
     }
     if (row.status) {
       const dot = meta.createSpan({ cls: "escrita-outline-dot" });
-      const color = parseStatusColors(this.plugin.settings.statusColors)[row.status.toLowerCase()];
+      const color = statusColor(row.status, this.plugin.settings.stages, this.plugin.settings.otherStatusColors);
       if (color) dot.setCssProps({ "--escrita-dot": color });
       setTooltip(dot, row.status);
       dot.setAttr("role", "img");

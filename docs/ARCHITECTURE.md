@@ -19,15 +19,19 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
 - **Plugin services** (on `this.plugin`): `settings` (see `src/settings.ts` —
   all settings already exist, with a settings tab), `data.history` (see `src/data.ts`),
   `requestSave()` (debounced persist), `saveSettings()`, `books` (`BookService`:
-  `classify(file | folder | path | null)` → `{ path, kind, markdown, book, tracked, piece, snapshot }`,
+  `classify(file | folder | path | null)` → `{ path, kind, markdown, book, tracked, piece, snapshot, stage }`,
   `chapters(book)`, `allBooks()`, `frontmatter(file)`; see "File classification" below),
   `measure` (`Measurer`, `core/measurer.ts`: counts per file and per book, cached
   by mtime; see "Measuring" below), `notes` (`NoteService`, `core/notes.ts`: every
   write into a note's text; see "Note text" below), `decorations`
   (`ExplorerDecorations`, `core/explorer-decorations.ts`: the one thing that draws in
   the file explorer; see the explorer spec), `chapterOps` (`ChapterOps`:
-  create/renumber/retitle chapters), and the other modules (`goals`, `outline`,
-  `placeholders`, `explorer`, `darlings`, `editor`, `snapshots`, `publish`).
+  create/renumber/retitle chapters), `index` (`VaultIndexes`, the reusable vault index; see
+  "Vault index" below: `add(spec)`, `follow(follower)`, `rebuild(name?)`, `settingsChanged()`),
+  `works` (`WorksReader`, `core/works-index.ts`: the live list of works, one entry per
+  tracked book, note or chapter; `get`, `list`, `isReady`, `onReady`, `onChange`; built on
+  `index`), and the other modules (`goals`, `outline`,
+  `placeholders`, `explorer`, `darlings`, `editor`, `snapshots`, `publish`, `desk`).
 - **Pure core** (no Obsidian imports, unit tested): `core/markdown.ts` (the one
   Markdown segmenter, see below), `core/wordcount.ts`,
   `core/markers.ts` (beat/placeholder/scene-break syntax), `core/book.ts`
@@ -43,7 +47,18 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   `core/note-text.ts` (the note text port: `Change`, `checkedChange`, `minimalChange`,
   `matchLineEndings`), `core/explorer-decorations.ts` (the explorer walk, over fake
   elements in tests) and
-  `core/merge.ts` (`mergeDefaults` for saved settings). `countCharacters(md, { spaces })`
+  `core/merge.ts` (`mergeDefaults` for saved settings), and the 0.4 core:
+  `core/path-keys.ts` (`isUnder`, `movedPath`, and the rename/drop helpers for records,
+  maps and sets keyed by path; the one rule for files and folders), `core/vault-index.ts`
+  (`VaultIndex`, one incrementally kept index), `core/index-hub.ts` (`IndexHub`, which
+  owns the indexes and feeds them events), `core/works.ts` and `core/works-index.ts`
+  (`DeskEntry`, `deskEntry`, `worksSpec`, `WorksService`), `core/stages.ts` (the five
+  stages, `stageOf`, `writtenWord`, `statusColor`, `normalizeStages`), `core/migrate.ts`
+  (`migrateSettings`: the 0.3 status settings to stages), `core/anchor.ts` (`contextAt`,
+  `findRestoreOffset`: a spot found again by its surrounding text), `core/left-off.ts`
+  (`LeftOff`, `makeLeftOff`, `noteSpot`, `bookTarget`), and `core/markers.ts` also
+  exports `isBeatLine` and `isSceneBreakAt` (a real scene break in the body, not a
+  setext underline). `countCharacters(md, { spaces })`
   in `core/wordcount.ts` counts on `proseOnly` text with whitespace runs collapsed.
   Reuse these; don't duplicate.
 - **Never re-detect frontmatter, fences, inline code or comments**: ask
@@ -90,6 +105,10 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   Must look right in light and dark themes. Touch targets ≥ 32px in side panels.
 - **Data safety is the top priority.** Never lose or silently change prose. Anything
   that deletes text either moves it somewhere recoverable (darlings, trash) or asks.
+- **Fewer things to manage.** The writer should sit down and write, not run the
+  plugin. A feature that needs upkeep from the writer (fields to fill, lists to
+  groom, a panel to check) has to earn it. Prefer reading what the writer already
+  does (a `status`, a target) over asking for more. See "Workflow" below.
 - **Standalone.** Escrita is for any writer, whether or not they publish to a
   website. No feature may assume a site: no URLs or slugs, no site build rules, no
   files written for a site to read. "Publish" only means checking a note and setting
@@ -132,6 +151,32 @@ flow adds its blank-line-before rule on top).
 A beat is **written** when prose (or code) follows it before the next beat, scene break or end
 of file (`core/markers.parseBeats`). Beats stay in the file after the scene is
 written; they act as invisible scene headings and keep the outline in sync.
+
+## Workflow (shipped in 0.4)
+
+Escrita is a writing system, not a set of features: every feature serves a stage of
+a work's life, and the stage is the `status` the writer already sets. Decided in a
+design review on 2026-10-01; the feature spec is ROADMAP-short-fiction.md, 11
+(the writing desk) and 12 (submissions).
+
+- **A work** is what moves through the stages: a book (its book note's `status`, set
+  by hand, never derived from its chapters) or a tracked standalone note whose
+  `status` is a known stage. No status, or an unknown one, means not a work.
+  Chapters are never works: their status is progress inside the book.
+- **Five fixed stages**, mapped in settings to the writer's words: idea, draft,
+  revision, ready, published. Planning happens in idea; submitted is not a stage
+  (submissions are notes of their own). Code reads the stage, never a status word.
+- **What a stage changes:** nothing is hidden, every command works in every stage,
+  and words count in every stage. A stage may change what a feature puts forward
+  first, read from `classify().stage`, never as a mode the writer manages.
+- **One automatic action:** a stage snapshot (kind `stage`, never pruned) on any
+  status change of a work.
+- **The hub is a note the writer owns**, with an `escrita-works` block Escrita
+  draws and never writes. It shows only what to write today (draft and revision);
+  everything else is a count. A click opens the work where the writer left off.
+- **Considered and dropped:** a Works tab, a three-pane library and a stage board
+  (too much to manage, and boards are StoryLine's); per-stage settings; stage
+  dropdowns and action buttons in the block.
 
 ## File classification (`core/classify.ts`)
 
@@ -187,6 +232,16 @@ Growth: new knowledge arrives as new fields on the result and new fields on
 `ClassifySettings`, never as new kinds and never as caller changes. The universe
 roadmap's `scopeFor(file, settings)` becomes a `scope` field computed in the same
 pass; the file explorer counts of v0.3 read `kind`, `book` and `tracked` per item.
+The writing desk (0.4) added `stage` and submissions (0.8) will add `submission`, both
+the same way.
+
+- `stage`: the work's stage (`idea`, `draft`, `revision`, `ready`, `published`), set only
+  for a **tracked** book note or a tracked standalone note whose status property holds a
+  word mapped to a stage in `settings.stages`; null for everything else (chapters, files,
+  untracked notes, an unknown or missing status). This is the one stage rule for works
+  (`stageFor` in `core/classify.ts`): the works index, the publish check and the stage
+  snapshot all read it, and none re-derives it. Words match after NFC, trim and
+  lowercase; a word listed under two stages belongs to the first stage in order.
 
 ## Markdown segmentation (`core/markdown.ts`)
 
@@ -353,6 +408,60 @@ refuse.
   (read, restore, "Use the old version"). The outline's four hand-made beat re-checks
   are not migrated yet (IMPROVEMENTS 3, partial).
 
+## Vault index (`core/vault-index.ts`, `core/index-hub.ts`, `core/vault-indexes.ts`)
+
+One reusable, incrementally kept index replaces the per-module scans (placeholders and
+the works list use it first). `plugin.index` is the hub; a module adds a spec and gets a
+`VaultIndex<F, V>` back.
+
+- **Spec** (`IndexSpec<F, V>`): `name`; `mode` (`content` reads each file's text through
+  `cachedRead`, `metadata` reads only the metadata cache and gets `text === null`);
+  `include(f)`; `compute(f, text) → V | undefined` (undefined means no entry); `same(a, b)`;
+  `structural` (recompute everything when a file is created, deleted or renamed, because
+  who is what can change, as the works index needs for `classify`); `settingsKey()`
+  (a string that changes when a setting the spec depends on changes). An index holds
+  **values, never note text**: a spec computes what it needs from the text and returns
+  only that (markers, a desk entry), so the index stays small and holds nothing to leak.
+- **Cause contract.** Each change is `{ path, from?, before?, after?, cause }`, with
+  `cause` one of `build`, `update`, `rename` or `delete`. `delete` is only for a vault
+  delete event. A live file whose `compute` gives undefined, or that leaves `include`,
+  is an `update` with `after: undefined`. A structural recompute emits `update` for
+  changed values only (by `same`). A build, first or after a settings change, emits
+  `build` for every entry, `same` notwithstanding, so a consumer can reseed from it.
+  `onChange` gets one call per batch, in order; `onReady` fires after each completed
+  build, never on subscribe (check `isReady()` first).
+- **Ordering (measure, index, followers, modules).** `main.ts` builds `measure` first,
+  so counts are fresh when an index computes; then the hub; then the works service; then
+  the modules. On a rename or delete the hub updates every index first, then calls the
+  followers (`plugin.index.follow({ moved, deleted })`), so a follower asking `works`
+  about the new path already gets an answer. Path-keyed data (publish records, goals
+  history, dialogue focus, left-off, the home note setting) follows renames through a
+  follower, not through a module's own `vault.on` listener.
+- **Build timing.** Nothing is read before layout ready (the vault announces every file
+  while it loads, so `create` events are ignored until then). A `content` index builds
+  at layout ready. A `metadata` index builds when every included file has a cache, else
+  at the first `resolved` event; if no `resolved` comes (the plugin was enabled
+  mid-session) a 5 s fallback timer builds anyway. A build reads files in batches (40 at
+  a time) and yields between them; a newer build makes an older one stop. Live events
+  that arrive during a build are mirrored into the map being built and win over the
+  build's read.
+- **Debounce.** A modified file is recomputed after 300 ms of quiet. `settingsChanged()`
+  (called by `saveSettings`) is debounced 500 ms, then rebuilds only the specs whose
+  `settingsKey()` changed.
+- **Folder renames are idempotent.** Obsidian may send a folder event and then one event
+  per child. The hub remembers each folder event for 1 s and does not call the followers
+  twice for the echoes (`movedPath` in `core/path-keys.ts` decides). Every follower must
+  still be safe to run twice: `renameKeys` and its siblings move a key once and do
+  nothing when it is already moved.
+- **Shell.** `core/vault-indexes.ts` is the only Obsidian-facing part: one `vault.on`
+  each for create, modify, delete and rename plus `metadataCache` `changed` and
+  `resolved`, all registered through the plugin. Time and the vault are ports
+  (`IndexTimers`, `IndexSource`), so `tests/vault-index*.test.ts` and
+  `tests/index-hub*.test.ts` drive everything with `tests/support/memory-vault.ts` and
+  fake timers.
+- **Adding an index** is a spec plus a test on the memory vault. Do not add a
+  `vault.on("modify")` listener of your own to rebuild something the index could hold.
+
 ## Module specs
 
 ### goals (`src/goals/`)
@@ -459,7 +568,8 @@ refuse.
 - **Canvas board**: a button/command "Open outline as a board" writes
   `<book folder>/<book title> board.canvas` (JSON Canvas 1.0) with one text card per
   chapter (title, summary, beats as a list) in a grid, colored by status
-  (map to canvas colors "1"–"6" or the hex from statusColors). If the file exists and was
+  (`statusColor(status, settings.stages, settings.otherStatusColors)` gives a hex, mapped
+  to canvas colors "1"–"6"; a stage's own color wins, then the "Other status colors" lines). If the file exists and was
   not generated by Escrita (check a marker in the first node's text or a
   `"escrita": true` top-level key), ask before overwriting. Open it.
 - **Ghost beats** (`src/outline/ghost.ts`): a CodeMirror `ViewPlugin` registered with
@@ -492,9 +602,11 @@ refuse.
 - **Editor decoration**: `%% XXX: … %%` gets a pill style (mark decoration; in Live
   Preview, when the cursor is outside it, hide the `%%` and show a small marker label
   + the text). Registered with `registerEditorExtension`; marker from settings.
-- **Index**: `Map<path, PlaceholderMarker[]>` over Markdown files not in excluded folders,
-  built after layout ready with `cachedRead` in small async batches; kept current on
-  modify/create/delete/rename. Public API: `countFor(path): number`,
+- **Index**: a `content` spec on the vault index (`placeholderSpec` in `logic.ts`, value
+  `IndexedMarker[]`) over Markdown files outside the exclude folders and the snapshots
+  folder. The vault index builds it after layout ready and keeps it current on
+  modify/create/delete/rename; the module owns no store, listeners or debounce. A change
+  to the marker word or the folders rebuilds it through the spec's `settingsKey`. Public API: `countFor(path): number`,
   `all(): {file, markers}[]`, and an `onChange(cb)` subscription the outline can use.
 - **Placeholders view** (`ItemView`, type `escrita-placeholders`, icon `map-pin`,
   command "Open placeholders"): grouped by file (book chapters first, in chapter order),
@@ -572,8 +684,30 @@ refuse.
   until the command "Toggle spellcheck" turns it on; the command toggles and calls
   `workspace.updateOptions()`. Notice with the new state. When the setting is off, leave
   Obsidian's own spellcheck alone.
+- **Move a paragraph or scene** (`move-blocks.ts` and `move.ts`, pure and tested; wired in
+  `editor/index.ts`). Four commands, no default hotkeys, available only in the editor
+  (Live Preview or Source, not Reading view): "Move paragraph up/down", "Move scene
+  up/down". `move-blocks.ts` cuts the body into blocks from `core/markdown` and
+  `core/markers` (paragraph, heading, unit, break, scene; frontmatter is never a block;
+  a beat, comment, code or math block is a unit that never moves and is never moved
+  into). In blank style a run of lines with no blank line or break among them is one
+  block, so a beat, heading or code glued to prose travels with it (the cursor on the
+  beat part itself refuses). `swap` trades the group under the cursor (or the lines a selection touches)
+  with its neighbour, keeps the text between them where it is, and returns one change
+  `{ from, to, insert }`, so the note keeps its length and its blank lines. The view
+  applies it with the public `editor.transaction`, so it is one undo step and the cursor
+  moves with the text; no new exception to the guidelines and nothing goes through
+  `plugin.notes`, because the editor is the open document. It refuses with a Notice in the
+  properties, outside any block, inside a unit, and when the result would read
+  differently (`sameStructure`: same length, and the same comments (paired the same way), code,
+  frontmatter, scene breaks and `$$` marks, and the same blocks once cut again, so two
+  paragraphs never merge; the data-safety net). The trailing break is a wall both ways: a
+  paragraph never steps over it down, nor up when it would leave the last scene empty. At an edge
+  (nothing to swap with) it does nothing, silently. Nothing is removed, so there is
+  nothing to keep in darlings. The paragraph style (`single` or `blank`) decides what a
+  paragraph is.
 - **Commands**: "Toggle spellcheck", "Insert scene break" (inserts `\n\n---\n\n` normalized
-  around the cursor).
+  around the cursor), and the four move commands above.
 
 ### publish (`src/publish/`)
 
@@ -594,11 +728,15 @@ refuse.
 - **Modal** (`src/publish/modal.ts`): "Publish “<title>”", the sorted checks with an
   icon per level, clickable items (jump to the line), a date
   input, and Publish. Blockers disable Publish until "Publish anyway" is checked.
-- **Publish** sets `statusProperty` = `publishedValue` and `dateProperty` in one
-  `processFrontMatter` call, then a Notice. It stores `data.publish[path] =
+- **Publish** sets `statusProperty` to the word written for the `published` stage
+  (`writtenWord(settings.stages, "published")`, the first word of the stage) and
+  `dateProperty` in one `processFrontMatter` call, then a Notice. A note counts as
+  published when its status maps to the `published` stage (`isPublished(status, stages)`),
+  so any of the stage's words counts. It stores `data.publish[path] =
   { previousStatus }` when there was one. **Unpublish** restores `previousStatus`, else
-  `unpublishedValue`, else `ready`, and drops the record. Records follow file and
-  folder renames and are dropped on delete. Escrita never commits, pushes or uploads.
+  the `ready` stage's written word, and drops the record. There are no separate published
+  and unpublished settings any more (0.3 values migrate into `stages`). Records follow
+  file and folder renames and are dropped on delete, through an index follower. Escrita never commits, pushes or uploads.
 - **Commands** (also in the file menu): "Publish this note", "Unpublish this note".
 
 ### explorer (`src/explorer/` + `src/core/explorer-decorations.ts`)
@@ -671,6 +809,20 @@ refuse.
   `snapshotsKeepAuto` (default 20) per note, oldest first, to the trash; the snapshot
   being restored or compared is protected. A take identical to the latest snapshot
   writes nothing; a named manual take identical to an automatic one promotes it.
+- **Stage kind.** A fifth kind, `stage`, is taken when a work's status moves to another
+  stage, named from the written words (for example "Draft → Revision", `transitionName`),
+  with `stage: { from, to }` in the entry. It is **never pruned**: it is not in
+  `AUTO_KINDS`, so retention ignores it, and `snapshotsKeepAuto` does not count it. A
+  book takes the snapshot of its book note and of each chapter, one after another, under
+  the same name (`stageTakeTargets`). It is silent (no Notice) unless the take fails,
+  and then one Notice per session.
+- **StageWatch** (`stage-watch.ts`, pure, tested). Fed by `plugin.works.onChange`, it
+  remembers each work's last known stage **in memory only** and, once a change has been
+  quiet for 3 s (`STAGE_SETTLE_MS`, so a status typed letter by letter fires once),
+  compares the work's current stage with the last one and calls `onTransition`. It
+  reseeds from every `build` change, so a settings rebuild never counts as a transition;
+  it follows renames and forgets deletes; a work that stops being a work keeps its last
+  stage. A status changed while Obsidian was closed is therefore not snapshotted.
 - **Panel** (`view.ts`, type `escrita-snapshots`): the active note's snapshots, newest
   first, with words (`unitAmount`) and the difference from now; View, Compare, Restore,
   Rename, Delete.
@@ -686,3 +838,50 @@ refuse.
 - jsdiff (`diff`, BSD-3-Clause) is the first runtime dependency; its license travels in
   an esbuild banner at the top of `main.js` (release assets don't include
   `THIRD_PARTY_NOTICES.md`).
+
+### desk (`src/desk/`)
+
+The writing desk: the home block, where the writer left off, and the home note. Stage
+logic lives in core (`stages`, `works`, `left-off`); the desk draws and records.
+
+- **Home block** (`block.ts`, `works.ts`, `gather.ts`, `render.ts`). A code block
+  `escrita-works` (registered with `registerMarkdownCodeBlockProcessor`; a `DeskBlock`
+  `MarkdownRenderChild` per block, in a set so a settings change re-renders them). Escrita
+  draws it and never writes it. The grammar is `folder: <name>` lines (any other line is
+  ignored; a quoted name or a `[[wikilink]]` is accepted), which narrow the block to works
+  inside those folders. `buildDesk` (pure) turns the works list into a model: works in
+  **draft** under "Writing", works in **revision** under "Revising", each as a line with
+  its facts (a piece's count against its target or limit, a deadline, a book's chapters
+  ready of total, an unstaged work's own status word), ordered by when the writer last
+  edited each; every other stage (idea, ready, published, and notes with a status that
+  isn't a stage) is a single count. Notices (no works, nothing in draft or revision, a
+  folder that doesn't exist) are muted lines. A click opens the work where the writer
+  left off; the block has no buttons that change anything.
+- **Opening a work** (`open.ts`). A note opens at its left-off spot, else the first
+  unwritten beat, else the end (`noteSpot`). A book opens the chapter edited last, else the
+  first chapter with an unwritten beat, else the last chapter at its end (`bookTarget`).
+  Reading view scrolls to the line instead of moving a cursor.
+- **Left off** (`recorder.ts`, `core/left-off.ts`, `core/anchor.ts`). `data.leftOff[path]`
+  is `{ offset, before, after, at }`: the cursor offset plus the text around it, found
+  again by `findLeftOff` if the note changed (a stale offset is never trusted alone).
+  `LeftOffRecorder` records only notes that are works and chapters of a book that is a
+  work. An edit only marks the note dirty and remembers the cursor offset (cheap,
+  per keystroke, no text read); the context is built once at commit time. A commit runs
+  when the writer leaves the note, after 30 s idle, when the window is hidden, on quit and
+  on unload. Records follow renames and deletes through an index follower, and records for
+  files that no longer exist are pruned at layout ready.
+- **Home note** (`home.ts` pure, `home-note.ts`). Setting `homeNote` (a vault path; `.md`
+  added when missing; empty by default). The command "Open the home note" (no hotkey)
+  opens it; with the setting empty it adopts an existing `Home.md` or `Inicio.md` and
+  never overwrites, and saves it as the setting so open on startup and rename tracking
+  follow it; if the note doesn't exist it asks, then creates it holding an empty
+  works block (a failure shows a Notice and logs the error). The setting follows a rename
+  or move of the note through `homeAfterMove`; a deleted home note leaves the setting
+  alone.
+- **Open on startup** (`openHomeOnStartup`, off by default). Only on a cold start:
+  `coldStart` is read at load (`!workspace.layoutReady`) and used in `onLayoutReady`, so
+  enabling or updating the plugin mid-session never swaps the active tab. It opens the
+  home note in the active tab, replacing the restored one.
+- **Settings** it reads: the `stages` mapping and `otherStatusColors` (Stages and Other
+  status colors in the settings tab), `statusProperty`, `homeNote`, `openHomeOnStartup`.
+  The rest comes from `plugin.works`, never from a scan.

@@ -2,6 +2,8 @@ import { Plugin, debounce, setTooltip } from "obsidian";
 import { DEFAULT_SETTINGS, EscritaSettingTab, normalizeSettings, type EscritaSettings } from "./settings";
 import type { EscritaData, EscritaModule, PublishRecord } from "./data";
 import { mergeDefaults } from "./core/merge";
+import { migrateSettings } from "./core/migrate";
+import { cleanLeftOff } from "./core/left-off";
 import { registerStrings } from "./i18n";
 import { coreStrings } from "./strings";
 import { BookService } from "./core/books";
@@ -23,8 +25,23 @@ import { PublishModule } from "./publish";
 import { publishStrings } from "./publish/strings";
 import { ExplorerModule } from "./explorer";
 import { explorerStrings } from "./explorer/strings";
+import type { Follower, IndexSpec, IndexFile, VaultIndex } from "./core/vault-index";
+import type { WorksReader } from "./core/works";
+import { VaultIndexesShell } from "./core/vault-indexes";
+import { WorksService } from "./core/works-index";
+import { DeskModule } from "./desk";
+import { deskStrings } from "./desk/strings";
 import { SnapshotsModule } from "./snapshots";
 import { snapshotsStrings } from "./snapshots/strings";
+
+/** The reusable vault index (0.4 task 3.x fills it in). */
+export interface VaultIndexes {
+  add<F extends IndexFile, V>(spec: IndexSpec<F, V>): VaultIndex<F, V>;
+  follow(f: Follower): () => void;
+  rebuild(name?: string): void;
+  settingsChanged(): void;
+  unload(): void;
+}
 
 export default class EscritaPlugin extends Plugin {
   settings!: EscritaSettings;
@@ -34,6 +51,8 @@ export default class EscritaPlugin extends Plugin {
   decorations!: ExplorerDecorations;
   chapterOps!: ChapterOps;
   notes!: NoteService;
+  index!: VaultIndexes;
+  works!: WorksReader;
 
   goals!: GoalsModule;
   outline!: OutlineModule;
@@ -42,6 +61,7 @@ export default class EscritaPlugin extends Plugin {
   darlings!: DarlingsModule;
   editor!: EditorModule;
   snapshots!: SnapshotsModule;
+  desk!: DeskModule;
   publish!: PublishModule;
   private modules: EscritaModule[] = [];
 
@@ -51,7 +71,7 @@ export default class EscritaPlugin extends Plugin {
   async onload(): Promise<void> {
     for (const s of [
       coreStrings, goalsStrings, outlineStrings, placeholdersStrings, darlingsStrings, editorStrings, publishStrings,
-      explorerStrings, snapshotsStrings,
+      explorerStrings, snapshotsStrings, deskStrings,
     ]) {
       registerStrings(s);
     }
@@ -60,6 +80,10 @@ export default class EscritaPlugin extends Plugin {
     this.books = new BookService(this.app, () => this.settings);
     // before the modules: its rename/delete handlers must run before theirs
     this.measure = new Measurer(this);
+    // order: measure -> index -> followers -> modules, so counts are fresh when
+    // the index computes, and followers run before any module reacts
+    this.index = new VaultIndexesShell(this);
+    this.works = new WorksService(this, this.index);
     this.chapterOps = new ChapterOps(this);
     this.notes = new NoteService(this.app);
     // The file explorer's dots and counts. It re-renders its items without
@@ -86,8 +110,9 @@ export default class EscritaPlugin extends Plugin {
     // before publish: "Before publishing" snapshots
     this.snapshots = new SnapshotsModule(this);
     this.publish = new PublishModule(this);
+    this.desk = new DeskModule(this);
     this.modules = [
-      this.goals, this.outline, this.placeholders, this.explorer, this.darlings, this.editor, this.snapshots, this.publish,
+      this.goals, this.outline, this.placeholders, this.explorer, this.darlings, this.editor, this.snapshots, this.publish, this.desk,
     ];
     for (const m of this.modules) await m.load();
 
@@ -96,6 +121,7 @@ export default class EscritaPlugin extends Plugin {
 
   onunload(): void {
     for (const m of this.modules) m.unload?.();
+    this.index?.unload();
     this.measure?.unload();
     // Write now what a pending debounced save would have written.
     this.requestSave.cancel();
@@ -104,22 +130,25 @@ export default class EscritaPlugin extends Plugin {
 
   private async loadAll(): Promise<void> {
     const raw = ((await this.loadData()) ?? {}) as Partial<EscritaData>;
-    this.settings = normalizeSettings(mergeDefaults(DEFAULT_SETTINGS, raw.settings));
+    this.settings = normalizeSettings(mergeDefaults(DEFAULT_SETTINGS, migrateSettings(raw.settings)));
     this.data = {
       version: 1,
       settings: this.settings,
       history: isRecord(raw.history) ? raw.history : {},
       publish: isRecord(raw.publish) ? (raw.publish as Record<string, PublishRecord>) : {},
+      leftOff: cleanLeftOff(raw.leftOff),
     };
   }
 
   private async persist(): Promise<void> {
+    // Saving `stages` is what tells the next load the migration is done; the legacy keys stay.
     this.data.settings = this.settings;
     await this.saveData(this.data);
   }
 
   async saveSettings(): Promise<void> {
     await this.persist();
+    this.index.settingsChanged();
     for (const m of this.modules) m.settingsChanged?.();
   }
 }

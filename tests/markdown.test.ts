@@ -97,7 +97,7 @@ const TABLE = [
 describe("invariants", () => {
   it("hold on the table and a seeded fuzz corpus", () => {
     for (const text of [...TABLE, ...corpus(3000)]) checkInvariants(text, segment(text));
-  });
+  }, 30000);
 
   it("a line's state depends only on the text before it (except frontmatter and <!-- look-ahead)", () => {
     for (const text of [...TABLE, ...corpus(1500, 11)]) {

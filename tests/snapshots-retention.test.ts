@@ -20,6 +20,11 @@ describe("toPrune", () => {
     const es = [e("p.txt", 1, "publish"), e("r.txt", 2, "restore"), e("d.txt", 3, "daily")];
     expect(toPrune(es, 2)).toEqual(["p.txt"]);
   });
+  it("never prunes or counts stage snapshots, even with keepAuto 1", () => {
+    const es = [e("s0.txt", 1, "stage"), ...autos(3), e("s1.txt", 5000, "stage")];
+    expect(toPrune(es, 1)).toEqual(["f00.txt", "f01.txt"]);
+    expect(toPrune([e("s.txt", 1, "stage"), e("t.txt", 2, "stage")], 1)).toEqual([]);
+  });
   it("never prunes or counts manual snapshots", () => {
     const es = [e("m0.txt", 1, "manual"), ...autos(21), e("m1.txt", 5000, "manual")];
     expect(toPrune(es, 20)).toEqual(["f00.txt"]);

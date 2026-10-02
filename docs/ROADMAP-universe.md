@@ -6,8 +6,8 @@ events carry over between works. Today characters and places live inside one nov
 folder (`Romances/<Book>/Personagens/`), so contos can't share them. This roadmap
 makes the **universe** the container and every work a part of it.
 
-Versions are decided in [ROADMAP.md](ROADMAP.md): 1.1, 1.3 and 1.5 in v0.5; 1.2 and 1.4 in
-v0.6; phase 2 in v0.8, which completes the universe for v1.0.
+Versions are decided in [ROADMAP.md](ROADMAP.md): 1.1, 1.3 and 1.5 in v0.6; 1.2 and 1.4 in
+v0.7; phase 2 in v0.9, which completes the universe for v1.0.
 
 It is independent of [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md) and
 [ROADMAP-novel.md](ROADMAP-novel.md); where features overlap (character tracking in the
@@ -68,7 +68,7 @@ the short-fiction roadmap.
 
 ## Phase 1
 
-### 1.1 Universe container and entry types (v0.5)
+### 1.1 Universe container and entry types (v0.6)
 
 **Convention** (all names configurable):
 
@@ -103,7 +103,7 @@ Romances/A Casa.md              ← a book: universe: "[[Universo]]", form: roma
   searchable, each with its type, aliases and number of works it appears in; a works tab
   listing all works in the universe by form and status.
 
-### 1.2 "Appears in" across works (v0.6)
+### 1.2 "Appears in" across works (v0.7)
 
 Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
 
@@ -112,7 +112,7 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
   frontmatter don't count). Case-insensitive by default; per-entry `caseSensitive`.
 - **Portuguese inflection**: plural, feminine, diminutive and augmentative forms
   (*Maria / Mariazinha*, *menino / meninos / menina*) through the Portuguese stemmer in
-  `core/stem/` (built in v0.4 with the revision lens, short-fiction roadmap feature 5).
+  `core/stem/` (built in v0.5 with the revision lens, short-fiction roadmap feature 5).
   English: plural and possessive (`Teo's`) through the English stemmer from the same
   module.
 - **Ignore list** per entry (`ignore` property) for names that are also common words
@@ -133,7 +133,7 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
   - Optional subtle underline of recognized names in the editor (setting, off by default).
   - "Unlinked mentions" list per work, so the author can add links if wanted.
 
-### 1.3 Create entry from selection (v0.5)
+### 1.3 Create entry from selection (v0.6)
 
 - Editor menu and command "Create universe entry from selection": pick the type, then
   create the note in the type's folder from its template (setting per type; the vault
@@ -141,12 +141,12 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
   title, `type` and `universe` set.
 - Options in the same modal: link this occurrence, and add another alias.
 - If an entry with that name or alias exists, offer to open it instead.
-- **Names without an entry** (a tab in the universe panel, from v0.6 when the matcher
+- **Names without an entry** (a tab in the universe panel, from v0.7 when the matcher
   exists): capitalized words that recur across works, aren't at a sentence start, and
   match no entry or alias, each with a Create button that opens this modal. A dismiss
   list keeps ordinary words out.
 
-### 1.4 Names into spellcheck and the revision lens (v0.6)
+### 1.4 Names into spellcheck and the revision lens (v0.7)
 
 - Every entry name and alias in the universe is added to the editor's spellcheck
   dictionary so invented names stop being flagged. Obsidian doesn't expose a dictionary
@@ -155,7 +155,7 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
 - The revision lens's name-variant rule reads names from the universe instead of (or in
   addition to) its word-list note: *Marianna* when the entry is *Mariana*.
 
-### 1.5 Open threads (v0.5)
+### 1.5 Open threads (v0.6)
 
 Hooks planted in one story for future stories.
 
@@ -170,7 +170,7 @@ Hooks planted in one story for future stories.
 
 ---
 
-## Phase 2 (v0.8)
+## Phase 2 (v0.9)
 
 ### 2.1 Story timeline
 

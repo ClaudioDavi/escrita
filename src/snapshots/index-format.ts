@@ -8,9 +8,9 @@
 import { isoDay } from "../core/dates";
 import { parseSnapshotFileName } from "./paths";
 
-export type SnapshotKind = "manual" | "publish" | "restore" | "daily";
+export type SnapshotKind = "manual" | "publish" | "restore" | "daily" | "stage";
 
-const KINDS: readonly SnapshotKind[] = ["manual", "publish", "restore", "daily"];
+const KINDS: readonly SnapshotKind[] = ["manual", "publish", "restore", "daily", "stage"];
 
 /** Kinds Escrita takes on its own; only these are pruned. */
 export const AUTO_KINDS: ReadonlySet<SnapshotKind> = new Set<SnapshotKind>(["publish", "restore", "daily"]);
@@ -33,6 +33,8 @@ export interface SnapshotEntry {
   hash: string;
   /** UTF-16 length of the text; -1 = not known */
   length: number;
+  /** kind "stage": the stage ids the note moved between */
+  stage?: { from: string; to: string };
 }
 
 export interface SnapshotIndex {
@@ -60,6 +62,13 @@ function entryFrom(v: unknown, note: string): SnapshotEntry | null {
   const parsed = parseSnapshotFileName(o.file);
   const taken = int(o.taken, parsed?.taken ?? 0);
   const day = typeof o.day === "string" && /^\d{4}-\d{2}-\d{2}$/.test(o.day) ? o.day : isoDay(new Date(taken));
+  const st = o.stage;
+  const stage =
+    typeof st === "object" && st !== null && !Array.isArray(st) &&
+    typeof (st as Record<string, unknown>).from === "string" && (st as Record<string, unknown>).from !== "" &&
+    typeof (st as Record<string, unknown>).to === "string" && (st as Record<string, unknown>).to !== ""
+      ? { from: (st as { from: string }).from, to: (st as { to: string }).to }
+      : undefined;
   return {
     file: o.file,
     name: typeof o.name === "string" ? o.name : parsed?.name ?? "",
@@ -70,6 +79,7 @@ function entryFrom(v: unknown, note: string): SnapshotEntry | null {
     notePath: typeof o.notePath === "string" && o.notePath !== "" ? o.notePath : note,
     hash: typeof o.hash === "string" && /^[0-9a-f]{8}$/.test(o.hash) ? o.hash : "",
     length: int(o.length, -1),
+    ...(stage ? { stage } : {}),
   };
 }
 

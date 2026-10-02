@@ -31,42 +31,54 @@ move the improvement to "Done" in IMPROVEMENTS.md, and pick the next version's c
 | 0.2.0 | No-network guard (SF 0) · Publish check (SF 1) · Targets per piece and days off (SF 2) · Outline for a single note (SF 3) |
 | 0.2.1 | Standalone publish (URL features removed) · Improvements: Markdown segmenter, file classifier |
 | 0.3.0 | Word counts in the file explorer (SF 6) · Dialogue focus (SF 7) · Snapshots with word-level compare (SF 4) · Improvements: measure module, explorer decoration adapter, note text (partial) |
+| 0.4.0 | The writing desk: stages and the stage snapshot (SF 11) · Home block, where you left off, open on startup (SF 11) · Move a paragraph or scene (SF 8) · Improvement: vault index |
 
-## Next: 0.4
+## Next: 0.5, revision
+
+Reads the text the writer has already written and shows what to look at. It
+suggests and never rewrites. The stemmers are shared: the universe reuses them
+later (U 1.2, 1.4).
 
 | Feature | Ref | Effort | Note |
 |---|---|---|---|
-| Portuguese and English stemmers in `core/stem/` | SF 5 | M | Shared: the revision lens uses them here, and the universe reuses them for name matching (U 1.2, 1.4: *Maria / Mariazinha*, *Teo's*). |
-| Revision lens (pt-BR and English rules) | SF 5 | M | Six rules, per-1,000 rates, performance on long notes. Measures: dialogue share (from dialogue focus, so dash dialogue counts) and readability with the Portuguese Flesch formula, which StoryLine lacks. |
-| Move a paragraph or scene up or down | SF 8 | S | One undo step; reads `segmentDoc`, like the improvement below. |
+| Stemmers | SF 5 | M | Portuguese and English stemmers in `core/stem/`. Shared with the universe for name matching (*Maria / Mariazinha*, *Teo's*). |
+| Revision lens | SF 5 | M | pt-BR and English rules, dialogue share, Portuguese Flesch readability, which StoryLine lacks. |
 
-**Improvement:** the 0.2.1 loose ends in the editor (IMPROVEMENTS.md): drop the
-compatibility wrappers and read `segmentDoc` everywhere, since the lens adds another
-editor decoration on the same segmentation.
+**Improvement:** the 0.2.1 editor loose ends (IMPROVEMENTS.md, "Loose ends from
+0.2.1"): drop the compatibility wrappers and read `segmentDoc` everywhere. The lens
+adds another editor decoration on the same segmentation.
 
 ## 0.5 to 1.0
 
 1.0 is the full release: **the shared universe and manuscript export**. The versions
 before it build toward those two, contos first (the author's next months are short
-fiction), then the universe, then book features.
+fiction), then the universe, then book features. Planning the writing desk as 0.4
+(2026-10-01) moved every later version up by one, so books land in 0.10. The desk
+shipped as 0.4.0.
 
 | Version | Contents | Ref | Effort | Theme |
 |---|---|---|---|---|
-| 0.5 | Universe modes and container, migration command, universe panel · Create entry from selection · Open threads (work without a universe too) · Insert from a template | U 1.1, U 1.3, U 1.5, SF 9 | M + S | Universe foundations |
-| 0.6 | "Appears in" · Names into spellcheck and the revision lens · POV and status in the outline (POV can link to a character entry) · Per-chapter targets | U 1.2, U 1.4, N 1, N 2 | M + S + S + S | Characters across works |
-| 0.7 | Export stages 1–2: Markdown manuscript and DOCX (Shunn and pt-BR presets), for a single note and for a book · Companion-plugin guide | N 7, N 6 | M–L + S | Submitting work |
-| 0.8 | Universe phase 2: timeline, facts over time, continuity checks, canon | U 2.1–2.4 | L | A consistent world |
-| 0.9 | Export stage 3: EPUB 3, validated by EPUBCheck in CI · Book-wide publish check and serial dashboard · "Read the book" view | N 7, N 4, N 8 | M + S + M | Books |
-| 1.0 | Stabilization: mobile pass, docs in English and pt-BR, migrations tested on the author's vault, community plugin submission · Set up a writing vault | SF 10 | M + S | Full release |
+| 0.6 | Universe modes and container, migration command, universe panel · Create entry from selection · Open threads (work without a universe too) · Insert from a template | U 1.1, U 1.3, U 1.5, SF 9 | M + S | Universe foundations |
+| 0.7 | "Appears in" · Names into spellcheck and the revision lens · POV and status in the outline (POV can link to a character entry) · Per-chapter targets | U 1.2, U 1.4, N 1, N 2 | M + S + S + S | Characters across works |
+| 0.8 | Export stages 1–2: Markdown manuscript and DOCX (Shunn and pt-BR presets), for a single note and for a book · Submissions · Companion-plugin guide | N 7, SF 12, N 6 | M–L + S + S | Submitting work |
+| 0.9 | Universe phase 2: timeline, facts over time, continuity checks, canon | U 2.1–2.4 | L | A consistent world |
+| 0.10 | Export stage 3: EPUB 3, validated by EPUBCheck in CI · Book-wide publish check and serial dashboard · "Read the book" view | N 7, N 4, N 8 | M + S + M | Books |
+| 1.0 | Stabilization: mobile pass, docs in English and pt-BR, migrations tested on the author's vault, community plugin submission · Set up a writing vault (creates the home note and a first writing layout) | SF 10 | M + S | Full release |
 
-Improvements: 0.5 the vault index (IMPROVEMENTS.md, 2), which the universe's indexes
-need; later versions pick from IMPROVEMENTS.md when they're planned in detail.
+Improvements: 0.5 is planned above; later versions pick from IMPROVEMENTS.md when
+they're planned in detail.
 
 Notes:
 
-- U 1.1, 1.3 and 1.5 don't need the stemmers, so they come before U 1.2 and 1.4.
-- Export ships DOCX first (0.7): a conto in standard manuscript format is what contests
-  and magazines ask for. EPUB matters mostly for a finished book (0.9).
+- The writing desk (0.4, shipped) came from a design review on 2026-10-01: Escrita was a set
+  of features without a workflow. The test it set for every feature: **fewer things to
+  manage**. A feature that needs upkeep from the writer has to earn it. A works tab
+  and a three-pane library were considered and dropped as too much to manage.
+- The stemmers ship with the lens (0.5), before the universe; U 1.2 and 1.4 (0.7)
+  reuse them. The vault index (0.4) is also ready for the lens and "appears in".
+- Export ships DOCX first (0.8): a conto in standard manuscript format is what contests
+  and magazines ask for. Submissions (SF 12) ship with it, since sending a work out is
+  what export is for. EPUB matters mostly for a finished book (0.10).
 - Per-chapter targets (N 2) is small: chapters already take `target` / `limit` since 0.2;
   what's left is the bar in the outline and a book default.
 - The universe's "appears in" (U 1.2) replaces Codex-lite (N 9), which is dropped.

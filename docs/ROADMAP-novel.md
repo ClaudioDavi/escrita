@@ -22,15 +22,15 @@ mobile-safe manuscript tool with first-class Portuguese.
 
 | # | Feature | Tier | Effort |
 |---|---|---|---|
-| 1 | POV and status in the outline (v0.6) | Quick win | S |
-| 2 | Per-chapter targets (v0.6) | Quick win | S |
+| 1 | POV and status in the outline (v0.7) | Quick win | S |
+| 2 | Per-chapter targets (v0.7) | Quick win | S |
 | 3 | ~~Dialogue focus~~ (moved to short fiction, feature 7, v0.3) | — | — |
-| 4 | Book-wide publish check and serial dashboard (v0.9) | Quick win | S |
+| 4 | Book-wide publish check and serial dashboard (v0.10) | Quick win | S |
 | 5 | Longform importer (after 1.0) | Quick win | S–M |
-| 6 | Companion-plugin guide (v0.7) | Quick win | S |
-| 7 | Book compile: Markdown and DOCX (v0.7), EPUB (v0.9) | Big bet | L |
-| 8 | "Read the book" view (v0.9) | Big bet | M |
-| 9 | ~~Codex-lite~~ (replaced by the universe's "appears in", v0.6) | — | — |
+| 6 | Companion-plugin guide (v0.8) | Quick win | S |
+| 7 | Book compile: Markdown and DOCX (v0.8), EPUB (v0.10) | Big bet | L |
+| 8 | "Read the book" view (v0.10) | Big bet | M |
+| 9 | ~~Codex-lite~~ (replaced by the universe's "appears in", v0.7) | — | — |
 | 10 | Book-wide snapshots and revision reports (after 1.0) | Big bet | M |
 
 Effort: S a few days, M one to two weeks, L several weeks.
@@ -42,7 +42,7 @@ planned in [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md), feature 6 (v0.3
 with contos and essays. Snapshots of a single chapter come with feature 4 (v0.3); feature 10
 below extends them to the whole book.
 
-## 1. POV and status in the outline (v0.6)
+## 1. POV and status in the outline (v0.7)
 
 The design already shows status dots; "color by POV" was left out of v0.1.
 
@@ -53,7 +53,7 @@ The design already shows status dots; "color by POV" was left out of v0.1.
 - Filter by status and POV (chips in the header).
 - Header summary: "3 rascunho · 2 revisão · 4 publicado".
 
-## 2. Per-chapter targets (v0.6)
+## 2. Per-chapter targets (v0.7)
 
 Reuse the `target` / `limit` / `unit` properties from the short-fiction roadmap on
 chapters. The outline shows a small bar per chapter when a target exists. A book-level
@@ -65,7 +65,7 @@ applies when a chapter has none.
 Moved to [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md), feature 7, and scheduled
 for v0.3: it works on any note, so contos get it too.
 
-## 4. Book-wide publish check and serial dashboard (v0.9)
+## 4. Book-wide publish check and serial dashboard (v0.10)
 
 Extends feature 1 of the short-fiction roadmap to chapters, for writers who release a
 book one chapter at a time (a newsletter, a serial platform, a blog):
@@ -89,7 +89,7 @@ Longform stores a project in the index note's frontmatter (`longform:` with `for
   (copy by default; move only on explicit choice).
 - Never delete the Longform files. Tests on real Longform frontmatter samples.
 
-## 6. Companion-plugin guide (v0.7)
+## 6. Companion-plugin guide (v0.8)
 
 A settings section and README page recommending healthy plugins instead of rebuilding
 them: LanguageTool (the only real pt-BR grammar checker; can point to a self-hosted
@@ -101,9 +101,9 @@ Running Escrita next to **StoryLine**: say what to watch. StoryLine writes `stat
 (idea → final), `wordcount` and `charcount` into scene files, which can clash with
 Escrita's status values and fill its "modified" events while typing. Suggest pointing
 Escrita's status property elsewhere or keeping StoryLine's scenes out of the track
-folders, and check both together before 0.7 ships.
+folders, and check both together before 0.8 ships.
 
-## 7. Book compile (stages 1–2 in v0.7, stage 3 in v0.9)
+## 7. Book compile (stages 1–2 in v0.8, stage 3 in v0.10)
 
 The step Scrivener users miss most, and Longform's oldest open requests.
 
@@ -139,7 +139,7 @@ may use Java; the plugin itself stays offline).
 
 Print-ready PDF is out of scope: recommend Enhancing Export or Vellum/Atticus.
 
-## 8. "Read the book" view (v0.9)
+## 8. "Read the book" view (v0.10)
 
 A read-only view of all chapters in order, rendered with Obsidian's Markdown renderer,
 with chapter headings, scene breaks, and markers hidden; remembers the reading position;
@@ -148,7 +148,7 @@ chapters (true Scrivenings) is XL and fragile; recommend Continuous Mode for tha
 
 ## 9. Codex-lite (replaced)
 
-Replaced by [ROADMAP-universe.md](ROADMAP-universe.md) 1.2 "Appears in" (v0.6), which
+Replaced by [ROADMAP-universe.md](ROADMAP-universe.md) 1.2 "Appears in" (v0.7), which
 covers the same ground at universe scope and also works per book. Kept below for
 reference.
 

@@ -96,6 +96,31 @@ describe("renameBook", () => {
   });
 });
 
+describe("renameBook, folders", () => {
+  const book = (added: number, total = 10) => ({ added, deleted: 0, total });
+  it("moves every key under a renamed folder and ignores the replayed child events", () => {
+    const h: History = {
+      "2026-09-27": rec(9, 0, { "Contos/a.md": book(4), "Contos/sub/b.md": book(5), "Contosx/c.md": book(1) }),
+    };
+    expect(renameBook(h, "Contos", "Histórias")).toBe(true);
+    expect(h["2026-09-27"].books).toEqual({
+      "Histórias/a.md": book(4), "Histórias/sub/b.md": book(5), "Contosx/c.md": book(1),
+    });
+    // Obsidian then fires one event per child: nothing moves, nothing is summed twice.
+    expect(renameBook(h, "Contos/a.md", "Histórias/a.md")).toBe(false);
+    expect(renameBook(h, "Contos/sub/b.md", "Histórias/sub/b.md")).toBe(false);
+    expect(h["2026-09-27"].books["Histórias/a.md"]).toEqual(book(4));
+  });
+
+  it("sums a collision once and keeps the existing total", () => {
+    const h: History = {
+      "2026-09-27": rec(3, 0, { "A/x.md": book(2, 7), "B/x.md": book(1, 50) }),
+    };
+    renameBook(h, "A", "B");
+    expect(h["2026-09-27"].books).toEqual({ "B/x.md": { added: 3, deleted: 0, total: 50 } });
+  });
+});
+
 describe("reading history", () => {
   const h: History = {
     "2026-09-29": rec(400, 180, { [BOOK]: { added: 300, deleted: 100, total: 18420 } }),

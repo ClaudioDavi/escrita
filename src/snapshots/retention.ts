@@ -1,6 +1,7 @@
 // Which automatic snapshots to prune (no Obsidian imports). Only the automatic
 // kinds (before publishing, before restoring, before the day's first edit) are
-// counted and pruned, oldest first; snapshots the writer took are never touched.
+// counted and pruned, oldest first; snapshots the writer took, and stage-change
+// snapshots (kind stage, not in AUTO_KINDS), are never touched.
 // The caller sends pruned files to the trash, never a permanent delete.
 
 import { AUTO_KINDS, type SnapshotEntry } from "./index-format";

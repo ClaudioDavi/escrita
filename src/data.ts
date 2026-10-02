@@ -1,4 +1,5 @@
 import type { EscritaSettings } from "./settings";
+import type { LeftOff } from "./core/left-off";
 
 /** One book's writing on one day. `total` is the book's word count at the last change that day. */
 export interface DayBook {
@@ -28,6 +29,8 @@ export interface EscritaData {
   history: Record<string, DayRecord>;
   /** keyed by note path; absent in data saved by 0.1 (loaded as {}) */
   publish: Record<string, PublishRecord>;
+  /** keyed by note path; absent before 0.4 (loaded as {}) */
+  leftOff: Record<string, LeftOff>;
 }
 
 export interface EscritaModule {

@@ -44,3 +44,13 @@ export function plural(base: string, n: number, vars: Record<string, string | nu
 export function unitAmount(unit: PieceUnit, n: number): string {
   return plural(unitKey(unit), n);
 }
+
+/** YYYY-MM-DD → "Sep 29" / "29 de set." for chart labels. */
+export function fmtShortDay(day: string): string {
+  const m = moment(day, "YYYY-MM-DD", true);
+  if (!m.isValid()) return day;
+  const long = m.localeData().longDateFormat("ll");
+  // Drop the year from the locale's "ll" format.
+  const noYear = long.replace(/[\s,]*(?:\[[^\]]*\]\s*)?Y+[\s,.]*/g, " ").trim();
+  return m.format(noYear || "MMM D");
+}

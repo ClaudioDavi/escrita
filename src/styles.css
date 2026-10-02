@@ -49,3 +49,65 @@ body {
 input.escrita-invalid {
   border-color: var(--escrita-warn);
 }
+
+/* Settings: Stages section */
+.escrita-stages-desc {
+  padding-bottom: var(--size-4-2);
+}
+.escrita-stage-row .setting-item-control {
+  gap: var(--size-4-2);
+}
+.escrita-stage-words {
+  width: 260px;
+  max-width: 100%;
+}
+input[type="color"].escrita-swatch {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+/* No color: a dashed empty square instead of black. */
+input[type="color"].escrita-swatch.escrita-swatch-empty {
+  border: 1px dashed var(--background-modifier-border-hover);
+  background: transparent;
+}
+input[type="color"].escrita-swatch.escrita-swatch-empty::-webkit-color-swatch,
+input[type="color"].escrita-swatch.escrita-swatch-empty::-moz-color-swatch {
+  background: transparent;
+  border: 0;
+}
+.escrita-swatch-clear {
+  width: 32px;
+  height: 32px;
+  justify-content: center;
+}
+.escrita-stage-warning {
+  margin: 0 0 var(--size-4-2);
+}
+textarea.escrita-mono {
+  width: 302px;
+  max-width: 100%;
+  min-height: 72px;
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.6;
+}
+body.is-mobile .escrita-stage-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--size-4-2);
+}
+body.is-mobile .escrita-stage-row .setting-item-control {
+  justify-content: flex-start;
+}
+body.is-mobile .escrita-stage-words {
+  flex-grow: 1;
+  height: 40px;
+}
+body.is-mobile input[type="color"].escrita-swatch,
+body.is-mobile .escrita-swatch-clear {
+  width: 40px;
+  height: 40px;
+}

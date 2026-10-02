@@ -9,7 +9,7 @@
 // starts a new chapter.
 
 import { segment, type Markdown } from "../core/markdown";
-import { SCENE_BREAK, isSceneBreakLine } from "../core/markers";
+import { SCENE_BREAK, isSceneBreakAt } from "../core/markers";
 import type { ParagraphStyle } from "../settings";
 import { blockStateIn, bodyLineIn, inBlock } from "./context";
 
@@ -74,16 +74,6 @@ function isMarkdown(doc: Doc): doc is Markdown {
 }
 
 /**
- * A scene break at `i` that really is one (core/markers.isSceneBreakLine, so not
- * a `---` inside code or a comment), in the body, and not a setext heading
- * underline (blank line or the body's start before it).
- */
-function isSceneBreakAt(lines: readonly string[], i: number, body: number, md: Markdown): boolean {
-  if (i < body || !isSceneBreakLine(md, i)) return false;
-  return i === body || isEmptyLine(lines[i - 1]);
-}
-
-/**
  * What Enter should do on `cursorLine` (0-based) with an empty selection.
  * The caller checks the setting, the selection and that the file is a chapter.
  */
@@ -101,7 +91,7 @@ export function decideEnter(doc: Doc, cursorLine: number, style: ParagraphStyle)
   const above = start - 1;
   if (above < body) return "normal"; // nothing but properties (or nothing) above
 
-  if (isSceneBreakAt(lines, above, body, md)) {
+  if (isSceneBreakAt(md, above, body)) {
     for (let i = cursorLine + 1; i < lines.length; i++) if (!isEmptyLine(lines[i])) return "normal";
     return "chapter";
   }
@@ -139,7 +129,7 @@ export function trailingBreakKeep(doc: Doc): number | null {
   if (i < 0) return null;
   const body = bodyLineIn(md);
   // never a --- inside code or a comment: that text is not ours to delete
-  if (!isSceneBreakAt(lines, i, body, md)) return null;
+  if (!isSceneBreakAt(md, i, body)) return null;
   let keep = i;
   while (keep > body && isEmptyLine(lines[keep - 1])) keep--;
   return keep;

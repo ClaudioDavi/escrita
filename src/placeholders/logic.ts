@@ -9,6 +9,7 @@
 import { parsePlaceholders, type PlaceholderMarker } from "../core/markers";
 import type { Markdown } from "../core/markdown";
 import { inFolder } from "../core/classify";
+import type { IndexSpec } from "../core/vault-index";
 
 /** A placeholder with the exact source text it was parsed from. */
 export interface IndexedMarker extends PlaceholderMarker {
@@ -290,4 +291,45 @@ export function displayName(path: string): string {
 export function parentPath(path: string): string {
   const i = path.lastIndexOf("/");
   return i === -1 ? "" : path.slice(0, i);
+}
+
+// ---------------------------------------------------------------------------
+// The vault index spec
+
+/** True when two marker lists hold the same markers at the same places. */
+export function sameMarkers(a: IndexedMarker[], b: IndexedMarker[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].from !== b[i].from || a[i].to !== b[i].to || a[i].raw !== b[i].raw || a[i].line !== b[i].line) return false;
+  }
+  return true;
+}
+
+/** A note's placeholders for the index; undefined when it has none (so the index keeps only notes that do). */
+export function placeholderValue(text: string, marker: string): IndexedMarker[] | undefined {
+  if (!text.includes("%%")) return undefined;
+  const ms = scan(text, marker);
+  return ms.length > 0 ? ms : undefined;
+}
+
+export interface PlaceholderSpecDeps {
+  /** the marker word, already defaulted */
+  marker(): string;
+  /** folders to leave out: the exclude folders and the snapshots root */
+  exclude(): string[];
+  settingsKey?(): string;
+}
+
+/** The placeholder index: content mode, markdown outside the excluded folders. */
+export function placeholderSpec<F extends { path: string; extension: string }>(
+  deps: PlaceholderSpecDeps,
+): IndexSpec<F, IndexedMarker[]> {
+  return {
+    name: "placeholders",
+    mode: "content",
+    include: (f) => f.extension === "md" && isIndexable(f.path, deps.exclude()),
+    compute: (_f, text) => (text === null ? undefined : placeholderValue(text, deps.marker())),
+    same: sameMarkers,
+    settingsKey: deps.settingsKey,
+  };
 }

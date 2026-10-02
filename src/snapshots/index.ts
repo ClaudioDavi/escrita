@@ -13,10 +13,12 @@ import type { EscritaModule } from "../data";
 import { inSnapshots, snapshotsRoot } from "../core/classify";
 import { writingDay } from "../core/dates";
 import { measureText } from "../core/measure";
+import { writtenWord, type Stage } from "../core/stages";
 import { revertPlan, wholeText, type AnchoredChange, type Change } from "../core/note-text";
 import { t } from "../i18n";
 import { confirmAction } from "../outline/modals";
 import { createSnapshotFs } from "./fs";
+import { StageWatch, stageTakeTargets, transitionName } from "./stage-watch";
 import { label as entryLabel, type SnapshotEntry, type SnapshotKind } from "./index-format";
 import { askName, pickPath } from "./modals";
 import { isInside } from "./paths";
@@ -39,6 +41,8 @@ export class SnapshotsModule implements EscritaModule {
   private shownPath: string | null = null;
   private refreshTimer: number | null = null;
   private loaded = false;
+  private watch: StageWatch | null = null;
+  private stageFailed = false;
 
   constructor(private plugin: EscritaPlugin) {
     this.store = new SnapshotStore(
@@ -142,6 +146,7 @@ export class SnapshotsModule implements EscritaModule {
     p.register(this.store.onChange((path) => { if (path === this.shownPath) this.scheduleRefresh(); }));
     // the panel's word delta
     p.register(p.measure.onChange((paths) => { if (this.shownPath && paths.includes(this.shownPath)) this.scheduleRefresh(); }));
+    this.watchStages();
     workspace.onLayoutReady(() => {
       if (!this.loaded) return;
       const active = workspace.getActiveFile();
@@ -151,8 +156,64 @@ export class SnapshotsModule implements EscritaModule {
 
   unload(): void {
     this.loaded = false;
+    this.watch?.dispose();
+    this.watch = null;
     if (this.refreshTimer !== null) window.clearTimeout(this.refreshTimer);
     this.refreshTimer = null;
+  }
+
+  // ---------------------------------------------------------------- stage changes
+
+  /** A stage change takes a snapshot, silently (SS3). Fed by the works index. */
+  private watchStages(): void {
+    const p = this.plugin;
+    const watch = new StageWatch({
+      timers: {
+        set: (cb, ms) => window.setTimeout(cb, ms),
+        clear: (h) => window.clearTimeout(h as number),
+        yieldNow: () => new Promise<void>((r) => window.setTimeout(r, 0)),
+      },
+      current: (path) => p.works.get(path),
+      all: () => p.works.list(),
+      onTransition: (path, from, to) => { void this.takeStage(path, from, to); },
+    });
+    this.watch = watch;
+    p.register(p.works.onChange((changes) => watch.handle(changes)));
+    // seed from the full works list once the index is built
+    if (p.works.isReady()) watch.handle([{ path: "", cause: "build" }]);
+    else p.register(p.works.onReady(() => watch.handle([{ path: "", cause: "build" }])));
+  }
+
+  /** The work's note (and a book's chapters) are saved under the same name, one after another. */
+  private async takeStage(path: string, from: Stage, to: Stage): Promise<void> {
+    try {
+      const { vault } = this.plugin.app;
+      const note = vault.getAbstractFileByPath(path);
+      if (!this.canSnapshot(note)) return;
+      const entry = this.plugin.works.get(path);
+      const placement = this.plugin.books.classify(note);
+      const chapters = entry?.role === "book" && placement.book
+        ? this.plugin.books.chapters(placement.book).map((c) => c.file)
+        : [];
+      const targets = stageTakeTargets(note, entry?.role ?? "note", chapters);
+      const stages = this.plugin.settings.stages;
+      const name = transitionName(from, to, (s) => writtenWord(stages, s));
+      const day = writingDay(new Date(), this.plugin.settings.dayEndsAt);
+      for (const t0 of targets) {
+        // re-resolve by path: the file may have been renamed or deleted meanwhile
+        const f = vault.getAbstractFileByPath(t0.path);
+        if (!this.canSnapshot(f)) continue;
+        const text = await this.plugin.notes.text(f).read();
+        await this.store.take(f, text, {
+          kind: "stage", name, stage: { from, to }, day, words: measureText(text).words,
+        });
+      }
+    } catch (e) {
+      console.error(`Escrita: couldn't take the stage snapshot of ${path}`, e);
+      if (this.stageFailed) return;
+      this.stageFailed = true;
+      new Notice(t("snapshots.notice.stageFailed"));
+    }
   }
 
   settingsChanged(): void {

@@ -4,13 +4,16 @@ import { EditorView, keymap } from "@codemirror/view";
 import type EscritaPlugin from "../main";
 import type { EscritaModule } from "../data";
 import { t } from "../i18n";
-import { segmentDoc } from "../core/markdown";
+import { dropFromSet, renameInSet } from "../core/path-keys";
+import { segment, segmentDoc } from "../core/markdown";
 import { blockStateIn, inBlock, inProperties } from "./context";
 import { breakEdit, decideEnter, trailingBreakKeep } from "./enter-flow";
 import { typographyFor } from "./typography";
 import { sceneBreakEdit } from "./scene-break";
 import { spellcheckExtensions, spellcheckSuppressed } from "./spellcheck";
 import { DialogueFocus } from "./dialogue-focus";
+import { moveParagraph, moveScene } from "./move";
+import type { MoveDir } from "./move-blocks";
 
 /** The last automatic typography replacement, so Backspace can undo it. */
 interface LastReplacement {
@@ -88,19 +91,27 @@ export class EditorModule implements EscritaModule {
         return true;
       },
     });
+    for (const [id, kind, dir, key] of [
+      ["move-paragraph-up", "paragraph", "up", "editor.cmd.moveParagraphUp"],
+      ["move-paragraph-down", "paragraph", "down", "editor.cmd.moveParagraphDown"],
+      ["move-scene-up", "scene", "up", "editor.cmd.moveSceneUp"],
+      ["move-scene-down", "scene", "down", "editor.cmd.moveSceneDown"],
+    ] as const) {
+      this.plugin.addCommand({
+        id,
+        name: t(key),
+        editorCheckCallback: (checking, editor, ctx) => {
+          // only in the editor (Live Preview or Source), not Reading view
+          if (!(ctx instanceof MarkdownView) || ctx.getMode() !== "source") return false;
+          if (!checking) this.moveBlock(editor, kind, dir);
+          return true;
+        },
+      });
+    }
     // the toggle follows the note (this session only)
-    this.plugin.registerEvent(this.plugin.app.vault.on("rename", (f, old) => {
-      if (this.dialogueOn.delete(old)) this.dialogueOn.add(f.path);
-      // a folder rename moves the notes inside it
-      for (const p of [...this.dialogueOn]) {
-        if (p.startsWith(old + "/")) {
-          this.dialogueOn.delete(p);
-          this.dialogueOn.add(f.path + p.slice(old.length));
-        }
-      }
-    }));
-    this.plugin.registerEvent(this.plugin.app.vault.on("delete", (f) => {
-      this.dialogueOn.delete(f.path);
+    this.plugin.register(this.plugin.index.follow({
+      moved: (old, path) => { renameInSet(this.dialogueOn, old, path); },
+      deleted: (path) => { dropFromSet(this.dialogueOn, path); },
     }));
   }
 
@@ -141,6 +152,32 @@ export class EditorModule implements EscritaModule {
     this.rebuildSpellcheck();
     this.plugin.app.workspace.updateOptions();
     new Notice(t(this.spellcheckOn ? "editor.spellcheckOn" : "editor.spellcheckOff"));
+  }
+
+  // ---- move paragraph or scene ------------------------------------------------
+
+  private moveBlock(editor: Editor, kind: "paragraph" | "scene", dir: MoveDir): void {
+    const md = segment(editor.getValue());
+    const sel = {
+      anchor: editor.posToOffset(editor.getCursor("anchor")),
+      head: editor.posToOffset(editor.getCursor("head")),
+    };
+    const r = kind === "paragraph"
+      ? moveParagraph(md, this.plugin.settings.paragraphStyle, sel, dir)
+      : moveScene(md, sel, dir);
+    if ("refused" in r) {
+      if (r.refused !== "edge") new Notice(t(`editor.move.${r.refused}`));
+      return;
+    }
+    const { change, selection } = r;
+    // one transaction, so one undo puts it back
+    editor.transaction({
+      changes: [{ from: editor.offsetToPos(change.from), to: editor.offsetToPos(change.to), text: change.insert }],
+      selection: { from: editor.offsetToPos(selection.anchor), to: editor.offsetToPos(selection.head) },
+    });
+    const from = editor.offsetToPos(Math.min(selection.anchor, selection.head));
+    const to = editor.offsetToPos(Math.max(selection.anchor, selection.head));
+    editor.scrollIntoView({ from, to }, true);
   }
 
   // ---- scene break command --------------------------------------------------

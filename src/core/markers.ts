@@ -107,6 +107,21 @@ export function isSceneBreakLine(md: Markdown, i: number): boolean {
   return parts.length === 1 && parts[0].span.kind === "prose" && SCENE_BREAK.test(parts[0].text);
 }
 
+/** Whether line `i` is a beat line (a lone closed `%% beat: … %%` comment). */
+export function isBeatLine(md: Markdown, i: number): boolean {
+  return beatAt(md, i) !== null;
+}
+
+/**
+ * A scene break at `i` that really is one (isSceneBreakLine, so not a `---` in
+ * code or a comment), in the body (`i >= body`), and not a setext underline
+ * (the body's start or a blank line must precede it).
+ */
+export function isSceneBreakAt(md: Markdown, i: number, body = md.bodyLine): boolean {
+  if (i < body || !isSceneBreakLine(md, i)) return false;
+  return i === body || md.text.slice(md.lineStart(i - 1), md.lineEnd(i - 1)).replace(/\r$/, "").match(/^[ \t]*$/) !== null;
+}
+
 /** Whether line `i` holds something a reader sees (prose or code) other than a scene break. */
 function hasContent(md: Markdown, i: number): boolean {
   let t = "";

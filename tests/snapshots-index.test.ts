@@ -41,6 +41,18 @@ describe("parseIndex", () => {
       day: "2026-09-03", words: -1, notePath: NOTE, hash: "", length: -1,
     });
   });
+  it("round-trips the stage kind and its field", () => {
+    const i = index([entry("a.txt", { kind: "stage", name: "rascunho → revisão", stage: { from: "draft", to: "revision" } })]);
+    expect(parseIndex(serializeIndex(i), NOTE)).toEqual(i);
+    expect(AUTO_KINDS.has("stage")).toBe(false);
+  });
+  it("drops a malformed stage field and keeps the entry", () => {
+    for (const stage of [null, "x", [], { from: "a" }, { from: 1, to: "b" }, { from: "", to: "b" }]) {
+      const i = parseIndex(JSON.stringify({ entries: [{ file: "2026-09-03 0705 X.txt", kind: "stage", stage }] }), NOTE);
+      expect(i.entries[0].kind).toBe("stage");
+      expect("stage" in i.entries[0]).toBe(false);
+    }
+  });
   it("serialize then parse round-trips", () => {
     const i = index([entry("a.txt", { kind: "daily" }), entry("b.txt", { name: "Versão 2", words: 1234 })]);
     const s = serializeIndex(i);

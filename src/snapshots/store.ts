@@ -51,6 +51,8 @@ export interface TakeOptions {
   words: number;
   /** snapshot files of this note that pruning must leave alone (the one being restored or compared) */
   protect?: readonly string[];
+  /** kind "stage": the stage ids the note moved between */
+  stage?: { from: string; to: string };
 }
 
 /** A note by path, or by a live handle whose path follows renames (a TFile). */
@@ -213,34 +215,44 @@ export class SnapshotStore {
       let { index, files } = await this.load(fs, dir, notePath);
       const last = latest(index);
 
-      if (last && sameText(last, text) === "maybe") {
-        let prev: string | null = null;
+      const readSame = async (e: SnapshotEntry): Promise<boolean> => {
+        if (sameText(e, text) !== "maybe") return false;
         try {
-          prev = await fs.read(join(dir, last.file));
+          return (await fs.read(join(dir, e.file))) === text;
         } catch {
-          prev = null;
+          return false;
         }
-        if (prev === text) {
-          const name = o.name?.trim() ?? "";
-          if (o.kind === "manual" && AUTO_KINDS.has(last.kind) && name !== "") {
-            // A named milestone must never be pruned: the automatic copy becomes it.
-            const file = renamedFileName(last.file, name, new Set(files));
-            if (file !== last.file) await fs.rename(join(dir, last.file), join(dir, file));
-            index = updateEntry(index, last.file, { file, kind: "manual", name, hash: fnv1a(text), length: text.length });
-            await this.writeIndex(fs, dir, index);
-            this.emit(notePath);
-            return { status: "promoted", entry: index.entries.find((e) => e.file === file) as SnapshotEntry };
-          }
-          return { status: "unchanged", entry: last };
+      };
+
+      if (last && (await readSame(last))) {
+        const name = o.name?.trim() ?? "";
+        if (AUTO_KINDS.has(last.kind) && ((o.kind === "manual" && name !== "") || o.kind === "stage")) {
+          // A named milestone (or a stage change) must never be pruned: the automatic copy becomes it.
+          const file = name !== "" ? renamedFileName(last.file, name, new Set(files)) : last.file;
+          if (file !== last.file) await fs.rename(join(dir, last.file), join(dir, file));
+          index = updateEntry(index, last.file, {
+            file, kind: o.kind, name, hash: fnv1a(text), length: text.length,
+            ...(o.kind === "stage" && o.stage ? { stage: o.stage } : {}),
+          });
+          await this.writeIndex(fs, dir, index);
+          this.emit(notePath);
+          return { status: "promoted", entry: index.entries.find((e) => e.file === file) as SnapshotEntry };
+        }
+        if (o.kind !== "stage") return { status: "unchanged", entry: last };
+      }
+      if (o.kind === "stage") {
+        for (const e of newestFirst(index.entries)) {
+          if ((e.kind === "manual" || e.kind === "stage") && (await readSame(e))) return { status: "unchanged", entry: e };
         }
       }
 
       const when = this.now();
-      const name = o.kind === "manual" ? o.name?.trim() ?? "" : "";
+      const name = o.kind === "manual" || o.kind === "stage" ? o.name?.trim() ?? "" : "";
       const file = snapshotFileName(when, name || this.kindLabel(o.kind), new Set(files));
       const entry: SnapshotEntry = {
         file, name, kind: o.kind, taken: when.getTime(), day: o.day, words: o.words,
         notePath, hash: fnv1a(text), length: text.length,
+        ...(o.kind === "stage" && o.stage ? { stage: o.stage } : {}),
       };
       await fs.write(join(dir, file), text);
       index = addEntry(index, entry);
@@ -274,7 +286,7 @@ export class SnapshotStore {
       const next = renamedFileName(file, clean, new Set(l.files));
       if (next !== file) await fs.rename(join(dir, file), join(dir, next));
       // a name makes it the writer's: never pruned
-      const index = updateEntry(l.index, file, { file: next, name: clean, ...(clean !== "" ? { kind: "manual" as const } : {}) });
+      const index = updateEntry(l.index, file, { file: next, name: clean, ...(clean !== "" && AUTO_KINDS.has(l.index.entries.find((e) => e.file === file)!.kind) ? { kind: "manual" as const } : {}) });
       await this.writeIndex(fs, dir, index);
       this.emit(notePath);
       return index.entries.find((e) => e.file === next) as SnapshotEntry;

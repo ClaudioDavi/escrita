@@ -1,8 +1,9 @@
-import { App, PluginSettingTab, Setting, moment } from "obsidian";
+import { App, PluginSettingTab, Setting, moment, type ColorComponent } from "obsidian";
 import type EscritaPlugin from "./main";
-import { t } from "./i18n";
+import { lang, t } from "./i18n";
 import { cleanWeekdays } from "./core/merge";
 import { invalidDatesOff } from "./core/daysoff";
+import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, STAGES, hexColor, normalizeStages, stageConflicts, type Stage, type StageMapping } from "./core/stages";
 import { DEFAULT_SNAPSHOTS_FOLDER, inFolder, snapshotsFolderProblem, snapshotsRoot, type SnapshotsFolderProblem } from "./core/classify";
 
 export type ParagraphStyle = "single" | "blank";
@@ -14,9 +15,14 @@ export interface EscritaSettings {
   chaptersFolder: string;
   chapterTemplate: string;
   numberPadding: number;
-  /** "value = #hex" per line; colors the outline's status dots */
-  statusColors: string;
   statusProperty: string;
+  /** the writer's words and color for each stage */
+  stages: StageMapping;
+  /** "value = #hex" lines for chapter-only statuses and colors the picker can't show */
+  otherStatusColors: string;
+  /** path of the home note; empty = none */
+  homeNote: string;
+  openHomeOnStartup: boolean;
   summaryProperty: string;
 
   // Goals
@@ -52,10 +58,6 @@ export interface EscritaSettings {
   datesOff: string;
 
   // Publishing (status property: statusProperty)
-  /** status value that means published */
-  publishedValue: string;
-  /** status set by "Unpublish" when the previous status is unknown */
-  unpublishedValue: string;
   /** property holding the publication date */
   dateProperty: string;
   /** properties a published note should have; newline/comma list (lineList); empty disables the check */
@@ -96,8 +98,11 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   chaptersFolder: "Chapters",
   chapterTemplate: "",
   numberPadding: 2,
-  statusColors: "idea = #7d7972\ndraft = #9a968e\nrevision = #e0b567\nready = #8fb3d9\npublished = #86c497",
   statusProperty: "status",
+  stages: DEFAULT_STAGES,
+  otherStatusColors: "",
+  homeNote: "",
+  openHomeOnStartup: false,
   summaryProperty: "summary",
 
   dailyGoal: 1000,
@@ -119,8 +124,6 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   weekdaysOff: [],
   datesOff: "",
 
-  publishedValue: "published",
-  unpublishedValue: "ready",
   dateProperty: "date",
   recommendedProperties: "description",
 
@@ -145,18 +148,14 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   spellcheckOnDemand: false,
 };
 
-export function parseStatusColors(s: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const line of s.split(/\r?\n/)) {
-    const m = /^\s*(.+?)\s*[=:]\s*(#[0-9a-f]{3,8}|[a-z]+)\s*$/i.exec(line);
-    if (m) out[m[1].toLowerCase()] = m[2];
-  }
-  return out;
-}
-
 /** Settings as saved, with defaults filled in and list fields cleaned (used by loadAll). */
 export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   s.weekdaysOff = cleanWeekdays(s.weekdaysOff);
+  // Always a fresh copy: never share the frozen defaults with the live settings.
+  s.stages = normalizeStages(s.stages);
+  s.statusProperty = (typeof s.statusProperty === "string" ? s.statusProperty.trim() : "") || DEFAULT_STATUS_PROPERTY;
+  s.homeNote = typeof s.homeNote === "string" ? s.homeNote.trim() : DEFAULT_SETTINGS.homeNote;
+  if (typeof s.otherStatusColors !== "string") s.otherStatusColors = DEFAULT_SETTINGS.otherStatusColors;
   for (const k of PROPERTY_KEYS) s[k] = (typeof s[k] === "string" ? s[k].trim() : "") || DEFAULT_SETTINGS[k];
   s.snapshotsFolder = snapshotsRoot(s.snapshotsFolder);
   s.snapshotsKeepAuto = Number.isFinite(s.snapshotsKeepAuto) ? Math.max(1, Math.round(s.snapshotsKeepAuto)) : DEFAULT_SETTINGS.snapshotsKeepAuto;
@@ -165,6 +164,9 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
 
 /** Frontmatter property names a piece or book is read from; normalizeSettings trims them and restores empty ones. */
 const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadlineProperty", "goalProperty"] as const;
+
+/** What the color input holds while a stage has no color (not black, so black is a real choice). */
+const EMPTY_SWATCH = "#808080";
 
 export class EscritaSettingTab extends PluginSettingTab {
   constructor(app: App, private plugin: EscritaPlugin) {
@@ -206,10 +208,8 @@ export class EscritaSettingTab extends PluginSettingTab {
         .onChange(async (v) => { s.statusProperty = v.trim() || "status"; await save(); }))
       .addText((c) => c.setPlaceholder("summary").setValue(s.summaryProperty)
         .onChange(async (v) => { s.summaryProperty = v.trim() || "summary"; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.statusColors"))
-      .setDesc(t("settings.statusColors.desc"))
-      .addTextArea((c) => { c.setValue(s.statusColors).onChange(async (v) => { s.statusColors = v; await save(); }); c.inputEl.rows = 5; });
+
+    this.stagesSettings(containerEl, save);
 
     new Setting(containerEl).setName(t("settings.goals")).setHeading();
     new Setting(containerEl)
@@ -301,16 +301,6 @@ export class EscritaSettingTab extends PluginSettingTab {
 
     new Setting(containerEl).setName(t("settings.publishing")).setHeading();
     new Setting(containerEl)
-      .setName(t("settings.publishedValue"))
-      .setDesc(t("settings.publishedValue.desc"))
-      .addText((c) => c.setPlaceholder("published").setValue(s.publishedValue)
-        .onChange(async (v) => { s.publishedValue = v.trim() || DEFAULT_SETTINGS.publishedValue; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.unpublishedValue"))
-      .setDesc(t("settings.unpublishedValue.desc"))
-      .addText((c) => c.setPlaceholder("ready").setValue(s.unpublishedValue)
-        .onChange(async (v) => { s.unpublishedValue = v.trim() || DEFAULT_SETTINGS.unpublishedValue; await save(); }));
-    new Setting(containerEl)
       .setName(t("settings.dateProperty"))
       .setDesc(t("settings.dateProperty.desc"))
       .addText((c) => c.setPlaceholder("date").setValue(s.dateProperty)
@@ -400,6 +390,122 @@ export class EscritaSettingTab extends PluginSettingTab {
   }
 
   /**
+   * The Stages section: one row per stage (words, color, clear), the duplicate
+   * warning under the rows, the other-status-colors box and the home note rows.
+   * A duplicate word never blocks saving; the first stage wins (stageOf).
+   */
+  private stagesSettings(containerEl: HTMLElement, save: () => Promise<void>): void {
+    const s = this.plugin.settings;
+    new Setting(containerEl).setName(t("settings.stages")).setHeading();
+    containerEl.createDiv({ cls: "setting-item-description escrita-stages-desc", text: t("settings.stages.desc") });
+
+    const warnings = new Map<Stage, HTMLElement>();
+    const showWarnings = () => {
+      const lines = new Map<Stage, string>();
+      for (const c of stageConflicts(s.stages)) {
+        const names = c.stages.map((k) => t(`stage.${k}`));
+        const text = t("settings.stages.duplicate", { word: c.word, stages: listJoin(names), first: names[0] });
+        // The warning sits under the last stage that repeats the word.
+        const last = c.stages[c.stages.length - 1];
+        lines.set(last, lines.has(last) ? `${lines.get(last)} ${text}` : text);
+      }
+      for (const [k, el] of warnings) {
+        const text = lines.get(k) ?? "";
+        el.setText(text);
+        el.toggle(text !== "");
+      }
+    };
+
+    for (const k of STAGES) {
+      const setting = new Setting(containerEl).setName(t(`stage.${k}`));
+      setting.settingEl.addClass("escrita-stage-row");
+      const stage = t(`stage.${k}`).toLowerCase();
+      let swatch: HTMLInputElement | null = null;
+      let clear: HTMLButtonElement | null = null;
+      const paint = () => {
+        const color = hexColor(s.stages[k].color);
+        swatch?.toggleClass("escrita-swatch-empty", !color);
+        clear?.toggle(!!color);
+        swatch?.setAttr("aria-label", color ? t("settings.stages.color", { stage }) : t("settings.stages.noColor"));
+      };
+      const saveWords = async (v: string) => {
+        if (v === s.stages[k].words) return;
+        s.stages[k].words = v;
+        showWarnings();
+        await save();
+      };
+      setting.addText((c) => {
+        // An empty field is never stored: on blur it shows the previous (or default) words again.
+        const fieldChange = (v: string) => { if (v.trim() !== "") void saveWords(v); };
+        c.setValue(s.stages[k].words).onChange(fieldChange);
+        c.inputEl.addClass("escrita-stage-words");
+        c.inputEl.setAttr("aria-label", t("settings.stages.words", { stage }));
+        // Also on blur, so a value typed and left is never lost.
+        c.inputEl.addEventListener("blur", () => {
+          if (c.getValue().trim() === "") {
+            if (s.stages[k].words.trim() === "") s.stages[k].words = DEFAULT_STAGES[k].words;
+            c.setValue(s.stages[k].words);
+            showWarnings();
+            return;
+          }
+          void saveWords(c.getValue());
+        });
+      });
+      let picker: ColorComponent | null = null;
+      setting.addColorPicker((c) => {
+        picker = c;
+        c.setValue(hexColor(s.stages[k].color) ?? EMPTY_SWATCH).onChange(async (v) => {
+          s.stages[k].color = hexColor(v) ?? "";
+          paint();
+          await save();
+        });
+      });
+      swatch = setting.controlEl.querySelector<HTMLInputElement>('input[type="color"]');
+      swatch?.addClass("escrita-swatch");
+      setting.addExtraButton((b) => {
+        b.setIcon("x").setTooltip(t("settings.stages.clear")).onClick(async () => {
+          s.stages[k].color = "";
+          // Reset the input too, so picking the same color again fires a change.
+          // The empty state is the dashed swatch; the input holds a neutral grey so black can still be picked.
+          (picker as ColorComponent | null)?.setValue(EMPTY_SWATCH);
+          paint();
+          await save();
+        });
+        clear = b.extraSettingsEl as unknown as HTMLButtonElement;
+        clear.addClass("escrita-swatch-clear");
+        clear.setAttr("aria-label", t("settings.stages.clear"));
+      });
+      paint();
+      warnings.set(k, containerEl.createDiv({ cls: "escrita-setting-warning escrita-stage-warning" }));
+      // The warning belongs to its row: keep it directly under it.
+      setting.settingEl.after(warnings.get(k)!);
+    }
+    showWarnings();
+
+    const other = new Setting(containerEl)
+      .setName(t("settings.otherStatusColors"))
+      .setDesc(t("settings.otherStatusColors.desc"));
+    other.addTextArea((c) => {
+      c.setPlaceholder("paused: #6e6b66").setValue(s.otherStatusColors)
+        .onChange(async (v) => { s.otherStatusColors = v; await save(); });
+      c.inputEl.addClass("escrita-mono");
+      c.inputEl.setAttr("aria-label", t("settings.otherStatusColors"));
+    });
+
+    new Setting(containerEl).setName(t("settings.homeNoteHeading")).setHeading();
+    new Setting(containerEl)
+      .setName(t("settings.homeNote"))
+      .setDesc(t("settings.homeNote.desc"))
+      .addText((c) => c.setPlaceholder(lang() === "pt-BR" ? "Inicio.md" : "Home.md").setValue(s.homeNote)
+        .onChange(async (v) => { s.homeNote = v.trim(); await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.openHomeOnStartup"))
+      .setDesc(t("settings.openHomeOnStartup.desc"))
+      .addToggle((c) => c.setValue(s.openHomeOnStartup)
+        .onChange(async (v) => { s.openHomeOnStartup = v; await save(); }));
+  }
+
+  /**
    * The Snapshots section. The folder is saved only when it passes
    * snapshotsFolderProblem; otherwise the saved value stays and a warning under
    * the setting says why (no notices while typing).
@@ -462,6 +568,13 @@ export class EscritaSettingTab extends PluginSettingTab {
       });
     }
   }
+}
+
+/** "A and B" / "A, B and C" in the writer's language. */
+function listJoin(items: string[]): string {
+  if (items.length < 2) return items.join("");
+  const and = lang() === "pt-BR" ? " e " : " and ";
+  return items.slice(0, -1).join(", ") + and + items[items.length - 1];
 }
 
 function snapshotsProblemText(p: SnapshotsFolderProblem): string {

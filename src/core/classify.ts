@@ -6,6 +6,7 @@
 
 import { folderList } from "./lists";
 import { readPiece, type Piece, type PieceProperties } from "./measure";
+import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, readStatus, stageOf, type Stage, type StageMapping } from "./stages";
 
 /** Anything with a vault path. TFile/TFolder satisfy it; test fakes are `{ path }` objects that keep their identity. */
 export interface Named { path: string }
@@ -41,6 +42,10 @@ export interface ClassifySettings extends PieceProperties {
   chapterTemplate: string;
   /** where Escrita keeps snapshots; read through snapshotsRoot(), so "" means the default */
   snapshotsFolder: string;
+  /** the frontmatter property holding the status; defaults to DEFAULT_STATUS_PROPERTY */
+  statusProperty?: string;
+  /** the writer's words for each stage; defaults to DEFAULT_STAGES */
+  stages?: StageMapping;
 }
 
 /** The snapshots folder when the setting is empty or unusable. */
@@ -106,6 +111,8 @@ export interface Placement<F extends Named, D extends Named> {
    * is a "note" or a "file", a folder there is a "folder".
    */
   snapshot: boolean;
+  /** the work's stage: set only for a tracked book note or tracked note whose status is a known stage word; null for everything else */
+  stage: Stage | null;
 }
 
 /** Whether `path` is `folder` itself or inside it. Slashes at the folder's edges are ignored, "" means the whole vault, case-sensitive. */
@@ -250,9 +257,28 @@ function isTracked(path: string, settings: ClassifySettings): boolean {
   return true;
 }
 
-function pieceOf<F extends Named, D extends Named>(tree: VaultTree<F, D>, file: F, settings: ClassifySettings): Piece | null {
+function frontmatterOf<F extends Named, D extends Named>(tree: VaultTree<F, D>, file: F): Record<string, unknown> | undefined {
   try {
-    return readPiece(tree.frontmatter(file), settings);
+    return tree.frontmatter(file);
+  } catch {
+    return undefined;
+  }
+}
+
+function pieceOf(fm: Record<string, unknown> | undefined, settings: ClassifySettings): Piece | null {
+  try {
+    return readPiece(fm, settings);
+  } catch {
+    return null;
+  }
+}
+
+/** The one stage rule for works: only a tracked note or book note has one. */
+function stageFor(fm: Record<string, unknown> | undefined, tracked: boolean, settings: ClassifySettings): Stage | null {
+  if (!tracked) return null;
+  try {
+    const prop = typeof settings.statusProperty === "string" && settings.statusProperty.trim() !== "" ? settings.statusProperty : DEFAULT_STATUS_PROPERTY;
+    return stageOf(readStatus(fm, prop), settings.stages ?? DEFAULT_STAGES);
   } catch {
     return null;
   }
@@ -266,7 +292,7 @@ function pieceOf<F extends Named, D extends Named>(tree: VaultTree<F, D>, file: 
 export function classify<F extends Named, D extends Named>(
   tree: VaultTree<F, D>, settings: ClassifySettings, path: string | null,
 ): Placement<F, D> {
-  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, snapshot: false };
+  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, snapshot: false, stage: null };
   if (typeof path !== "string" || path === "") return none;
   if (path === "/") return { ...none, kind: "folder" };
   try {
@@ -283,17 +309,18 @@ export function classify<F extends Named, D extends Named>(
     if (file) {
       const markdown = path.endsWith(".md");
       const tracked = markdown && isTracked(path, settings);
-      const piece = markdown ? pieceOf(tree, file, settings) : null;
+      const fm = markdown ? frontmatterOf(tree, file) : undefined;
+      const piece = markdown ? pieceOf(fm, settings) : null;
       // The book note comes first: a book note inside another book's folder belongs to its own book.
       const own = markdown ? bookAt(tree, path.slice(0, -3), ch) : null;
-      if (own) return { path, kind: "book-note", markdown, book: own, tracked, piece, snapshot: false };
+      if (own) return { path, kind: "book-note", markdown, book: own, tracked, piece, snapshot: false, stage: stageFor(fm, tracked, settings) };
       const book = ancestorBook(tree, path, ch);
       if (book) {
         // compare against the handle's path, never the settings string
         const kind: Kind = markdown && parentOf(path) === book.chaptersFolder.path ? "chapter" : "book-file";
-        return { path, kind, markdown, book, tracked, piece, snapshot: false };
+        return { path, kind, markdown, book, tracked, piece, snapshot: false, stage: null };
       }
-      return { path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, snapshot: false };
+      return { path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null };
     }
     if (tree.folder(path)) {
       const own = bookAt(tree, path, ch);

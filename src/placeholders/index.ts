@@ -1,39 +1,24 @@
-import { MarkdownView, Notice, TFile, debounce, type Editor, type PaneType, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
+import { MarkdownView, Notice, TFile, debounce, type Editor, type PaneType, type WorkspaceLeaf } from "obsidian";
 import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
 import type { EscritaModule } from "../data";
 import { folderList } from "../core/lists";
+import type { VaultIndex } from "../core/vault-index";
 import { snapshotsRoot } from "../core/classify";
 import type { Applied } from "../core/note-text";
 import { t } from "../i18n";
-import { isIndexable, locate, planInsert, resolvePlaceholder, scan, stepIndex, type IndexedMarker } from "./logic";
-import { PlaceholderStore } from "./store";
+import { locate, placeholderSpec, planInsert, resolvePlaceholder, scan, stepIndex, type IndexedMarker } from "./logic";
 import { placeholderDecorations } from "./decoration";
 import { PLACEHOLDERS_VIEW, PlaceholdersView } from "./view";
 
 export { PLACEHOLDERS_VIEW } from "./view";
 export type { IndexedMarker } from "./logic";
 
-/** files read concurrently per step of the initial index */
-const BATCH = 40;
-
 export class PlaceholdersModule implements EscritaModule {
-  private store = new PlaceholderStore();
+  /** the vault index; set in load() */
+  private idx: VaultIndex<TFile, IndexedMarker[]> | null = null;
   private extensions: Extension[] = [];
-  private ready = false;
   private loaded = false;
-  /** bumps on every full rebuild (and unload) so a stale one stops */
-  private generation = 0;
-  private building = false;
-  /** paths updated by events while a rebuild runs; their live value wins */
-  private touched = new Set<string>();
-  /**
-   * Latest read ticket per path, so an older read can't overwrite a newer one.
-   * Tickets come from one module-wide counter and never repeat, so a stale read
-   * can't match a ticket handed out later for the same path.
-   */
-  private seq = new Map<string, number>();
-  private nextSeq = 0;
   private lastMarker = "";
   private lastExclude = "";
   private lastSnapshots = "";
@@ -48,23 +33,23 @@ export class PlaceholdersModule implements EscritaModule {
 
   /** Number of placeholders in a file (0 when none, or not indexed). */
   countFor(path: string): number {
-    return this.store.countFor(path);
+    return this.idx?.get(path)?.length ?? 0;
   }
 
   /** Placeholders in a file, as last indexed. */
   markersFor(path: string): IndexedMarker[] {
-    return this.store.markersFor(path);
+    return this.idx?.get(path) ?? [];
   }
 
   /** Paths of every file with at least one placeholder. */
   paths(): string[] {
-    return this.store.paths();
+    return this.idx?.paths() ?? [];
   }
 
   /** Every file with placeholders and its markers. */
   all(): { file: TFile; markers: IndexedMarker[] }[] {
     const out: { file: TFile; markers: IndexedMarker[] }[] = [];
-    for (const { path, markers } of this.store.entries()) {
+    for (const [path, markers] of this.idx?.entries() ?? []) {
       const file = this.plugin.app.vault.getAbstractFileByPath(path);
       if (file instanceof TFile) out.push({ file, markers });
     }
@@ -73,12 +58,12 @@ export class PlaceholdersModule implements EscritaModule {
 
   /** Called whenever the index changes. Returns the unsubscribe function. */
   onChange(cb: () => void): () => void {
-    return this.store.onChange(cb);
+    return this.idx?.onChange(() => cb()) ?? (() => undefined);
   }
 
   /** True once the first full index has been built. */
   isReady(): boolean {
-    return this.ready;
+    return this.idx?.isReady() ?? false;
   }
 
   // ---------------------------------------------------------------- lifecycle
@@ -90,6 +75,20 @@ export class PlaceholdersModule implements EscritaModule {
     this.lastExclude = p.settings.excludeFolders;
     this.lastSnapshots = p.settings.snapshotsFolder;
     this.lastDots = p.settings.showExplorerDots;
+
+    const idx = p.index.add<TFile, IndexedMarker[]>(placeholderSpec<TFile>({
+      marker: () => this.marker(),
+      exclude: () => this.excluded(),
+      settingsKey: () => JSON.stringify([this.marker(), p.settings.excludeFolders, p.settings.snapshotsFolder]),
+    }));
+    this.idx = idx;
+    // Views waiting on "indexing" leave it once a build completes.
+    idx.onReady(() => {
+      for (const leaf of p.app.workspace.getLeavesOfType(PLACEHOLDERS_VIEW)) {
+        if (leaf.view instanceof PlaceholdersView) leaf.view.render();
+      }
+      this.applyDots();
+    });
 
     p.registerView(PLACEHOLDERS_VIEW, (leaf) => new PlaceholdersView(leaf, p));
 
@@ -119,24 +118,14 @@ export class PlaceholdersModule implements EscritaModule {
 
     // A small dot after files with placeholders in the file explorer (silent: no tooltip).
     this.undraw = p.decorations.add("dot", (it) =>
-      !it.folder && p.settings.showExplorerDots && this.store.countFor(it.path) > 0 ? {} : null);
-    p.register(this.store.onChange(() => this.dotsSoon()));
+      !it.folder && p.settings.showExplorerDots && this.countFor(it.path) > 0 ? {} : null);
+    p.register(idx.onChange(() => this.dotsSoon()));
 
-    p.app.workspace.onLayoutReady(() => {
-      if (!this.loaded) return;
-      const vault = p.app.vault;
-      // Registered after layout ready so the vault's initial "create" events are skipped.
-      p.registerEvent(vault.on("modify", (f) => this.reindex(f)));
-      p.registerEvent(vault.on("create", (f) => this.reindex(f)));
-      p.registerEvent(vault.on("delete", (f) => this.forget(f.path)));
-      p.registerEvent(vault.on("rename", (f, oldPath) => this.renamed(f, oldPath)));
-      void this.rebuild();
-    });
   }
 
   unload(): void {
     this.loaded = false;
-    this.generation++;
+    this.idx = null;
     this.dotsSoon.cancel();
     this.undraw?.();
     this.undraw = null;
@@ -155,7 +144,7 @@ export class PlaceholdersModule implements EscritaModule {
     if (reindex) {
       // Editors read the marker on each update; this makes them update now.
       this.plugin.app.workspace.updateOptions();
-      if (this.plugin.app.workspace.layoutReady) void this.rebuild();
+      this.plugin.index.settingsChanged();
     }
     if (dots) this.applyDots();
   }
@@ -166,90 +155,10 @@ export class PlaceholdersModule implements EscritaModule {
     return this.plugin.settings.placeholderMarker || "XXX";
   }
 
-  /** Markdown outside the exclude folders and the snapshots folder. */
-  private indexable(path: string): boolean {
+  /** Folders the index leaves out: the exclude folders and the snapshots folder. */
+  private excluded(): string[] {
     const s = this.plugin.settings;
-    return isIndexable(path, [...folderList(s.excludeFolders), snapshotsRoot(s.snapshotsFolder)]);
-  }
-
-  private async rebuild(): Promise<void> {
-    const gen = ++this.generation;
-    this.building = true;
-    this.touched.clear();
-    const marker = this.marker();
-    const vault = this.plugin.app.vault;
-    const files = vault.getMarkdownFiles().filter((f) => this.indexable(f.path));
-    const fresh = new Map<string, IndexedMarker[]>();
-    for (let i = 0; i < files.length; i += BATCH) {
-      if (gen !== this.generation) return;
-      await Promise.all(files.slice(i, i + BATCH).map(async (f) => {
-        try {
-          const text = await vault.cachedRead(f);
-          if (!text.includes("%%")) return;
-          const ms = scan(text, marker);
-          if (ms.length) fresh.set(f.path, ms);
-        } catch (e) {
-          console.error(`Escrita: could not read ${f.path} for placeholders`, e);
-        }
-      }));
-      await sleep(0);
-    }
-    if (gen !== this.generation) return;
-    this.building = false;
-    const wasReady = this.ready;
-    this.ready = true;
-    this.store.replaceAll(fresh, this.touched);
-    this.touched.clear();
-    // The first build may leave the (empty) store unchanged; open views still need to leave "indexing".
-    if (!wasReady) {
-      for (const leaf of this.plugin.app.workspace.getLeavesOfType(PLACEHOLDERS_VIEW)) {
-        if (leaf.view instanceof PlaceholdersView) leaf.view.render();
-      }
-    }
-    this.applyDots();
-  }
-
-  private bump(path: string): number {
-    const n = ++this.nextSeq;
-    this.seq.set(path, n);
-    if (this.building) this.touched.add(path);
-    return n;
-  }
-
-  private reindex(f: TAbstractFile): void {
-    if (!(f instanceof TFile)) return;
-    if (!this.indexable(f.path)) {
-      this.forget(f.path);
-      return;
-    }
-    const path = f.path;
-    const n = this.bump(path);
-    const marker = this.marker();
-    this.plugin.app.vault.cachedRead(f).then((text) => {
-      if (this.seq.get(path) !== n || !this.loaded) return;
-      this.seq.delete(path);
-      this.store.set(path, scan(text, marker));
-    }, (e) => console.error(`Escrita: could not read ${path} for placeholders`, e));
-  }
-
-  private forget(path: string): void {
-    this.bump(path);
-    this.store.remove(path);
-  }
-
-  private renamed(f: TAbstractFile, oldPath: string): void {
-    if (!(f instanceof TFile)) return;
-    if (!this.indexable(f.path)) {
-      this.forget(oldPath);
-      this.forget(f.path);
-      return;
-    }
-    // Move what we know right away so the UI doesn't flicker, then read the file
-    // anyway: a modify read still in flight for oldPath is dropped by the bump, and
-    // the moved data may predate a marker/exclude change (rebuild in progress).
-    this.bump(oldPath);
-    this.store.rename(oldPath, f.path);
-    this.reindex(f);
+    return [...folderList(s.excludeFolders), snapshotsRoot(s.snapshotsFolder)];
   }
 
   private applyDots(): void {
@@ -325,8 +234,7 @@ export class PlaceholdersModule implements EscritaModule {
   async openFile(path: string, newLeaf: PaneType | boolean = false): Promise<void> {
     const file = this.plugin.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile)) {
-      this.forget(path);
-      return;
+      return; // the index drops a deleted file on the vault event
     }
     try {
       await this.plugin.app.workspace.getLeaf(newLeaf).openFile(file);
@@ -340,8 +248,7 @@ export class PlaceholdersModule implements EscritaModule {
     const ws = this.plugin.app.workspace;
     const file = this.plugin.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile)) {
-      this.forget(path);
-      return;
+      return; // the index drops a deleted file on the vault event
     }
     let leaf = newLeaf ? null : this.markdownLeafFor(path);
     if (leaf) {
@@ -366,7 +273,7 @@ export class PlaceholdersModule implements EscritaModule {
       editor.setCursor({ line, ch: 0 });
       editor.scrollIntoView({ from: { line, ch: 0 }, to: { line, ch: 0 } }, true);
       new Notice(t("placeholders.moved"));
-      this.reindex(file);
+      this.idx?.modified(file);
     }
     editor.focus();
   }
@@ -381,7 +288,6 @@ export class PlaceholdersModule implements EscritaModule {
     const marker = this.marker();
     const file = this.plugin.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile)) {
-      this.forget(path);
       new Notice(t("placeholders.notFound"));
       return false;
     }
@@ -396,14 +302,13 @@ export class PlaceholdersModule implements EscritaModule {
       new Notice(t("placeholders.notFound"));
       return false;
     }
-    // Reflect it right away; with an editor the vault "modify" follows when it saves.
-    this.bump(path);
+    // The index re-reads on the vault "modify" (an open editor saves a moment later);
+    // ask for a re-read now for the cases where no modify follows.
+    this.idx?.modified(file);
     if (!res.ok) {
       new Notice(t("placeholders.notFound"));
-      this.store.set(path, scan(res.current, marker));
       return false;
     }
-    this.store.set(path, scan(res.after, marker));
     return true;
   }
 }

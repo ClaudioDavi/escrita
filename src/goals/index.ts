@@ -2,6 +2,7 @@ import { Notice, TAbstractFile, TFile, debounce } from "obsidian";
 import { EditorView, type ViewUpdate } from "@codemirror/view";
 import type EscritaPlugin from "../main";
 import type { EscritaModule } from "../data";
+import { dropFromMap, isUnder, renameInMap } from "../core/path-keys";
 import { writingDay } from "../core/dates";
 import { countSelection } from "../core/wordcount";
 import { segmentDoc } from "../core/markdown";
@@ -97,12 +98,14 @@ export class GoalsModule implements EscritaModule {
     plugin.registerEvent(plugin.app.metadataCache.on("changed", (file) => {
       if (file.path === workspace.getActiveFile()?.path) this.refreshStatus();
     }));
-    plugin.registerEvent(vault.on("rename", (file, oldPath) => this.onRename(file, oldPath)));
     // plugin.measure drops and moves cached counts itself (its handlers run first)
-    plugin.registerEvent(vault.on("delete", (file) => {
-      this.baseline.delete(file.path);
-      this.activeFiles.forget(file.path);
-      this.refreshStatus();
+    plugin.register(plugin.index.follow({
+      moved: (oldPath, newPath) => this.onRename(oldPath, newPath),
+      deleted: (path) => {
+        dropFromMap(this.baseline, path);
+        this.activeFiles.forget(path);
+        this.refreshStatus();
+      },
     }));
 
     // Day rollover and anything else that drifts: a cheap refresh once a minute.
@@ -199,12 +202,14 @@ export class GoalsModule implements EscritaModule {
     this.refreshModal();
   }
 
-  private onRename(file: TAbstractFile, oldPath: string): void {
-    this.activeFiles.rename(oldPath, file.path);
-    const b = this.baseline.get(oldPath);
-    this.baseline.delete(oldPath);
-    if (b !== undefined && this.plugin.books.classify(file).tracked) this.baseline.set(file.path, b);
-    if (file instanceof TFile && file.extension === "md" && renameBook(this.plugin.data.history, oldPath, file.path)) {
+  private onRename(oldPath: string, newPath: string): void {
+    this.activeFiles.rename(oldPath, newPath);
+    // a baseline only lives on while the file is still tracked at its new place
+    renameInMap(this.baseline, oldPath, newPath);
+    for (const k of [...this.baseline.keys()]) {
+      if (isUnder(k, newPath) && !this.plugin.books.classify(k).tracked) this.baseline.delete(k);
+    }
+    if (renameBook(this.plugin.data.history, oldPath, newPath)) {
       this.plugin.requestSave();
     }
     this.refreshStatus();

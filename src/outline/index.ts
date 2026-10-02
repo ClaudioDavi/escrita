@@ -6,7 +6,7 @@ import type { Book } from "../core/books";
 import { safeFileName } from "../core/book";
 import { FolderBlockedError } from "../core/notes";
 import { parseBeats } from "../core/markers";
-import { parseStatusColors } from "../settings";
+import { statusColor } from "../core/stages";
 import { t } from "../i18n";
 import { beatAtLine, insertBeat, minimalChange } from "./beats-edit";
 import { buildBoard, canOverwriteBoard, mergeBoard, type BoardChapter } from "./model";
@@ -152,7 +152,6 @@ export class OutlineModule implements EscritaModule {
   async openBoard(book: Book): Promise<void> {
     const { app, settings, books } = this.plugin;
     try {
-      const colors = parseStatusColors(settings.statusColors);
       const chapters: BoardChapter[] = [];
       for (const ch of books.chapters(book)) {
         const text = await app.vault.cachedRead(ch.file);
@@ -165,7 +164,7 @@ export class OutlineModule implements EscritaModule {
           beats: parseBeats(text).map((b) => b.text),
         });
       }
-      const board = buildBoard(chapters, (s) => colors[s]);
+      const board = buildBoard(chapters, (s) => statusColor(s, settings.stages, settings.otherStatusColors));
       const path = normalizePath(`${book.folder.path}/${book.title} board.canvas`);
       const existing = app.vault.getAbstractFileByPath(path);
       let file: TFile;

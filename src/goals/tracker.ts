@@ -7,6 +7,7 @@
 
 import type { DayBook, DayRecord } from "../data";
 import { addDays, lastDays } from "../core/dates";
+import { dropFromMap, isUnder, movedPath, renameInMap, renameKeys } from "../core/path-keys";
 
 export type History = Record<string, DayRecord>;
 
@@ -72,20 +73,23 @@ export function recordBookTotal(history: History, dayKey: string, book: BookChan
   return history;
 }
 
-/** Move a book's records to a new note path (the book note was renamed). Returns whether anything moved. */
+/** Combine a moved book record with the one already at its new path: counts add, the existing total stands. */
+export function sumDayBook(moved: DayBook, existing: DayBook): DayBook {
+  return {
+    added: num(existing?.added) + num(moved?.added),
+    deleted: num(existing?.deleted) + num(moved?.deleted),
+    total: num(existing?.total),
+  };
+}
+
+/** Move records at `oldPath`, or under it when it is a folder, to `newPath`. Returns whether anything moved. */
 export function renameBook(history: History, oldPath: string, newPath: string): boolean {
   if (oldPath === newPath) return false;
   let moved = false;
   for (const rec of Object.values(history)) {
     const books = rec?.books;
-    if (!books || typeof books !== "object" || !(oldPath in books)) continue;
-    const from = books[oldPath];
-    const to = books[newPath];
-    books[newPath] = to
-      ? { added: num(to.added) + num(from?.added), deleted: num(to.deleted) + num(from?.deleted), total: num(to.total) }
-      : from;
-    delete books[oldPath];
-    moved = true;
+    if (!books || typeof books !== "object") continue;
+    if (renameKeys(books, oldPath, newPath, sumDayBook)) moved = true;
   }
   return moved;
 }
@@ -303,13 +307,15 @@ export class ActiveFiles {
   }
 
   rename(oldPath: string, newPath: string): void {
-    if (this.current === oldPath) this.current = newPath;
-    const at = this.left.get(oldPath);
-    if (at !== undefined) { this.left.delete(oldPath); this.left.set(newPath, at); }
+    if (this.current !== null) {
+      const to = movedPath(this.current, oldPath, newPath);
+      if (to !== null) this.current = to;
+    }
+    renameInMap(this.left, oldPath, newPath);
   }
 
   forget(path: string): void {
-    if (this.current === path) this.current = null;
-    this.left.delete(path);
+    if (this.current !== null && isUnder(this.current, path)) this.current = null;
+    dropFromMap(this.left, path);
   }
 }

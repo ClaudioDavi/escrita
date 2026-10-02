@@ -2,9 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 import {
   scan, placeholderSpans, sanitizeNote, placeholderText, planInsert, locate,
   removalRange, resolvePlaceholder, stepIndex, isIndexable, orderPaths,
-  displayName, parentPath, type IndexedMarker,
+  displayName, parentPath, placeholderValue, sameMarkers, placeholderSpec, type IndexedMarker,
 } from "../src/placeholders/logic";
-import { PlaceholderStore } from "../src/placeholders/store";
+import { VaultIndex } from "../src/core/vault-index";
+import { MemoryVault, ManualTimers, type MemFile } from "./support/memory-vault";
 
 const X = "XXX";
 
@@ -447,104 +448,83 @@ describe("files", () => {
   });
 });
 
-describe("PlaceholderStore", () => {
+describe("placeholderValue and sameMarkers", () => {
   const ms = (text: string) => scan(text, X);
 
-  it("counts, lists and only keeps files with placeholders", () => {
-    const s = new PlaceholderStore();
-    s.set("a.md", ms("%% XXX: 1 %% %% XXX: 2 %%"));
-    s.set("b.md", ms("nothing"));
-    expect(s.countFor("a.md")).toBe(2);
-    expect(s.countFor("b.md")).toBe(0);
-    expect(s.countFor("missing.md")).toBe(0);
-    expect(s.paths()).toEqual(["a.md"]);
-    expect(s.total()).toBe(2);
-    expect(s.entries()[0].markers.map((m) => m.text)).toEqual(["1", "2"]);
-    expect(s.markersFor("nope.md")).toEqual([]);
+  it("gives the markers, or nothing when there are none", () => {
+    expect(placeholderValue("plain text", X)).toBeUndefined();
+    expect(placeholderValue("%% a comment %%", X)).toBeUndefined();
+    expect(placeholderValue("%% XXX: 1 %% %% XXX: 2 %%", X)?.map((m) => m.text)).toEqual(["1", "2"]);
+    expect(placeholderValue("%% XXX: 1 %%", "")).toBeUndefined();
   });
 
-  it("notifies only on real changes", () => {
-    const s = new PlaceholderStore();
-    const cb = vi.fn();
-    const off = s.onChange(cb);
-    expect(s.set("a.md", ms("%% XXX: 1 %%"))).toBe(true);
-    expect(s.set("a.md", ms("%% XXX: 1 %%"))).toBe(false);
-    expect(s.set("b.md", [])).toBe(false);
-    expect(s.set("a.md", ms("x %% XXX: 1 %%"))).toBe(true); // moved
-    expect(s.rename("a.md", "c.md")).toBe(true);
-    expect(s.rename("zzz.md", "y.md")).toBe(false);
-    expect(s.rename("c.md", "c.md")).toBe(false);
-    expect(s.countFor("c.md")).toBe(1);
-    expect(s.countFor("a.md")).toBe(0);
-    expect(s.remove("c.md")).toBe(true);
-    expect(s.remove("c.md")).toBe(false);
-    expect(cb).toHaveBeenCalledTimes(4);
-    off();
-    s.set("a.md", ms("%% XXX: 1 %%"));
-    expect(cb).toHaveBeenCalledTimes(4);
+  it("sameMarkers compares position, raw text and line", () => {
+    expect(sameMarkers(ms("%% XXX: 1 %%"), ms("%% XXX: 1 %%"))).toBe(true);
+    expect(sameMarkers(ms("%% XXX: 1 %%"), ms("x %% XXX: 1 %%"))).toBe(false);
+    expect(sameMarkers(ms("%% XXX: 1 %%"), ms("%% XXX: 2 %%"))).toBe(false);
+    expect(sameMarkers(ms("%% XXX: 1 %%"), ms("%% XXX: 1 %% %% XXX: 2 %%"))).toBe(false);
+    expect(sameMarkers(ms("a\n%% XXX: 1 %%"), ms("\n%% XXX: 1 %%\n"))).toBe(false);
+  });
+});
+
+describe("placeholderSpec on a VaultIndex", () => {
+  const setup = async (files: Record<string, string>, marker = X) => {
+    const vault = new MemoryVault(files);
+    const timers = new ManualTimers();
+    const state = { marker, exclude: ["Arquivo"] };
+    const spec = placeholderSpec<MemFile>({ marker: () => state.marker, exclude: () => state.exclude });
+    const index = new VaultIndex(spec, vault, timers);
+    vault.attach(index);
+    await index.build();
+    return { vault, timers, index, state };
+  };
+
+  it("indexes only markdown with placeholders outside excluded folders", async () => {
+    const { index } = await setup({
+      "a.md": "%% XXX: um %%",
+      "b.md": "nada",
+      "Arquivo/c.md": "%% XXX: fora %%",
+      "d.txt": "%% XXX: txt %%",
+    });
+    expect(index.paths()).toEqual(["a.md"]);
+    expect(index.isReady()).toBe(true);
+    expect(index.get("a.md")?.[0].text).toBe("um");
   });
 
-  it("setting an empty list removes the file", () => {
-    const s = new PlaceholderStore();
-    s.set("a.md", ms("%% XXX: 1 %%"));
-    expect(s.set("a.md", [])).toBe(true);
-    expect(s.paths()).toEqual([]);
+  it("follows edits, removal of the last marker, renames and deletes", async () => {
+    const { vault, timers, index } = await setup({ "a.md": "%% XXX: um %%" });
+    const seen: string[] = [];
+    index.onChange((cs) => cs.forEach((c) => seen.push(`${c.cause}:${c.path}`)));
+    vault.modify("a.md", "%% XXX: um %% e %% XXX: dois %%");
+    await timers.advance(300);
+    expect(index.get("a.md")).toHaveLength(2);
+    vault.modify("a.md", "limpo");
+    await timers.advance(300);
+    expect(index.get("a.md")).toBeUndefined();
+    vault.modify("a.md", "%% XXX: de novo %%");
+    await timers.advance(300);
+    vault.rename("a.md", "b.md");
+    await timers.advance(300);
+    expect(index.paths()).toEqual(["b.md"]);
+    vault.delete("b.md");
+    expect(index.paths()).toEqual([]);
+    expect(seen).toContain("delete:b.md");
   });
 
-  it("replaceAll swaps the index in one notification and keeps paths touched during a build", () => {
-    const s = new PlaceholderStore();
-    s.set("live.md", ms("%% XXX: new %%"));
-    s.set("old.md", ms("%% XXX: gone %%"));
-    const cb = vi.fn();
-    s.onChange(cb);
-    const fresh = new Map([
-      ["live.md", ms("%% XXX: stale %%")],
-      ["deleted.md", ms("%% XXX: stale %%")],
-      ["x.md", ms("%% XXX: x %% %% XXX: y %%")],
-      ["empty.md", []],
-    ]);
-    s.replaceAll(fresh, new Set(["live.md", "deleted.md"]));
-    expect(cb).toHaveBeenCalledTimes(1);
-    expect(s.markersFor("live.md")[0].text).toBe("new");
-    expect(s.countFor("deleted.md")).toBe(0);
-    expect(s.countFor("old.md")).toBe(0);
-    expect(s.countFor("x.md")).toBe(2);
-    expect(s.paths().sort()).toEqual(["live.md", "x.md"]);
+  it("a file moved into an excluded folder leaves the index", async () => {
+    const { vault, timers, index } = await setup({ "a.md": "%% XXX: um %%" });
+    vault.rename("a.md", "Arquivo/a.md");
+    await timers.advance(300);
+    expect(index.paths()).toEqual([]);
   });
 
-  it("replaceAll with identical content does not notify", () => {
-    const s = new PlaceholderStore();
-    s.set("a.md", ms("%% XXX: 1 %%"));
-    const cb = vi.fn();
-    s.onChange(cb);
-    s.replaceAll(new Map([["a.md", ms("%% XXX: 1 %%")]]));
-    s.replaceAll(new Map([["a.md", ms("%% XXX: 1 %%")]]));
-    expect(cb).not.toHaveBeenCalled();
-    s.replaceAll(new Map());
-    expect(cb).toHaveBeenCalledTimes(1);
-    s.clear();
-    expect(cb).toHaveBeenCalledTimes(1);
-  });
-
-  it("a failing listener doesn't stop the others", () => {
-    const s = new PlaceholderStore();
-    const err = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const good = vi.fn();
-    s.onChange(() => { throw new Error("boom"); });
-    s.onChange(good);
-    s.set("a.md", ms("%% XXX: 1 %%"));
-    expect(good).toHaveBeenCalledTimes(1);
-    expect(err).toHaveBeenCalled();
-    err.mockRestore();
-  });
-
-  it("a listener may unsubscribe while being notified", () => {
-    const s = new PlaceholderStore();
-    const calls: string[] = [];
-    const offA = s.onChange(() => { calls.push("a"); offA(); });
-    s.onChange(() => calls.push("b"));
-    s.set("a.md", ms("%% XXX: 1 %%"));
-    s.set("a.md", []);
-    expect(calls).toEqual(["a", "b", "b"]);
+  it("settingsKey changes with the marker, exclude folders and snapshots folder", () => {
+    const st = { marker: "XXX", exclude: ["A"], snapshots: "Escrita/Snapshots" };
+    const spec = placeholderSpec<MemFile>({
+      marker: () => st.marker, exclude: () => st.exclude, settingsKey: () => JSON.stringify([st.marker, st.exclude, st.snapshots]),
+    });
+    const k = spec.settingsKey!();
+    st.marker = "TODO";
+    expect(spec.settingsKey!()).not.toBe(k);
   });
 });

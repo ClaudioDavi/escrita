@@ -6,6 +6,7 @@ import {
   beatLetter, decideKey, chapterAsBeatText, dropIndex, moveItem, scanBeats,
   buildBoard, canvasColor, canOverwriteBoard, cardText, mergeBoard, BOARD_MARKER, type KeyInput,
 } from "../src/outline/model";
+import { statusColor, normalizeStages } from "../src/core/stages";
 import { parseBeats } from "../src/core/markers";
 import { countWords } from "../src/core/wordcount";
 
@@ -354,6 +355,13 @@ describe("canvas board", () => {
     expect(board.nodes[2].color).toBe("5");
     expect(board.nodes[0].text.startsWith(BOARD_MARKER)).toBe(true);
     expect(new Set(board.nodes.map((n) => n.id)).size).toBe(3);
+  });
+  it("colors a board from the stage mapping, then the other status colors", () => {
+    const stages = normalizeStages({ draft: { words: "rascunho, draft", color: "#abc" } });
+    const board = buildBoard(chapters, (s) => statusColor(s, stages, "odd = blue"), { columns: 2, width: 300, gap: 20 });
+    expect(board.nodes[0].color).toBe("#aabbcc");
+    expect(board.nodes[1].color).toBeUndefined();
+    expect(board.nodes[2].color).toBe("5");
   });
   it("card text", () => {
     expect(cardText(chapters[0])).toBe(`${BOARD_MARKER}\n\n## [[N/A Casa/Chapters/01 Chegada|01 Chegada]]\n\nEla chega.\n\n- a\n- b`);

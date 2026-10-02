@@ -3,6 +3,7 @@
 // Messages are not translated here: each Check carries an id, a level and
 // variables, and the modal turns them into text with t().
 
+import { stageOf, type StageMapping } from "../core/stages";
 import { segment, type Markdown } from "../core/markdown";
 import { parseBeats, parsePlaceholders } from "../core/markers";
 import { countIn, measureText, pieceProgress, readPiece, type PieceProperties } from "../core/measure";
@@ -74,11 +75,9 @@ export function unclosedComment(src: string | Markdown): number | null {
 
 // ------------------------------------------------------------------ status
 
-/** Whether a status property value equals the published value (trimmed, case-insensitive). */
-export function isPublished(status: unknown, publishedValue: string): boolean {
-  if (typeof status !== "string" && typeof status !== "number") return false;
-  const want = publishedValue.trim().toLowerCase();
-  return want !== "" && String(status).trim().toLowerCase() === want;
+/** Whether a status property value is one of the words the writer mapped to the published stage. */
+export function isPublished(status: unknown, stages: StageMapping): boolean {
+  return stageOf(status, stages) === "published";
 }
 
 /** A frontmatter value that counts as filled in: not missing, null, blank or an empty list. */

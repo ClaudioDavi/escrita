@@ -17,22 +17,6 @@ interface lives. Test through the interface.
 
 ## Candidates
 
-### 2. Reusable vault index
-
-**Strength:** worth exploring · **Pairs with:** 0.3 explorer counts, 0.3 snapshots,
-0.6 "appears in"
-
-- **Problem.** The batched, rename-aware indexer lives inside the placeholders module
-  (`placeholders/index.ts`). Path-keyed data follows renames in five separate
-  places: the measurer (`core/measurer.ts`, which replaced the counter and now owns
-  its rename, delete and modify upkeep), the placeholder store, `data.history`,
-  `data.publish` and the snapshots (`snapshots/store.ts` moves each note's snapshot
-  folder). The explorer counts and dialogue focus keep their own path-keyed state
-  too. The universe would add another.
-- **Change.** A generic index keyed by path that owns the batched first pass, rename,
-  delete and debounced modify, parameterised by what it computes per file.
-- **Wins.** Rename bugs fixed once; two real adapters (vault, in-memory for tests).
-
 ### 3. Note text: edit through the editor or the vault
 
 **Strength:** worth exploring · **Pairs with:** 0.3 snapshots (restore, "use the old
@@ -67,7 +51,9 @@ darlings, publish and snapshots, and darlings and outline create folders through
 
 ## Loose ends from 0.2.1
 
-Small; good for a release whose features don't touch the candidates above.
+Small; good for a release whose features don't touch the candidates above. The
+editor ones (wrappers, `insertSceneBreak`, `enter-flow`) are scheduled for 0.5, with
+the revision lens.
 
 - Remove the compatibility wrappers only tests use: `editor/context.blockStateAt`,
   `bodyStart`, `inProperties`, and `core/markers.bodyStartLine`. They rejoin lines and
@@ -82,9 +68,7 @@ Small; good for a release whose features don't touch the candidates above.
   counted although Reading view hides them. Needs a check id and strings.
 - Test the Obsidian side of the classifier (`core/books.ts`: `instanceof` checks,
   root folder filtering) with a small fake, and try nested books in a real vault.
-- The last hand-written folder-prefix rewrite is in `publish/index.ts` (records follow
-  a folder rename); move it onto a shared helper when candidate 2 lands.
-- Open questions pinned by tests in `tests/markdown-consumers.test.ts`: `%%` inside a
+- - Open questions pinned by tests in `tests/markdown-consumers.test.ts`: `%%` inside a
   closed `<!-- -->`, a fence inside an open `%%`, `%%` inside `$$`, escaped backticks.
   Check each against Reading view and flip the rule where it differs.
 
@@ -97,3 +81,4 @@ Small; good for a release whose features don't touch the candidates above.
 | 0.3.0 | Measure module (`core/measure`, `plugin.measure`): counts, targets and goals in one place (candidate 1) |
 | 0.3.0 | File explorer decoration adapter (`core/explorer-decorations`) (candidate 4) |
 | 0.3.0 | Note text port (`core/note-text`, `plugin.notes`), partial: the outline's beat re-checks remain (candidate 3) |
+| 0.4.0 | Vault index (`core/vault-index`, `core/index-hub`, `plugin.index`; candidate 2). Migrated: placeholders, publish records, dialogue focus, goals history and baseline, the desk's works, `leftOff` and the home note path. Still waiting: the measurer, the explorer's tracked set and first pass, and the snapshots store (they keep their own path-keyed state) |

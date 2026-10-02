@@ -9,6 +9,7 @@ import { editorStrings } from "../src/editor/strings";
 import { publishStrings } from "../src/publish/strings";
 import { explorerStrings } from "../src/explorer/strings";
 import { snapshotsStrings } from "../src/snapshots/strings";
+import { deskStrings } from "../src/desk/strings";
 
 const all: Record<string, Strings> = {
   core: coreStrings,
@@ -20,6 +21,7 @@ const all: Record<string, Strings> = {
   publish: publishStrings,
   explorer: explorerStrings,
   snapshots: snapshotsStrings,
+  desk: deskStrings,
 };
 
 const vars = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();

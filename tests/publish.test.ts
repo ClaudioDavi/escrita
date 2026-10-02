@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { DEFAULT_STAGES, normalizeStages } from "../src/core/stages";
 import {
   hasBlockers, isFilled, isPublished, runChecks, sortChecks,
   unclosedComment, type Check, type CheckContext, type CheckId,
@@ -44,10 +45,18 @@ describe("unclosedComment", () => {
 
 describe("isPublished, isFilled", () => {
   it("compares status trimmed and case-insensitive", () => {
-    expect(isPublished(" Publicado ", "publicado")).toBe(true);
-    expect(isPublished("pronto", "publicado")).toBe(false);
-    expect(isPublished(undefined, "publicado")).toBe(false);
-    expect(isPublished("", "")).toBe(false);
+    const stages = normalizeStages({
+      idea: { words: "ideia", color: "" }, draft: { words: "rascunho", color: "" },
+      revision: { words: "revisão", color: "" }, ready: { words: "pronto", color: "" },
+      published: { words: "publicado, no ar", color: "" },
+    });
+    expect(isPublished(" Publicado ", stages)).toBe(true);
+    expect(isPublished("NO AR", stages)).toBe(true);
+    expect(isPublished("pronto", stages)).toBe(false);
+    expect(isPublished(undefined, stages)).toBe(false);
+    expect(isPublished("", stages)).toBe(false);
+    expect(isPublished(["publicado"], stages)).toBe(false);
+    expect(isPublished("published", DEFAULT_STAGES)).toBe(true);
   });
   it("treats blank, null and empty lists as missing", () => {
     expect(isFilled("x")).toBe(true);

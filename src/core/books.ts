@@ -6,7 +6,7 @@ import { classify, listBooks, lookupPath, placementPath, type BookOf, type Place
 /** A book: its note (Novels/A Casa.md), folder (Novels/A Casa), chapters folder (Novels/A Casa/Chapters) and title. */
 export type Book = BookOf<TFile, TFolder>;
 
-/** Where a file or folder sits: see core/classify.ts. */
+/** Where a file or folder sits (kind, book, tracked, piece, stage): see core/classify.ts. */
 export type FilePlacement = Placement<TFile, TFolder>;
 
 export interface Chapter {
