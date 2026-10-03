@@ -1,6 +1,8 @@
 import { MarkdownView, Notice, TFile } from "obsidian";
 import type EscritaPlugin from "../main";
-import type { EscritaModule } from "../data";
+import { FeatureModule } from "../core/module-context";
+import type { FeatureId } from "../core/features";
+import type { Follower } from "../core/vault-index";
 import { lineList } from "../core/lists";
 import { writtenWord } from "../core/stages";
 import { dropKeys, renameKeys } from "../core/path-keys";
@@ -13,13 +15,24 @@ import { PublishModal } from "./modal";
 type Frontmatter = Record<string, unknown>;
 
 /** Publish check: "Publish this note" / "Unpublish this note" (see docs/ROADMAP-short-fiction.md §1). */
-export class PublishModule implements EscritaModule {
-  constructor(private plugin: EscritaPlugin) {}
+export class PublishModule extends FeatureModule {
+  readonly id: FeatureId = "publish";
 
-  load(): void {
+  constructor(private plugin: EscritaPlugin) { super(); }
+
+  /** Keeps the publish records current through renames and deletes, even while the feature is off (Q8). */
+  dataFollowers(): Follower[] {
+    return [{
+      moved: (oldPath, newPath) => this.renamed(oldPath, newPath),
+      deleted: (path) => this.deleted(path),
+    }];
+  }
+
+  onload(): void {
     const p = this.plugin;
+    const ctx = this.ctx;
 
-    p.addCommand({
+    ctx.command({
       id: "publish-note",
       name: t("publish.command"),
       checkCallback: (checking) => {
@@ -29,7 +42,7 @@ export class PublishModule implements EscritaModule {
         return true;
       },
     });
-    p.addCommand({
+    ctx.command({
       id: "unpublish-note",
       name: t("publish.unpublishCommand"),
       checkCallback: (checking) => {
@@ -41,7 +54,7 @@ export class PublishModule implements EscritaModule {
       },
     });
 
-    p.registerEvent(p.app.workspace.on("file-menu", (menu, file) => {
+    this.registerEvent(p.app.workspace.on("file-menu", (menu, file) => {
       if (!(file instanceof TFile) || !this.publishable(file)) return;
       menu.addItem((item) => item
         .setTitle(t("publish.menu"))
@@ -53,11 +66,6 @@ export class PublishModule implements EscritaModule {
           .setIcon("undo-2")
           .onClick(() => { void this.unpublish(file); }));
       }
-    }));
-
-    p.register(p.index.follow({
-      moved: (oldPath, newPath) => this.renamed(oldPath, newPath),
-      deleted: (path) => this.deleted(path),
     }));
   }
 
@@ -138,7 +146,7 @@ export class PublishModule implements EscritaModule {
     let wasPublished = false;
     let finalDate = picked;
     // The text as it was, before the properties change. Never blocks publishing.
-    await this.plugin.snapshots.beforePublish(file);
+    if (this.plugin.features.isOn("snapshots")) await this.plugin.snapshots.beforePublish(file);
     try {
       await this.plugin.app.fileManager.processFrontMatter(file, (fm: Frontmatter) => {
         previous = fm[s.statusProperty];
