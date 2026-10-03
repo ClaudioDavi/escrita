@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (0.5.0 at the time of writing). The author's
+Current version: see `manifest.json` (0.5.1 at the time of writing). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down
@@ -150,5 +150,4 @@ data follows renames in three separate places, the measurer, the explorer's trac
 set and the snapshots store (IMPROVEMENTS 2, done in 0.4 for everything else, which
 follows through `plugin.index.follow`); the outline's beat
 re-checks still bypass the note text port (IMPROVEMENTS 3); a few Markdown parity
-questions with Reading view are pinned in `tests/markdown-consumers.test.ts`; lens marks
-can stay on an old result after the word lists note changes (IMPROVEMENTS, known issues; fix in 0.5.1).
+questions with Reading view are pinned in `tests/markdown-consumers.test.ts`.

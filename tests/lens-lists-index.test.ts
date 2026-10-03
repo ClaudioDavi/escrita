@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { EditorState } from "@codemirror/state";
 import { IndexHub, type HubEvents } from "../src/core/index-hub";
 import { ManualTimers, MemoryVault, settle, type MemFile } from "./support/memory-vault";
 
@@ -10,6 +11,8 @@ vi.mock("../src/lens/ui", () => ({
 }));
 
 import { LensModule } from "../src/lens";
+import { LensMarks } from "../src/lens/decorations";
+import { LENS_SETTLE_MS } from "../src/lens/session";
 
 const LISTS = "Modelos/Revisão.md";
 const NOTE = (word: string) => `## Crutch words\n\n- ${word}\n`;
@@ -120,5 +123,56 @@ describe("lens settingsChanged", () => {
     plugin.settings.lensEchoWindow = 20;
     await plugin.saveSettings();
     expect(session.result("a.md")).not.toBe(first);
+  });
+});
+
+// "Lens marks can stay on an old result" (IMPROVEMENTS, 0.5.1): the author edited the
+// word lists note in a split pane and a listed name stayed marked as a variant.
+describe("lens marks follow the word lists note", () => {
+  const NAMES = (names: string[]) => `## Nomes\n\n${names.map((n) => `- ${n}`).join("\n")}\n`;
+  const CONTO = "Ela chamou Mariana. Depois Teo saiu com Mariana e Willian. Marianna voltou tarde.";
+
+  async function open(dismissed = false) {
+    const env = await setup({ [LISTS]: NAMES(["Teo", "Mariana", "Willian"]), "Contos/A.md": CONTO });
+    const lens = env.lens as any;
+    const session = lens.session;
+    session.toggle("Contos/A.md");
+    session.now("Contos/A.md", CONTO);
+    if (dismissed) env.plugin.data.lensDismissed["Contos/A.md"] = [{ rule: "echo", text: "x", before: "", after: "" }];
+    const marks = new LensMarks(() => "Contos/A.md", session, (p) => lens.shown(p));
+    // the editor sees a transaction for every result, like LensUi's refresh
+    let st = EditorState.create({ doc: CONTO, extensions: [marks.extension] });
+    session.onResult(() => { st = st.update({}).state; });
+    const flagged = () => marks.matchesFor(st).filter((m) => m.rule === "name").map((m) => m.text);
+    const edit = async (names: string[]) => { env.vault.modify(LISTS, NAMES(names)); await env.timers.advance(1000); };
+    return { ...env, session, flagged, edit, state: () => st, setState: (s: EditorState) => { st = s; } };
+  }
+
+  for (const dismissed of [false, true]) {
+    it(`a mid-edit list is replaced by the full one${dismissed ? " (with ignored matches)" : ""}`, async () => {
+      const { flagged, edit } = await open(dismissed);
+      expect(flagged()).toEqual(["Marianna"]);
+      await edit(["Teo", "Mariana", "Willian", "J"]);
+      await edit(["Teo", "Mariana", "Willian", "Jo"]);
+      await edit(["Teo", "Mariana", "Willian"]);
+      expect(flagged()).toEqual(["Marianna"]);
+      await edit(["Teo", "Marian", "Willian"]); // read mid-edit
+      expect(flagged()).toEqual(["Mariana", "Mariana", "Marianna"]);
+      await edit(["Teo", "Mariana", "Willian"]);
+      expect(flagged()).toEqual(["Marianna"]);
+    });
+  }
+
+  it("a list change while the conto has a pending pass lands in the marks", async () => {
+    const { flagged, edit, session, timers, state } = await open();
+    await edit(["Teo", "Marian", "Willian"]);
+    expect(flagged()).toEqual(["Mariana", "Mariana", "Marianna"]);
+    const st = state();
+    session.changed("Contos/A.md", () => st.doc.toString()); // the editor reopened, a pass waits
+    await edit(["Teo", "Mariana", "Willian"]);
+    // the module's session runs on window timers: let the pending pass land
+    await new Promise((r) => setTimeout(r, LENS_SETTLE_MS + 50));
+    await timers.advance(0);
+    expect(flagged()).toEqual(["Marianna"]);
   });
 });

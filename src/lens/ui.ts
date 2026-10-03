@@ -4,14 +4,16 @@
 
 import {
   MarkdownView, Notice, Platform, TFile, editorInfoField, normalizePath,
-  type Editor, type MarkdownFileInfo, type Menu, type WorkspaceLeaf,
+  type Editor, type MarkdownFileInfo, type Menu, type TAbstractFile, type WorkspaceLeaf,
 } from "obsidian";
 import type { EditorState } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import type EscritaPlugin from "../main";
 import { t } from "../i18n";
+import { minimalChange } from "../core/note-text";
 import { LensMarks } from "./decorations";
-import { starterNote } from "./lists";
+import { listsPath, starterNote } from "./lists";
+import { addToList, menuEntry, type ListName } from "./lists-edit";
 import { stepTo } from "./panel-model";
 import type { LensSession } from "./session";
 import { listsTarget, selectionRange } from "./shown";
@@ -281,18 +283,77 @@ export class LensUi {
     if (!path || info.file?.extension !== "md" || !this.host.session.isOn(path)) return;
     const cm = (editor as unknown as { cm?: EditorView }).cm;
     if (!cm) return;
-    const m = this.marks.matchAt(cm.state, cm.state.selection.main.head);
-    if (!m) return;
-    const rule = t(m.rule === "gerund" && this.host.lang() === "en" ? "lens.ruleOne.gerund.en" : `lens.ruleOne.${m.rule}`);
+    const head = cm.state.selection.main.head;
+    const m = this.marks.matchAt(cm.state, head);
+    const word = cm.state.wordAt(head);
+    const picked = menuEntry(editor.getSelection(), word ? cm.state.doc.sliceString(word.from, word.to) : "");
+    if (!m && !picked) return;
     menu.addSeparator();
-    menu.addItem((item) => item.setTitle(t("lens.menu.header", { rule, word: m.text })).setDisabled(true));
-    menu.addItem((item) => item
-      .setTitle(t("lens.menu.ignore"))
-      .setIcon("eye-off")
-      .onClick(() => this.ignoreMatch(cm, path, m)));
+    if (m) {
+      const rule = t(m.rule === "gerund" && this.host.lang() === "en" ? "lens.ruleOne.gerund.en" : `lens.ruleOne.${m.rule}`);
+      menu.addItem((item) => item.setTitle(t("lens.menu.header", { rule, word: m.text })).setDisabled(true));
+      menu.addItem((item) => item
+        .setTitle(t("lens.menu.ignore"))
+        .setIcon("eye-off")
+        .onClick(() => this.ignoreMatch(cm, path, m)));
+    }
+    if (picked) {
+      const add = (list: ListName, key: string, icon: string) => menu.addItem((item) => item
+        .setTitle(t(key))
+        .setIcon(icon)
+        .onClick(() => { void this.addToLists(list, picked.entry); }));
+      add("crutch", "lens.menu.addCrutch", "list-plus");
+      if (picked.name) add("names", "lens.menu.addNames", "user-plus");
+      if (picked.word) add("ignore", "lens.menu.addIgnore", "eye-off");
+    }
   }
 
   // ---------------------------------------------------------------- the word lists note
+
+  /** The word lists note for an "add": the note itself, or a new starter note (setting filled in when empty). */
+  private async listsFileForAdd(): Promise<TFile> {
+    const p = this.plugin;
+    const l = this.host.lang();
+    const path = normalizePath(listsTarget(p.settings.lensListsNote, l));
+    const found: TAbstractFile | null = p.app.vault.getAbstractFileByPath(path);
+    const low = path.toLowerCase();
+    let file: TFile | null = found instanceof TFile ? found
+      : p.app.vault.getMarkdownFiles().find((f) => f.path.toLowerCase() === low) ?? null;
+    if (!file) {
+      const parent = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+      if (parent !== "") await p.notes.ensureFolder(parent);
+      file = await p.app.vault.create(path, starterNote(l ?? "en"));
+    }
+    // the lens reads the exact path in the setting: point it at the note that was found
+    if (listsPath(p.settings.lensListsNote) !== file.path) {
+      p.settings.lensListsNote = file.path;
+      await p.saveSettings();
+    }
+    return file;
+  }
+
+  /** Adds one entry to a list in the word lists note. Only that note is written, never the prose. */
+  private async addToLists(list: ListName, entry: string): Promise<void> {
+    const lang = this.host.lang() ?? "en";
+    try {
+      const file = await this.listsFileForAdd();
+      let already = false;
+      let unreadable = false;
+      const res = await this.plugin.notes.text(file).apply((cur) => {
+        const r = addToList(cur, list, entry, lang);
+        if ("already" in r) { already = true; return null; }
+        if ("unreadable" in r) { unreadable = true; return null; }
+        return minimalChange(cur, r.text);
+      });
+      if (already) new Notice(t("lens.notice.already"));
+      else if (unreadable) new Notice(t("lens.notice.listsFailed", { path: file.path }));
+      else if (res.ok) new Notice(t(`lens.notice.added.${list}`, { word: entry }));
+      else new Notice(t("lens.notice.listsFailed", { path: file.path }));
+    } catch (e) {
+      console.error("Escrita: couldn't add to the word lists", e);
+      new Notice(t("lens.notice.listsFailed", { path: listsTarget(this.plugin.settings.lensListsNote, this.host.lang()) }));
+    }
+  }
 
   async createLists(): Promise<void> {
     const p = this.plugin;

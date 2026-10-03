@@ -84,6 +84,8 @@ Six rules, each with its own underline style, each can be switched off in the se
 
 The panel shows, for the whole note (or for the selection, labelled "Selection"): the **dialogue share** (the percentage of words that are speech, with each scene's share when the note has several) and **readability** (average sentence length, syllables per word and a reading-ease score with its band: Flesch adapted to Portuguese by Martins et al. 1996, or Flesch for English). Below, one row per rule with its count, the rate **per 1,000 words** so pieces of different lengths compare, and previous and next buttons that select the match ("3 / 12"). **Next revision lens match** and **Previous revision lens match** do the same for the rule you stepped last, handy from the mobile toolbar. On a phone the drawer closes after a step and a short notice shows where you are.
 
+**Add to the word lists.** In the editor's context menu, with the lens on, **Add to crutch words**, **Add to names** and **Always ignore** add the selection (one line, 1 to 6 words) or the word under the cursor to the matching list in your word lists note. They are not offered for a selection that holds `%%` or starts like a list item, since that would not read back from the note. Nothing else in the note changes.
+
 To drop a match you disagree with, use **Ignore here** in the editor's context menu on it, or in the panel while stepping. Escrita remembers it by the note, the rule, the word and the words around it, so it survives edits elsewhere in the note, and the panel offers "N ignored · Clear" to bring them back. Dismissals follow the note when you rename it.
 
 **Word lists note.** A note you choose in the settings with three headings, in Portuguese or English: `## Vícios` / `## Crutch words`, `## Nomes` / `## Names`, `## Ignorar` / `## Ignore`, one entry per line. **Ignore** words stay out of echoes, adverbs, gerunds and name variants (not crutch words, which you listed on purpose). **Create the word lists note** makes one for you, with the three headings and a short starter list of crutch words, and never touches a note that exists. Without a word lists note the crutch and name rules stay silent and everything else works.
@@ -217,6 +219,11 @@ To try your build, link or copy the repository folder into a test vault's `.obsi
 To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updates `manifest.json` and `versions.json`), commit, then push a tag with the bare version number (for example `git tag 0.1.1 && git push --tags`). The release workflow builds the plugin and drafts a GitHub release with `main.js`, `manifest.json` and `styles.css`; publish the draft when it looks right.
 
 ## Changelog
+
+### 0.5.1
+
+- **Fix**: the revision lens could keep showing marks from before you edited the word lists note (a name you had just added still underlined as a name variant until you turned the lens off and on). Marks now follow the lists as soon as the note changes, and a failed refresh no longer stops an editor from updating.
+- **Add to the word lists from the editor menu**: with the lens on, the context menu offers **Add to crutch words**, **Add to names** (for a capitalized word or name) and **Always ignore** (for a single word). It uses your selection (one line, 1 to 6 words) or the word under the cursor, and writes one line under the matching heading of the word lists note. A word already there is not added twice ("Already in the list"). If the note is missing, a starter note is created; if the setting was empty, it is filled in. The rest of the lists note is not touched.
 
 ### 0.5.0
 

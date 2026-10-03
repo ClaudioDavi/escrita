@@ -64,22 +64,13 @@ ones shipped in 0.5 (see "Done"). What is left:
 
 ## Known issues
 
-### Lens marks can stay on an old result
-
-**Found in 0.5.0, to fix in 0.5.1, with a test.** The author edited the word lists
-note and saw a name that is in the list (*Mariana*) still marked as a name variant in
-Obsidian. Turning the lens off and on cleared it. The pure analysis of the same files
-gives the right answer, so the stale result is in the refresh path, not in the rules.
-
-Where to look in `src/lens/index.ts` and its neighbours: the session's `invalidate`,
-`run`'s text cache (the same text never recomputes, so a changed list must change the
-cache key), `LensMarks.adopt`, and the shown cache. Write a test that edits the lists
-note while the lens is on and expects the marks to follow.
+None at the moment.
 
 ## Done
 
 | Version | Improvement |
 |---|---|
+| 0.5.1 | Lens marks stale after a lists change: the session treats options as a generation (`invalidate` clears every cache first, one failing pass no longer stops the others), the marks field drops a list from an older generation, and a failed refresh retries instead of dropping the editor |
 | 0.2.1 | Markdown segmenter (`core/markdown`): one scan for prose, frontmatter, code and comments |
 | 0.2.1 | File classifier (`core/classify`): one answer to what a file is |
 | 0.3.0 | Measure module (`core/measure`, `plugin.measure`): counts, targets and goals in one place (candidate 1) |

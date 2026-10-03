@@ -6,7 +6,7 @@ import type { LensLang, Lists } from "./types";
 type Section = keyof Lists;
 
 /** Fixed bilingual aliases, compared without case or accents (Q10). */
-const HEADINGS: Record<string, Section> = {
+export const HEADINGS: Record<string, Section> = {
   vicios: "crutch",
   "crutch words": "crutch",
   crutches: "crutch",
@@ -16,7 +16,7 @@ const HEADINGS: Record<string, Section> = {
   ignore: "ignore",
 };
 
-function foldHeading(s: string): string {
+export function foldHeading(s: string): string {
   return s
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
@@ -25,7 +25,7 @@ function foldHeading(s: string): string {
     .trim();
 }
 
-function sectionOf(line: string): Section | null | undefined {
+export function sectionOf(line: string): Section | null | undefined {
   const m = /^ {0,3}#{1,6}[ \t]+(.*?)[ \t]*#*[ \t]*$/.exec(line);
   if (!m) return undefined; // not a heading
   return HEADINGS[foldHeading(m[1])] ?? null; // null: another heading, skip what follows

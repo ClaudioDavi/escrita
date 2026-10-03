@@ -69,8 +69,10 @@ export class LensModule implements EscritaModule {
       settingsKey: () => listsPath(p.settings.lensListsNote),
     });
     this.listsIndex = idx;
-    p.register(idx.onChange(() => this.session.invalidate()));
-    p.register(idx.onReady(() => this.session.invalidate()));
+    // the session reads the lists when a pass runs; every change starts a new options
+    // generation there, so no note keeps a result computed on the old lists
+    p.register(idx.onChange(() => this.invalidate()));
+    p.register(idx.onReady(() => this.invalidate()));
 
     p.register(p.index.follow({
       moved: (oldPath, newPath) => {
@@ -125,9 +127,20 @@ export class LensModule implements EscritaModule {
     const key = this.passKey();
     if (key !== this.lastPassKey) {
       this.lastPassKey = key;
-      this.session?.invalidate();
+      this.invalidate();
     }
     this.ui?.refreshPanels();
+  }
+
+  /** Options changed: recompute every note that is on. A failing pass is logged, not thrown into the caller. */
+  private invalidate(): void {
+    if (!this.session) return;
+    this.shownCache.clear();
+    try {
+      this.session.invalidate();
+    } catch (e) {
+      console.error("Escrita: the revision lens failed to recompute", e);
+    }
   }
 
   /** The lens language: the setting, or the raw Obsidian locale for "auto" (Q8; i18n's lang() falls back to English). */

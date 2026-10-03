@@ -17,13 +17,18 @@ interface PathState {
 	version: number;
 	timer: unknown;
 	pending: (() => string) | null;
-	cached: { text: string; result: LensResult } | null;
+	/** The newest text the session was given (a change or a `now`), for `invalidate`. */
+	latest: (() => string) | null;
+	cached: { text: string; result: LensResult; gen: number } | null;
 }
 
 export class LensSession {
 	private states = new Map<string, PathState>();
 	private listeners = new Set<(path: string, r: LensResult) => void>();
+	private invalidated = new Set<() => void>();
 	private disposed = false;
+	/** Bumped by `invalidate`: results from an older generation are never used. */
+	private gen = 0;
 
 	constructor(private opts: {
 		timers: IndexTimers;
@@ -40,6 +45,7 @@ export class LensSession {
 		if (!s.on) {
 			this.cancel(s);
 			s.cached = null;
+			s.latest = null;
 		}
 		return s.on;
 	}
@@ -63,13 +69,17 @@ export class LensSession {
 		const version = s.version;
 		if (!s.on || this.disposed) return version;
 		s.pending = text;
+		s.latest = text;
 		if (s.timer !== null) this.opts.timers.clear(s.timer);
 		s.timer = this.opts.timers.set(() => {
 			s.timer = null;
 			const read = s.pending;
 			s.pending = null;
 			if (!read || !s.on || this.disposed) return;
-			this.run(s, read(), s.version);
+			// keep the text, not the reader: the reader holds the editor, which may close
+			const text = read();
+			s.latest = () => text;
+			this.run(s, text, s.version);
 		}, this.opts.settleMs);
 		return version;
 	}
@@ -79,40 +89,50 @@ export class LensSession {
 		const s = this.state(path);
 		this.cancel(s);
 		s.version++;
-		const cached = s.cached;
-		if (cached && cached.text === text) {
-			const result = cached.result.version === s.version ? cached.result : { ...cached.result, version: s.version };
-			s.cached = { text, result };
-			this.emit(s, result);
-			return result;
-		}
-		const result = this.opts.analyze(text, s.version);
-		if (result.version >= s.version) {
-			s.cached = { text, result };
-			this.emit(s, result);
-		}
-		return result;
+		s.latest = () => text;
+		return this.run(s, text, s.version);
 	}
 
-	result(path: string): LensResult | undefined { return this.states.get(path)?.cached?.result; }
+	/** The cached result, only when it was computed under the current options. */
+	result(path: string): LensResult | undefined { return this.current(this.states.get(path))?.result; }
 
 	/** The text the cached result was computed on. */
-	cachedText(path: string): string | undefined { return this.states.get(path)?.cached?.text; }
+	cachedText(path: string): string | undefined { return this.current(this.states.get(path))?.text; }
 
 	version(path: string): number { return this.states.get(path)?.version ?? 0; }
 
-	/** Settings or lists changed: drop every cache and recompute the notes that are on. */
+	/** The options generation: bumped by every `invalidate`. */
+	generation(): number { return this.gen; }
+
+	/**
+	 * Settings or lists changed: start a new generation, drop every cache, and recompute
+	 * each note that is on from the newest text it was given. A note with a pending pass
+	 * is left to it (the pass reads the latest text and options when it fires). One
+	 * failing pass does not stop the others; the first error is rethrown at the end.
+	 */
 	invalidate(): void {
-		for (const s of [...this.states.values()]) {
-			const text = s.cached?.text;
-			s.cached = null;
-			// a pending pass reads the latest text when it fires, and options are read then
-			// too: let it run instead of recomputing from the stale cached text
-			if (s.on && s.timer === null && text !== undefined && !this.disposed) {
-				s.version++;
-				this.run(s, text, s.version);
+		this.gen++;
+		const all = [...this.states.values()];
+		for (const s of all) s.cached = null;
+		let failure: { error: unknown } | null = null;
+		for (const s of all) {
+			if (this.disposed) break;
+			if (!s.on || s.timer !== null || !s.latest || this.states.get(s.path) !== s) continue;
+			s.version++;
+			try {
+				this.run(s, s.latest(), s.version);
+			} catch (error) {
+				failure ??= { error };
 			}
 		}
+		for (const cb of [...this.invalidated]) cb();
+		if (failure) throw failure.error;
+	}
+
+	/** Called after every `invalidate`, once its passes ran, so views can drop old-options marks. */
+	onInvalidate(cb: () => void): () => void {
+		this.invalidated.add(cb);
+		return () => { this.invalidated.delete(cb); };
 	}
 
 	onResult(cb: (path: string, r: LensResult) => void): () => void {
@@ -124,6 +144,7 @@ export class LensSession {
 		this.disposed = true;
 		for (const s of this.states.values()) this.cancel(s);
 		this.listeners.clear();
+		this.invalidated.clear();
 	}
 
 	// ---------------------------------------------------------------- internals
@@ -131,7 +152,7 @@ export class LensSession {
 	private state(path: string): PathState {
 		let s = this.states.get(path);
 		if (!s) {
-			s = { path, on: false, version: 0, timer: null, pending: null, cached: null };
+			s = { path, on: false, version: 0, timer: null, pending: null, latest: null, cached: null };
 			this.states.set(path, s);
 		}
 		return s;
@@ -143,17 +164,30 @@ export class LensSession {
 		s.pending = null;
 	}
 
-	private run(s: PathState, text: string, version: number): void {
-		if (s.cached && s.cached.text === text) {
-			const result = s.cached.result.version === version ? s.cached.result : { ...s.cached.result, version };
-			s.cached = { text, result };
+	private current(s: PathState | undefined): PathState["cached"] {
+		const c = s?.cached;
+		return c && c.gen === this.gen ? c : null;
+	}
+
+	/**
+	 * One pass. The cache is reused only for the same text under the same options. The
+	 * result is cached and announced unless a newer change or an options change arrived
+	 * while it ran; it is returned either way.
+	 */
+	private run(s: PathState, text: string, version: number): LensResult {
+		const gen = this.gen;
+		const cached = this.current(s);
+		if (cached && cached.text === text) {
+			const result = cached.result.version === version ? cached.result : { ...cached.result, version };
+			s.cached = { text, result, gen };
 			this.emit(s, result);
-			return;
+			return result;
 		}
 		const result = this.opts.analyze(text, version);
-		if (result.version < s.version) return; // stale: a newer change arrived meanwhile
-		s.cached = { text, result };
+		if (result.version < s.version || gen !== this.gen) return result; // stale: not kept
+		s.cached = { text, result, gen };
 		this.emit(s, result);
+		return result;
 	}
 
 	private emit(s: PathState, r: LensResult): void {

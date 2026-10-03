@@ -35,6 +35,16 @@ describe("LensSession", () => {
 		expect(session.result("a.md")?.version).toBe(v);
 	});
 
+	it("after a pass, invalidate reads the kept text, not the editor's reader", async () => {
+		const { timers, calls, session } = make();
+		session.toggle("a.md");
+		let reads = 0;
+		session.changed("a.md", () => { reads++; return "text"; });
+		await timers.advance(LENS_SETTLE_MS);
+		session.invalidate();
+		expect(reads).toBe(1);
+		expect(calls.map((c) => c.text)).toEqual(["text", "text"]);
+	});
 	it("never analyzes a path that is off", async () => {
 		const { timers, calls, session } = make();
 		session.changed("a.md", () => "x");
@@ -197,5 +207,133 @@ describe("LensSession", () => {
 		calls.length = 0;
 		session.invalidate();
 		expect(calls.map((c) => c.text)).toEqual(["old"]);
+	});
+});
+
+// "Lens marks can stay on an old result" (IMPROVEMENTS, 0.5.1): a list or settings
+// change must reach every note that is on; no result computed under older options
+// may be reused, cached or shown after it.
+describe("LensSession after an options change", () => {
+	/** A session whose results carry the options they were computed under. */
+	function tagged() {
+		const timers = new ManualTimers();
+		const o = { opts: "old", fail: new Set<string>() };
+		const session = new LensSession({
+			timers, settleMs: LENS_SETTLE_MS,
+			analyze: (text, version) => {
+				if (o.fail.has(text)) throw new Error("boom");
+				return { version, opts: o.opts, text } as unknown as LensResult;
+			},
+		});
+		const optsOf = (p: string) => (session.result(p) as unknown as { opts: string } | undefined)?.opts;
+		return { timers, o, session, optsOf };
+	}
+
+	it("now() with unchanged text gives a result under the new options", () => {
+		const { o, session, optsOf } = tagged();
+		session.toggle("a.md");
+		session.now("a.md", "T");
+		o.opts = "new";
+		session.invalidate();
+		expect((session.now("a.md", "T") as unknown as { opts: string }).opts).toBe("new");
+		expect(optsOf("a.md")).toBe("new");
+	});
+
+	it("a pending pass on the cached text runs under the new options", async () => {
+		const { timers, o, session, optsOf } = tagged();
+		session.toggle("a.md");
+		session.now("a.md", "T");
+		session.changed("a.md", () => "T");
+		o.opts = "new";
+		session.invalidate();
+		expect(session.result("a.md")).toBeUndefined();
+		await timers.advance(LENS_SETTLE_MS);
+		expect(optsOf("a.md")).toBe("new");
+	});
+
+	it("a list read mid-edit is replaced by the next one", () => {
+		const { o, session, optsOf } = tagged();
+		session.toggle("a.md");
+		session.now("a.md", "T");
+		o.opts = "Marian";
+		session.invalidate();
+		expect(optsOf("a.md")).toBe("Marian");
+		o.opts = "Mariana";
+		session.invalidate();
+		expect(optsOf("a.md")).toBe("Mariana");
+	});
+
+	it("a pass that fails during invalidate does not leave other notes on old options", async () => {
+		const { timers, o, session, optsOf } = tagged();
+		session.toggle("a.md");
+		session.toggle("b.md");
+		session.now("a.md", "A");
+		session.now("b.md", "B");
+		o.opts = "new";
+		o.fail.add("A");
+		expect(() => session.invalidate()).toThrow("boom");
+		expect(optsOf("b.md")).toBe("new");
+		expect(session.result("a.md")).toBeUndefined();
+		// b's next pass on the same text must not bring back an old-options result
+		session.changed("b.md", () => "B");
+		await timers.advance(LENS_SETTLE_MS);
+		expect(optsOf("b.md")).toBe("new");
+	});
+
+	it("a note whose result was dropped is recomputed by the next invalidate", () => {
+		const { o, session, optsOf } = tagged();
+		session.toggle("a.md");
+		session.now("a.md", "A");
+		o.fail.add("A");
+		o.opts = "mid";
+		expect(() => session.invalidate()).toThrow();
+		expect(session.result("a.md")).toBeUndefined();
+		o.fail.clear();
+		o.opts = "final";
+		session.invalidate();
+		expect(optsOf("a.md")).toBe("final");
+	});
+
+	it("invalidate recomputes from the latest text the session was given", async () => {
+		const { timers, o, session } = tagged();
+		session.toggle("a.md");
+		session.now("a.md", "first");
+		session.changed("a.md", () => "second");
+		await timers.advance(LENS_SETTLE_MS);
+		o.opts = "new";
+		session.invalidate();
+		expect(session.cachedText("a.md")).toBe("second");
+		expect((session.result("a.md") as unknown as { text: string }).text).toBe("second");
+	});
+
+	it("bumps the generation on every invalidate", () => {
+		const { session } = tagged();
+		const g = session.generation();
+		session.invalidate();
+		expect(session.generation()).toBe(g + 1);
+	});
+});
+
+describe("LensSession.onInvalidate", () => {
+	it("is called after the passes, even when one fails", () => {
+		const timers = new ManualTimers();
+		const order: string[] = [];
+		const session = new LensSession({
+			timers, settleMs: 10,
+			analyze: (text, version) => {
+				if (order.includes("ready") && text === "bad") throw new Error("boom");
+				order.push("analyze " + text);
+				return { version } as unknown as LensResult;
+			},
+		});
+		session.toggle("a.md");
+		session.toggle("b.md");
+		session.now("a.md", "bad");
+		session.now("b.md", "ok");
+		order.length = 0;
+		order.push("ready");
+		session.onInvalidate(() => order.push("invalidated"));
+		expect(() => session.invalidate()).toThrow("boom");
+		expect(order).toEqual(["ready", "analyze ok", "invalidated"]);
 	});
 });

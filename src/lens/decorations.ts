@@ -1,10 +1,12 @@
 // Revision lens marks, CodeMirror glue (4.1), shaped like editor/dialogue-focus.ts.
 // The state field holds the one list of positions: matches mapped through every
 // edit until a result for the session's latest version arrives. Marks, `matchAt`
-// and stepping read that list, never the session's result.
+// and stepping read that list, never the session's result. The list remembers the
+// options generation it came from: after a settings or lists change it is dropped
+// rather than kept until a new result happens to be adopted (IMPROVEMENTS, 0.5.1).
 
 import {
-  StateEffect, StateField, type EditorState, type Extension, type Range,
+  StateEffect, StateField, type EditorState, type Extension, type Range, type TransactionSpec,
 } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 import type { LensSession } from "./session";
@@ -20,9 +22,11 @@ interface LensField {
   current: Match | null;
   /** The result object the list came from, to adopt each result once. */
   source: LensResult | null;
+  /** The session's options generation the list was computed under. */
+  gen: number;
 }
 
-const EMPTY: LensField = { matches: [], current: null, source: null };
+const EMPTY: LensField = { matches: [], current: null, source: null, gen: -1 };
 const cache = new Map<string, Decoration>();
 function deco(cls: string): Decoration {
   let d = cache.get(cls);
@@ -52,7 +56,7 @@ export class LensMarks {
         if (tr.docChanged && (next.matches.length > 0 || next.current)) {
           const map = (pos: number, assoc: -1 | 1) => tr.changes.mapPos(pos, assoc);
           const cur = next.current ? mapMatches([next.current], map)[0] ?? null : null;
-          next = { matches: mapMatches(next.matches, map), current: cur, source: next.source };
+          next = { matches: mapMatches(next.matches, map), current: cur, source: next.source, gen: next.gen };
         }
         for (const e of tr.effects) {
           if (e.is(currentEffect)) next = { ...next, current: e.value };
@@ -104,6 +108,8 @@ export class LensMarks {
     }, { decorations: (v) => v.decorations });
 
     this.extension = [field, plugin];
+    // a pending or failed pass emits nothing: still make every editor drop old-options marks
+    session.onInvalidate(() => this.refresh());
   }
 
   /** Takes the shown result when it is for the session's latest version of the note. */
@@ -112,13 +118,19 @@ export class LensMarks {
     if (path === null || !this.session.isOn(path)) {
       return value.matches.length === 0 && !value.current && !value.source ? value : EMPTY;
     }
+    const gen = this.session.generation();
+    // the session returns only results computed under the current options
     const r = this.shown(path);
-    if (r && r !== value.source && r.version === this.session.version(path)
+    if (r && (r !== value.source || value.gen !== gen) && r.version === this.session.version(path)
       && r.pass.mask.length === state.doc.length
       && this.session.cachedText(path) === state.doc.toString()) {
       const current = value.current && r.matches.some((m) => sameMatch(m, value.current))
         ? value.current : null;
-      return { matches: r.matches, current, source: r };
+      return { matches: r.matches, current, source: r, gen };
+    }
+    // marks computed under older options are wrong now: drop them until the new pass lands
+    if (value.gen !== gen && (value.matches.length > 0 || value.current || value.source)) {
+      return { matches: [], current: null, source: null, gen };
     }
     return value;
   }
@@ -139,12 +151,10 @@ export class LensMarks {
   setCurrent(path: string, m: Match | null, reveal = false): void {
     for (const view of [...this.views]) {
       if (this.pathOf(view.state) !== path) continue;
-      try {
-        view.dispatch({
-          effects: [currentEffect.of(m),
-            ...(reveal && m ? [EditorView.scrollIntoView(m.from, { y: "center" })] : [])],
-        });
-      } catch { this.views.delete(view); }
+      this.send(view, () => ({
+        effects: [currentEffect.of(m),
+          ...(reveal && m ? [EditorView.scrollIntoView(m.from, { y: "center" })] : [])],
+      }));
     }
   }
 
@@ -156,12 +166,23 @@ export class LensMarks {
 
   /** Makes every editor re-read the shown result (a result arrived, a dismissal changed, the lens toggled). */
   refresh(): void {
-    for (const view of [...this.views]) {
-      try {
-        view.dispatch({ effects: refreshEffect.of(null) });
-      } catch {
-        this.views.delete(view);
-      }
+    for (const view of [...this.views]) this.send(view, () => ({ effects: refreshEffect.of(null) }));
+  }
+
+  /**
+   * Dispatches to one editor. A dispatch can fail while that editor is in the middle of
+   * an update; it is tried once more after the update instead of dropping the editor,
+   * which would leave its marks on an old result (only typing in it would update them).
+   * Editors leave the set when they are destroyed.
+   */
+  private send(view: EditorView, spec: () => TransactionSpec): void {
+    try {
+      view.dispatch(spec());
+    } catch {
+      queueMicrotask(() => {
+        if (!this.views.has(view)) return;
+        try { view.dispatch(spec()); } catch { this.views.delete(view); }
+      });
     }
   }
 }

@@ -899,8 +899,19 @@ scans its files).
   the quiet time: **400 ms** (`LENS_SETTLE_MS`), **800 ms** on mobile
   (`LENS_SETTLE_MOBILE_MS`). `now` runs immediately. The same text never recomputes
   (stepping and toggling reuse the cache), and a result older than the path's latest
-  version is dropped. `invalidate` (settings or lists changed) recomputes the notes that
-  are on. Zero work while the lens is off.
+  version is dropped. `invalidate` (settings or lists changed) bumps an **options
+  generation** and clears every cache first, then recomputes each note that is on from the
+  newest text the session was given (notes with a pending pass are left to that pass). The
+  cache records its generation and only a current one is reused; a pass that saw the
+  generation change is not cached; one failing pass does not stop the others (the first
+  error is rethrown at the end). `generation()` and `onInvalidate(cb)` let `LensMarks`
+  refresh. Zero work while the lens is off.
+- **Marks follow the generation** (`decorations.ts`, fixed in 0.5.1). The field stores the
+  generation of its list and adopts a result when it is new or the generation changed;
+  otherwise it drops a list from an older generation until the new pass lands (mapped
+  marks while typing are unchanged). Root cause of the 0.5.0 stale marks: with no current
+  result the field kept its old list, and editing the lists note sent no transaction to
+  other editors. A failed dispatch is retried once in a microtask, not removed.
 - **Full pass, visible marks, one position list.** The pass (`analyze.ts`) is O(words),
   with a memoized stemmer and a sliding echo window, never pairwise. Decorations are
   built only for the visible ranges (`visible`, a binary search over the sorted matches).
@@ -948,6 +959,13 @@ scans its files).
   overwrites: it opens an existing note with a Notice; else `ensureFolder`,
   `vault.create` with `starterNote`, and it sets the setting when it was empty. Crutch
   phrases match exactly (whole words, any case), never stemmed.
+- **Adding to the lists** (`lists-edit.ts`, pure; 0.5.1). `addToList(text, list, entry,
+  lang)` returns `{ text }` or `{ already: true }`; it finds the heading (any level, by
+  alias), keeps line endings, comments and frontmatter, and adds the heading when missing.
+  `menuEntry` and `listable` decide what the editor menu offers. The write goes through
+  `plugin.notes.text(file).apply` with the diff shrunk by `minimalChange`, so undo and the
+  cursor stay sane; a missing lists note is created silently and an empty setting is set.
+  The lists index picks the change up through its modify event.
 - **UI** (`ui.ts`, `view.ts`, `panel-model.ts`, `panel-format.ts`, `panel.css`). The panel
   is a view, `escrita-lens`, in the right sidebar, following the most recent Markdown
   note: measures, one row per rule (count, rate per 1,000, previous and next buttons, "3 /
@@ -962,7 +980,7 @@ scans its files).
   `editor/context`; core never imports the lens. The pure files import neither `obsidian`
   nor `i18n`: `types`, `syllables`, `readability`, `lists`, `lang`, `dismiss`, `lexicon`,
   `rules-words`, `rules-stem`, `measures`, `panel-model`, `session`, `analyze`,
-  `marks-model`.
+  `marks-model`, `lists-edit`.
 
 ### snapshots (`src/snapshots/`)
 

@@ -259,7 +259,7 @@ manual check on mobile.
 
 ---
 
-## 5. Revision lens (v0.5, shipped in 0.5.0)
+## 5. Revision lens (v0.5, shipped in 0.5.0; list menu items in 0.5.1)
 
 **Why.** Short fiction and essays are revised sentence by sentence. Style checkers
 (ProWritingAid, iA Writer Style Check, Harper) are English-only or need a server. This
@@ -375,6 +375,16 @@ que, viu, ouviu, sentiu, percebeu*; en: *all of a sudden, started to, sort of, s
 felt, noticed*). It never overwrites: if the note exists, it opens it and says so. With an
 empty note the crutch and name rules stay silent, and the panel says "Add a word lists
 note" (or "Word lists note not found" when the setting points at a missing note).
+
+**Adding to the lists (0.5.1).** With the lens on, the editor's context menu offers
+"Add to crutch words", "Add to names" (a capitalized word or name; lowercase connectors
+like "da" or "of" are allowed inside, not at the end) and "Always ignore" (a single word).
+The entry is the selection (one line, 1 to 6 words) or the word under the cursor; a
+selection containing `%%` or starting with a list marker gets no items. The line is written
+under the matching heading of the lists note (created, with the heading, when missing), and
+a duplicate says "Already in the list" and writes nothing. If the lists note is missing a
+starter note is created, and an empty setting is filled in. The author waived mockups for
+this item.
 
 **Dismissing.** A match can be dismissed ("Ignore here"), from the editor's context menu
 on a match (a disabled header names it: "Advérbio: lentamente") and from the panel while
