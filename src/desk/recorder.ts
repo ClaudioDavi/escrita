@@ -1,7 +1,8 @@
-import type { Editor, MarkdownFileInfo, MarkdownView } from "obsidian";
+import type { Component, Editor, MarkdownFileInfo, MarkdownView } from "obsidian";
 import type EscritaPlugin from "../main";
 import { makeLeftOff, shouldRecord } from "../core/left-off";
 import type { LeftOff, LeftOffEvents } from "../core/left-off";
+import type { ModuleContext } from "../core/module-context";
 import { dropFromMap, renameInMap } from "../core/path-keys";
 
 /** How long after the last edit an idle note is committed. */
@@ -100,21 +101,21 @@ export class LeftOffRecorder implements LeftOffEvents {
     return () => { this.listeners.delete(cb); };
   }
 
-  load(): void {
-    const p = this.plugin;
-    const ws = p.app.workspace;
-    p.registerEvent(ws.on("editor-change", (editor, info) => this.capture(editor, info)));
-    p.registerEvent(ws.on("active-leaf-change", () => this.commit(false)));
-    p.registerEvent(ws.on("file-open", () => this.commit(false)));
-    p.registerEvent(ws.on("layout-change", () => this.commit(false)));
-    p.registerEvent(ws.on("quit", () => this.commit(true, true)));
-    p.registerDomEvent(document, "visibilitychange", () => {
+  /** `host` is the module's Component (its events go when the desk unloads); the `pending` follower is session state and goes with the context. */
+  load(host: Component, ctx: ModuleContext): void {
+    const ws = this.plugin.app.workspace;
+    host.registerEvent(ws.on("editor-change", (editor, info) => this.capture(editor, info)));
+    host.registerEvent(ws.on("active-leaf-change", () => this.commit(false)));
+    host.registerEvent(ws.on("file-open", () => this.commit(false)));
+    host.registerEvent(ws.on("layout-change", () => this.commit(false)));
+    host.registerEvent(ws.on("quit", () => this.commit(true, true)));
+    host.registerDomEvent(document, "visibilitychange", () => {
       if (document.visibilityState === "hidden") this.commit(true, true);
     });
-    p.register(p.index.follow({
+    ctx.follow({
       moved: (oldPath, newPath) => { renameInMap(this.pending, oldPath, newPath, newestPending); },
       deleted: (path) => { dropFromMap(this.pending, path); },
-    }));
+    });
   }
 
   unload(): void {
