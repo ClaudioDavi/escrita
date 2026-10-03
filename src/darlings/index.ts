@@ -3,7 +3,7 @@ import {
   type MarkdownFileInfo, type WorkspaceLeaf,
 } from "obsidian";
 import type EscritaPlugin from "../main";
-import type { EscritaModule } from "../data";
+import { FeatureModule, type FeatureSlots } from "../core/module-context";
 import { t } from "../i18n";
 import { writingDay } from "../core/dates";
 import { chapterTitle } from "../core/book";
@@ -17,7 +17,10 @@ import { ConfirmModal, DarlingsView, VIEW_DARLINGS } from "./view";
 
 export { VIEW_DARLINGS };
 
-export class DarlingsModule implements EscritaModule {
+export class DarlingsModule extends FeatureModule {
+  readonly id = "darlings" as const;
+  override readonly slots: FeatureSlots = { views: [VIEW_DARLINGS] };
+
   /** the darlings note the panel shows; follows the active file */
   private shownPath: string | null = null;
   /** entries with an operation in progress (guards double clicks) */
@@ -26,13 +29,13 @@ export class DarlingsModule implements EscritaModule {
   private cutting = new Set<string>();
   private refreshTimer: number | null = null;
 
-  constructor(private plugin: EscritaPlugin) {}
+  constructor(private plugin: EscritaPlugin) { super(); }
 
-  load(): void {
-    const { plugin } = this;
-    plugin.registerView(VIEW_DARLINGS, (leaf) => new DarlingsView(leaf, this));
+  override onload(): void {
+    const { plugin, ctx } = this;
+    ctx.view(VIEW_DARLINGS, (leaf) => new DarlingsView(leaf, this));
 
-    plugin.addCommand({
+    ctx.command({
       id: "move-selection-to-darlings",
       name: t("darlings.cmd.move"),
       editorCheckCallback: (checking, editor, ctx) => {
@@ -42,13 +45,13 @@ export class DarlingsModule implements EscritaModule {
         return true;
       },
     });
-    plugin.addCommand({
+    ctx.command({
       id: "open-darlings",
       name: t("darlings.cmd.open"),
       callback: () => { void this.activateView(); },
     });
 
-    plugin.registerEvent(plugin.app.workspace.on("editor-menu", (menu: Menu, editor: Editor, info: MarkdownView | MarkdownFileInfo) => {
+    this.registerEvent(plugin.app.workspace.on("editor-menu", (menu: Menu, editor: Editor, info: MarkdownView | MarkdownFileInfo) => {
       const file = info.file;
       if (!file || !editor.somethingSelected() || this.isDarlingsNote(file)) return;
       menu.addItem((item) => item
@@ -58,29 +61,30 @@ export class DarlingsModule implements EscritaModule {
         .onClick(() => { void this.cut(editor, file); }));
     }));
 
-    plugin.registerEvent(plugin.app.workspace.on("file-open", (file) => {
+    this.registerEvent(plugin.app.workspace.on("file-open", (file) => {
       if (file && file.extension === "md") this.follow(file);
     }));
     const onChange = (path: string, oldPath?: string) => {
       if (this.shownPath && (path === this.shownPath || oldPath === this.shownPath)) this.scheduleRefresh();
     };
-    plugin.registerEvent(plugin.app.vault.on("modify", (f) => onChange(f.path)));
-    plugin.registerEvent(plugin.app.vault.on("create", (f) => onChange(f.path)));
-    plugin.registerEvent(plugin.app.vault.on("delete", (f) => onChange(f.path)));
-    plugin.registerEvent(plugin.app.vault.on("rename", (f, old) => onChange(f.path, old)));
+    this.registerEvent(plugin.app.vault.on("modify", (f) => onChange(f.path)));
+    this.registerEvent(plugin.app.vault.on("create", (f) => onChange(f.path)));
+    this.registerEvent(plugin.app.vault.on("delete", (f) => onChange(f.path)));
+    this.registerEvent(plugin.app.vault.on("rename", (f, old) => onChange(f.path, old)));
 
-    plugin.app.workspace.onLayoutReady(() => {
+    ctx.onLayoutReady(() => {
       const active = plugin.app.workspace.getActiveFile();
       if (active) this.follow(active);
     });
   }
 
-  unload(): void {
+  override onunload(): void {
     if (this.refreshTimer !== null) window.clearTimeout(this.refreshTimer);
     this.refreshTimer = null;
+    this.shownPath = null;
   }
 
-  settingsChanged(): void {
+  override settingsChanged(): void {
     const active = this.plugin.app.workspace.getActiveFile();
     this.shownPath = null;
     if (active) this.follow(active);
