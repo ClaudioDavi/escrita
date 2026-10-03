@@ -14,8 +14,11 @@ export async function openWork(plugin: EscritaPlugin, path: string, newTab: bool
     new Notice(t("desk.notice.missing", { path }));
     return;
   }
+  // With the desk off the recorder isn't running, so the records are stale: ignore them (Q11).
+  const deskOn = plugin.features.isOn("desk");
+  const leftOff = deskOn ? plugin.data.leftOff : {};
   const record = (p: string): LeftOff | null => {
-    const rec = plugin.data.leftOff;
+    const rec = leftOff;
     return rec && Object.prototype.hasOwnProperty.call(rec, p) ? rec[p] : null;
   };
 
@@ -26,7 +29,7 @@ export async function openWork(plugin: EscritaPlugin, path: string, newTab: bool
   }
 
   const chapters = plugin.books.chapters(place.book);
-  const target = bookTarget(chapters.map((c) => c.file.path), plugin.data.leftOff ?? {});
+  const target = bookTarget(chapters.map((c) => c.file.path), leftOff ?? {});
   if (target === null) {
     await openAt(plugin, file, null, newTab);
     return;
