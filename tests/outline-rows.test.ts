@@ -31,7 +31,7 @@ describe("loadRows", () => {
       "Sem número.md": { text: "", fm: { status: "xyz" } },
     });
     const rows = await loadRows(p, ["01 Abertura.md", "Sem número.md"]);
-    expect(rows[0]).toMatchObject({ path: "01 Abertura.md", index: 0, label: "1", title: "Abertura", summary: "line one line two", status: "draft", stage: "draft", words: 3, count: 3, unit: "words", bodyBlank: false });
+    expect(rows[0]).toMatchObject({ path: "01 Abertura.md", index: 0, label: "01", title: "Abertura", summary: "line one line two", status: "draft", stage: "draft", words: 3, count: 3, unit: "words", bodyBlank: false });
     expect(rows[1]).toMatchObject({ index: 1, label: "2", title: "Sem número", status: "xyz", stage: null, bodyBlank: true, piece: null, progress: null });
   });
 
@@ -84,5 +84,19 @@ describe("loadRows", () => {
     const [r] = await loadRows(port({ "a.md": { text: "%% beat: a door %%\n\nShe knocked.\n\n%% beat: b %%\n" } }, { placeholders: { "a.md": 2 } }), ["a.md"]);
     expect(r.placeholders).toBe(2);
     expect(r.beats.map((b) => [b.text, b.written])).toEqual([["a door", true], ["b", false]]);
+  });
+
+  it("keeps the label as the digits written in the file name, as the view did", async () => {
+    const rows = await loadRows(port({ "01 Abertura.md": { text: "" }, "007.md": { text: "" }, "Sem número.md": { text: "" }, "12abc.md": { text: "" } }),
+      ["01 Abertura.md", "007.md", "Sem número.md", "12abc.md"]);
+    expect(rows.map((r) => r.label)).toEqual(["01", "007", "3", "12"]);
+  });
+
+  it("a blank unit never overrides the book's unit", async () => {
+    const files = { "a.md": { text: "ab cd", fm: { unit: "" } }, "b.md": { text: "ab cd", fm: { unit: "  " } }, "c.md": { text: "ab cd", fm: { unit: "words" } } };
+    const rows = await loadRows(port(files, { def: { target: 500, unit: "characters" } }), ["a.md", "b.md", "c.md"]);
+    expect(rows[0]).toMatchObject({ unit: "characters", pieceSource: "book" });
+    expect(rows[1].unit).toBe("characters");
+    expect(rows[2].unit).toBe("words");
   });
 });

@@ -5,11 +5,11 @@ import {
 import type EscritaPlugin from "../main";
 import type { Book } from "../core/books";
 import { inBook, inSnapshots } from "../core/classify";
-import { beatLine, parseBeats, parsePlaceholders, type BeatMarker } from "../core/markers";
+import { beatLine, parseBeats, type BeatMarker } from "../core/markers";
 import { guardedEdit } from "../core/note-text";
 import { statusColor } from "../core/stages";
 import { fmt, plural, t, unitAmount } from "../i18n";
-import { noteProgress, type Piece, type Progress } from "../core/measure";
+import { noteProgress, readChapterDefault, type Piece, type Progress } from "../core/measure";
 import { appendBeat, insertBeat, insertFirstBeat, isBlankBody, moveBeatOut, removeBeat, setBeatText } from "./beats-edit";
 import {
   beatLetter, chapterAsBeatText, decideKey, decideNoteKey, dropIndex, moveItem, resolveTarget,
@@ -17,6 +17,8 @@ import {
 } from "./model";
 import { confirmAction } from "./modals";
 import { errorMessage } from "./errors";
+import { loadRows, type ChapterRow as LoadedRow, type RowsPort } from "./rows";
+import { povValue } from "./pov";
 
 export const OUTLINE_VIEW = "escrita-outline";
 
@@ -33,6 +35,54 @@ interface ChapterRow {
   beats: BeatMarker[];
   placeholders: number;
   bodyBlank: boolean;
+}
+
+/** The row loader's row as the panel's own, keyed by file (0.7 plan 2.2). */
+export function toViewRow(row: LoadedRow, file: TFile): ChapterRow {
+  return {
+    file,
+    index: row.index,
+    label: row.label,
+    title: row.title,
+    summary: row.summary,
+    status: row.status,
+    words: row.words,
+    beats: row.beats,
+    placeholders: row.placeholders,
+    bodyBlank: row.bodyBlank,
+  };
+}
+
+/**
+ * What `rows.loadRows` needs from Obsidian, for the panel and the board. `files` maps
+ * each chapter path of the book being loaded to its file.
+ */
+export function chaptersPort(plugin: EscritaPlugin): { port: RowsPort<Book>; files: Map<string, TFile> } {
+  const files = new Map<string, TFile>();
+  const { app, books, settings } = plugin;
+  const fileAt = (path: string): TFile => files.get(path) as TFile;
+  const port: RowsPort<Book> = {
+    chapters: (book) => books.chapters(book).map((ch) => {
+      files.set(ch.file.path, ch.file);
+      return { path: ch.file.path, basename: ch.file.basename };
+    }),
+    read: async (path) => {
+      const file = fileAt(path);
+      return { text: await app.vault.cachedRead(file), mtime: file.stat.mtime };
+    },
+    frontmatter: (path) => books.frontmatter(fileAt(path)),
+    counts: (path, seed, unit) => plugin.measure.counts(fileAt(path), seed, unit),
+    placeholders: (path) => (plugin.features.isOn("placeholders") ? plugin.placeholders.countFor(path) : 0),
+    chapterDefault: (book) => readChapterDefault(books.frontmatter(book.note), settings),
+    resolvePov: (value, path) => povValue(value, (link) => {
+      const dest = app.metadataCache.getFirstLinkpathDest(link, path);
+      if (dest) return { path: dest.path, name: dest.basename };
+      return plugin.names.entryFor(link, path);
+    }),
+    settings: () => settings,
+    stages: () => settings.stages,
+  };
+  return { port, files };
 }
 
 interface LineInfo {
@@ -69,7 +119,8 @@ interface NoteState {
   progress: Progress;
 }
 
-function str(v: unknown): string {
+/** A property value as text, as the panel and the board show it. */
+export function str(v: unknown): string {
   if (v === null || v === undefined) return "";
   if (Array.isArray(v)) return v.map(str).join(", ");
   return String(v);
@@ -274,25 +325,15 @@ export class OutlineView extends ItemView {
   }
 
   private async loadRows(book: Book): Promise<ChapterRow[]> {
+    const { port, files } = chaptersPort(this.plugin);
     const s = this.plugin.settings;
-    const chapters = this.plugin.books.chapters(book);
-    return Promise.all(chapters.map(async (ch, i): Promise<ChapterRow> => {
-      const mtime = ch.file.stat.mtime;
-      const text = await this.app.vault.cachedRead(ch.file);
-      const fm = this.plugin.books.frontmatter(ch.file);
-      return {
-        file: ch.file,
-        index: i,
-        label: /^\d+/.exec(ch.file.basename)?.[0] ?? String(i + 1),
-        title: ch.title,
-        summary: str(fm[s.summaryProperty]),
-        status: str(fm[s.statusProperty]),
-        words: (await this.plugin.measure.counts(ch.file, { text, mtime }, "words")).words,
-        beats: parseBeats(text),
-        placeholders: parsePlaceholders(text, s.placeholderMarker).length,
-        bodyBlank: isBlankBody(text),
-      };
-    }));
+    const rows = await loadRows(port, book);
+    return rows.map((row) => {
+      const file = files.get(row.path) as TFile;
+      const fm = this.plugin.books.frontmatter(file);
+      // summary and status as written, as the panel always showed them (the row's are one line and trimmed)
+      return { ...toViewRow(row, file), summary: str(fm[s.summaryProperty]), status: str(fm[s.statusProperty]) };
+    });
   }
 
   /** Reload and re-render. Without `force`, only counts are patched while a field has focus. */
