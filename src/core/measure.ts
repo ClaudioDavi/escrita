@@ -213,21 +213,39 @@ export function readBookGoal(frontmatter: Record<string, unknown> | null | undef
 /** A book note's default for its chapters: a target, and optionally the unit it is counted in (Q47). */
 export interface ChapterDefault { target: number; unit: PieceUnit | null }
 
-/** The book note's chapter target (via parseAmount) and unit, under the configured names; null when it sets no target. Stub until 1.4. */
+/** The book note's chapter target (via parseAmount) and unit, under the configured names; null when it sets no target (Q47). */
 export function readChapterDefault(
   fm: Record<string, unknown> | null | undefined,
   props: { chapterTargetProperty: string; unitProperty: string },
 ): ChapterDefault | null {
-  throw new Error("todo");
+  if (!isRecord(fm)) return null;
+  const target = parseAmount(fm[props.chapterTargetProperty]);
+  if (target === undefined) return null;
+  const raw = fm[props.unitProperty];
+  const hasUnit = typeof raw === "string" && raw.trim() !== "";
+  return { target, unit: hasUnit ? parseUnit(raw) : null };
 }
 
-/** Per field: the chapter's own target wins, else the book default (Q48). Stub until 1.4. */
+/**
+ * Per field: the chapter's own target wins, else the book default (Q48). The
+ * own `limit` and `deadline` are kept. The unit is `ownUnit ?? def.unit ??
+ * "words"` (`ownUnit` is null when the chapter has no unit property, so
+ * `own.unit` is ignored then). `source` says where the target came from.
+ */
 export function effectivePiece(
   own: Piece | null,
   def: ChapterDefault | null,
   ownUnit: PieceUnit | null,
 ): { piece: Piece | null; source: "own" | "book" | null } {
-  throw new Error("todo");
+  if (!own && !def) return { piece: null, source: null };
+  const unit = ownUnit ?? def?.unit ?? "words";
+  const piece: Piece = { unit };
+  let source: "own" | "book" | null = null;
+  if (own?.target !== undefined) { piece.target = own.target; source = "own"; }
+  else if (def) { piece.target = def.target; source = "book"; }
+  if (own?.limit !== undefined) piece.limit = own.limit;
+  if (own?.deadline !== undefined) piece.deadline = own.deadline;
+  return { piece, source };
 }
 
 // ── Progress ─────────────────────────────────────────────────────────────
