@@ -53,6 +53,13 @@ async function setup(files: Record<string, string>, setting = "Modelos/Revisão"
     saveSettings: async () => { saves.settings++; hub.settingsChanged(); lens.settingsChanged(); },
   };
   const lens = new LensModule(plugin);
+  // the context the registry would give it, on this test's hub
+  lens.attach({
+    index: (spec: never) => hub.add(spec),
+    follow: (f: never) => void hub.follow(f),
+    onLayoutReady: (cb: () => void) => void cbs.layout.push(cb),
+  } as never);
+  for (const f of lens.dataFollowers()) hub.follow(f);
   lens.load();
   cbs.layout.forEach((c) => c());
   await settle();

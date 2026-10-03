@@ -5,7 +5,9 @@
 
 import type { TFile } from "obsidian";
 import type EscritaPlugin from "../main";
-import type { EscritaModule } from "../data";
+import { FeatureModule, type FeatureSlots } from "../core/module-context";
+import type { FeatureId } from "../core/features";
+import type { Follower } from "../core/vault-index";
 import { locale } from "../i18n";
 import { segment } from "../core/markdown";
 import { dropKeys, movedPath, renameKeys } from "../core/path-keys";
@@ -17,6 +19,7 @@ import { listsPath, parseLists, sameLists } from "./lists";
 import { LENS_SETTLE_MOBILE_MS, LENS_SETTLE_MS, LensSession } from "./session";
 import { shownResult } from "./shown";
 import { LensUi } from "./ui";
+import { LENS_VIEW } from "./view";
 import { RULES, type Dismissal, type Lists, type LensLang, type LensResult, type Match, type Measures, type RuleId } from "./types";
 
 /** What `Platform.isMobile` reads (the body class); index.ts has no runtime obsidian import, so tests can load it. */
@@ -27,8 +30,11 @@ function isMobile(): boolean {
 const EMPTY_MD = segment("");
 const EMPTY_LISTS: Lists = { crutch: [], names: [], ignore: [] };
 
-export class LensModule implements EscritaModule {
-  private session!: LensSession;
+export class LensModule extends FeatureModule {
+  readonly id: FeatureId = "lens";
+  readonly slots: FeatureSlots = { views: [LENS_VIEW], editors: 1 };
+  /** undefined while the feature is off */
+  private session: LensSession | undefined;
   private listsIndex: VaultIndex<TFile, Lists> | null = null;
   private ui: LensUi | null = null;
   private lastPassKey: string | null = null;
@@ -36,10 +42,35 @@ export class LensModule implements EscritaModule {
   private texts = new WeakMap<object, string>();
   private shownCache = new Map<string, { src: LensResult; list: Dismissal[]; out: LensResult }>();
 
-  constructor(private plugin: EscritaPlugin) {}
+  constructor(private plugin: EscritaPlugin) {
+    super();
+  }
 
-  load(): void {
+  /**
+   * Always on (Q8): the dismissals and the word lists note path follow renames and deletes
+   * while the lens is off. Touches only plugin.data and plugin.settings.
+   */
+  dataFollowers(): Follower[] {
     const p = this.plugin;
+    return [{
+      moved: (oldPath, newPath) => {
+        if (renameKeys(p.data.lensDismissed, oldPath, newPath, mergeDismissals)) p.requestSave();
+        const moved = movedPath(listsPath(p.settings.lensListsNote), oldPath, newPath);
+        if (moved !== null && moved !== "") {
+          p.settings.lensListsNote = moved;
+          void p.saveSettings(); // triggers the index rebuild and settingsChanged
+        }
+      },
+      // a deleted lists note leaves the setting alone: the panel says it is missing
+      deleted: (path) => {
+        if (dropKeys(p.data.lensDismissed, path)) p.requestSave();
+      },
+    }];
+  }
+
+  onload(): void {
+    const p = this.plugin;
+    const ctx = this.ctx;
     this.session = new LensSession({
       timers: {
         set: (cb, ms) => window.setTimeout(cb, ms),
@@ -53,11 +84,10 @@ export class LensModule implements EscritaModule {
         return r;
       },
     });
-    p.register(() => this.session.dispose());
     this.lastPassKey = this.passKey();
 
     // the word lists note: re-parsed on edit, rebuilt when the setting changes
-    const idx = p.index.add<TFile, Lists>({
+    const idx = ctx.index<TFile, Lists>({
       name: "lens-lists",
       mode: "content",
       include: (f) => {
@@ -71,29 +101,22 @@ export class LensModule implements EscritaModule {
     this.listsIndex = idx;
     // the session reads the lists when a pass runs; every change starts a new options
     // generation there, so no note keeps a result computed on the old lists
-    p.register(idx.onChange(() => this.invalidate()));
-    p.register(idx.onReady(() => this.invalidate()));
+    this.register(idx.onChange(() => this.invalidate()));
+    this.register(idx.onReady(() => this.invalidate()));
 
-    p.register(p.index.follow({
+    // session state only; the data moves are in dataFollowers()
+    ctx.follow({
       moved: (oldPath, newPath) => {
-        this.session.renamed(oldPath, newPath);
+        this.session?.renamed(oldPath, newPath);
         this.shownCache.delete(oldPath);
-        if (renameKeys(p.data.lensDismissed, oldPath, newPath, mergeDismissals)) p.requestSave();
-        const moved = movedPath(listsPath(p.settings.lensListsNote), oldPath, newPath);
-        if (moved !== null && moved !== "") {
-          p.settings.lensListsNote = moved;
-          void p.saveSettings(); // triggers the index rebuild and settingsChanged
-        }
       },
-      // a deleted lists note leaves the setting alone: the panel says it is missing
       deleted: (path) => {
-        this.session.deleted(path);
+        this.session?.deleted(path);
         this.shownCache.delete(path);
-        if (dropKeys(p.data.lensDismissed, path)) p.requestSave();
       },
-    }));
+    });
 
-    p.app.workspace.onLayoutReady(() => {
+    ctx.onLayoutReady(() => {
       let changed = false;
       for (const k of Object.keys(p.data.lensDismissed)) {
         if (p.app.vault.getAbstractFileByPath(k) === null) { delete p.data.lensDismissed[k]; changed = true; }
@@ -106,12 +129,17 @@ export class LensModule implements EscritaModule {
       shown: (path) => this.shown(path),
       lang: () => this.lensLanguage(),
       dismiss: (path, text, m) => this.dismiss(path, text, m),
-    });
+    }, ctx, this);
     this.ui.load();
   }
 
-  unload(): void {
+  onunload(): void {
     this.session?.dispose();
+    this.session = undefined;
+    this.ui = null;
+    this.listsIndex = null;
+    this.shownCache.clear();
+    this.lastPassKey = null;
   }
 
   /** The settings that change a pass; display-only ones (panel measures) do not need a new one. */
@@ -150,7 +178,7 @@ export class LensModule implements EscritaModule {
 
   /** The result the writer sees: the session's result minus the ignored matches. */
   private shown(path: string): LensResult | undefined {
-    const r = this.session.result(path);
+    const r = this.session?.result(path);
     const list = this.plugin.data.lensDismissed[path];
     if (!r || !list || list.length === 0) return r;
     const hit = this.shownCache.get(path);
@@ -207,7 +235,7 @@ export class LensModule implements EscritaModule {
     const path = this.ui?.activePath() ?? null;
     const base = { lang: this.lensLanguage(), listsState: this.listsState() };
     if (path === null) return { path, on: false, result: undefined, selection: null, ...base };
-    const on = this.session.isOn(path);
+    const on = this.session?.isOn(path) ?? false;
     const result = on ? this.shown(path) : undefined;
     let selection: Measures | null = null;
     const range = result ? this.ui?.selectionFor(path, result) ?? null : null;
