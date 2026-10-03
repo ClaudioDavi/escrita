@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { linkText, scopeFor, universeNotePath, type ScopeLookup, type ScopeSettings } from "../src/universe/scope";
+import { keptOut, linkText, scopeFor, universeNotePath, type ScopeLookup, type ScopeSettings } from "../src/universe/scope";
 import { ENTRY_KINDS, FORM_KINDS, defaultUniverseSettings, normalizeUniverse } from "../src/universe/settings";
 
 interface World {
@@ -190,5 +190,80 @@ describe("the universe note path", () => {
     expect(normalizeUniverse({ universeNote: "Universo/" }).universeNote).toBe("Universo.md");
     expect(normalizeUniverse({ universeNote: " /A/B " }).universeNote).toBe("A/B.md");
     expect(normalizeUniverse({ universeNote: "" }).universeNote).toBe("Universe.md");
+  });
+});
+
+describe("universe: false", () => {
+  const w: World = {
+    notes: ["Universe.md"],
+    books: { "Novels/A Casa": "Novels/A Casa.md" },
+    props: {
+      "Universe/Characters/Ana.md": false,
+      "Contos/Fora.md": false,
+      "Universe.md": false,
+      "Novels/A Casa.md": false,
+      "Novels/A Casa/Chapters/02 Dentro.md": "[[Universe]]",
+      "Novels/Solo.md": "[[Universe]]",
+    },
+  };
+  const l = lookup(w);
+  const sc = (path: string, s = base({ defaultUniverseFolders: "Contos" }), look = l) => scopeFor({ path }, s, look);
+  const NONE = { kind: "none", root: "", note: null };
+
+  it("beats the universe folder, a default folder and the universe note", () => {
+    expect(sc("Universe/Characters/Ana.md")).toEqual(NONE);
+    expect(sc("Contos/Fora.md")).toEqual(NONE);
+    expect(sc("Universe.md")).toEqual(NONE);
+  });
+
+  it("on a book note keeps every file of the book out, at book scope", () => {
+    const book = { kind: "book", root: "Novels/A Casa", note: "Novels/A Casa.md" };
+    expect(sc("Novels/A Casa.md")).toEqual(book);
+    expect(sc("Novels/A Casa/Chapters/01 X.md")).toEqual(book);
+    expect(sc("Novels/A Casa/Characters/Ana.md")).toEqual(book);
+  });
+
+  it("a chapter's own link beats the book's false", () => {
+    expect(sc("Novels/A Casa/Chapters/02 Dentro.md").kind).toBe("universe");
+  });
+
+  it("a chapter's own false beats the book note's link", () => {
+    const l2 = lookup({ notes: ["Universe.md"], books: w.books, props: { "Novels/A Casa.md": "[[Universe]]", "Novels/A Casa/Chapters/01 X.md": false } });
+    expect(sc("Novels/A Casa/Chapters/01 X.md", undefined, l2).kind).toBe("book");
+    expect(sc("Novels/A Casa/Chapters/03 Y.md", undefined, l2).kind).toBe("universe");
+  });
+
+  it("per-book and off modes are unchanged", () => {
+    expect(sc("Contos/Fora.md", base({ universeMode: "off" }))).toEqual(NONE);
+    expect(sc("Novels/A Casa/Chapters/01 X.md", base({ universeMode: "perBook" })).kind).toBe("book");
+    expect(sc("Contos/Fora.md", base({ universeMode: "perBook" }))).toEqual(NONE);
+  });
+
+  it("true, 0 and empty text behave as before", () => {
+    for (const v of [true, 0, "", "0", "true"]) {
+      const lv = lookup({ props: { "Universe/Characters/Ana.md": v } });
+      expect(sc("Universe/Characters/Ana.md", undefined, lv).kind).toBe("universe");
+      expect(keptOut("Universe/Characters/Ana.md", lv)).toBe(false);
+    }
+  });
+
+  it("the string false counts, trimmed and in any case; a list does not", () => {
+    for (const v of ["false", " False ", "FALSE"]) {
+      const lv = lookup({ props: { "Universe/Characters/Ana.md": v } });
+      expect(sc("Universe/Characters/Ana.md", undefined, lv)).toEqual(NONE);
+      expect(keptOut("Universe/Characters/Ana.md", lv)).toBe(true);
+    }
+    const lv = lookup({ props: { "Universe/Characters/Ana.md": ["false"] } });
+    expect(sc("Universe/Characters/Ana.md", undefined, lv).kind).toBe("universe");
+    expect(keptOut("Universe/Characters/Ana.md", lv)).toBe(false);
+  });
+
+  it("keptOut: own false, book false without own link, own link wins, plain notes stay in", () => {
+    expect(keptOut("Contos/Fora.md", l)).toBe(true);
+    expect(keptOut("Novels/A Casa.md", l)).toBe(true);
+    expect(keptOut("Novels/A Casa/Chapters/01 X.md", l)).toBe(true);
+    expect(keptOut("Novels/A Casa/Chapters/02 Dentro.md", l)).toBe(false);
+    expect(keptOut("Novels/Solo.md", l)).toBe(false);
+    expect(keptOut("Other/Plain.md", l)).toBe(false);
   });
 });

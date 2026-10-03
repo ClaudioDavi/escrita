@@ -8,6 +8,10 @@
 // `note` is the note that names the scope: the book note, or the universe note.
 //
 // Universe mode, in this order (first match wins):
+//   0. `universe: false` (the YAML boolean, or the string "false", trimmed, any case) keeps
+//      the file out of the universe: its book scope, else none. The file comes before its
+//      book note, so a file's own link beats the book's `false`, and its own `false` beats
+//      the book's link. It beats the universe folder and the universe note too.
 //   1. the file's own `universe` property (a work, an entry, a chapter that sets it);
 //   2. the book note's property, for a chapter or other file of a book;
 //   3. the file is inside the universe folder (entries join by folder);
@@ -93,6 +97,20 @@ function universeFromLink(link: string, from: string, s: ScopeSettings, lookup: 
   return name(link) === name(own) ? defaultUniverse(s) : null;
 }
 
+/** `universe: false`: the YAML boolean, or the string "false" (trimmed, any case; the Properties editor writes a string). A list never counts. */
+function isFalse(value: unknown): boolean {
+  return value === false || (typeof value === "string" && value.trim().toLowerCase() === "false");
+}
+
+/** True when the note is kept out of the universe: its own `false`, or its book note's `false` with no own link. */
+export function keptOut(path: string, lookup: ScopeLookup): boolean {
+  const own = lookup.universe(path);
+  if (isFalse(own)) return true;
+  if (linkText(own) !== null) return false;
+  const book = lookup.book(path);
+  return book !== null && book.note !== path && isFalse(lookup.universe(book.note));
+}
+
 export function scopeFor(file: { path: string }, settings: ScopeSettings, lookup: ScopeLookup): Scope {
   const mode = settings.universeMode;
   if (mode === "off") return NONE;
@@ -101,6 +119,7 @@ export function scopeFor(file: { path: string }, settings: ScopeSettings, lookup
   if (mode === "perBook") return bookScope;
 
   for (const path of book ? [file.path, book.note] : [file.path]) {
+    if (isFalse(lookup.universe(path))) return bookScope;
     const link = linkText(lookup.universe(path));
     if (link === null) continue;
     const joined = universeFromLink(link, path, settings, lookup);
