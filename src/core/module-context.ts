@@ -38,6 +38,14 @@ export interface ModuleContext {
   follow(f: Follower): void;                                     // removed on unload
   decorate(id: DecorationId, draw: Drawer): void;                // undrawn on unload
   onLayoutReady(cb: () => void): void;                           // never runs after unload
+  /**
+   * Runs once after this feature has unloaded: after `onunload`, after every undo of the
+   * context and after its view, code block, post-processor and editor slots are unbound.
+   * For work that must see the feature as gone, such as the desk re-drawing the blocks
+   * that were showing its content (they now render as plain source). Never survives the
+   * load it was registered in; register it again on each load. A throw is logged.
+   */
+  afterUnload(cb: () => void): void;
 }
 
 /**
@@ -79,6 +87,8 @@ export class ModuleSlots {
   private post: MarkdownPostProcessor | null = null;
   private editors: Extension[][] = [];
   private nextEditor = 0;
+  /** bumps on every release, so an EditorSlot handle outlives only the load it came from */
+  private epoch = 0;
   private registered = false;
 
   /** `changed` is called when an editor slot's contents change. */
@@ -137,7 +147,9 @@ export class ModuleSlots {
   takeEditor(initial?: readonly Extension[]): EditorSlot {
     const arr = this.editors[this.nextEditor++];
     if (!arr) throw new Error("Escrita: more editor slots taken than declared in slots.editors");
+    const epoch = this.epoch;
     const set = (exts: readonly Extension[]): void => {
+      if (epoch !== this.epoch) return;   // a handle from an earlier load is dead
       arr.splice(0, arr.length, ...exts);
       this.changed();
     };
@@ -148,6 +160,7 @@ export class ModuleSlots {
   /** Unload: empties every editor array and lets the next load take them from the first. */
   releaseEditors(): void {
     this.nextEditor = 0;
+    this.epoch++;
     let any = false;
     for (const arr of this.editors) {
       if (arr.length > 0) any = true;
@@ -170,6 +183,7 @@ export class ModuleContextImpl implements ModuleContext {
   private disposers: (() => void)[] = [];
   private active = false;
   private generation = 0;
+  private afterEnd: (() => void)[] = [];
   /** G0f: a ribbon icon can't be removed, so it is kept by title for the plugin's life */
   private ribbons = new Map<string, { el: HTMLElement; cb: ((e: MouseEvent) => void) | null }>();
 
@@ -191,6 +205,9 @@ export class ModuleContextImpl implements ModuleContext {
     }
     this.slots?.releaseEditors();
     for (const r of this.ribbons.values()) r.cb = null;
+    for (const cb of this.afterEnd.splice(0)) {
+      try { cb(); } catch (e) { console.error("Escrita: an afterUnload callback failed", e); }
+    }
   }
 
   command(cmd: Command): void {
@@ -253,6 +270,10 @@ export class ModuleContextImpl implements ModuleContext {
 
   decorate(id: DecorationId, draw: Drawer): void {
     this.disposers.push(this.plugin.decorations.add(id, draw));
+  }
+
+  afterUnload(cb: () => void): void {
+    this.afterEnd.push(cb);
   }
 
   onLayoutReady(cb: () => void): void {

@@ -589,9 +589,28 @@ describe("the adapter for 0.6 modules", () => {
     r.init();
     r.apply();
     r.settingsChanged();
-    turn("goals", false);
-    r.apply();
+    r.unloadAll();
     expect(calls).toEqual(["load", "settings", "unload"]);
+  });
+
+  it("a 0.6 module is never unloaded by a switch, and never registers twice", () => {
+    let loads = 0;
+    let unloads = 0;
+    const legacy: EscritaModule = {
+      load: () => { loads++; plugin.registerView("legacy-view", () => ({}) as never); },
+      unload: () => { unloads++; },
+    };
+    const r = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, FeatureModule | EscritaModule>([["snapshots", legacy]]));
+    r.init();
+    plugin.settings.features = { snapshots: false };
+    r.apply();
+    expect(r.isOn("snapshots")).toBe(true);
+    turn("snapshots", true);
+    r.apply();
+    turn("snapshots", false);
+    r.apply();
+    expect([loads, unloads]).toEqual([1, 0]);
+    expect(plugin.app.workspace.detached).toEqual([]);
   });
 
   it("keeps a 0.6 module that reads its own switch (explorer counts, universe mode) loaded", () => {
@@ -613,5 +632,128 @@ describe("the adapter for 0.6 modules", () => {
     r.init();
     r.apply();
     expect(r.isOn("goals")).toBe(false);
+  });
+});
+
+describe("order of a switch-off (wave 1 review, finding 4)", () => {
+  it("leaves are detached before the module unloads", () => {
+    const order: string[] = [];
+    const m = new Fake("outline", { views: ["escrita-outline"] }, (f) => {
+      f.ctxOf().view("escrita-outline", () => ({}) as never);
+    }, order);
+    const r = registryOf(m);
+    r.apply();
+    const ws = plugin.app.workspace;
+    const detach = ws.detachLeavesOfType.bind(ws);
+    ws.detachLeavesOfType = (type: string) => { order.push(`detach ${type}`); detach(type); };
+    turn("outline", false);
+    r.apply();
+    expect(order).toEqual(["load outline", "detach escrita-outline", "unload outline"]);
+  });
+
+  it("onChange fires after updateOptions, once the apply is over", () => {
+    const m = new Fake("typing", { editors: 1 }, (f) => { f.ctxOf().editor([[{} as unknown as Extension]]); });
+    const r = registryOf(m);
+    const seen: string[] = [];
+    r.onChange((id, on) => seen.push(`${id} ${on} options=${plugin.app.workspace.updateOptionsCalls}`));
+    r.apply();
+    turn("typing", false);
+    r.apply();
+    expect(seen).toEqual(["typing true options=1", "typing false options=2"]);
+  });
+
+  it("a listener may call apply() again", () => {
+    const a = new Fake("goals");
+    const b = new Fake("lens");
+    const r = registryOf(a, b);
+    r.apply();
+    r.onChange((id, on) => {
+      if (id === "goals" && !on) { turn("lens", false); r.apply(); }
+    });
+    turn("goals", false);
+    r.apply();
+    expect(r.isOn("lens")).toBe(false);
+    expect(b.unloads).toBe(1);
+  });
+});
+
+describe("ctx.afterUnload", () => {
+  it("runs after onunload and after the slots are unbound", () => {
+    const seen: string[] = [];
+    let handlerBound = (): boolean => false;
+    const m = new Fake("desk", { codeBlocks: ["escrita-works"] }, (f) => {
+      f.ctxOf().codeBlock("escrita-works", () => {});
+      f.ctxOf().afterUnload(() => {
+        seen.push(`after (blocks bound: ${handlerBound()})`);
+      });
+    }, seen);
+    const r = registryOf(m);
+    handlerBound = () => {
+      const el = document.createElement("div");
+      plugin.codeBlocks.get("escrita-works")!("src", el, {});
+      return el.querySelector("pre") === null;   // a bound handler draws no plain source
+    };
+    r.apply();
+    turn("desk", false);
+    r.apply();
+    expect(seen).toEqual(["load desk", "unload desk", "after (blocks bound: false)"]);
+  });
+
+  it("is one-shot per load, and registered again on the next load", () => {
+    let n = 0;
+    const m = new Fake("desk", {}, (f) => { f.ctxOf().afterUnload(() => { n++; }); });
+    const r = registryOf(m);
+    for (let i = 0; i < 2; i++) {
+      turn("desk", true);
+      r.apply();
+      turn("desk", false);
+      r.apply();
+    }
+    expect(n).toBe(2);
+  });
+
+  it("a callback that throws does not stop the next one", () => {
+    const calls: string[] = [];
+    const m = new Fake("desk", {}, (f) => {
+      f.ctxOf().afterUnload(() => { throw new Error("boom"); });
+      f.ctxOf().afterUnload(() => { calls.push("second"); });
+    });
+    const r = registryOf(m);
+    r.apply();
+    turn("desk", false);
+    r.apply();
+    expect(calls).toEqual(["second"]);
+  });
+});
+
+describe("an editor slot handle is tied to its load", () => {
+  it("a late set after unload does nothing", () => {
+    const m = new Fake("typing", { editors: 1 }, (f) => { f.editorSlot = f.ctxOf().editor(); });
+    const r = registryOf(m);
+    r.apply();
+    const old = m.editorSlot!;
+    const arr = plugin.extensions[0] as Extension[];
+    turn("typing", false);
+    r.apply();
+    const calls = plugin.app.workspace.updateOptionsCalls;
+    old.set([[{} as unknown as Extension]]);
+    expect(arr).toHaveLength(0);
+    expect(plugin.app.workspace.updateOptionsCalls).toBe(calls);
+  });
+
+  it("the old handle stays dead after the feature loads again; the new one works", () => {
+    const m = new Fake("typing", { editors: 1 }, (f) => { f.editorSlot = f.ctxOf().editor(); });
+    const r = registryOf(m);
+    r.apply();
+    const old = m.editorSlot!;
+    turn("typing", false);
+    r.apply();
+    turn("typing", true);
+    r.apply();
+    const arr = plugin.extensions[0] as Extension[];
+    old.set([[{} as unknown as Extension]]);
+    expect(arr).toHaveLength(0);
+    m.editorSlot!.set([[{} as unknown as Extension]]);
+    expect(arr).toHaveLength(1);
   });
 });

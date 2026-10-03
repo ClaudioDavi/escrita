@@ -5,7 +5,7 @@
 
 import type EscritaPlugin from "../main";
 import type { EscritaModule } from "../data";
-import { FEATURE_IDS, FEATURE_SPECS, planApply, wanted, type FeatureId, type FeatureSwitches } from "./features";
+import { FEATURE_IDS, planApply, wanted, type FeatureId, type FeatureSwitches } from "./features";
 import { FeatureModule, ModuleContextImpl, ModuleSlots } from "./module-context";
 
 /** Past this many passes a feature that keeps re-triggering apply() is cut off. */
@@ -57,18 +57,25 @@ export class FeatureRegistry {
       return;
     }
     this.applying = true;
+    let changes: [FeatureId, boolean][] = [];
     try {
       this.slotsDirty = false;
       let passes = 0;
       do {
         this.again = false;
-        this.applyOnce();
+        changes.push(...this.applyOnce());
       } while (this.again && !this.closed && ++passes < MAX_PASSES);
       if (this.slotsDirty) this.plugin.app.workspace.updateOptions();
       this.slotsDirty = false;
       this.hookLayoutReady();
     } finally {
       this.applying = false;
+    }
+    // After updateOptions, and after `applying` is off, so a listener may call apply() again.
+    for (const [id, on] of changes) {
+      for (const cb of [...this.listeners]) {
+        try { cb(id, on); } catch (err) { console.error("Escrita: a feature listener failed", err); }
+      }
     }
   }
 
@@ -115,15 +122,17 @@ export class FeatureRegistry {
 
   private want(): Set<FeatureId> {
     const want = wanted(this.switches());
-    // A 0.6 module that reads its own switch (the explorer's counts, the universe's mode) stays
-    // loaded, as it was in 0.6.0, until wave 2 moves it onto the registry.
+    // A 0.6 module that has not moved onto FeatureModule yet stays loaded for good, as it was
+    // in 0.6.0: its load() registers views and the like on the plugin, which cannot be undone,
+    // so loading it a second time would throw (G0b). Wave 2 moves each one over.
     for (const e of this.entries) {
-      if (e.legacy && FEATURE_SPECS.find((f) => f.id === e.id)?.switch) want.add(e.id);
+      if (e.legacy) want.add(e.id);
     }
     return want;
   }
 
-  private applyOnce(): void {
+  /** One pass; the changes are fired by apply(), after updateOptions. */
+  private applyOnce(): [FeatureId, boolean][] {
     const plan = planApply(this.loaded, this.want());
     const changes: [FeatureId, boolean][] = [];
     for (const id of plan.unload) {
@@ -133,11 +142,7 @@ export class FeatureRegistry {
     for (const id of plan.load) {
       if (this.loadOne(id)) changes.push([id, true]);
     }
-    for (const [id, on] of changes) {
-      for (const cb of [...this.listeners]) {
-        try { cb(id, on); } catch (err) { console.error("Escrita: a feature listener failed", err); }
-      }
-    }
+    return changes;
   }
 
   private entry(id: FeatureId): Entry | undefined {
@@ -170,11 +175,12 @@ export class FeatureRegistry {
     const e = this.entry(id);
     this.loaded.delete(id);
     if (!e) return;
-    this.stop(e);
     // Unregistering a view leaves ghost panes (G0b), so a switched-off feature closes its own leaves.
+    // Before stop(): a view's onClose runs now, while the module is still whole.
     if (detachLeaves) {
       for (const type of e.slots?.viewTypes ?? []) this.plugin.app.workspace.detachLeavesOfType(type);
     }
+    this.stop(e);
   }
 
   private stop(e: Entry): void {

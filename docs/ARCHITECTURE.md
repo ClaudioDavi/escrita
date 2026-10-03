@@ -375,6 +375,20 @@ lens now; the universe (U 1.2, U 1.4) reuses it without importing the lens.
   after the universe uses it is a matching change, so never change a fixture row to make
   a test pass.
 
+## Names matcher (`core/names.ts`, 0.7)
+
+Pure, no Obsidian imports. `compileTerms` turns entries (a name, aliases, a first name for
+people) into a `TermTable`; `findNames` reads the reader mask (offsets match the document)
+and returns occurrences with candidates. Words are folded with `foldName` (accents
+removed) before they are stemmed, so *Inês* and *Ines* meet; a hyphenated word also
+matches as its parts.
+
+- **Performance budget.** `tests/names.test.ts` has a CI ceiling (300 entries against a
+  10,000-word note under 100 ms) that catches quadratic code, and a local budget that is
+  skipped when `CI` is set: **20 ms** (median of the fastest half of the runs, to ride out
+  a loaded machine) for the same note. The two-thousand-word bench (`tests/names.bench.ts`,
+  `vitest bench`) is how the figure for a phone was estimated (0.7 plan, G0h).
+
 ## Design reference
 
 The approved design (canvas "Escrita plugin") shows, in Portuguese:

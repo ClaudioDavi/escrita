@@ -58,5 +58,5 @@ console.log(
 );
 
 describe("names: segment + readerMask + findNames", () => {
-  bench("2,000 words, 300 entries", run, { iterations: 20, warmupIterations: 5, time: 0, warmupTime: 0 });
+  bench("2,000 words, 300 entries", () => { run(); }, { iterations: 20, warmupIterations: 5, time: 0, warmupTime: 0 });
 });

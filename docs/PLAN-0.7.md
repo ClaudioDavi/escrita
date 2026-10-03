@@ -285,7 +285,7 @@ gated task starts.
   with `names.ts` bundled in).
 
 **G1. Design canvas mockups** (rule 7), on
-https://claude.ai/artifact/DGww2xWiadXRuWqVv2jFv6. The author approves them before
+https://claude.ai/artifact/DGww2xWiadXRuWqVv2jFv6. **G1a–G1d: Approved by the author 2026-10-03 (boards 21–25 on the canvas).** The author approves them before
 the gated tasks start: G1a gates 4.1, G1b gates 4.2 and 4.4, G1c gates 4.3, G1d gates
 4.5. **Nothing in waves 0–3 waits on them, because waves 0–3 change no visible UI**:
 the registry, every module's move onto it, the matcher, the mentions index, the names
@@ -452,6 +452,7 @@ export interface ModuleContext {
   follow(f: Follower): void;                                     // removed on unload
   decorate(id: DecorationId, draw: Drawer): void;                // undrawn on unload
   onLayoutReady(cb: () => void): void;                           // never runs after unload
+  afterUnload(cb: () => void): void;                             // once, after onunload and after the slots are unbound; for re-rendering what the feature drew (added after the wave 1 review)
 }
 /**
  * A switchable part of Escrita. Constructed once; the registry calls Component.load()
@@ -500,7 +501,8 @@ export interface NameSource {
 }
 export type TermOrigin = "name" | "alias" | "first";
 export interface NameTerm { id: string; text: string; words: readonly string[]; keys: readonly string[]; profile: StemProfile; origin: TermOrigin; caseSensitive: boolean }
-export interface TermTable { terms: readonly NameTerm[]; lang: StemLang | null; signature: string }
+export interface IgnorePhrase { id: string; words: readonly string[]; keys: readonly string[]; profile: StemProfile }
+export interface TermTable { terms: readonly NameTerm[]; lang: StemLang | null; signature: string; ignores?: readonly IgnorePhrase[] }   // ignores: absent on EMPTY_TABLE
 export interface Candidate { id: string; exact: boolean; origin: TermOrigin }   // exact: same foldName form as the term
 export interface Occurrence { from: number; to: number; text: string; candidates: readonly Candidate[] }
 export function matchLang(setting: "auto" | "pt-BR" | "en", locale: string): StemLang | null;
@@ -576,6 +578,13 @@ export interface RowsPort<B> {                 // generic, so tests pass a plain
   chapterDefault(book: B): ChapterDefault | null;
   resolvePov(value: unknown, path: string): PovValue | null;
   settings(): RowSettings;
+  stages(): StageMapping;                      // the writer's status words, for stageOf (core/stages.ts)
+}
+/** The property names a row reads (the writer's settings; summaryProperty is optional). */
+export interface RowSettings {
+  summaryProperty?: string;
+  statusProperty: string; povProperty: string; targetProperty: string; limitProperty: string;
+  unitProperty: string; deadlineProperty: string; chapterTargetProperty: string;
 }
 export function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRow[]>;
 // pov.ts
@@ -915,6 +924,11 @@ from `plugin.placeholders.countFor` when `features.isOn("placeholders")`, else 0
 Rows now carry the new fields; rendering of them waits for 4.3. The local
 `parsePlaceholders` count (outline/view.ts:292) and `stringOf` go. The subscription
 at outline/view.ts:185 now hits placeholders' stable listener set (2.3).
+Two behaviours of the row loader must match the view as it was (wave 1 review): the
+chapter label stays the raw digits of the file name, `/^\d+/.exec(basename)?.[0] ??
+String(i + 1)` (so "01" stays "01", and "12abc" still falls back to the position), not
+`String(chapterNumber())`; and a blank `unit` (`""`) is null in both `rows.ts` and
+`readChapterDefault`, so it never overrides the book's unit. Add a test row for each.
 Test: the existing outline tests pass unchanged; `tests/lifecycle-outline.test.ts`.
 
 **2.3 Placeholders**, effort S. Own `src/placeholders/*`. Fix the double push on
@@ -983,7 +997,7 @@ note. The recorder's events and DOM event through the module's `Component`
 becomes a data follower; the recorder's `pending` follower (recorder.ts:113-116) is
 session state and stays with the loaded recorder. `openWork` (desk/open.ts) opens
 without a record when the desk is off (Q11). Startup open keeps its cold-start guard
-(desk/index.ts:28). Unload unloads live blocks (desk/index.ts:19). Tests: the code block
+(desk/index.ts:28). Unload unloads live blocks (desk/index.ts:19). The re-render on a toggle goes through `ctx.afterUnload` (0.7 wave 1 review): it runs after `onunload` and after the code block slot is unbound, so the blocks draw as plain source; re-registered on each load. Re-rendering from `onunload` itself would still see the handler bound. Tests: the code block
 draws plain code while off; `openWork` with the desk off ignores `leftOff`.
 
 **2.11 Universe and open threads**, depends on 1.5, effort M. Own `src/universe/*`
@@ -994,6 +1008,9 @@ draws plain code while off; `openWork` with the desk off ignores `leftOff`.
   extension (universe/index.ts:105, into a slot), "Show open threads", "Plant a
   thread" and "Close thread". The `threadSeen` follower (:94) becomes a data
   follower of threads.
+- `keptOut` and `scopeFor` must agree (wave 1 review): in `keptOut` an own link wins only
+  when it resolves; a chapter whose own link names nothing, under a book note set to
+  `false`, is out for both. Add that case to `tests/universe-scope.test.ts`.
 - `syncMode` (universe/index.ts:370-376) and the `checkCallback` mode checks go: the
   registry loads and unloads the universe with the mode. Commands keep `checkCallback`
   only for what they check besides the mode (an active Markdown note). Hiding the

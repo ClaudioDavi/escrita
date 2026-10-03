@@ -15,9 +15,41 @@ import type { Follower } from "../../src/core/vault-index";
 import type { DecorationId, Drawer } from "../../src/core/explorer-decorations";
 import type EscritaPlugin from "../../src/main";
 
-export interface FakeIndexHandle { disposed: boolean; spec: { name: string }; dispose(): void }
+export interface FakeIndexHandle {
+  disposed: boolean;
+  spec: { name: string };
+  dispose(): void;
+  /** what get(path) answers; tests set it */
+  values: Map<string, unknown>;
+  get(path: string): unknown;
+  onChange(cb: (changes: readonly unknown[]) => void): () => void;
+  onReady(cb: () => void): () => void;
+  /** tests call these to simulate the index */
+  emitChange(changes: readonly unknown[]): void;
+  becomeReady(): void;
+}
 
-export class FakeWorkspace {
+export interface FakeEventRef { source: string; name: string; cb: (...args: unknown[]) => unknown; live: boolean; off(): void }
+
+/** An Obsidian Events source that records: on() returns a ref, off()/offref() end it, trigger() calls the live ones. */
+export class FakeEvents {
+  refs: FakeEventRef[] = [];
+  constructor(readonly source: string) {}
+  on(name: string, cb: (...args: unknown[]) => unknown): FakeEventRef {
+    const ref: FakeEventRef = { source: this.source, name, cb, live: true, off: () => { ref.live = false; } };
+    this.refs.push(ref);
+    return ref;
+  }
+  offref(ref: FakeEventRef): void { ref.live = false; }
+  /** Calls the live listeners of an event. */
+  trigger(name: string, ...args: unknown[]): void {
+    for (const r of this.refs.filter((x) => x.live && x.name === name)) r.cb(...args);
+  }
+  liveListeners(name?: string): number { return this.refs.filter((r) => r.live && (!name || r.name === name)).length; }
+}
+
+export class FakeWorkspace extends FakeEvents {
+  constructor() { super("workspace"); }
   ready = false;
   private pending: (() => void)[] = [];
   updateOptionsCalls = 0;
@@ -41,8 +73,27 @@ export class FakeWorkspace {
     this.detached.push(type);
     this.leaves.delete(type);
   }
-  on(): { off(): void } { return { off() {} }; }
   getActiveFile(): null { return null; }
+  /** what getActiveViewOfType returns; tests set it */
+  activeView: unknown = null;
+  getActiveViewOfType(_type?: unknown): unknown { return this.activeView; }
+  /** leaves iterateAllLeaves walks, any view type; tests push into it */
+  allLeaves: unknown[] = [];
+  iterateAllLeaves(cb: (leaf: unknown) => void): void { for (const l of [...this.allLeaves]) cb(l); }
+}
+
+export class FakeVault extends FakeEvents {
+  /** what getAbstractFileByPath finds, by path; tests set it */
+  files = new Map<string, unknown>();
+  constructor() { super("vault"); }
+  getAbstractFileByPath(path: string): unknown { return this.files.get(path) ?? null; }
+}
+
+export class FakeMetadataCache extends FakeEvents {
+  /** what getFileCache returns, by file path; tests set it */
+  caches = new Map<string, unknown>();
+  constructor() { super("metadataCache"); }
+  getFileCache(file: { path: string } | null | undefined): unknown { return (file && this.caches.get(file.path)) ?? null; }
 }
 
 export class FakePlugin extends Component {
@@ -51,7 +102,11 @@ export class FakePlugin extends Component {
     version: 1, history: {}, publish: {}, leftOff: {}, lensDismissed: {}, threadSeen: {}, povColors: {},
   } as unknown as EscritaData;
   names = new NamesPort();
-  app = { workspace: new FakeWorkspace(), vault: {}, metadataCache: {} };
+  app = { workspace: new FakeWorkspace(), vault: new FakeVault(), metadataCache: new FakeMetadataCache() };
+  /** Event listeners still registered on workspace, vault and metadataCache. */
+  liveListeners(): number {
+    return this.app.workspace.liveListeners() + this.app.vault.liveListeners() + this.app.metadataCache.liveListeners();
+  }
 
   // services a module may touch; tests overwrite what they use
   books = {} as unknown;
@@ -73,7 +128,22 @@ export class FakePlugin extends Component {
   followers = new Set<Follower>();
   index = {
     add: (spec: { name: string }): FakeIndexHandle => {
-      const h: FakeIndexHandle = { disposed: false, spec, dispose() { this.disposed = true; } };
+      const changeCbs = new Set<(c: readonly unknown[]) => void>();
+      const readyCbs = new Set<() => void>();
+      let ready = false;
+      const h: FakeIndexHandle = {
+        disposed: false, spec, values: new Map(),
+        dispose() { this.disposed = true; changeCbs.clear(); readyCbs.clear(); },
+        get(path) { return this.values.get(path); },
+        onChange(cb) { changeCbs.add(cb); return () => { changeCbs.delete(cb); }; },
+        onReady(cb) {
+          if (ready) { cb(); return () => {}; }
+          readyCbs.add(cb);
+          return () => { readyCbs.delete(cb); };
+        },
+        emitChange(c) { for (const cb of [...changeCbs]) cb(c); },
+        becomeReady() { ready = true; for (const cb of [...readyCbs]) cb(); readyCbs.clear(); },
+      };
       this.indexAdded.push(h);
       return h;
     },
