@@ -4,12 +4,13 @@
 
 import {
   MarkdownView, Notice, Platform, TFile, editorInfoField, normalizePath,
-  type Editor, type MarkdownFileInfo, type Menu, type TAbstractFile, type WorkspaceLeaf,
+  type Component, type Editor, type MarkdownFileInfo, type Menu, type TAbstractFile, type WorkspaceLeaf,
 } from "obsidian";
 import type { EditorState } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import type EscritaPlugin from "../main";
 import { t } from "../i18n";
+import type { ModuleContext } from "../core/module-context";
 import { minimalChange } from "../core/note-text";
 import { LensMarks } from "./decorations";
 import { listsPath, starterNote } from "./lists";
@@ -46,7 +47,8 @@ export class LensUi {
   private selection: { path: string; from: number; to: number } | null = null;
   private selectionTimer: number | null = null;
 
-  constructor(private plugin: EscritaPlugin, private host: LensHost) {
+  /** `owner` is the module's Component: events and callbacks registered on it end with the module. */
+  constructor(private plugin: EscritaPlugin, private host: LensHost, private ctx: ModuleContext, private owner: Component) {
     this.marks = new LensMarks(
       (s) => { const f = fileOf(s); return f && f.extension === "md" ? f.path : null; },
       host.session,
@@ -58,7 +60,7 @@ export class LensUi {
     const p = this.plugin;
     const ws = p.app.workspace;
 
-    p.registerView(LENS_VIEW, (leaf) => {
+    this.ctx.view(LENS_VIEW, (leaf) => {
       const v = new LensView(leaf, p);
       v.hooks = {
         ignore: (rule) => this.ignoreCurrent(rule),
@@ -66,9 +68,9 @@ export class LensUi {
       };
       return v;
     });
-    p.registerEditorExtension(this.marks.extension);
+    this.ctx.editor([this.marks.extension]);
 
-    p.addCommand({
+    this.ctx.command({
       id: "toggle-revision-lens",
       name: t("lens.cmd.toggle"),
       checkCallback: (checking) => {
@@ -82,7 +84,7 @@ export class LensUi {
       ["next-revision-lens-match", 1, "lens.cmd.next", "chevron-down"],
       ["previous-revision-lens-match", -1, "lens.cmd.prev", "chevron-up"],
     ] as const) {
-      p.addCommand({
+      this.ctx.command({
         id,
         name: t(key),
         icon,
@@ -94,20 +96,20 @@ export class LensUi {
         },
       });
     }
-    p.addCommand({
+    this.ctx.command({
       id: "create-word-lists-note",
       name: t("lens.cmd.createLists"),
       callback: () => { void this.createLists(); },
     });
 
-    p.registerEvent(ws.on("editor-menu", (menu, editor, info) => this.editorMenu(menu, editor, info)));
+    this.owner.registerEvent(ws.on("editor-menu", (menu, editor, info) => this.editorMenu(menu, editor, info)));
 
-    p.register(this.host.session.onResult((path) => {
+    this.owner.register(this.host.session.onResult((path) => {
       this.marks.refresh();
       if (path === this.activePath()) this.refreshPanels();
     }));
-    p.register(this.marks.onSelection((path, ranges) => this.onSelection(path, ranges)));
-    p.register(() => { if (this.selectionTimer !== null) window.clearTimeout(this.selectionTimer); });
+    this.owner.register(this.marks.onSelection((path, ranges) => this.onSelection(path, ranges)));
+    this.owner.register(() => { if (this.selectionTimer !== null) window.clearTimeout(this.selectionTimer); });
   }
 
   // ---------------------------------------------------------------- state for the panel
