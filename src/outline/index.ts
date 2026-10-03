@@ -1,7 +1,7 @@
 import { Notice, TFile, normalizePath, type Editor } from "obsidian";
 import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
-import type { EscritaModule } from "../data";
+import { FeatureModule, type EditorSlot, type FeatureSlots } from "../core/module-context";
 import type { Book } from "../core/books";
 import { safeFileName } from "../core/book";
 import { FolderBlockedError } from "../core/notes";
@@ -12,8 +12,9 @@ import { beatAtLine, insertBeat, minimalChange } from "./beats-edit";
 import { buildBoard, canOverwriteBoard, mergeBoard, type BoardChapter } from "./model";
 import { reportError } from "./errors";
 import { ghostBeats } from "./ghost";
+import { loadRows } from "./rows";
 import { CreateBookModal, confirmAction } from "./modals";
-import { OUTLINE_VIEW, OutlineView } from "./view";
+import { OUTLINE_VIEW, OutlineView, chaptersPort, str } from "./view";
 
 /** Default goal written into a new book's note. */
 const NEW_BOOK_GOAL = 80000;
@@ -22,23 +23,26 @@ const NEW_BOOK_GOAL = 80000;
  * The outline: a side panel with a book's chapters and beats (editable in
  * place), ghost beats in the editor, a Canvas board export and book creation.
  */
-export class OutlineModule implements EscritaModule {
-  /** editor extensions, swapped in place when settings change */
-  private extensions: Extension[] = [];
+export class OutlineModule extends FeatureModule {
+  readonly id = "outline" as const;
+  readonly slots: FeatureSlots = { views: [OUTLINE_VIEW], editors: 1 };
+  /** the ghost beats' extension slot, refilled when the setting changes */
+  private editorSlot: EditorSlot | null = null;
 
-  constructor(private plugin: EscritaPlugin) {}
+  constructor(private plugin: EscritaPlugin) { super(); }
 
-  load(): void {
+  onload(): void {
     const plugin = this.plugin;
-    plugin.registerView(OUTLINE_VIEW, (leaf) => new OutlineView(leaf, plugin));
-    plugin.addRibbonIcon("list-tree", t("outline.command.open"), () => { void this.openOutline(); });
+    const ctx = this.ctx;
+    ctx.view(OUTLINE_VIEW, (leaf) => new OutlineView(leaf, plugin));
+    ctx.ribbon("list-tree", t("outline.command.open"), () => { void this.openOutline(); });
 
-    plugin.addCommand({
+    ctx.command({
       id: "open-outline",
       name: t("outline.command.open"),
       callback: () => { void this.openOutline(); },
     });
-    plugin.addCommand({
+    ctx.command({
       id: "open-outline-board",
       name: t("outline.command.board"),
       checkCallback: (checking) => {
@@ -48,22 +52,22 @@ export class OutlineModule implements EscritaModule {
         return true;
       },
     });
-    plugin.addCommand({
+    ctx.command({
       id: "create-book",
       name: t("outline.command.createBook"),
       callback: () => this.createBook(),
     });
-    plugin.addCommand({
+    ctx.command({
       id: "add-beat",
       name: t("outline.command.addBeat"),
-      editorCheckCallback: (checking, editor, ctx) => {
-        const file = ctx.file;
+      editorCheckCallback: (checking, editor, ectx) => {
+        const file = ectx.file;
         if (!file || plugin.books.classify(file).kind !== "chapter") return false;
         if (!checking) this.addBeatInEditor(editor);
         return true;
       },
     });
-    plugin.addCommand({
+    ctx.command({
       id: "renumber-chapters",
       name: t("outline.command.renumber"),
       checkCallback: (checking) => {
@@ -74,21 +78,23 @@ export class OutlineModule implements EscritaModule {
       },
     });
 
-    this.applyEditorSettings(false);
-    plugin.registerEditorExtension(this.extensions);
+    this.editorSlot = ctx.editor(this.ghostExtensions());
+  }
+
+  onunload(): void {
+    this.editorSlot = null;
   }
 
   settingsChanged(): void {
-    this.applyEditorSettings(true);
+    this.editorSlot?.set(this.ghostExtensions());
+    this.plugin.app.workspace.updateOptions();
     for (const leaf of this.plugin.app.workspace.getLeavesOfType(OUTLINE_VIEW)) {
       if (leaf.view instanceof OutlineView) leaf.view.settingsChanged();
     }
   }
 
-  private applyEditorSettings(update: boolean): void {
-    this.extensions.length = 0;
-    if (this.plugin.settings.ghostBeats) this.extensions.push(ghostBeats());
-    if (update) this.plugin.app.workspace.updateOptions();
+  private ghostExtensions(): Extension[] {
+    return this.plugin.settings.ghostBeats ? [ghostBeats()] : [];
   }
 
   /** The active note's book, else the book shown in the outline panel. */
@@ -150,20 +156,20 @@ export class OutlineModule implements EscritaModule {
 
   /** Write `<book folder>/<book title> board.canvas` from the outline and open it. */
   async openBoard(book: Book): Promise<void> {
-    const { app, settings, books } = this.plugin;
+    const { app, settings } = this.plugin;
     try {
-      const chapters: BoardChapter[] = [];
-      for (const ch of books.chapters(book)) {
-        const text = await app.vault.cachedRead(ch.file);
-        const fm = books.frontmatter(ch.file);
-        chapters.push({
-          path: ch.file.path,
-          name: ch.file.basename,
-          summary: stringOf(fm[settings.summaryProperty]),
-          status: stringOf(fm[settings.statusProperty]),
-          beats: parseBeats(text).map((b) => b.text),
-        });
-      }
+      const { port } = chaptersPort(this.plugin);
+      const chapters: BoardChapter[] = (await loadRows(port, book)).map((row) => {
+        // summary and status as written in the note, as the board always had them
+        const fm = port.frontmatter(row.path) ?? {};
+        return {
+          path: row.path,
+          name: row.path.slice(row.path.lastIndexOf("/") + 1).replace(/\.md$/, ""),
+          summary: str(fm[settings.summaryProperty]),
+          status: str(fm[settings.statusProperty]),
+          beats: row.beats.map((b) => b.text),
+        };
+      });
       const board = buildBoard(chapters, (s) => statusColor(s, settings.stages, settings.otherStatusColors));
       const path = normalizePath(`${book.folder.path}/${book.title} board.canvas`);
       const existing = app.vault.getAbstractFileByPath(path);
@@ -252,10 +258,3 @@ export class OutlineModule implements EscritaModule {
     reportError(e);
   }
 }
-
-function stringOf(v: unknown): string {
-  if (v === null || v === undefined) return "";
-  if (Array.isArray(v)) return v.map(stringOf).join(", ");
-  return String(v);
-}
-

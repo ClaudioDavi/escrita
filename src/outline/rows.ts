@@ -1,7 +1,7 @@
 // A chapter's row, loaded once for the outline view and the board (0.7 plan Q51,
 // IMPROVEMENTS 7). Pure: no Obsidian or CodeMirror imports, no i18n.
 
-import { chapterNumber, chapterTitle } from "../core/book";
+import { chapterTitle } from "../core/book";
 import { parseBeats, type BeatMarker } from "../core/markers";
 import {
   countIn, effectivePiece, noteProgress, parseUnit, readPiece,
@@ -63,14 +63,16 @@ export async function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRo
     const fm = port.frontmatter(ch.path) ?? {};
     const status = readStatus(fm, s.statusProperty) ?? "";
     const own = readPiece(fm, s);
-    const ownUnit = fm[s.unitProperty] === undefined || fm[s.unitProperty] === null ? null : parseUnit(fm[s.unitProperty]);
+    const rawUnit = fm[s.unitProperty];
+    // a blank unit is no unit, so it never overrides the book's (same rule as readChapterDefault)
+    const ownUnit = rawUnit === undefined || rawUnit === null || (typeof rawUnit === "string" && rawUnit.trim() === "") ? null : parseUnit(rawUnit);
     const { piece, source } = effectivePiece(own, def, ownUnit);
     const unit: PieceUnit = piece?.unit ?? ownUnit ?? "words";
     const counts = await port.counts(ch.path, seed, unit);
     return {
       path: ch.path,
       index: i,
-      label: String(chapterNumber(ch.basename) ?? i + 1),
+      label: /^\d+/.exec(ch.basename)?.[0] ?? String(i + 1),   // the digits as written ("01"), as the view always showed them
       title: chapterTitle(ch.basename),
       summary: s.summaryProperty ? oneLine(str(fm[s.summaryProperty])) : "",
       status,

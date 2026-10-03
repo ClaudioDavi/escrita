@@ -1,0 +1,124 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { FeatureRegistry } from "../src/core/feature-registry";
+import type { FeatureId } from "../src/core/features";
+import type { FeatureModule } from "../src/core/module-context";
+import type { EscritaModule } from "../src/data";
+import { OutlineModule } from "../src/outline";
+import { OUTLINE_VIEW } from "../src/outline/view";
+import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
+
+const COMMANDS = ["open-outline", "open-outline-board", "create-book", "add-beat", "renumber-chapters"].map((c) => `escrita:${c}`);
+
+let plugin: FakePlugin;
+let mod: OutlineModule;
+let reg: FeatureRegistry;
+
+function turn(on: boolean): void {
+  plugin.settings.features = { ...plugin.settings.features, outline: on };
+}
+
+/** The editor array the module's slot fills, registered once at plugin load. */
+function slotArray(): unknown[] {
+  return plugin.extensions[0] as unknown[];
+}
+
+beforeEach(() => {
+  plugin = fakePlugin();
+  mod = new OutlineModule(plugin.asPlugin);
+  reg = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, FeatureModule | EscritaModule>([["outline", mod]]));
+  plugin.features = reg;
+  reg.init();
+});
+
+describe("outline lifecycle", () => {
+  it("registers its view and one editor slot at init, before anything loads", () => {
+    expect([...plugin.views.keys()]).toEqual([OUTLINE_VIEW]);
+    expect(plugin.extensions).toHaveLength(1);
+    expect(slotArray()).toHaveLength(0);
+    expect(plugin.commands.size).toBe(0);
+  });
+
+  it("loads: five commands, the ribbon icon, the ghost beats, the view creates an OutlineView", () => {
+    reg.apply();
+    expect(reg.isOn("outline")).toBe(true);
+    expect([...plugin.commands.keys()].sort()).toEqual([...COMMANDS].sort());
+    expect(plugin.ribbonAdds).toHaveLength(1);
+    expect(slotArray()).toHaveLength(1);
+    expect(plugin.views.get(OUTLINE_VIEW)).toBeTypeOf("function");
+  });
+
+  it("unloads: no command, no extension, no listener, no index, no timer; the view slot answers a placeholder", () => {
+    reg.apply();
+    turn(false);
+    reg.apply();
+    expect(reg.isOn("outline")).toBe(false);
+    expect(plugin.commands.size).toBe(0);
+    expect(slotArray()).toHaveLength(0);
+    expect(plugin.liveListeners()).toBe(0);
+    expect(plugin.indexAdded).toHaveLength(0);
+    expect(plugin.followers.size).toBe(0);
+    expect(plugin.drawn.size).toBe(0);
+    expect(plugin.statusBars).toHaveLength(0);
+    expect(plugin.app.workspace.detached).toContain(OUTLINE_VIEW);
+    // the leaf of an off feature gets Obsidian's placeholder, not the outline
+    const view = plugin.views.get(OUTLINE_VIEW)!({} as never) as { getViewType(): string };
+    expect(view.getViewType()).toBe(OUTLINE_VIEW);
+    expect(view.constructor.name).not.toBe("OutlineView");
+  });
+
+  it("loads again with one of each, and the ribbon icon is reused (G0f)", () => {
+    reg.apply();
+    turn(false);
+    reg.apply();
+    turn(true);
+    reg.apply();
+    expect([...plugin.commands.keys()].sort()).toEqual([...COMMANDS].sort());
+    expect(plugin.views.size).toBe(1);
+    expect(plugin.extensions).toHaveLength(1);
+    expect(slotArray()).toHaveLength(1);
+    expect(plugin.ribbon.size).toBe(1);
+  });
+
+  it("a click on the ribbon icon of an off feature shows the notice and opens nothing", () => {
+    reg.apply();
+    turn(false);
+    reg.apply();
+    expect(() => plugin.clickRibbon("Open outline")).not.toThrow();
+  });
+
+  it("the ghost beats setting refills the slot while loaded, and updates the editors", () => {
+    reg.apply();
+    const before = plugin.app.workspace.updateOptionsCalls;
+    plugin.settings.ghostBeats = false;
+    mod.settingsChanged();
+    expect(slotArray()).toHaveLength(0);
+    expect(plugin.app.workspace.updateOptionsCalls).toBeGreaterThan(before);
+    plugin.settings.ghostBeats = true;
+    mod.settingsChanged();
+    expect(slotArray()).toHaveLength(1);
+  });
+
+  it("starts with ghost beats off: the slot is empty", () => {
+    plugin.settings.ghostBeats = false;
+    reg.apply();
+    expect(slotArray()).toHaveLength(0);
+    expect(plugin.commands.size).toBe(COMMANDS.length);
+  });
+
+  it("a settings change on an unloaded outline does nothing (the registry skips it)", () => {
+    reg.apply();
+    turn(false);
+    reg.apply();
+    plugin.settings.ghostBeats = false;
+    reg.settingsChanged();
+    expect(slotArray()).toHaveLength(0);
+  });
+
+  it("keeps the writer's data: nothing in plugin.data changes across a switch", () => {
+    const before = JSON.stringify(plugin.data);
+    reg.apply();
+    turn(false);
+    reg.apply();
+    expect(JSON.stringify(plugin.data)).toBe(before);
+  });
+});
