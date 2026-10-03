@@ -9,16 +9,16 @@
 
 import { Notice, TFile, TFolder, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
 import type EscritaPlugin from "../main";
-import type { EscritaModule } from "../data";
+import { FeatureModule, type FeatureSlots } from "../core/module-context";
+import type { Follower } from "../core/vault-index";
+import { movedPath } from "../core/path-keys";
 import { inSnapshots, snapshotsRoot } from "../core/classify";
 import { writingDay } from "../core/dates";
 import { measureText } from "../core/measure";
-import { writtenWord, type Stage } from "../core/stages";
 import { revertPlan, wholeText, type AnchoredChange, type Change } from "../core/note-text";
 import { t } from "../i18n";
 import { confirmAction } from "../outline/modals";
 import { createSnapshotFs } from "./fs";
-import { StageWatch, stageTakeTargets, transitionName } from "./stage-watch";
 import { label as entryLabel, type SnapshotEntry, type SnapshotKind } from "./index-format";
 import { askName, pickPath } from "./modals";
 import { isInside } from "./paths";
@@ -29,7 +29,10 @@ import { COMPARE_VIEW, CompareView, type CompareMode } from "./compare-view";
 export { SNAPSHOTS_VIEW } from "./view";
 export { COMPARE_VIEW } from "./compare-view";
 
-export class SnapshotsModule implements EscritaModule {
+export class SnapshotsModule extends FeatureModule {
+  readonly id = "snapshots" as const;
+  readonly slots: FeatureSlots = { views: [SNAPSHOTS_VIEW, COMPARE_VIEW] };
+  /** built at construction, not at load: the rename follower moves snapshot files while the feature is off (Q8) */
   store: SnapshotStore;
   private fsCache: { root: string; fs: SnapshotFs } | null = null;
   /** path → writing day of its first edit seen this session (the daily snapshot runs once) */
@@ -40,11 +43,9 @@ export class SnapshotsModule implements EscritaModule {
   /** the note the panel shows; follows the active note */
   private shownPath: string | null = null;
   private refreshTimer: number | null = null;
-  private loaded = false;
-  private watch: StageWatch | null = null;
-  private stageFailed = false;
 
   constructor(private plugin: EscritaPlugin) {
+    super();
     this.store = new SnapshotStore(
       () => this.fs(),
       () => ({
@@ -95,12 +96,11 @@ export class SnapshotsModule implements EscritaModule {
 
   // ---------------------------------------------------------------- lifecycle
 
-  load(): void {
-    const p = this.plugin;
-    const { workspace, vault } = p.app;
-    this.loaded = true;
-    p.registerView(SNAPSHOTS_VIEW, (leaf) => new SnapshotsView(leaf, this));
-    p.registerView(COMPARE_VIEW, (leaf) => new CompareView(leaf, this));
+  onload(): void {
+    const ctx = this.ctx;
+    const { workspace, vault } = this.plugin.app;
+    ctx.view(SNAPSHOTS_VIEW, (leaf) => new SnapshotsView(leaf, this));
+    ctx.view(COMPARE_VIEW, (leaf) => new CompareView(leaf, this));
 
     const onActive = (run: (file: TFile) => void) => (checking: boolean): boolean => {
       const file = workspace.getActiveFile();
@@ -108,29 +108,28 @@ export class SnapshotsModule implements EscritaModule {
       if (!checking) run(file);
       return true;
     };
-    p.addCommand({
+    ctx.command({
       id: "take-snapshot",
       name: t("snapshots.cmd.take"),
       checkCallback: onActive((f) => { void this.promptTake(f); }),
     });
-    p.addCommand({
+    ctx.command({
       id: "open-snapshots",
       name: t("snapshots.cmd.open"),
       callback: () => { void this.openPanel(); },
     });
-    p.addCommand({
+    ctx.command({
       id: "compare-last-snapshot",
       name: t("snapshots.cmd.compareLast"),
       checkCallback: onActive((f) => { void this.compareLast(f); }),
     });
-
-    p.addCommand({
+    ctx.command({
       id: "browse-deleted-snapshots",
       name: t("snapshots.cmd.browseDeleted"),
       callback: () => { void this.browseDeleted(); },
     });
 
-    p.registerEvent(workspace.on("file-menu", (menu, file) => {
+    this.registerEvent(workspace.on("file-menu", (menu, file) => {
       if (!this.canSnapshot(file)) return;
       menu.addItem((item) => item
         .setTitle(t("snapshots.menu.take"))
@@ -138,82 +137,33 @@ export class SnapshotsModule implements EscritaModule {
         .onClick(() => { void this.promptTake(file); }));
     }));
 
-    // Renames: snapshots follow their note (deletes keep them, on purpose).
-    p.registerEvent(vault.on("rename", (f, oldPath) => this.renamed(f, oldPath)));
-    p.registerEvent(workspace.on("editor-change", (_ed, info) => this.firstEdit(info.file)));
-    p.registerEvent(workspace.on("file-open", (file) => { if (this.canSnapshot(file)) this.follow(file.path); }));
-    p.registerEvent(vault.on("modify", (f) => { if (f.path === this.shownPath) this.scheduleRefresh(); }));
-    p.register(this.store.onChange((path) => { if (path === this.shownPath) this.scheduleRefresh(); }));
+    // The panel follows a rename of the note it shows. The snapshot files follow in dataFollowers().
+    ctx.follow({ moved: (oldPath, newPath) => this.shownMoved(oldPath, newPath) });
+    this.registerEvent(workspace.on("editor-change", (_ed, info) => this.firstEdit(info.file)));
+    this.registerEvent(workspace.on("file-open", (file) => { if (this.canSnapshot(file)) this.follow(file.path); }));
+    this.registerEvent(vault.on("modify", (f) => { if (f.path === this.shownPath) this.scheduleRefresh(); }));
+    this.register(this.store.onChange((path) => { if (path === this.shownPath) this.scheduleRefresh(); }));
     // the panel's word delta
-    p.register(p.measure.onChange((paths) => { if (this.shownPath && paths.includes(this.shownPath)) this.scheduleRefresh(); }));
-    this.watchStages();
-    workspace.onLayoutReady(() => {
-      if (!this.loaded) return;
+    this.register(this.plugin.measure.onChange((paths) => { if (this.shownPath && paths.includes(this.shownPath)) this.scheduleRefresh(); }));
+    ctx.onLayoutReady(() => {
       const active = workspace.getActiveFile();
       if (this.canSnapshot(active)) this.follow(active.path);
     });
   }
 
-  unload(): void {
-    this.loaded = false;
-    this.watch?.dispose();
-    this.watch = null;
+  onunload(): void {
     if (this.refreshTimer !== null) window.clearTimeout(this.refreshTimer);
     this.refreshTimer = null;
+    this.shownPath = null;
   }
 
-  // ---------------------------------------------------------------- stage changes
-
-  /** A stage change takes a snapshot, silently (SS3). Fed by the works index. */
-  private watchStages(): void {
-    const p = this.plugin;
-    const watch = new StageWatch({
-      timers: {
-        set: (cb, ms) => window.setTimeout(cb, ms),
-        clear: (h) => window.clearTimeout(h as number),
-        yieldNow: () => new Promise<void>((r) => window.setTimeout(r, 0)),
-      },
-      current: (path) => p.works.get(path),
-      all: () => p.works.list(),
-      onTransition: (path, from, to) => { void this.takeStage(path, from, to); },
-    });
-    this.watch = watch;
-    p.register(p.works.onChange((changes) => watch.handle(changes)));
-    // seed from the full works list once the index is built
-    if (p.works.isReady()) watch.handle([{ path: "", cause: "build" }]);
-    else p.register(p.works.onReady(() => watch.handle([{ path: "", cause: "build" }])));
-  }
-
-  /** The work's note (and a book's chapters) are saved under the same name, one after another. */
-  private async takeStage(path: string, from: Stage, to: Stage): Promise<void> {
-    try {
-      const { vault } = this.plugin.app;
-      const note = vault.getAbstractFileByPath(path);
-      if (!this.canSnapshot(note)) return;
-      const entry = this.plugin.works.get(path);
-      const placement = this.plugin.books.classify(note);
-      const chapters = entry?.role === "book" && placement.book
-        ? this.plugin.books.chapters(placement.book).map((c) => c.file)
-        : [];
-      const targets = stageTakeTargets(note, entry?.role ?? "note", chapters);
-      const stages = this.plugin.settings.stages;
-      const name = transitionName(from, to, (s) => writtenWord(stages, s));
-      const day = writingDay(new Date(), this.plugin.settings.dayEndsAt);
-      for (const t0 of targets) {
-        // re-resolve by path: the file may have been renamed or deleted meanwhile
-        const f = vault.getAbstractFileByPath(t0.path);
-        if (!this.canSnapshot(f)) continue;
-        const text = await this.plugin.notes.text(f).read();
-        await this.store.take(f, text, {
-          kind: "stage", name, stage: { from, to }, day, words: measureText(text).words,
-        });
-      }
-    } catch (e) {
-      console.error(`Escrita: couldn't take the stage snapshot of ${path}`, e);
-      if (this.stageFailed) return;
-      this.stageFailed = true;
-      new Notice(t("snapshots.notice.stageFailed"));
-    }
+  /**
+   * Snapshots follow their note, also while the feature is off (Q8, a listed deviation):
+   * this one moves files on disk and may rewrite `snapshotsFolder`. Deletes keep them, on purpose.
+   * It touches only the store (built at construction), the settings and the vault.
+   */
+  dataFollowers(): Follower[] {
+    return [{ moved: (oldPath, newPath) => this.renamed(oldPath, newPath) }];
   }
 
   settingsChanged(): void {
@@ -564,24 +514,33 @@ export class SnapshotsModule implements EscritaModule {
 
   // ---------------------------------------------------------------- renames
 
-  private renamed(f: TAbstractFile, oldPath: string): void {
+  private renamed(oldPath: string, newPath: string): void {
+    // A follower carries paths only; the vault says what the new path is.
+    const f = this.plugin.app.vault.getAbstractFileByPath(newPath);
+    if (!f) return;
     const root = this.root();
     // The snapshots folder itself (or a folder holding it) was renamed: follow it.
     if (f instanceof TFolder && isInside(oldPath, root)) {
-      const next = f.path + root.slice(oldPath.length);
-      this.plugin.settings.snapshotsFolder = next;
+      this.plugin.settings.snapshotsFolder = f.path + root.slice(oldPath.length);
       void this.plugin.saveSettings();
       return;
     }
     if (isInside(root, f.path) || isInside(root, oldPath)) return;
-    if (this.shownPath === oldPath) this.shownPath = f.path;
     let job: Promise<void> | null = null;
     if (f instanceof TFile) {
       if (oldPath.endsWith(".md") && f.path.endsWith(".md")) job = this.store.moveNote(oldPath, f.path);
     } else if (f instanceof TFolder) {
-      if (this.shownPath?.startsWith(`${oldPath}/`)) this.shownPath = f.path + this.shownPath.slice(oldPath.length);
       job = this.store.moveFolder(oldPath, f.path);
     }
     job?.catch((e) => console.error(`Escrita: couldn't move the snapshots of ${oldPath} to ${f.path}`, e));
+  }
+
+  /** The panel's note was renamed, or sits in a folder that was. */
+  private shownMoved(oldPath: string, newPath: string): void {
+    const root = this.root();
+    if (isInside(root, newPath) || isInside(root, oldPath)) return;
+    if (this.shownPath === null) return;
+    const next = movedPath(this.shownPath, oldPath, newPath);
+    if (next !== null) this.shownPath = next;
   }
 }

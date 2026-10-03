@@ -140,7 +140,7 @@ export default class EscritaPlugin extends Plugin {
       ["typing", new TypingFeature(this)], ["dialogueFocus", new DialogueFocusFeature(this)],
       ["moveBlocks", new MoveBlocksFeature(this)], ["templates", new TemplatesFeature(this)],
       ["spellcheck", new SpellcheckFeature(this)],
-      ["lens", this.lens], ["snapshots", this.snapshots], ["stageSnapshot", new StageSnapshotFeature()],
+      ["lens", this.lens], ["snapshots", this.snapshots], ["stageSnapshot", new StageSnapshotFeature(this)],
       ["publish", this.publish], ["desk", this.desk],
       ["universe", this.universe], ["threads", new ThreadsFeature()],
     ]);
