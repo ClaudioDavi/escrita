@@ -1,5 +1,5 @@
 // The features the writer can turn off (SF 10, 0.7 plan Q9-Q11). Pure data and
-// stubs (no Obsidian imports); task 1.1 fills the stubs.
+// functions, no Obsidian imports. The registry (feature-registry.ts) acts on them.
 
 export const FEATURE_IDS = [
   "goals", "outline", "placeholders", "explorerCounts", "darlings", "typing", "dialogueFocus",
@@ -46,12 +46,29 @@ export interface FeatureSwitches {
 
 /** The writer's switch alone (missing key = on). */
 export function switchedOn(id: FeatureId, s: FeatureSwitches): boolean {
-  throw new Error("todo");
+  switch (FEATURE_SPECS.find((f) => f.id === id)?.switch) {
+    case "explorerCounts": return s.explorerCounts;
+    case "spellcheckOnDemand": return s.spellcheckOnDemand;
+    case "universeMode": return s.universeMode !== "off";
+    default: return s.features[id] !== false;
+  }
 }
 
 /** Switched on and every requirement on (closure). */
 export function wanted(s: FeatureSwitches): Set<FeatureId> {
-  throw new Error("todo");
+  // `requires` is one level deep today, but the closure is computed to a fixed point.
+  const on = new Set<FeatureId>(FEATURE_IDS.filter((id) => switchedOn(id, s)));
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const spec of FEATURE_SPECS) {
+      if (on.has(spec.id) && spec.requires?.some((r) => !on.has(r))) {
+        on.delete(spec.id);
+        changed = true;
+      }
+    }
+  }
+  return on;
 }
 
 /** What to unload (reverse order) and load (FEATURE_IDS order) to go from loaded to want. */
@@ -59,7 +76,10 @@ export function planApply(
   loaded: ReadonlySet<FeatureId>,
   want: ReadonlySet<FeatureId>,
 ): { unload: FeatureId[]; load: FeatureId[] } {
-  throw new Error("todo");
+  return {
+    unload: FEATURE_IDS.filter((id) => loaded.has(id) && !want.has(id)).reverse(),
+    load: FEATURE_IDS.filter((id) => want.has(id) && !loaded.has(id)),
+  };
 }
 
 /** Saved `features` (any shape) → a clean record: unknown ids and non-booleans dropped. */

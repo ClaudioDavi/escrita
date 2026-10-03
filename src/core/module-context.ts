@@ -1,8 +1,12 @@
-// What a module may register on the plugin, and the base class of a switchable
-// feature (0.7 plan Q1-Q7). Types are filled; class bodies are stubs until 1.1.
+// What a module registers on the plugin, and the base class of a switchable
+// feature (0.7 plan Q1-Q7). The context is the one place, with main.ts and the
+// two core services that already do, that calls the Plugin-only registration
+// methods; it records an undo for each and runs them on unload.
 
-import { Component, type Command, type MarkdownPostProcessor, type MarkdownPostProcessorContext, type ViewCreator } from "obsidian";
+import { Component, ItemView, Notice, type Command, type MarkdownPostProcessor, type MarkdownPostProcessorContext, type ViewCreator, type WorkspaceLeaf } from "obsidian";
 import type { Extension } from "@codemirror/state";
+import type EscritaPlugin from "../main";
+import { t } from "../i18n";
 import type { FeatureId } from "./features";
 import type { Follower, IndexFile, IndexSpec, VaultIndex } from "./vault-index";
 import type { DecorationId, Drawer } from "./explorer-decorations";
@@ -48,11 +52,213 @@ export abstract class FeatureModule extends Component {
 
   /** Called by the registry before each load. */
   attach(ctx: ModuleContext): void {
-    throw new Error("todo");
+    this.ctx = ctx;
   }
 
   settingsChanged?(): void;
 
   /** Followers that keep this feature's path-keyed data current even while it is off (Q8). Touch only plugin.data and plugin.settings. */
   dataFollowers?(): Follower[];
+}
+
+/** What a restored leaf of an off feature's view type shows until the layout is ready and it is detached (Q3). */
+class PlaceholderView extends ItemView {
+  constructor(leaf: WorkspaceLeaf, private readonly type: string) { super(leaf); }
+  getViewType(): string { return this.type; }
+  getDisplayText(): string { return "Escrita"; }
+}
+
+/**
+ * The slots one module declared: views, code blocks, a post-processor and editor
+ * extension arrays. Each is registered on the plugin once, at plugin load, whether
+ * the feature is on or not; the module only binds and unbinds what they call (Q3-Q5).
+ */
+export class ModuleSlots {
+  private views = new Map<string, ViewCreator | null>();
+  private blocks = new Map<string, CodeBlockHandler | null>();
+  private post: MarkdownPostProcessor | null = null;
+  private editors: Extension[][] = [];
+  private nextEditor = 0;
+  private registered = false;
+
+  /** `changed` is called when an editor slot's contents change. */
+  constructor(private plugin: EscritaPlugin, readonly declared: FeatureSlots, private changed: () => void) {}
+
+  /** Registers every declared slot on the plugin; a second call does nothing. */
+  register(): void {
+    if (this.registered) return;
+    this.registered = true;
+    const p = this.plugin;
+    for (const type of this.declared.views ?? []) {
+      this.views.set(type, null);
+      p.registerView(type, (leaf) => {
+        const create = this.views.get(type);
+        return create ? create(leaf) : new PlaceholderView(leaf, type);
+      });
+    }
+    for (const lang of this.declared.codeBlocks ?? []) {
+      this.blocks.set(lang, null);
+      p.registerMarkdownCodeBlockProcessor(lang, (source, el, ctx) => {
+        const handler = this.blocks.get(lang);
+        if (handler) return handler(source, el, ctx);
+        // off: plain source, the way Obsidian shows an unknown language
+        el.createEl("pre").createEl("code", { text: source });
+      });
+    }
+    if (this.declared.postProcessor) {
+      p.registerMarkdownPostProcessor((el, ctx) => { this.post?.(el, ctx); });
+    }
+    for (let i = 0; i < (this.declared.editors ?? 0); i++) {
+      const arr: Extension[] = [];
+      this.editors.push(arr);
+      p.registerEditorExtension(arr);
+    }
+  }
+
+  bindView(type: string, create: ViewCreator): () => void {
+    if (!this.views.has(type)) throw new Error(`Escrita: view type "${type}" was not declared in slots.views`);
+    this.views.set(type, create);
+    return () => { this.views.set(type, null); };
+  }
+
+  bindCodeBlock(lang: string, handler: CodeBlockHandler): () => void {
+    if (!this.blocks.has(lang)) throw new Error(`Escrita: code block "${lang}" was not declared in slots.codeBlocks`);
+    this.blocks.set(lang, handler);
+    return () => { this.blocks.set(lang, null); };
+  }
+
+  bindPostProcessor(fn: MarkdownPostProcessor): () => void {
+    if (!this.declared.postProcessor) throw new Error("Escrita: the post-processor was not declared in slots.postProcessor");
+    this.post = fn;
+    return () => { this.post = null; };
+  }
+
+  /** The module's next declared array; `set` replaces its contents. */
+  takeEditor(initial?: readonly Extension[]): EditorSlot {
+    const arr = this.editors[this.nextEditor++];
+    if (!arr) throw new Error("Escrita: more editor slots taken than declared in slots.editors");
+    const set = (exts: readonly Extension[]): void => {
+      arr.splice(0, arr.length, ...exts);
+      this.changed();
+    };
+    if (initial && initial.length > 0) set(initial);
+    return { set };
+  }
+
+  /** Unload: empties every editor array and lets the next load take them from the first. */
+  releaseEditors(): void {
+    this.nextEditor = 0;
+    let any = false;
+    for (const arr of this.editors) {
+      if (arr.length > 0) any = true;
+      arr.length = 0;
+    }
+    if (any) this.changed();
+  }
+
+  /** The declared view types (the registry detaches their leaves when a feature is switched off). */
+  get viewTypes(): readonly string[] { return this.declared.views ?? []; }
+}
+
+/**
+ * The context of one module, reused across its loads and owned by the registry.
+ * `begin()` before each load, `end()` on unload: it runs every recorded undo in
+ * reverse. Commands, ribbon icons, the status bar, views, editor slots, code
+ * blocks, indexes, followers and decorations all go through here.
+ */
+export class ModuleContextImpl implements ModuleContext {
+  private disposers: (() => void)[] = [];
+  private active = false;
+  private generation = 0;
+  /** G0f: a ribbon icon can't be removed, so it is kept by title for the plugin's life */
+  private ribbons = new Map<string, { el: HTMLElement; cb: ((e: MouseEvent) => void) | null }>();
+
+  constructor(private plugin: EscritaPlugin, private slots: ModuleSlots | null = null) {}
+
+  /** Before each load. */
+  begin(): void {
+    this.active = true;
+    this.generation++;
+  }
+
+  /** On unload: undoes everything registered since `begin()`. Safe to call twice. */
+  end(): void {
+    this.active = false;
+    this.generation++;
+    const run = this.disposers.splice(0).reverse();
+    for (const undo of run) {
+      try { undo(); } catch (e) { console.error("Escrita: a feature's undo failed", e); }
+    }
+    this.slots?.releaseEditors();
+    for (const r of this.ribbons.values()) r.cb = null;
+  }
+
+  command(cmd: Command): void {
+    const raw = cmd.id;               // addCommand rewrites id to `escrita:<id>` on the object it gets (G0a)
+    this.plugin.addCommand({ ...cmd });
+    this.disposers.push(() => this.plugin.removeCommand(raw));
+  }
+
+  ribbon(icon: string, title: string, cb: (e: MouseEvent) => void): HTMLElement | null {
+    if (!this.active) return null;
+    const known = this.ribbons.get(title);
+    if (known) {
+      known.cb = cb;
+      return known.el;
+    }
+    const entry: { el: HTMLElement; cb: ((e: MouseEvent) => void) | null } = { el: null as unknown as HTMLElement, cb };
+    entry.el = this.plugin.addRibbonIcon(icon, title, (e) => {
+      if (entry.cb) entry.cb(e);
+      else new Notice(t("features.offNotice"));
+    });
+    this.ribbons.set(title, entry);
+    return entry.el;
+  }
+
+  statusBar(): HTMLElement {
+    const el = this.plugin.addStatusBarItem();
+    this.disposers.push(() => el.remove());
+    return el;
+  }
+
+  view(type: string, create: ViewCreator): void {
+    if (!this.slots) throw new Error(`Escrita: view type "${type}" was not declared in slots.views`);
+    this.disposers.push(this.slots.bindView(type, create));
+  }
+
+  editor(initial?: readonly Extension[]): EditorSlot {
+    if (!this.slots) throw new Error("Escrita: more editor slots taken than declared in slots.editors");
+    return this.slots.takeEditor(initial);
+  }
+
+  codeBlock(lang: string, handler: CodeBlockHandler): void {
+    if (!this.slots) throw new Error(`Escrita: code block "${lang}" was not declared in slots.codeBlocks`);
+    this.disposers.push(this.slots.bindCodeBlock(lang, handler));
+  }
+
+  postProcessor(fn: MarkdownPostProcessor): void {
+    if (!this.slots) throw new Error("Escrita: the post-processor was not declared in slots.postProcessor");
+    this.disposers.push(this.slots.bindPostProcessor(fn));
+  }
+
+  index<F extends IndexFile, V>(spec: IndexSpec<F, V>): VaultIndex<F, V> {
+    const index = this.plugin.index.add(spec);
+    this.disposers.push(() => this.plugin.index.remove(index));
+    return index;
+  }
+
+  follow(f: Follower): void {
+    this.disposers.push(this.plugin.index.follow(f));
+  }
+
+  decorate(id: DecorationId, draw: Drawer): void {
+    this.disposers.push(this.plugin.decorations.add(id, draw));
+  }
+
+  onLayoutReady(cb: () => void): void {
+    const gen = this.generation;
+    this.plugin.app.workspace.onLayoutReady(() => {
+      if (this.active && this.generation === gen) cb();
+    });
+  }
 }

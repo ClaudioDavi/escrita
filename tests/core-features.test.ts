@@ -41,6 +41,18 @@ describe("cleanFeatures", () => {
   it("ignores inherited keys", () => {
     expect(cleanFeatures(Object.create({ goals: false }))).toEqual({});
   });
+
+  it("returns a new record and leaves its input alone", () => {
+    const raw = { goals: false, nope: 1 };
+    const out = cleanFeatures(raw);
+    expect(out).not.toBe(raw);
+    expect(raw).toEqual({ goals: false, nope: 1 });
+  });
+
+  it("keeps all 17 ids when every one is a boolean", () => {
+    const raw = Object.fromEntries(FEATURE_IDS.map((id, i) => [id, i % 2 === 0]));
+    expect(cleanFeatures(raw)).toEqual(raw);
+  });
 });
 
 describe("universe settings additions", () => {
@@ -70,6 +82,17 @@ describe("name titles", () => {
     expect(NAME_TITLES.pt).toContain("Vô");
     expect(NAME_TITLES.en).toContain("Mr");
     expect(NAME_TITLES.en).not.toContain("Dona");
+  });
+
+  it("has the pt titles added after the wave 0 review", () => {
+    for (const t of ["Irmão", "Senhor", "Senhora", "Doutor", "Doutora"]) expect(NAME_TITLES.pt).toContain(t);
+  });
+
+  it("has no duplicates and no trailing dots", () => {
+    for (const list of Object.values(NAME_TITLES)) {
+      expect(new Set(list).size).toBe(list.length);
+      for (const t of list) expect(t.endsWith(".")).toBe(false);
+    }
   });
 });
 

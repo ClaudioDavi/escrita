@@ -42,6 +42,10 @@ export interface EscritaData {
   povColors: Record<string, PovColor>;
 }
 
+/**
+ * @deprecated The 0.6 module shape. A feature is a `FeatureModule` (core/module-context.ts);
+ * the registry wraps an `EscritaModule` in an adapter until each module moves over.
+ */
 export interface EscritaModule {
   load(): void | Promise<void>;
   unload?(): void;

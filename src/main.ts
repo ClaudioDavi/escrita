@@ -35,8 +35,13 @@ import { LensModule } from "./lens";
 import { lensStrings } from "./lens/strings";
 import { cleanDismissed } from "./lens/dismiss";
 import { cleanSeen } from "./universe/first-seen";
-import type { FeatureRegistry } from "./core/feature-registry";
-import type { NamesPort } from "./core/names-source";
+import { FeatureRegistry } from "./core/feature-registry";
+import type { FeatureId } from "./core/features";
+import type { FeatureModule } from "./core/module-context";
+import { NamesPort } from "./core/names-source";
+import { DialogueFocusFeature, MoveBlocksFeature, SpellcheckFeature, TemplatesFeature } from "./editor/features";
+import { StageSnapshotFeature } from "./snapshots/stage-feature";
+import { ThreadsFeature } from "./universe/threads-feature";
 import { SnapshotsModule } from "./snapshots";
 import { snapshotsStrings } from "./snapshots/strings";
 import { UniverseModule } from "./universe";
@@ -48,6 +53,8 @@ import { universeMigrateStrings } from "./universe/migrate-strings";
 /** The reusable vault index (0.4 task 3.x fills it in). */
 export interface VaultIndexes {
   add<F extends IndexFile, V>(spec: IndexSpec<F, V>): VaultIndex<F, V>;
+  /** Disposes an index added with `add` and drops it from the hub (a feature turned off). */
+  remove<F extends IndexFile, V>(index: VaultIndex<F, V>): void;
   follow(f: Follower): () => void;
   rebuild(name?: string): void;
   settingsChanged(): void;
@@ -78,7 +85,6 @@ export default class EscritaPlugin extends Plugin {
   publish!: PublishModule;
   lens!: LensModule;
   universe!: UniverseModule;
-  private modules: EscritaModule[] = [];
 
   /** Persist data soon; for frequent writes such as word tracking. */
   requestSave = debounce(() => { void this.persist(); }, 2000, true);
@@ -102,6 +108,7 @@ export default class EscritaPlugin extends Plugin {
     this.works = new WorksService(this, this.index);
     this.chapterOps = new ChapterOps(this);
     this.notes = new NoteService(this.app);
+    this.names = new NamesPort();
     // The file explorer's dots and counts. It re-renders its items without
     // telling anyone; layout-change is the closest signal.
     this.decorations = new ExplorerDecorations(
@@ -129,16 +136,26 @@ export default class EscritaPlugin extends Plugin {
     this.publish = new PublishModule(this);
     this.desk = new DeskModule(this);
     this.universe = new UniverseModule(this);
-    this.modules = [
-      this.goals, this.outline, this.placeholders, this.explorer, this.darlings, this.editor, this.lens, this.snapshots, this.publish, this.desk, this.universe,
-    ];
-    for (const m of this.modules) await m.load();
+    // keyed by feature id; the 0.6 modules are wrapped by the registry until they move over (wave 2)
+    const modules = new Map<FeatureId, FeatureModule | EscritaModule>([
+      ["goals", this.goals], ["outline", this.outline], ["placeholders", this.placeholders],
+      ["explorerCounts", this.explorer], ["darlings", this.darlings],
+      ["typing", this.editor], ["dialogueFocus", new DialogueFocusFeature()],
+      ["moveBlocks", new MoveBlocksFeature()], ["templates", new TemplatesFeature()],
+      ["spellcheck", new SpellcheckFeature()],
+      ["lens", this.lens], ["snapshots", this.snapshots], ["stageSnapshot", new StageSnapshotFeature()],
+      ["publish", this.publish], ["desk", this.desk],
+      ["universe", this.universe], ["threads", new ThreadsFeature()],
+    ]);
+    this.features = new FeatureRegistry(this, modules);
+    this.features.init();
+    this.features.apply();
 
     this.addSettingTab(new EscritaSettingTab(this.app, this));
   }
 
   onunload(): void {
-    for (const m of this.modules) m.unload?.();
+    this.features?.unloadAll();
     this.index?.unload();
     this.measure?.unload();
     // Write now what a pending debounced save would have written.
@@ -169,8 +186,9 @@ export default class EscritaPlugin extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.persist();
+    this.features.apply();
     this.index.settingsChanged();
-    for (const m of this.modules) m.settingsChanged?.();
+    this.features.settingsChanged();
   }
 }
 
