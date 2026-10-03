@@ -1,0 +1,36 @@
+# Entries for the names matcher fixtures (0.7 task 0.2). Frozen after gate G3.
+# Values come from docs/PLAN-0.7.md (Q22-Q29) and docs/ROADMAP-universe.md 1.2, not from any code.
+# Columns, tab separated: id, name, aliases, kind, options.
+#   id       a slug; the "entry" column of the expected files uses it.
+#   name     the entry note basename (the explicit name term).
+#   aliases  separated by |, or empty.
+#   kind     character, place, object, group or event. Only character can give a first-name alias (Q29).
+#   options  key=value separated by ;. Keys: lang (pt or en, required), scope (names separated by |,
+#            default base), caseSensitive (true), firstName (false), ignore (phrases separated by |).
+# A fixture file loads the entries of the scopes named in its #scope line in the expected file
+# (default base) whose lang matches the file prefix.
+maria	Maria		character	lang=pt
+mariano	Mariano		character	lang=pt
+mariana	Mariana		character	lang=pt
+marcos	Marcos		character	lang=pt
+marco	Marco		character	lang=pt
+rosa	Rosa		character	lang=pt;ignore=rosa dos ventos
+porto	Porto		place	lang=pt;caseSensitive=true
+teo	Teo	o menino	character	lang=pt
+ines	Inês		character	lang=pt
+tomas	Tomás		character	lang=pt
+thais	Thaís		character	lang=pt
+andres	Andrés		character	lang=pt
+mario	Mário		character	lang=pt
+maria-jose	Maria José		character	lang=pt;scope=base|clara
+dona-maria-clara	Dona Maria Clara		character	lang=pt;scope=clara
+dona-benta	Dona Benta Encerrabodes		character	lang=pt;scope=titles
+doutor-paulo	Doutor Paulo Mendes		character	lang=pt;scope=titles
+irma-luisa	Irma Luísa Prado		character	lang=pt;scope=titles
+senhor-antunes	Senhor Antunes Prado		character	lang=pt;scope=titles
+senhora-zelia	Senhora Zélia Prado		character	lang=pt;scope=titles
+teo-en	Teo		character	lang=en
+james-en	James		character	lang=en
+mr-brown	Mr Brown		character	lang=en
+dr-alice-hart	Dr Alice Hart		character	lang=en
+ann-en	Ann	A|the	character	lang=en

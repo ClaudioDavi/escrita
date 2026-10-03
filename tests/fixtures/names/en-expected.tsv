@@ -1,0 +1,11 @@
+# Expected mentions for en-*.md (0.7 task 0.2). Frozen after gate G3. Same columns as pt-expected.tsv.
+# Written from the specs, not from code: docs/ROADMAP-universe.md 1.2 and docs/PLAN-0.7.md Q25-Q29.
+en-names.md	3	Teo's	teo-en
+en-names.md	3	Teos	teo-en
+en-names.md	5	James	james-en
+en-names.md	5	Jame	-
+en-names.md	7	Mr Brown	mr-brown
+en-names.md	7	Brown	-
+en-names.md	9	Alice	dr-alice-hart
+en-names.md	11	A	-
+en-names.md	11	The	-

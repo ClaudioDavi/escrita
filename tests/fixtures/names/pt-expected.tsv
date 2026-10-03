@@ -1,0 +1,58 @@
+# Expected mentions for pt-*.md (0.7 task 0.2). Frozen after gate G3. Written from the specs, not from code:
+# docs/ROADMAP-universe.md 1.2 and docs/PLAN-0.7.md Q22-Q29 (accents fold before stemming, Q23).
+# Columns, tab separated: file, line, text, entry.
+#   line   1-based line of the mention in the file (where it starts).
+#   text   the raw source from the first letter of the mention to its last letter, in order of position;
+#          \n stands for a line break. Link syntax and emphasis marks inside the span are kept.
+#   entry  the id in entries.tsv, or - when that text must not match any entry.
+# The #scope lines name the scopes a file loads (default base).
+#scope	pt-clara.md	clara
+#scope	pt-titles.md	titles
+pt-names.md	3	Mariazinha	maria
+pt-names.md	3	Marias	maria
+pt-names.md	5	Mariano	mariano
+pt-names.md	5	Mariana	mariana
+pt-names.md	7	Marcos	marcos
+pt-names.md	7	Marco	marco
+pt-names.md	7	Marcos	marcos
+pt-names.md	9	Rosa	rosa
+pt-names.md	9	rosa dos ventos	-
+pt-names.md	11	Porto	porto
+pt-names.md	13	PORTO	-
+pt-names.md	15	porto	-
+pt-names.md	17	porto	-
+pt-names.md	19	Os meninos	teo
+pt-names.md	19	O menino	teo
+pt-names.md	21	[[Teo|o menino]]	teo
+pt-names.md	23	Teo	teo
+pt-names.md	25	Inês	ines
+pt-names.md	25	Ines	ines
+pt-names.md	27	Tomás	tomas
+pt-names.md	27	Tomas	tomas
+pt-names.md	29	Thaís	thais
+pt-names.md	29	Thais	thais
+pt-names.md	31	Andrés	andres
+pt-names.md	31	Andres	andres
+pt-names.md	33	Mario	mario
+pt-names.md	35	Maria-José	maria-jose
+pt-names.md	37	rosa-dos-ventos	-
+pt-structure.md	2	Maria	-
+pt-structure.md	7	Mariana	mariana
+pt-structure.md	9	Maria	-
+pt-structure.md	12	Maria	-
+pt-structure.md	15	Maria\nJosé	maria-jose
+pt-structure.md	18	Maria* *José	maria-jose
+pt-clara.md	3	Dona Maria Clara	dona-maria-clara
+pt-clara.md	5	Maria Clara	dona-maria-clara
+pt-clara.md	7	Maria José	maria-jose
+pt-clara.md	9	Maria	-
+pt-titles.md	3	Benta	dona-benta
+pt-titles.md	5	Dona Benta Encerrabodes	dona-benta
+pt-titles.md	7	dona	-
+pt-titles.md	9	Paulo	doutor-paulo
+pt-titles.md	11	Luísa	irma-luisa
+pt-titles.md	13	Antunes	senhor-antunes
+pt-titles.md	15	Zélia	senhora-zelia
+pt-titles.md	17	senhor	-
+pt-titles.md	17	doutor	-
+pt-titles.md	19	irma	-
