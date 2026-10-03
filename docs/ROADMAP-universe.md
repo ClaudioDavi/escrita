@@ -29,28 +29,40 @@ much of this roadmap exists for a user:
 |---|---|---|---|
 | **Off** (default) | Writers who don't want any of it | Nowhere in particular | Hidden: no panel, no commands, no properties added |
 | **Per book** | Standalone novels | Inside each book: `<Book folder>/Characters/`, `Places/`… (today's convention) | That book's chapters only |
-| **Universe** | A shared world across works | `Universe/` folders, shared | Every work in the universe |
+| **Universe** | A shared world across works | The folder beside the universe note (`Universe.md` → `Universe/`), shared | Every work in the universe |
 
 Rules:
 
-- **Off is the default for new installs.** Commands are only registered, and the
-  universe panel only offered, when the mode isn't off (re-register on
-  `settingsChanged`). No property is ever added to a note while the mode is off.
+- **Off is the default for new installs.** The universe panel (view type
+  `escrita-universe`) and the universe commands exist only when the mode isn't off.
+  Obsidian can't unregister a view or a command, so the view type stays registered but its
+  leaves are closed when the mode goes off, and each universe command hides itself with a
+  `checkCallback` (no re-registering needed). No property is ever added to a note while
+  the mode is off, and none is added without an explicit click.
 - **Features that don't need a universe work in every mode**: open threads (1.5) are
-  listed per work when off or per book, and per universe in universe mode; names from
-  the entry folders feed spellcheck and the revision lens (1.4) in per-book mode too.
+  listed over the tracked works when off (a standalone "Open threads" view, command
+  "Show open threads"), over the book when per book, and over the universe's works in
+  universe mode. "Plant a thread" and "Insert from a template" (SF 9) work in every mode.
+  Names from the entry folders feed spellcheck and the revision lens (1.4) in per-book
+  mode too.
 - **Per book** reuses the book convention: entry folders are subfolders of the book
-  folder (names configurable, author: `Personagens`, `Lugares`), and every feature is
-  scoped to that book. Short stories have no entries in this mode.
+  folder, with the same per-type folder names as the universe uses (`Personagens`,
+  `Lugares` for the author), and every feature is scoped to that book. Short stories
+  have no entries in this mode.
 - **Switching modes never moves or edits files.** Per book → universe offers the
   migration command (1.1) with a preview; universe → per book or off only hides
   features. Notes stay where they are.
 - **Mixed vaults**: in universe mode, a work without a `universe` property (and not in
   a folder with a default universe) is standalone. Its entries live in its own book
   folder (per-book rules) and are invisible to the universe.
-- Implementation: a pure `scopeFor(file, settings) → { kind: "none" | "book" |
-  "universe", root }` in `src/universe/scope.ts` that every feature asks first; tested
-  for each mode and for mixed vaults.
+- Implementation: a pure `scopeFor(file, settings, lookup) → { kind: "none" | "book" |
+  "universe", root, note }` in `src/universe/scope.ts` that every feature asks first;
+  tested for each mode and for mixed vaults. In universe mode the first match wins:
+  the note's own `universe` property (a chapter's own property wins over its book note's);
+  the book note's property; being inside the universe folder (entries join by folder,
+  no property needed); being inside a default-universe folder; belonging to a book (that
+  book, per-book rules); else none. A `universe` link that points at no note is read as
+  a typo and joins nothing.
 
 The author's vault uses **Universe** mode.
 
@@ -68,40 +80,73 @@ the short-fiction roadmap.
 
 ## Phase 1
 
-### 1.1 Universe container and entry types (v0.6)
+### 1.1 Universe container and entry types (v0.6, shipped in 0.6.0)
 
-**Convention** (all names configurable):
+**Convention** (names are settings; the author's are shown):
 
 ```
 Universo.md                     ← universe note (properties: name, description)
-Universo/
+Universo/                       ← the folder beside it with the same basename
     Personagens/                ← characters
     Lugares/                    ← places
     Objetos/                    ← objects
     Grupos/                     ← families, institutions, groups
     Eventos/                    ← events (feeds the timeline in phase 2)
-Contos/O farol.md               ← a work: universe: "[[Universo]]", form: conto
-Romances/A Casa.md              ← a book: universe: "[[Universo]]", form: romance
+Contos/O farol.md               ← a work: universe: "[[Universo]]", forma: conto
+Romances/A Casa.md              ← a book: universe: "[[Universo]]", forma: romance
 ```
 
+- **No universe folder setting.** The entries folder is the folder next to the universe
+  note with the same basename (`Universo.md` → `Universo/`). One setting, the universe
+  note, names both. A `universe` link to another note makes that note's own folder the
+  root, so a second world needs no setting.
 - **A work joins a universe** with a `universe` property linking to the universe note.
-  Book chapters inherit it from the book note. A default universe (setting) applies to
-  notes in chosen folders without the property, so existing contos join without edits.
-- **Entry type by property** (`type: character`, `place`, `object`, `group`, `event`;
-  values configurable, author: `tipo: personagem`, `lugar`, …). Folders are the default
-  place for new entries, not the source of truth, so entries can move freely. Bases can
-  already build tables from these properties.
+  Book chapters inherit it from the book note, and a chapter's own property wins. Notes
+  inside the universe folder join without a property. A setting, "Folders in the
+  universe", also lets notes in chosen folders join without the property, so existing
+  contos join without edits.
+- **Entry type by property** (`type: character`, `place`, `object`, `group`, `event`).
+  There are **five fixed types**, renamable but not addable or removable, like the
+  stages. Each has a value (the word in the property), a folder, a template (optional)
+  and a label ("Name in menus"). The folder is the default place for new entries, not the
+  source of truth, so entries can move freely. Bases can already build tables from
+  these properties. The phase 2 timeline reads the event type.
+- **Per-book mode uses the same per-type folder names** inside the book folder
+  (`Romances/A Casa/Personagens/`). There is no separate setting for them.
 - **Several universes** are allowed (a writer with two worlds); entries belong to a
-  universe by folder or by their own `universe` property.
-- **`form` on works** (`conto`, `novela`, `romance`, `poema`, `fragmento`; configurable).
-  A novella can be a single note or use the book convention.
-- **Migration command** "Move this book's characters and places to the universe":
-  moves `Romances/<Book>/Personagens/*` and `Lugares/*` into the universe folders with
-  `fileManager.renameFile` (links update), after a preview. Name clashes are listed, never
-  overwritten.
-- **Universe panel** (`ItemView`, type `escrita-universe`): entries grouped by type,
-  searchable, each with its type, aliases and number of works it appears in; a works tab
-  listing all works in the universe by form and status.
+  universe by folder or by their own `universe` property. The panel has a picker.
+- **`form` on works** (short story, essay, novella, novel, poem, fragment; the property and
+  the six words are settings; author: `forma`: conto, ensaio, novela, romance, poema,
+  fragmento). A novella can be a single note or use the book convention. It groups the
+  Works tab.
+- **Form by folder.** A setting maps folders to forms (`Folder: form` lines; author:
+  `Contos: conto`, `Textos: ensaio`, `Romances: romance`), so works take their form
+  from where they live and nobody has to add the property. A work's own `form` wins,
+  and the deepest matching folder wins over a shallower one. Nothing is written.
+- **Add to the universe.** In the panel, a note that is outside any universe has an
+  "Add to <universe>" button. It sets the `universe` property on that note, only on that
+  explicit click, and only when the note has none.
+- **Migration command** "Move this book's entries to the universe" (also in the book
+  note's file menu, in universe mode): moves `<Book>/Personagens/*`, `Lugares/*`… into
+  the universe's per-type folders with `fileManager.renameFile` (links update), one note
+  at a time, after a preview. A note goes to the deepest matching type folder; chapters
+  are never moved. Name clashes are listed, never overwritten. The preview has two
+  checkboxes: **add the type property where it's missing** (from the source folder) and
+  **add `universe` to the book note when it's missing**. Migration only adds, never
+  changes a value. When the target is not the settings' universe, each moved note also
+  gets the `universe` property, where missing, since its folder alone doesn't join it.
+- **Universe panel** (`ItemView`, type `escrita-universe`; tabs Entries, Threads, Works):
+  - *Entries*: grouped by type (headings are the last segment of the type's folder),
+    searchable by name and alias, collapsible, with a + per group and a "New entry"
+    button. Row menu: open, open to the side, insert link in the note (never into the
+    properties, code or a comment), reveal in the explorer. In per-book mode it shows
+    the active note's book.
+  - *Works*: the works in the universe grouped by the form property (an unknown or
+    missing form goes under "No form"), sorted by stage (published first) then name, a
+    dot in the stage color, the word count from `plugin.measure`. A click opens the work
+    where the writer left off (the desk's open logic).
+  - There is **no "appears in N works" count** yet. It arrives in 0.7 with the matcher (1.2).
+  - Mode off: the panel is closed and the commands hide. Threads have their own view (1.5).
 
 ### 1.2 "Appears in" across works (v0.7)
 
@@ -136,14 +181,21 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
   - Optional subtle underline of recognized names in the editor (setting, off by default).
   - "Unlinked mentions" list per work, so the author can add links if wanted.
 
-### 1.3 Create entry from selection (v0.6)
+### 1.3 Create entry from selection (v0.6, shipped in 0.6.0)
 
-- Editor menu and command "Create universe entry from selection": pick the type, then
-  create the note in the type's folder from its template (setting per type; the vault
-  already has `Modelos/Personagem.md` and `Modelos/Lugar.md`), with the selection as the
-  title, `type` and `universe` set.
-- Options in the same modal: link this occurrence, and add another alias.
-- If an entry with that name or alias exists, offer to open it instead.
+- Editor menu item and command "Create universe entry" (universe and per-book modes):
+  pick the type, then create the note in the type's folder from its template (a setting
+  per type, filled by the shared template code, SF 9), with the selection as the title and
+  the `type` property set. `universe` is set in universe mode only (never in per-book mode).
+  The same code serves the panel's + buttons, which pass the scope the panel shows.
+- Options in the same modal: link this occurrence (through the note text port, refused
+  if the text changed), and add another alias.
+- If an entry with that name or alias exists, offer to open it instead, to just link
+  here, or to create another anyway.
+- A note outside any universe gets a notice that points to the panel's "Add to" button
+  and the default-folders setting; the command never adds the property by itself.
+- The universe link is written as the shortest link that is unambiguous
+  (`fileToLinktext`), so two notes with one basename get a path.
 - **Names without an entry** (a tab in the universe panel, from v0.7 when the matcher
   exists): capitalized words that recur across works, aren't at a sentence start, and
   match no entry or alias, each with a Create button that opens this modal. A dismiss
@@ -160,18 +212,48 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
   addition to) its word-list note: *Marianna* when the entry is *Mariana*. The rule has
   taken a `names` option since 0.5, so this only feeds it entries.
 
-### 1.5 Open threads (v0.6)
+### 1.5 Open threads (v0.6, shipped in 0.6.0)
 
-Hooks planted in one story for future stories.
+Hooks planted in one story for future stories. They work in every mode.
 
-- Syntax: `%% thread: quem escreveu as cartas? %%` (keyword configurable), a single-line
-  comment like beats and placeholders, so it never shows in Reading view or an export.
-- Parser in `core/markers.ts` next to beats and placeholders; tests.
-- Threads panel (a tab in the universe panel): all open threads in the universe, grouped
-  by work, with the text and date first seen; click to jump.
-- Closing a thread: a `%% thread closed: … %%` form, or a button that rewrites the marker
-  as closed after checking the exact text is still there. A thread can name the work that
-  answers it (`%% thread: … → [[A Casa]] %%`).
+- Syntax: `%% thread: quem escreveu as cartas? %%` (the keyword is a setting), a
+  single-line comment like beats and placeholders, so it never shows in Reading view or an
+  export. `parseThreads(src, keyword, closedWord)` in `core/markers.ts` reads them (markers
+  in code or frontmatter don't count); tests in `tests/threads.test.ts`.
+- **Closed form**: `%% thread closed: … %%`. The closed word is a setting
+  (`threadClosedWord`, English default `closed`; the author sets `fechado` in their
+  vault's `data.json`, never in code). The colon is required, so an open thread that
+  starts with the word is not read as closed. `parseThreads` accepts the configured word
+  and `closeThreadPlan` writes it.
+- **Answer link**: a thread can name the work that answers it (`%% thread closed: … →
+  [[A Casa]] %%`). The link drops any `|alias`, `#heading` and `^block`. The `%%` sequence
+  is cleaned out of the text and the answer, so a marker can't end early.
+- **Plant a thread**: command and editor menu item. It inserts the marker at the cursor,
+  or at the end of the selection, padded with a space; the selected text becomes the
+  thread's text and **stays in the prose** (a deviation from the first idea, to keep rule
+  1: the command never removes text). On an empty line it fills the line when the lines
+  around are blank; beside text it takes blank lines of its own; on a scene break or a
+  table row it goes in a paragraph after it; a cursor inside a wikilink goes after the
+  link. Refused in the properties, in code and inside a multi-line comment. One undo
+  takes it back.
+- **Where threads show**: mode off, a standalone "Open threads" view (command "Show open
+  threads") over the tracked works; per book, the Threads tab scoped to the book;
+  universe, the universe's works. Grouped by work (a chapter counts under its book), with
+  the text, the date first seen and the answer link; click to jump to the marker. A
+  footer toggle shows the closed ones.
+- **First-seen dates** are stored in plugin data (`threadSeen`: path → thread text →
+  time), never in the note. They follow renames through `plugin.index.follow`, go with a
+  deleted note, and survive a thread disappearing and coming back with the same text.
+- **Closing a thread**, from the panel (a popover with an optional "Answered in", and a
+  preview of the new marker), from the editor menu or by the command "Close thread" with
+  the cursor on the marker. Reopening keeps the answer link. The rewrite goes through
+  the note text port and is refused if the marker moved or changed: the plan re-reads
+  the text it runs on and accepts only the same line with the identical comment (no
+  search, and CRLF files and unsaved editor text give the same answer). A refusal shows a
+  notice and refreshes the list.
+- **In the editor**: a small flag in the margin on a line with an open thread; a closed
+  marker is muted and struck through (the marker only, never the prose around it).
+  Decorations only, so the text is untouched.
 
 ---
 
@@ -253,13 +335,15 @@ story-order reading pages or a public wiki on their own site, reading the vault'
 | Setting | Default | Author's vault |
 |---|---|---|
 | Shared universe mode | off | universe |
-| Entry folders in per-book mode | `Characters`, `Places`, … | (not used) |
-| Universe note / folder | `Universe.md` / `Universe/` | `Universo.md` / `Universo/` |
-| Default universe for folders | (none) | `Contos`, `Textos`, `Romances` |
-| Type property and values | `type`: character, place, object, group, event | `tipo`: personagem, lugar, objeto, grupo, evento |
-| Folder per type | `Characters`, `Places`, … | `Personagens`, `Lugares`, `Objetos`, `Grupos`, `Eventos` |
-| Template per type | (none) | `Modelos/Personagem.md`, `Modelos/Lugar.md` |
-| Form property and values | `form`: short story, novella, novel, poem, fragment | `forma`: conto, novela, romance, poema, fragmento |
-| Thread keyword | `thread` | `fio` or `thread` (author's choice) |
-| Underline names in the editor | off | (author's choice) |
-| When / born / died / canon properties | `when`, `born`, `died`, `canon` | same or Portuguese names |
+| Universe note (its folder is the folder beside it, same basename; no separate folder setting) | `Universe.md` | `Universo.md` |
+| Folders in the universe (join without the property) | (none) | `Contos`, `Textos`, `Romances` |
+| Universe property | `universe` | same |
+| Type property | `type` | `tipo` |
+| Per type (five fixed types, renamable): value, folder, template, label | `character`, `Characters`, none, "Character"; likewise place, object, group, event | `personagem`, `Personagens`, `Modelos/Personagem.md`, "Personagem"; `lugar`, `Lugares`, … |
+| Folders in per-book mode | the same per-type folders, inside the book | (not used) |
+| Form property and values | `form`: short story, essay, novella, novel, poem, fragment | `forma`: conto, ensaio, novela, romance, poema, fragmento |
+| Form by folder | (none) | `Contos: conto`, `Textos: ensaio`, `Romances: romance` |
+| Thread word | `thread` | `fio` or `thread` (author's choice) |
+| Thread closed word | `closed` | `fechado` |
+| Underline names in the editor (0.7) | off | (author's choice) |
+| When / born / died / canon properties (0.9) | `when`, `born`, `died`, `canon` | same or Portuguese names |

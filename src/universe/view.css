@@ -1,0 +1,403 @@
+/* The universe panel and the Open threads view (boards 15 and 16).
+   Classes: escrita-universe-*; Obsidian CSS variables only; touch targets >= 32px. */
+.escrita-universe-view {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.escrita-universe-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--size-4-3) var(--size-4-4) var(--size-4-2);
+}
+.escrita-universe-title {
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+}
+.escrita-universe-sub,
+.escrita-universe-muted {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.escrita-universe-pick {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  min-height: 32px;
+  margin-left: calc(var(--size-4-2) * -1);
+  padding: 0 var(--size-4-2);
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+}
+.escrita-universe-chevron {
+  display: inline-flex;
+  color: var(--text-faint);
+}
+.escrita-universe-chevron svg {
+  width: 12px;
+  height: 12px;
+}
+
+.escrita-universe-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 var(--size-4-2);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.escrita-universe-tab {
+  min-height: 32px;
+  padding: 0 var(--size-4-2);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+}
+.escrita-universe-tab.is-active {
+  color: var(--text-normal);
+  border-bottom-color: var(--interactive-accent);
+}
+.escrita-universe-tab-n {
+  padding-left: var(--size-4-1);
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
+.escrita-universe-body {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--size-4-3);
+}
+.escrita-universe-search {
+  margin: var(--size-4-2) var(--size-4-3) var(--size-4-1);
+  height: 32px;
+}
+.escrita-universe-notin {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--size-4-2);
+  padding: var(--size-4-3) var(--size-4-4) var(--size-4-1);
+}
+
+/* groups */
+.escrita-universe-group-head {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 var(--size-4-2) 0 var(--size-4-3);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+}
+.escrita-universe-group-head.is-static {
+  gap: var(--size-4-2);
+  padding: var(--size-4-2) var(--size-4-4) 0;
+}
+.escrita-universe-group-toggle {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  min-height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.escrita-universe-count {
+  color: var(--text-faint);
+  font-weight: var(--font-normal);
+}
+.escrita-universe-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.escrita-universe-icon-btn:hover,
+.escrita-universe-pick:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+.escrita-universe-icon-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* entries and works */
+.escrita-universe-entry,
+.escrita-universe-work {
+  display: flex;
+  min-height: 36px;
+  padding: 2px var(--size-4-4) 2px var(--size-4-6);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+  border-radius: var(--radius-s);
+}
+.escrita-universe-entry {
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+.escrita-universe-entry:hover,
+.escrita-universe-work:hover {
+  background: var(--background-modifier-hover);
+}
+.escrita-universe-entry.is-active {
+  background: var(--background-modifier-active-hover);
+}
+.escrita-universe-entry-alias {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+.escrita-universe-hit {
+  background: color-mix(in srgb, var(--interactive-accent) 25%, transparent);
+  border-radius: 2px;
+  color: inherit;
+}
+.escrita-universe-work {
+  align-items: center;
+  gap: var(--size-4-3);
+  padding-left: var(--size-4-4);
+}
+.escrita-universe-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--escrita-dot, var(--text-faint));
+}
+.escrita-universe-work-name {
+  flex-grow: 1;
+}
+.escrita-universe-work-words {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+}
+
+/* threads */
+.escrita-universe-thread {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-4-1);
+  padding: var(--size-4-1) var(--size-4-2) var(--size-4-1) var(--size-4-2);
+  font-size: var(--font-ui-small);
+  line-height: 1.45;
+}
+.escrita-universe-check {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  cursor: pointer;
+  color: var(--color-green);
+}
+.escrita-universe-check svg {
+  width: 16px;
+  height: 16px;
+}
+.escrita-universe-circle {
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--text-faint);
+  border-radius: 50%;
+}
+.escrita-universe-check:hover .escrita-universe-circle {
+  border-color: var(--interactive-accent);
+}
+.escrita-universe-thread-body {
+  flex-grow: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.escrita-universe-thread-text {
+  align-self: flex-start;
+  padding: 0;
+  height: auto;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--text-normal);
+  font: inherit;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+.escrita-universe-thread-text:hover {
+  color: var(--text-accent-hover);
+}
+.escrita-universe-thread.is-closed .escrita-universe-thread-text {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--text-faint);
+}
+.escrita-universe-thread-meta {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+}
+.escrita-universe-answer {
+  color: var(--interactive-accent);
+}
+a.escrita-universe-answer {
+  cursor: pointer;
+}
+.escrita-universe-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  margin-top: var(--size-4-2);
+  padding: var(--size-4-2) var(--size-4-4);
+  border-top: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+}
+.escrita-universe-link {
+  min-height: 32px;
+  padding: 0 var(--size-4-1);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--interactive-accent);
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+}
+
+/* the close form, under its thread */
+.escrita-universe-close {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  margin: var(--size-4-1) var(--size-4-3) var(--size-4-2);
+  padding: var(--size-4-3);
+  background: var(--background-secondary-alt);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+}
+.escrita-universe-close-title {
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+}
+.escrita-universe-close-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.escrita-universe-close-input {
+  height: 32px;
+}
+.escrita-universe-close-hint {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.escrita-universe-close-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--size-4-2);
+}
+
+/* empty states and buttons */
+.escrita-universe-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--size-4-3);
+  padding: var(--size-4-6) var(--size-4-5);
+  font-size: var(--font-ui-small);
+  line-height: 1.55;
+  color: var(--text-normal);
+}
+.escrita-universe-sample {
+  padding: var(--size-4-1) var(--size-4-2);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  background: var(--background-secondary-alt);
+  border-radius: var(--radius-s);
+}
+.escrita-universe-btn {
+  min-height: 32px;
+  padding: 0 var(--size-4-4);
+  cursor: pointer;
+}
+@media (max-width: 600px) {
+  a.escrita-universe-answer {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+  }
+  .escrita-universe-entry,
+  .escrita-universe-work {
+    min-height: 44px;
+  }
+}
+
+/* Plain (borderless) buttons. Qualified so they beat Obsidian's
+   `button:not(.clickable-icon)` (0,1,1) and its :hover/:focus variants, which
+   otherwise paint them as raised buttons with a fill and a shadow. */
+.escrita-universe-view button.escrita-universe-tab,
+.escrita-universe-view button.escrita-universe-check,
+.escrita-universe-view button.escrita-universe-thread-text,
+.escrita-universe-view button.escrita-universe-link,
+.escrita-universe-view button.escrita-universe-pick,
+.escrita-universe-view button.escrita-universe-group-toggle,
+.escrita-universe-view button.escrita-universe-icon-btn,
+.escrita-universe-view button.escrita-universe-tab:hover,
+.escrita-universe-view button.escrita-universe-check:hover,
+.escrita-universe-view button.escrita-universe-thread-text:hover,
+.escrita-universe-view button.escrita-universe-link:hover,
+.escrita-universe-view button.escrita-universe-pick:hover,
+.escrita-universe-view button.escrita-universe-group-toggle:hover {
+  background-color: transparent;
+  box-shadow: none;
+}
+.escrita-universe-view button.escrita-universe-tab {
+  border-radius: 0;
+}
+.escrita-universe-view button.escrita-universe-icon-btn:hover {
+  background-color: var(--background-modifier-hover);
+  box-shadow: none;
+}
+.escrita-universe-view button.escrita-universe-tab:focus-visible,
+.escrita-universe-view button.escrita-universe-check:focus-visible,
+.escrita-universe-view button.escrita-universe-thread-text:focus-visible,
+.escrita-universe-view button.escrita-universe-link:focus-visible,
+.escrita-universe-view button.escrita-universe-pick:focus-visible,
+.escrita-universe-view button.escrita-universe-group-toggle:focus-visible,
+.escrita-universe-view button.escrita-universe-icon-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}

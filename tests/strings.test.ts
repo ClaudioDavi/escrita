@@ -11,6 +11,10 @@ import { explorerStrings } from "../src/explorer/strings";
 import { snapshotsStrings } from "../src/snapshots/strings";
 import { deskStrings } from "../src/desk/strings";
 import { lensStrings } from "../src/lens/strings";
+import { universeStrings } from "../src/universe/strings";
+import { universeViewStrings } from "../src/universe/view-strings";
+import { universeCreateStrings } from "../src/universe/create-strings";
+import { universeMigrateStrings } from "../src/universe/migrate-strings";
 
 const all: Record<string, Strings> = {
   core: coreStrings,
@@ -24,6 +28,10 @@ const all: Record<string, Strings> = {
   snapshots: snapshotsStrings,
   desk: deskStrings,
   lens: lensStrings,
+  universe: universeStrings,
+  universeView: universeViewStrings,
+  universeCreate: universeCreateStrings,
+  universeMigrate: universeMigrateStrings,
 };
 
 const vars = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();

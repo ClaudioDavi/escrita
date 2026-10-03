@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (0.5.1 at the time of writing). The author's
+Current version: see `manifest.json` (0.6.0 at the time of writing). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down
@@ -20,10 +20,11 @@ next months are short fiction (contos, essays), so short-fiction features come f
 | Question | Read |
 |---|---|
 | What ships in which version, what's next | `docs/ROADMAP.md` (the index; start here) |
-| Details of a feature (refs like SF 5, N 7, U 1.2) | `docs/ROADMAP-short-fiction.md` (SF), `docs/ROADMAP-novel.md` (N), `docs/ROADMAP-universe.md` (U), by section number |
+| Details of a feature (refs like SF 5, N 7, U 1.2) | `docs/ROADMAP-short-fiction.md` (SF), `docs/ROADMAP-novel.md` (N), `docs/ROADMAP-universe.md` (U), `docs/ROADMAP-screenplay.md` (SP), by section number |
 | How the code is organized, module specs, conventions | `docs/ARCHITECTURE.md` |
 | Code improvements to schedule | `docs/IMPROVEMENTS.md` |
 | User-facing features, settings, commands, changelog, release steps | `README.md` |
+| How to use the universe, threads and templates (user guide) | `docs/GUIDE-universe.md` |
 | Background research (local only, git-ignored) | `reports/Obsidian fiction writing gaps.md`, `research_notes/` |
 | Approved UI design (mockups) | design canvas https://claude.ai/artifact/DGww2xWiadXRuWqVv2jFv6 |
 
@@ -135,19 +136,22 @@ and what upkeep it asks of the writer.
   "where you left off" (SF 11), moving a paragraph or scene (SF 8), the vault index.
 - **0.5 (shipped), revision**: stemmers in `core/stem/` (shared with the universe) and the revision lens
   (SF 5). Improvement: the 0.2.1 editor loose ends.
-- **0.6 (next), universe foundations**: universe modes and container, create entry from
+- **0.6 (shipped), universe foundations**: universe modes and container, create entry from
   selection, open threads, insert from a template (U 1.1, U 1.3, U 1.5, SF 9).
-  Improvement: the outline's beat re-checks through the note text port (IMPROVEMENTS 3).
-- **0.7–0.9**: the shared universe (opt-in, off by default), DOCX/Markdown export
-  with submissions (0.8, SF 12), universe phase 2.
+  Improvement: the outline's beat writes through the note text port (IMPROVEMENTS 3).
+  User guide: `docs/GUIDE-universe.md`.
+- **0.7 (next)**: characters across works, plus feature switches (turn any feature off, SF 10)
+  on modules that load and unload at runtime (IMPROVEMENTS 6).
+- **0.8–0.9**: DOCX/Markdown export with submissions (0.8, SF 12), universe phase 2.
 - **0.10**: EPUB, book-wide publish check, "Read the book".
-- **1.0**: universe + manuscript export complete, mobile pass, docs in both
-  languages, community plugin submission.
+- **1.0**: universe + manuscript export complete, setup with presets (Essentials,
+  Writer, Everything), mobile pass, docs in both languages, community plugin submission.
+- **After 1.0**: screenwriting (`docs/ROADMAP-screenplay.md`), Fountain and PDF export first.
 
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and
 `goals/progress-modal.ts` are large and mostly untested (IMPROVEMENTS 5); path-keyed
 data follows renames in three separate places, the measurer, the explorer's tracked
 set and the snapshots store (IMPROVEMENTS 2, done in 0.4 for everything else, which
-follows through `plugin.index.follow`); the outline's beat
-re-checks still bypass the note text port (IMPROVEMENTS 3); a few Markdown parity
+follows through `plugin.index.follow`); two editor commands (plant a thread, insert
+from a template) still write straight to the editor instead of `plugin.notes`; a few Markdown parity
 questions with Reading view are pinned in `tests/markdown-consumers.test.ts`.

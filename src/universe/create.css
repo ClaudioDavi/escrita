@@ -1,0 +1,123 @@
+/* BUILDER B owns this file: the create-entry modal, the close-thread popover and menus.
+   Classes: escrita-universe-create-* / escrita-thread-*; Obsidian CSS variables only;
+   touch targets >= 32px. */
+
+/* ---- create: the create-entry modal, the close-thread dialog and the thread marker (boards 17, 20) ---- */
+.escrita-universe-create .modal-content,
+.escrita-thread-close .modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-4);
+}
+.escrita-universe-create-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+.escrita-universe-create-field input[type="text"] {
+  min-height: 34px;
+  width: 100%;
+  color: var(--text-normal);
+}
+.escrita-universe-create-extras {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+}
+.escrita-universe-create-hidden {
+  display: none;
+}
+.escrita-universe-create-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+}
+.escrita-universe-create-chip {
+  min-height: 32px;
+  padding: 0 var(--size-4-3);
+  border-radius: var(--radius-l);
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+.escrita-universe-create-chip.is-active {
+  border-color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
+  color: var(--text-accent);
+}
+.escrita-universe-create-check {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  min-height: 32px;
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+}
+.escrita-universe-create-dynamic {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-4);
+}
+.escrita-universe-create-where {
+  padding: var(--size-4-2) var(--size-4-3);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+.escrita-universe-create-where code {
+  color: var(--text-normal);
+}
+.escrita-universe-create-warn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  padding: var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  font-size: var(--font-ui-small);
+}
+.escrita-universe-create-warn p {
+  margin: 0;
+}
+.escrita-universe-create-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+}
+.escrita-universe-create-btns button {
+  min-height: 32px;
+}
+.escrita-universe-create-footer {
+  justify-content: flex-end;
+}
+
+/* The thread marker: a flag in the margin for an open thread, muted and struck when closed. */
+.cm-line.escrita-thread-line {
+  position: relative;
+}
+.cm-line.escrita-thread-line::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--size-4-4));
+  top: 0.35em;
+  width: 0.9em;
+  height: 0.9em;
+  background-color: var(--text-accent);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6'%3E%3Cpath d='M4 2v12M4 3h8l-2 3 2 3H4'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6'%3E%3Cpath d='M4 2v12M4 3h8l-2 3 2 3H4'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.cm-line .escrita-thread-closed-mark,
+.cm-line .escrita-thread-closed-mark .cm-comment {
+  color: var(--text-faint);
+  text-decoration: line-through;
+}
+.cm-line.escrita-thread-line.is-closed::before {
+  background-color: var(--text-faint);
+}

@@ -139,6 +139,12 @@ may use Java; the plugin itself stays offline).
 
 Print-ready PDF is out of scope: recommend Enhancing Export or Vellum/Atticus.
 
+**Shared with screenplay export.** Screenplay export (ROADMAP-screenplay.md, SP 6) reuses
+this pipeline (choose the source, strip markers, warn on placeholders, write the file)
+and adds Fountain, PDF and FDX writers. Keep the format writers behind one seam in 0.8 so
+they plug in without changing it. The PDF exception is only for scripts: Courier-only
+monospace layout needs no typography decisions, and the PDF is what gets submitted.
+
 ## 8. "Read the book" view (v0.10)
 
 A read-only view of all chapters in order, rendered with Obsidian's Markdown renderer,

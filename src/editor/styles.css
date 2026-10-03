@@ -10,3 +10,13 @@
 .escrita-dialogue-focus .metadata-container {
   opacity: 0.35;
 }
+
+.escrita-template-path {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.escrita-notice-button {
+  margin-top: var(--size-4-2);
+  min-height: 32px;
+}

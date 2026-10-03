@@ -1,6 +1,7 @@
 import type { EscritaSettings } from "./settings";
 import type { LeftOff } from "./core/left-off";
 import type { Dismissal } from "./lens/types";
+import type { SeenStore } from "./universe/first-seen";
 
 /** One book's writing on one day. `total` is the book's word count at the last change that day. */
 export interface DayBook {
@@ -34,6 +35,8 @@ export interface EscritaData {
   leftOff: Record<string, LeftOff>;
   /** revision lens "Ignore here" records, keyed by note path; absent before 0.5 (loaded as {}) */
   lensDismissed: Record<string, Dismissal[]>;
+  /** when each open thread was first seen: note path → thread text → ms; absent before 0.6 (loaded as {}); never written into notes */
+  threadSeen: SeenStore;
 }
 
 export interface EscritaModule {

@@ -12,6 +12,7 @@ import { typographyFor } from "./typography";
 import { sceneBreakEdit } from "./scene-break";
 import { spellcheckExtensions, spellcheckSuppressed } from "./spellcheck";
 import { DialogueFocus } from "./dialogue-focus";
+import { insertFromTemplate } from "./template-insert";
 import { moveParagraph, moveScene } from "./move";
 import type { MoveDir } from "./move-blocks";
 
@@ -80,6 +81,16 @@ export class EditorModule implements EscritaModule {
       id: "insert-scene-break",
       name: t("editor.cmd.insertSceneBreak"),
       editorCallback: (editor) => this.insertSceneBreak(editor),
+    });
+    this.plugin.addCommand({
+      id: "insert-from-template",
+      name: t("editor.cmd.insertTemplate"),
+      editorCheckCallback: (checking, editor, ctx) => {
+        // only in the editor (Live Preview or Source), not Reading view
+        if (!(ctx instanceof MarkdownView) || ctx.getMode() !== "source") return false;
+        if (!checking) insertFromTemplate(this.plugin, editor, ctx.file);
+        return true;
+      },
     });
     this.plugin.addCommand({
       id: "toggle-dialogue-focus",

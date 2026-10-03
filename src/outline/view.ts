@@ -6,6 +6,7 @@ import type EscritaPlugin from "../main";
 import type { Book } from "../core/books";
 import { inBook, inSnapshots } from "../core/classify";
 import { beatLine, parseBeats, parsePlaceholders, type BeatMarker } from "../core/markers";
+import { guardedEdit } from "../core/note-text";
 import { statusColor } from "../core/stages";
 import { fmt, plural, t, unitAmount } from "../i18n";
 import { noteProgress, type Piece, type Progress } from "../core/measure";
@@ -568,7 +569,7 @@ export class OutlineView extends ItemView {
     if (this.busy) return;
     this.busy = true;
     try {
-      const ok = await this.run(() => this.app.vault.process(file, (text) => insertFirstBeat(text, "")));
+      const ok = await this.run(() => this.editText(file, (text) => insertFirstBeat(text, "")));
       if (ok) this.pendingFocus = { kind: "beat", file, beat: 0, caret: "end" };
     } finally {
       this.busy = false;
@@ -888,16 +889,21 @@ export class OutlineView extends ItemView {
    * text the outline showed (the file may have changed since).
    */
   private async editBeats(file: TFile, i: number, expected: string | undefined, fn: (text: string) => string): Promise<boolean> {
-    let ok = true;
-    await this.app.vault.process(file, (text) => {
-      if (expected !== undefined && parseBeats(text)[i]?.text !== expected) { ok = false; return text; }
-      return fn(text);
-    });
+    const res = await this.plugin.notes.text(file).apply(guardedEdit(
+      expected === undefined ? null : (text) => parseBeats(text)[i]?.text === expected,
+      fn,
+    ));
+    const ok = res.ok;
     if (!ok) {
       new Notice(this.changedMessage());
       void this.refresh(true);
     }
     return ok;
+  }
+
+  /** Write `edit`'s text into a chapter through the note text port (the open editor, else the vault). */
+  private async editText(file: TFile, edit: (text: string) => string): Promise<void> {
+    await this.plugin.notes.text(file).apply(guardedEdit(null, edit));
   }
 
   private changedMessage(): string {
@@ -1027,7 +1033,7 @@ export class OutlineView extends ItemView {
         const value = fieldText(el).trim();
         el.dataset.done = "1";
         if (line.before && this.draftBefore === line.before) this.draftBefore = null;
-        const ok = await this.run(() => this.app.vault.process(target.file, (text) => appendBeat(text, value)));
+        const ok = await this.run(() => this.editText(target.file, (text) => appendBeat(text, value)));
         if (!ok) { el.dataset.done = ""; return; }
         this.pendingFocus = { kind: "beat", file: target.file, beat: target.beats.length, caret: "end" };
         break;
@@ -1076,13 +1082,15 @@ export class OutlineView extends ItemView {
           await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
             fm[this.plugin.settings.summaryProperty] = beatText;
           });
-          await this.app.vault.process(row.file, (text) => {
-            const cur = parseBeats(text)[i];
-            if (!cur || cur.text !== original) throw new Error(t("outline.beatChanged"));
-            const out = moveBeatOut(text, i);
-            if (!out) throw new Error(t("outline.blocked.written"));
-            return out.text;
-          });
+          const res = await this.plugin.notes.text(row.file).apply(guardedEdit(
+            (text) => parseBeats(text)[i]?.text === original,
+            (text) => {
+              const out = moveBeatOut(text, i);
+              if (!out) throw new Error(t("outline.blocked.written"));
+              return out.text;
+            },
+          ));
+          if (!res.ok) throw new Error(t("outline.beatChanged"));
         });
         if (!ok && !created) { el.dataset.done = ""; return; }
         if (created) this.pendingFocus = { kind: "title", file: created, caret: "all" };
@@ -1099,10 +1107,10 @@ export class OutlineView extends ItemView {
         el.dataset.done = "1";
         if (summaryEl) summaryEl.dataset.done = "1";
         const ok = await this.run(async () => {
-          // Re-check on disk that the chapter is still empty before trashing it.
-          const text = await this.app.vault.read(row.file);
+          // Re-check, through the note text port (an open editor's unsaved buffer counts), that the chapter is still empty before trashing it.
+          const text = await this.plugin.notes.text(row.file).read();
           if (!isBlankBody(text)) throw new Error(t("outline.blocked.notEmptyTab"));
-          await this.app.vault.process(prev.file, (p) => appendBeat(p, beatText));
+          await this.editText(prev.file, (p) => appendBeat(p, beatText));
           await this.app.fileManager.trashFile(row.file);
           await this.renumberRest(book, row.file);
         });
@@ -1115,7 +1123,7 @@ export class OutlineView extends ItemView {
         el.dataset.done = "1";
         const before = this.previousTarget(el);
         const ok = await this.run(async () => {
-          const text = await this.app.vault.read(row.file);
+          const text = await this.plugin.notes.text(row.file).read();
           if (!isBlankBody(text)) throw new Error(t("outline.blocked.notEmptyDelete"));
           await this.app.fileManager.trashFile(row.file);
           await this.renumberRest(book, row.file);
@@ -1162,7 +1170,7 @@ export class OutlineView extends ItemView {
   /** Add an empty beat at the end of a chapter and focus it. */
   private async addBeat(file: TFile): Promise<void> {
     let index = -1;
-    const ok = await this.run(() => this.app.vault.process(file, (text) => {
+    const ok = await this.run(() => this.editText(file, (text) => {
       const out = appendBeat(text, "");
       index = parseBeats(out).length - 1;
       return out;

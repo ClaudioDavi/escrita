@@ -8,16 +8,20 @@ import { RULES } from "./lens/types";
 import { cleanWeekdays } from "./core/merge";
 import { invalidDatesOff } from "./core/daysoff";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, STAGES, hexColor, normalizeStages, stageConflicts, type Stage, type StageMapping } from "./core/stages";
+import { renderUniverseSettings } from "./universe/settings-ui";
+import { defaultUniverseSettings, normalizeUniverse, type UniverseSettings } from "./universe/settings";
 import { DEFAULT_SNAPSHOTS_FOLDER, inFolder, snapshotsFolderProblem, snapshotsRoot, type SnapshotsFolderProblem } from "./core/classify";
 
 export type ParagraphStyle = "single" | "blank";
 export type Scope = "books" | "all";
 export type QuoteStyle = "curly" | "guillemets" | "german" | "off";
 
-export interface EscritaSettings {
+export interface EscritaSettings extends UniverseSettings {
   // Books
   chaptersFolder: string;
   chapterTemplate: string;
+  /** folder of the notes offered by "Insert from a template"; empty = none */
+  templatesFolder: string;
   numberPadding: number;
   statusProperty: string;
   /** the writer's words and color for each stage */
@@ -82,6 +86,10 @@ export interface EscritaSettings {
   placeholderMarker: string;
   showExplorerDots: boolean;
 
+  // Threads
+  /** the word after `%%` that marks an open thread */
+  threadKeyword: string;
+
   // Darlings
   /** relative to the book folder */
   darlingsNote: string;
@@ -113,6 +121,7 @@ export interface EscritaSettings {
 export const DEFAULT_SETTINGS: EscritaSettings = {
   chaptersFolder: "Chapters",
   chapterTemplate: "",
+  templatesFolder: "",
   numberPadding: 2,
   statusProperty: "status",
   stages: DEFAULT_STAGES,
@@ -152,6 +161,8 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   placeholderMarker: "XXX",
   showExplorerDots: true,
 
+  threadKeyword: "thread",
+
   darlingsNote: "Darlings.md",
   globalDarlingsNote: "Darlings.md",
 
@@ -171,6 +182,8 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   lensSkipQuotes: true,
   lensShowDialogue: true,
   lensShowReadability: true,
+
+  ...defaultUniverseSettings(),
 };
 
 /** Settings as saved, with defaults filled in and list fields cleaned (used by loadAll). */
@@ -189,6 +202,9 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   s.lensEchoWindow = clampInt(s.lensEchoWindow, 10, 200, DEFAULT_SETTINGS.lensEchoWindow);
   s.lensLongSentence = clampInt(s.lensLongSentence, 15, 200, DEFAULT_SETTINGS.lensLongSentence);
   s.lensRulesOff = Array.isArray(s.lensRulesOff) ? s.lensRulesOff.filter((x): x is string => typeof x === "string") : [];
+  s.templatesFolder = typeof s.templatesFolder === "string" ? s.templatesFolder.trim().replace(/^\/+|\/+$/g, "") : "";
+  s.threadKeyword = (typeof s.threadKeyword === "string" ? s.threadKeyword.trim() : "") || DEFAULT_SETTINGS.threadKeyword;
+  Object.assign(s, normalizeUniverse(s));
   return s;
 }
 
@@ -229,6 +245,11 @@ export class EscritaSettingTab extends PluginSettingTab {
       .addText((c) => c.setPlaceholder("Templates/Chapter.md").setValue(s.chapterTemplate)
         .onChange(async (v) => { s.chapterTemplate = v.trim(); await save(); }));
     new Setting(containerEl)
+      .setName(t("settings.templatesFolder"))
+      .setDesc(t("settings.templatesFolder.desc"))
+      .addText((c) => c.setPlaceholder("Templates").setValue(s.templatesFolder)
+        .onChange(async (v) => { s.templatesFolder = v.trim(); await save(); }));
+    new Setting(containerEl)
       .setName(t("settings.numberPadding"))
       .setDesc(t("settings.numberPadding.desc"))
       .addDropdown((d) => {
@@ -245,6 +266,7 @@ export class EscritaSettingTab extends PluginSettingTab {
 
     this.stagesSettings(containerEl, save);
     this.lensSettings(containerEl, save);
+    renderUniverseSettings(this.plugin, containerEl, save, () => this.display());
 
     new Setting(containerEl).setName(t("settings.goals")).setHeading();
     new Setting(containerEl)

@@ -50,9 +50,10 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 0.3.0 | Word counts in the file explorer (6) · Dialogue focus (7) · Snapshots with word-level compare (4) | S + S + M | Shipped |
 | 0.4.0 | The writing desk: stages, stage snapshot, home block (11) · Move a paragraph or scene (8) | S–M + S | Shipped |
 | 0.5.0 | Revision lens, pt-BR and English rules, with dialogue share and readability (5) · stemmers | M–L | Shipped |
-| 0.6 | Insert from a template (9) | S | Planned |
+| 0.6.0 | Insert from a template (9) | S | Shipped |
+| 0.7 | Feature switches (10, the Features page) | M | Planned |
 | 0.8 | Submissions (12), with export (novel roadmap, 7) | S | Planned |
-| 1.0 | Set up a writing vault (10) | S | Planned |
+| 1.0 | Set up a writing vault and presets (10) | S | Planned |
 
 Sections keep their original numbers so references from the other roadmaps stay valid.
 
@@ -522,28 +523,37 @@ in Live Preview and Source mode, on desktop and mobile.
 
 ---
 
-## 9. Insert from a template (v0.6)
+## 9. Insert from a template (v0.6, shipped in 0.6.0)
 
 **Why.** Writers reuse small scaffolds: a scene with its beats, a revision checklist, a
 note for a contest entry. Tris uses Hotkeys for Templates for this. Escrita only knows
 the chapter template.
 
 **What it does.** A setting "Templates folder" (empty by default). Command "Insert from
-a template" lists its notes; the chosen one's body goes in at the cursor, with
-`{{title}}`, `{{date}}` and `{{time}}` filled in as in the chapter template, and its
-properties merged into the note's only where the note doesn't have them yet
-(`processFrontMatter`, never overwriting). Beats and placeholders in a template work as
-usual once inserted.
+a template" (editor only, Live Preview or Source; no default hotkey) lists the notes in
+that folder, with each template's path under its name. The chosen one's body goes in at
+the end of the selection (the cursor when nothing is selected), with `{{title}}`,
+`{{date}}` and `{{time}}` filled in as in the chapter template, and its properties merged
+into the note's only where the note doesn't have them yet, never overwriting. The body and
+the properties go in as one editor transaction, so one undo takes everything back. A body
+never lands inside the frontmatter, and one that follows a closing `---` starts on a line
+of its own. The note you are in is left out of the list. Beats and placeholders in a
+template work as usual once inserted.
+
+Without a templates folder the command shows a notice with an "Open settings" button; an
+empty folder gets a notice naming it. If the note changes while the template loads, nothing
+is inserted and a notice says so. It works in every universe mode.
 
 The universe's per-type templates (U 1.3) and the chapter template use the same filling
-code, in `core/`.
+code, `core/template.ts` (`renderTemplate`, `templateVars`, `splitTemplate`,
+`mergeProperties`, `planTemplateInsert`); the chapter's code re-exports it.
 
 **Done when** inserting a scene template into a chapter fills its variables, keeps the
 chapter's properties, and undoes in one step.
 
 ---
 
-## 10. Set up a writing vault (v1.0)
+## 10. Set up a writing vault (v1.0; feature switches in v0.7)
 
 **Why.** Escrita has many settings, and a new user meets them before writing a word.
 Tris gives his readers a ready-made vault; Escrita can build one.
@@ -567,12 +577,49 @@ It never touches existing notes; if a folder exists, it is used as it is and lis
 The layout step is listed with the rest and can be unticked; in a vault with a layout
 already set up it is unticked by default.
 
-**Design first.** A mockup of the layout (desktop and phone) on the design canvas
-before it is built.
+**Features you can turn off (v0.7).** Ships before the rest of this section, with
+IMPROVEMENTS 6. Escrita has grown into many features, and most writers
+use a few. A **Features** page at the top of the settings lists every feature, grouped by
+the stage of a work it serves, each with a switch and one line on what it does:
+
+- Writing: goals and sprints (with the status bar), outline and ghost beats,
+  placeholders, Enter flow and smart typography, dialogue focus, move a paragraph or
+  scene, insert from a template, word counts in the explorer.
+- Revision: revision lens, snapshots, darlings.
+- The desk: stages and the home block.
+- Publishing: publish check, and export and submissions once they ship.
+- The world: the universe (its switch is the universe mode, so there's one control, not
+  two) and open threads.
+
+A feature that is off is not loaded: no commands, views, menu items, editor extensions
+or index work, and its settings section is hidden. Its data stays (goals history,
+snapshots, darlings, thread dates), so turning it back on loses nothing. Features that
+depend on another say so next to the switch (the stage snapshot needs snapshots) and
+can't be on without it. Shared services (the classifier, the measurer, the vault index)
+are always on.
+
+**Presets (v1.0).** The setup command offers three starting points, and the Features page has
+the same three buttons, each showing what it will switch before it does:
+
+- **Essentials**: outline, goals, placeholders, darlings, snapshots, the home block.
+  For a writer who wants to write and not run a plugin.
+- **Writer** (default for new installs): Essentials plus the revision lens, dialogue
+  focus, moving blocks, templates, explorer counts and the publish check.
+- **Everything**: every feature on. The universe mode is asked separately (per book or
+  universe), since it shapes folders.
+
+Existing installs keep every feature on when they update, so nothing disappears
+without the writer choosing it. A preset is a starting point, not a mode: after it,
+each switch is the writer's, and the page shows "Custom" when they differ from all
+three.
+
+**Design first.** Mockups of the Features page before 0.7, and of the layout (desktop
+and phone) and the setup steps before 1.0, on the design canvas.
 
 **Done when** an empty vault goes from install to a working book and conto in one
 command, laid out for writing; the writer's later layout changes survive a restart;
-and running it in a vault with notes changes none of them.
+running it in a vault with notes changes none of them; and turning a feature off and on
+again at runtime leaves no command, view or listener behind and loses no data.
 
 ---
 
@@ -735,7 +782,7 @@ renaming the conto updates the link, and the notes read well with Escrita turned
 | | Skip quotes (`>` lines) | on | same |
 | | One toggle per rule | all on | same |
 | | Show dialogue share / readability | on / on | same |
-| Templates | Templates folder | (empty) | `Modelos` |
+| Templates | Templates folder (read by "Insert from a template" and offered nowhere else) | (empty) | `Modelos` |
 
 After each milestone, update the author's `escrita/.obsidian/plugins/escrita/data.json`
 in the website repo and the "Plugin Escrita" section of `escrita/Como usar.md`.

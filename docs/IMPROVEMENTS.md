@@ -17,25 +17,6 @@ interface lives. Test through the interface.
 
 ## Candidates
 
-### 3. Note text: edit through the editor or the vault
-
-**Strength:** worth exploring · **Pairs with:** 0.3 snapshots (restore, "use the old
-version")
-
-- **Problem.** "Write through the open editor if there is one, else through the vault,
-  and only if the text is still what we expect" is written three times with different
-  rules: placeholders (no mode check), darlings (editor only in source mode), publish
-  (read only). The outline re-checks "beat i still has text X" by hand four times.
-- **Change.** A small port with read and check-then-replace, satisfied by an editor
-  adapter (keeps undo) and a `vault.process` adapter (closed notes).
-- **Wins.** The data-safety rule lives once; snapshot restore reuses it.
-
-**Status:** partially shipped in 0.3.0: `core/note-text.ts` (the port,
-tested) and `plugin.notes` (`core/notes.ts`, `NoteService`) serve placeholders,
-darlings, publish and snapshots, and darlings and outline create folders through
-`plugin.notes.ensureFolder`. Left: the outline's four hand-made beat re-checks
-(with candidate 5).
-
 ### 5. Split the outline view along its concepts
 
 **Strength:** speculative · mostly falls out of 1 and 3
@@ -48,6 +29,27 @@ darlings, publish and snapshots, and darlings and outline create folders through
   lines) has the same shape.
 - **Change.** A chapter document module (rows, beats, checked edits, tested); the view
   keeps rendering and input.
+
+### 6. Modules that load and unload at runtime
+
+**Strength:** strong · **Pairs with:** feature switches (SF 10, 0.7)
+
+- **Problem.** Every module is built and loaded at startup, and its commands, views,
+  menus, editor extensions and index specs are registered on the plugin, so they live
+  until the plugin unloads. A module can't be switched off without a restart, and a
+  feature the writer never uses still costs startup time and index work. The universe
+  (0.6) already needs commands and a view that come and go with its mode, and solves it
+  locally.
+- **Change.** Each module becomes an Obsidian `Component` added as a child of the
+  plugin, and registers everything through its own `register*` calls, so `removeChild`
+  undoes all of it. A small registry in `main.ts` knows each module's switch and its
+  dependencies, loads the enabled ones, and loads or unloads on `settingsChanged`.
+  Index specs (`plugin.index.add`) return a handle the module disposes. Commands go
+  through one helper that removes them on unload. The universe's mode-dependent
+  registration moves onto it.
+- **Wins.** Feature switches become a settings change, not a refactor; startup skips
+  disabled modules; an unload test per module ("nothing left registered") catches leaks,
+  which the community review checks.
 
 ## Loose ends from 0.2.1
 
@@ -70,6 +72,7 @@ None at the moment.
 
 | Version | Improvement |
 |---|---|
+| 0.6.0 | Note text port finished (candidate 3): the outline's beat re-checks and writes go through `plugin.notes` as `guardedEdit` plans, and its emptiness checks read through the port. Thread closing and template insert share `replaceIfExact`, `guardedEdit` and `matchLineEndings`. Still direct: the editor's template insert and "Plant a thread" write to the editor that triggered them |
 | 0.5.1 | Lens marks stale after a lists change: the session treats options as a generation (`invalidate` clears every cache first, one failing pass no longer stops the others), the marks field drops a list from an older generation, and a failed refresh retries instead of dropping the editor |
 | 0.2.1 | Markdown segmenter (`core/markdown`): one scan for prose, frontmatter, code and comments |
 | 0.2.1 | File classifier (`core/classify`): one answer to what a file is |

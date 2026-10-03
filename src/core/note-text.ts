@@ -194,6 +194,33 @@ export function revertPlan(a: AnchoredChange, shown?: string): (text: string) =>
   return (text) => (shown !== undefined && text !== shown ? null : checkedChange(text, a));
 }
 
+/**
+ * A plan for an edit expressed as new whole text: refuses (null) when `guard`
+ * doesn't hold for the current text or when `edit` answers null; else the
+ * smallest change turning the text into what `edit` returned. `edit` may throw
+ * to refuse with a message. This is "check, then replace" for edits written as
+ * text-to-text functions (the outline's beat edits).
+ */
+export function guardedEdit(
+  guard: ((text: string) => boolean) | null,
+  edit: (text: string) => string | null,
+): (text: string) => Change | null {
+  return (text) => {
+    if (guard && !guard(text)) return null;
+    const next = edit(text);
+    return next === null ? null : wholeText(text, next);
+  };
+}
+
+/**
+ * A plan that replaces `[from, to)` with `insert` only while exactly `expected`
+ * is still there. No searching: a marker that moved is a marker that changed,
+ * so the writer is asked again rather than guessed at.
+ */
+export function replaceIfExact(from: number, to: number, expected: string, insert: string): (text: string) => Change | null {
+  return (text) => (validFor(text, { from, to, insert }) && text.slice(from, to) === expected ? { from, to, insert } : null);
+}
+
 /** `text` with the line endings `doc` uses (CRLF when `doc` has any, else LF). */
 export function matchLineEndings(text: string, doc: string): string {
   const lf = text.replace(/\r\n/g, "\n");

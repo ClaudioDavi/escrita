@@ -2,7 +2,10 @@
 // Everything works on basenames (file names without ".md").
 
 import { numberedName, type RenamePlan } from "./book";
-import { segment } from "./markdown";
+import { hasFrontmatter, renderTemplate, yamlKey, type TemplateVars } from "./template";
+
+// The template pieces moved to core/template.ts; re-exported for existing importers.
+export { hasFrontmatter, renderTemplate, templateVars, type TemplateVars } from "./template";
 
 const PREFIX = /^(\d+)(?:[ \t._-]+|$)/;
 
@@ -128,38 +131,6 @@ export function retitledName(basename: string, safeTitle: string): string | null
   if (!title) return null;
   const m = PREFIX.exec(basename);
   return m ? `${m[1]} ${title}` : title;
-}
-
-export interface TemplateVars {
-  title: string;
-  /** YYYY-MM-DD */
-  date: string;
-  /** HH:mm */
-  time: string;
-}
-
-export function templateVars(title: string, now: Date): TemplateVars {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return {
-    title,
-    date: `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`,
-    time: `${p(now.getHours())}:${p(now.getMinutes())}`,
-  };
-}
-
-export function renderTemplate(template: string, vars: TemplateVars): string {
-  return template
-    .replace(/\{\{\s*title\s*\}\}/gi, () => vars.title)
-    .replace(/\{\{\s*date\s*\}\}/gi, () => vars.date)
-    .replace(/\{\{\s*time\s*\}\}/gi, () => vars.time);
-}
-
-export function hasFrontmatter(text: string): boolean {
-  return segment(text).bodyLine > 0;
-}
-
-function yamlKey(k: string): string {
-  return /^[\p{L}\p{N}_-]+$/u.test(k) ? k : JSON.stringify(k);
 }
 
 /**

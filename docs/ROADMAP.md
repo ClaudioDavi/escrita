@@ -7,13 +7,15 @@ feature live in the three topic roadmaps:
   works on a single note (so on chapters too).
 - [ROADMAP-novel.md](ROADMAP-novel.md): features that need a book.
 - [ROADMAP-universe.md](ROADMAP-universe.md): a shared world across works (opt-in).
+- [ROADMAP-screenplay.md](ROADMAP-screenplay.md): screenplays in Fountain, with PDF export
+  in industry format.
 
 Every feature follows the rules in [ARCHITECTURE.md](ARCHITECTURE.md), including
 **standalone**: Escrita is for any writer, whether or not they publish to a website,
 so nothing here assumes one.
 
 Feature references below use the short names **SF** (short fiction), **N** (novel) and
-**U** (universe), followed by the section number in that file.
+**U** (universe) and **SP** (screenplay), followed by the section number in that file.
 
 **Every release includes at least one code improvement** from
 [IMPROVEMENTS.md](IMPROVEMENTS.md), listed as "Improvement" under the version below.
@@ -34,23 +36,25 @@ move the improvement to "Done" in IMPROVEMENTS.md, and pick the next version's c
 | 0.4.0 | The writing desk: stages and the stage snapshot (SF 11) · Home block, where you left off, open on startup (SF 11) · Move a paragraph or scene (SF 8) · Improvement: vault index |
 | 0.5.0 | Revision: revision lens with six rules, dialogue share, Portuguese readability and "Ignore here" (SF 5) · Portuguese and English stemmers in `core/stem/` · Improvement: the 0.2.1 editor loose ends (and the outline's scene-break check) |
 | 0.5.1 | Fix: lens marks stale after the word lists note changes · Add to crutch words, names or ignored words from the editor menu (SF 5; mockups waived by the author) |
+| 0.6.0 | Universe foundations: universe modes, entries, the universe panel (Entries, Threads, Works), migration (U 1.1) · Create entry from selection (U 1.3) · Open threads (U 1.5) · Insert from a template (SF 9) · Forms, with an essay form and form by folder · Improvement: the outline's beat writes through the note text port (candidate 3, finished) |
 
-## Next: 0.6, universe foundations
+## Next: 0.7, characters across works
 
-The container for a shared world, and the first tools that use it. Open threads and
-templates work without a universe too. The universe is opt-in and off by default.
+Characters and places start to work across stories: the universe learns where each entry
+appears, names stop being flagged, and the outline shows point of view. Every feature can
+also be switched off, which needs modules that load and unload at runtime.
 
 | Feature | Ref | Effort | Note |
 |---|---|---|---|
-| Universe modes and container | U 1.1 | M | Per book, shared universe or off. Entry folders and types (character, place, object…), `form` on works, a migration command with a preview, and the universe panel. |
-| Create entry from selection | U 1.3 | S | Editor menu and command: pick the type, create the note from its template, set `type` and `universe`. Opens the existing entry if the name is taken. |
-| Open threads | U 1.5 | S | `%% thread: … %%` hooks planted in one story for later ones, a threads panel, and closing a thread. Works without a universe. |
-| Insert from a template | SF 9 | S | A templates folder and a command. The same filling code serves the universe's per-type templates (U 1.3). |
+| "Appears in" | U 1.2 | M | The matcher (names and aliases, Portuguese inflection through `core/stem/`), an index kept current on edits, the count in the panel's Entries tab and an "Appears in" section in each entry note. |
+| Names into spellcheck and the revision lens | U 1.4 | S | Entry names and aliases stop being flagged; the name-variant rule reads them. |
+| POV and status in the outline | N 1 | S | POV can link to a character entry. |
+| Per-chapter targets | N 2 | S | The bar in the outline and a book default. |
+| Feature switches | SF 10 | M | A Features page: every feature has a switch, and an off feature isn't loaded. Data stays. Mockups first. Presets and the setup command stay in 1.0. |
 
-**Improvement:** the outline's hand-made beat re-checks (IMPROVEMENTS.md, candidate 3,
-the part still open). Closing a thread must check that the exact text is still there
-before it rewrites the marker, which is the check-then-replace that `plugin.notes`
-already does, so the new code and the outline can share one path.
+**Improvement:** modules that load and unload at runtime (IMPROVEMENTS.md, candidate 6).
+The feature switches stand on it, and the universe's mode-dependent commands and view
+move onto it.
 
 ## 0.5 to 1.0
 
@@ -62,13 +66,13 @@ shipped as 0.4.0 and the lens as 0.5.0.
 
 | Version | Contents | Ref | Effort | Theme |
 |---|---|---|---|---|
-| 0.7 | "Appears in" · Names into spellcheck and the revision lens · POV and status in the outline (POV can link to a character entry) · Per-chapter targets | U 1.2, U 1.4, N 1, N 2 | M + S + S + S | Characters across works |
 | 0.8 | Export stages 1–2: Markdown manuscript and DOCX (Shunn and pt-BR presets), for a single note and for a book · Submissions · Companion-plugin guide | N 7, SF 12, N 6 | M–L + S + S | Submitting work |
 | 0.9 | Universe phase 2: timeline, facts over time, continuity checks, canon | U 2.1–2.4 | L | A consistent world |
 | 0.10 | Export stage 3: EPUB 3, validated by EPUBCheck in CI · Book-wide publish check and serial dashboard · "Read the book" view | N 7, N 4, N 8 | M + S + M | Books |
-| 1.0 | Stabilization: mobile pass, docs in English and pt-BR, migrations tested on the author's vault, community plugin submission · Set up a writing vault (creates the home note and a first writing layout) | SF 10 | M + S | Full release |
+| 1.0 | Stabilization: mobile pass, docs in English and pt-BR, migrations tested on the author's vault, community plugin submission · Set up a writing vault (creates the home note and a first writing layout, with presets: Essentials, Writer, Everything, built on the 0.7 feature switches) | SF 10 | M + S | Full release |
 
-Improvements: 0.6 is planned above; later versions pick from IMPROVEMENTS.md when
+Improvements: 0.6 is planned above, and 0.7 takes IMPROVEMENTS 6 (the feature switches
+stand on it); later versions pick from IMPROVEMENTS.md when
 they're planned in detail.
 
 Notes:
@@ -97,3 +101,6 @@ Notes:
 |---|---|---|---|
 | Book-wide snapshots and revision reports | N 10 | M | Builds on SF 4, SF 5 |
 | Longform importer | N 5 | S–M | Not wanted for 1.0 |
+| Screenwriting, phase 1: screenplay notes, Fountain parser, Fountain and PDF export | SP 1, SP 6 | M + L | Export first: a script can be drafted in plain Fountain, but can't be handed in without a correct PDF. Builds on the 0.8 export pipeline and the `form` property (0.6) |
+| Screenwriting, phase 2: screenplay layout and Tab/Enter in the editor, pages as a unit, scene outline | SP 2–4 | M + S + S | |
+| Screenwriting, phase 3: script report, FDX export, Fountain import, feature-length scripts as a book | SP 5–7 | M + M + M | |

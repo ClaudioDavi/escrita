@@ -1,0 +1,67 @@
+/* Universe: the settings section (board 19). The panel, the create/close UI and the
+   migration preview keep their CSS in view.css, create.css and migrate.css. */
+.escrita-universe-settings-desc {
+  padding-bottom: var(--size-4-2);
+}
+.setting-item-control input.escrita-universe-narrow {
+  width: 120px;
+}
+.setting-item-control input.escrita-universe-wide {
+  width: 280px;
+}
+
+/* Entry types: a table of four columns on a desktop, one block per type on a phone. */
+.escrita-types {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+  padding-bottom: var(--size-4-2);
+}
+.escrita-types-head,
+.escrita-types-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--size-4-2);
+  align-items: center;
+}
+.escrita-types-head {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+.escrita-types-name,
+.escrita-types-cell-label {
+  display: none;
+}
+.escrita-types-cell input {
+  width: 100%;
+  min-height: 32px;
+}
+
+@media (max-width: 600px) {
+  .escrita-types {
+    gap: var(--size-4-3);
+  }
+  .escrita-types-head {
+    display: none;
+  }
+  .escrita-types-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--size-4-1);
+    padding: var(--size-4-2) 0;
+    border-top: 1px solid var(--background-modifier-border);
+  }
+  .escrita-types-name {
+    display: block;
+    font-weight: var(--font-semibold);
+  }
+  .escrita-types-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .escrita-types-cell-label {
+    display: block;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+  }
+}

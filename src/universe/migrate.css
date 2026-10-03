@@ -1,0 +1,102 @@
+/* The migration preview and progress modals (board 18). Obsidian variables only. */
+.escrita-migrate-intro {
+  color: var(--text-muted);
+  margin: 0 0 var(--size-4-3);
+}
+.escrita-migrate-group {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  overflow: hidden;
+  margin-bottom: var(--size-4-2);
+}
+.escrita-migrate-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--size-4-2);
+  padding: var(--size-4-2) var(--size-4-3);
+  background: var(--background-secondary);
+  font-size: var(--font-ui-small);
+}
+.escrita-migrate-arrow {
+  color: var(--text-faint);
+}
+.escrita-migrate-count {
+  margin-left: auto;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.escrita-migrate-row {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  min-height: 32px;
+  padding: 0 var(--size-4-3);
+  border-top: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-small);
+}
+.escrita-migrate-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.escrita-migrate-row-note {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  text-align: right;
+}
+.escrita-migrate-clash {
+  background: color-mix(in srgb, var(--text-error) 8%, transparent);
+}
+.escrita-migrate-clash .escrita-migrate-row-note {
+  color: var(--text-error);
+}
+.escrita-migrate-checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  margin: var(--size-4-3) 0;
+}
+.escrita-migrate-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--size-4-2);
+  min-height: 32px;
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+}
+.escrita-migrate-check input {
+  margin-top: 3px;
+}
+.escrita-migrate-hint {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  margin: 0 0 var(--size-4-2);
+}
+.escrita-migrate-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--background-modifier-border);
+  overflow: hidden;
+  margin: var(--size-4-3) 0 var(--size-4-2);
+}
+.escrita-migrate-bar-fill {
+  height: 100%;
+  width: 0;
+  background: var(--interactive-accent);
+}
+.escrita-migrate-progress-line {
+  font-size: var(--font-ui-small);
+}
+@media (max-width: 600px) {
+  .escrita-migrate-row {
+    flex-wrap: wrap;
+    padding-block: var(--size-4-1);
+  }
+  .escrita-migrate-row-note {
+    margin-left: 0;
+    text-align: left;
+  }
+}

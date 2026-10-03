@@ -4,10 +4,13 @@
 //
 //   %% beat: As cartas na caixa de lata %%      ← a scene beat from the outline
 //   %% XXX: conferir se o porão tem janela %%   ← a placeholder (marker configurable)
+//   %% thread: quem escreveu as cartas? %%       ← an open thread (keyword configurable)
+//   %% thread closed: quem escreveu as cartas? → [[A Casa]] %%   ← a closed thread (closed word configurable)
 //
 // Scene breaks are a line holding only `---` (or `***`, `* * *`) with blank lines around.
 
 import { segment, type Markdown, type Span } from "./markdown";
+import { replaceIfExact, type Change } from "./note-text";
 
 export interface BeatMarker {
   /** 0-based line index of the beat comment */
@@ -179,4 +182,113 @@ export function parsePlaceholders(src: Source, marker: string): PlaceholderMarke
 
 export function beatLine(text: string): string {
   return `%% beat: ${text.replace(/%%/g, "%").replace(/\r?\n/g, " ").trim()} %%`;
+}
+
+export interface ThreadMarker {
+  line: number;
+  /** character offset of the `%%` opening within the whole text */
+  from: number;
+  to: number;
+  /** the question, without the `closed` word and the answer link */
+  text: string;
+  closed: boolean;
+  /** the note the thread was answered in (`→ [[note]]` or `-> [[note]]` at the end), else null */
+  answeredBy: string | null;
+  /** the whole comment as written, `%%` included (what closeThread checks before rewriting) */
+  raw: string;
+}
+
+const threadRegexes = new Map<string, RegExp>();
+
+/**
+ * One whole thread comment. The keyword and the closed word are settings; the
+ * closed form is the keyword, the closed word and a colon (`thread closed: …`).
+ * The colon is required there so an open thread that starts with the word
+ * ("%% thread closed door %%") is not read as closed.
+ */
+function threadRegex(keyword: string, closedWord: string): RegExp {
+  const key = `${keyword}\u0000${closedWord}`;
+  let re = threadRegexes.get(key);
+  if (!re) {
+    const mid = closedWord === "" ? ":?" : `(?:[ \\t]+(${escapeRe(closedWord)}):|:)?`;
+    re = new RegExp(
+      `^%%[ \\t]*${escapeRe(keyword)}(?![\\p{L}\\p{N}_-])${mid}[ \\t]*([^\\n]*?)[ \\t]*%%$`, "u");
+    if (threadRegexes.size > 16) threadRegexes.clear();
+    threadRegexes.set(key, re);
+  }
+  return re;
+}
+
+const ANSWER_LINK = /[ \t]*(?:→|->)[ \t]*\[\[([^\]\n]*)\]\][ \t]*$/u;
+
+/** The note a wikilink body points at: no alias, heading or block part. */
+export function linkTarget(inner: string): string {
+  return inner.split("|")[0].split(/[#^]/)[0].trim();
+}
+
+/** Threads (open and closed) in the body, in order. Like placeholders, markers in code or frontmatter don't count. */
+export function parseThreads(src: Source, keyword: string, closedWord: string): ThreadMarker[] {
+  const text = typeof src === "string" ? src : src.text;
+  if (keyword === "" || !text.includes("%%")) return [];
+  const re = threadRegex(keyword, closedWord);
+  const out: ThreadMarker[] = [];
+  for (const { span, line } of markerComments(segmented(src))) {
+    const raw = text.slice(span.from, span.to);
+    const m = re.exec(raw);
+    if (!m) continue;
+    let body = m[2];
+    let answeredBy: string | null = null;
+    const a = ANSWER_LINK.exec(body);
+    if (a) {
+      answeredBy = linkTarget(a[1]) || null;
+      body = body.slice(0, a.index);
+    }
+    out.push({ line, from: span.from, to: span.to, text: body, closed: m[1] !== undefined, answeredBy, raw });
+  }
+  return out;
+}
+
+/** The comment for a thread: `%% thread: … %%`, or `%% thread closed: … → [[note]] %%`. */
+export function threadComment(keyword: string, closedWord: string, text: string, closed: boolean, answeredBy: string | null = null): string {
+  const clean = text.replace(/%%/g, "%").replace(/\r?\n/g, " ").trim();
+  const target = answeredBy ? linkTarget(answeredBy.replace(/[[\]\r\n]/g, "").replace(/%%/g, "%")) : "";
+  const link = target !== "" ? ` → [[${target}]]` : "";
+  return `%% ${keyword}${closed ? ` ${closedWord}` : ""}: ${clean}${link} %%`;
+}
+
+/**
+ * Finds `thread` again in the text the plan runs on: the same line number and the
+ * identical comment. Not a search: line and raw text are the same whether the text is
+ * the file on disk (CRLF) or the editor's buffer (LF), while offsets are not.
+ */
+function sameThreadIn(text: string, thread: ThreadMarker, keyword: string, closedWord: string): ThreadMarker | null {
+  return parseThreads(text, keyword, closedWord).find((t) => t.line === thread.line && t.raw === thread.raw) ?? null;
+}
+
+/**
+ * The plan that closes `thread` (optionally recording the note that answers
+ * it): the comment is rewritten only while its exact text is still on the same
+ * line. Null for a thread that is already closed. Apply it through the note text port.
+ */
+export function closeThreadPlan(thread: ThreadMarker, keyword: string, closedWord: string, answeredBy?: string): (text: string) => Change | null {
+  if (thread.closed) return () => null;
+  const next = threadComment(keyword, closedWord, thread.text, true, answeredBy ?? thread.answeredBy);
+  return (text) => {
+    const at = sameThreadIn(text, thread, keyword, closedWord);
+    return at ? replaceIfExact(at.from, at.to, at.raw, next)(text) : null;
+  };
+}
+
+/**
+ * The plan that reopens a closed `thread`: the closed word goes, the answer link
+ * stays (it is still the best pointer to where the question was dealt with).
+ * Same guard as closeThreadPlan. Null for a thread that is already open.
+ */
+export function reopenThreadPlan(thread: ThreadMarker, keyword: string, closedWord: string): (text: string) => Change | null {
+  if (!thread.closed) return () => null;
+  const next = threadComment(keyword, closedWord, thread.text, false, thread.answeredBy);
+  return (text) => {
+    const at = sameThreadIn(text, thread, keyword, closedWord);
+    return at ? replaceIfExact(at.from, at.to, at.raw, next)(text) : null;
+  };
 }

@@ -34,8 +34,14 @@ import { deskStrings } from "./desk/strings";
 import { LensModule } from "./lens";
 import { lensStrings } from "./lens/strings";
 import { cleanDismissed } from "./lens/dismiss";
+import { cleanSeen } from "./universe/first-seen";
 import { SnapshotsModule } from "./snapshots";
 import { snapshotsStrings } from "./snapshots/strings";
+import { UniverseModule } from "./universe";
+import { universeStrings } from "./universe/strings";
+import { universeViewStrings } from "./universe/view-strings";
+import { universeCreateStrings } from "./universe/create-strings";
+import { universeMigrateStrings } from "./universe/migrate-strings";
 
 /** The reusable vault index (0.4 task 3.x fills it in). */
 export interface VaultIndexes {
@@ -67,6 +73,7 @@ export default class EscritaPlugin extends Plugin {
   desk!: DeskModule;
   publish!: PublishModule;
   lens!: LensModule;
+  universe!: UniverseModule;
   private modules: EscritaModule[] = [];
 
   /** Persist data soon; for frequent writes such as word tracking. */
@@ -76,6 +83,7 @@ export default class EscritaPlugin extends Plugin {
     for (const s of [
       coreStrings, goalsStrings, outlineStrings, placeholdersStrings, darlingsStrings, editorStrings, publishStrings,
       explorerStrings, snapshotsStrings, deskStrings, lensStrings,
+      universeStrings, universeViewStrings, universeCreateStrings, universeMigrateStrings,
     ]) {
       registerStrings(s);
     }
@@ -116,8 +124,9 @@ export default class EscritaPlugin extends Plugin {
     this.snapshots = new SnapshotsModule(this);
     this.publish = new PublishModule(this);
     this.desk = new DeskModule(this);
+    this.universe = new UniverseModule(this);
     this.modules = [
-      this.goals, this.outline, this.placeholders, this.explorer, this.darlings, this.editor, this.lens, this.snapshots, this.publish, this.desk,
+      this.goals, this.outline, this.placeholders, this.explorer, this.darlings, this.editor, this.lens, this.snapshots, this.publish, this.desk, this.universe,
     ];
     for (const m of this.modules) await m.load();
 
@@ -143,6 +152,7 @@ export default class EscritaPlugin extends Plugin {
       publish: isRecord(raw.publish) ? (raw.publish as Record<string, PublishRecord>) : {},
       leftOff: cleanLeftOff(raw.leftOff),
       lensDismissed: cleanDismissed(raw.lensDismissed),
+      threadSeen: cleanSeen(raw.threadSeen),
     };
   }
 

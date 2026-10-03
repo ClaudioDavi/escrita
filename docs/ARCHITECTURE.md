@@ -31,10 +31,13 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   `works` (`WorksReader`, `core/works-index.ts`: the live list of works, one entry per
   tracked book, note or chapter; `get`, `list`, `isReady`, `onReady`, `onChange`; built on
   `index`), and the other modules (`goals`, `outline`,
-  `placeholders`, `explorer`, `darlings`, `editor`, `lens`, `snapshots`, `publish`, `desk`).
+  `placeholders`, `explorer`, `darlings`, `editor`, `lens`, `snapshots`, `publish`, `desk`,
+  `universe`: the one with a public API, see its spec below).
 - **Pure core** (no Obsidian imports, unit tested): `core/markdown.ts` (the one
   Markdown segmenter, see below), `core/wordcount.ts`,
-  `core/markers.ts` (beat/placeholder/scene-break syntax), `core/book.ts`
+  `core/markers.ts` (beat/placeholder/scene-break syntax, and thread markers: see
+  "Thread markers" below), `core/template.ts` (template filling: see "Template filling"
+  below), `core/book.ts`
   (chapter numbering), `core/dates.ts` (writing day), `core/measure.ts` (`measureText`,
   `countIn`, a note's target/limit/unit/deadline via `readPiece`/`readUnit`, a book's
   goal via `readBookGoal`, the only amount and deadline parsers `parseAmount`/`parseDeadline`,
@@ -45,7 +48,7 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   `snapshotsRoot`, `inSnapshots`, `snapshotsFolderProblem`; see "File classification"),
   `core/lists.ts` (`lineList`, `folderList`; import them from here),
   `core/note-text.ts` (the note text port: `Change`, `checkedChange`, `minimalChange`,
-  `matchLineEndings`), `core/explorer-decorations.ts` (the explorer walk, over fake
+  `guardedEdit`, `replaceIfExact`, `matchLineEndings`), `core/explorer-decorations.ts` (the explorer walk, over fake
   elements in tests) and
   `core/merge.ts` (`mergeDefaults` for saved settings), and the 0.4 core:
   `core/path-keys.ts` (`isUnder`, `movedPath`, and the rename/drop helpers for records,
@@ -115,9 +118,16 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
     in `src/lens/ui.ts`), for the "Open settings" button of the no-language state:
     `setting.open()` then `setting.openTabById(manifest.id)`, behind a cast and a
     try/catch. Obsidian has no public call for it; if it is missing nothing happens.
+  - **Three casts to Obsidian internals, each behind a guard.** The universe panel's
+    "Reveal in explorer" reads the file explorer view through a cast
+    (`src/universe/view-entries.ts`, `revealInFolder`), and the panel's and the template
+    insert's "Open settings" buttons open Escrita's settings tab through `app.setting`
+    (`src/universe/view.ts`, `src/editor/template-insert.ts`), as the lens does. A missing
+    method means nothing happens.
   - **Writes into a note's text go through `plugin.notes`** (the editor when the note is
     open in source or Live Preview, else `vault.process`), never straight to
-    `vault.process` or an editor.
+    `vault.process` or an editor. The one deliberate gap is the two synchronous editor
+    commands listed under "Note text".
 - **Styling.** Classes prefixed `escrita-`, CSS in the module's `styles.css`, colors only
   from Obsidian CSS variables or the tokens in `src/styles.css` (`--escrita-accent`,
   `--escrita-ghost`, `--escrita-placeholder-bg/fg`, `--escrita-good`, `--escrita-bar-bg`).
@@ -467,9 +477,51 @@ refuse.
   instead of reverting at a shifted offset.
 - **Folders.** `plugin.notes.ensureFolder(path)` creates missing folders and throws
   `FolderBlockedError` when a segment is a file; darlings, outline and snapshots use it.
+- **Plans written as text-to-text.** `guardedEdit(guard, edit)` turns "check the text,
+  then return the new whole text" into a plan (the smallest `Change` between the two;
+  null when the guard fails or `edit` answers null; `edit` may throw to refuse with a
+  message). `replaceIfExact(from, to, expected, insert)` replaces a span only while
+  exactly `expected` is still there: no searching, since a marker that moved is a marker
+  that changed. `matchLineEndings(text, doc)` gives text the line endings of `doc`, for
+  plans that run on a disk text with CRLF and an editor buffer with LF.
 - Users: placeholders (resolve), darlings (cut and restore), publish (read), snapshots
-  (read, restore, "Use the old version"). The outline's four hand-made beat re-checks
-  are not migrated yet (IMPROVEMENTS 3, partial).
+  (read, restore, "Use the old version"), the outline (every beat write, with
+  `guardedEdit`, and the emptiness checks before trashing a chapter, which read the
+  open editor's unsaved text), and the universe (closing and reopening a thread, the
+  "Insert link" of the panel, the link in create entry). Two editor commands still
+  write straight to the editor that triggered them: "Plant a thread" (synchronous, on
+  that view) and "Insert from a template" (which re-checks after its await that the
+  view still shows the same note).
+
+## Thread markers (`core/markers.ts`)
+
+Threads are single-line comments like beats and placeholders (`%% thread: … %%`), read
+with the same segmenter, so a marker in code or frontmatter doesn't count. The keyword
+and the closed word are settings, never constants.
+
+- `parseThreads(src, keyword, closedWord)` → `ThreadMarker { line, from, to, text,
+  closed, answeredBy, raw }`. The closed form is `%% thread closed: … %%`; the colon is
+  required, so `%% thread closed door %%` is an open thread. A trailing `→ [[note]]`
+  (or `->`) is the answer link.
+- `threadComment(keyword, closedWord, text, closed, answeredBy)` writes one: `%%` in the
+  text and the answer is cleaned out, and the link goes through `linkTarget` (drops
+  `|alias`, `#heading` and `^block`).
+- `closeThreadPlan` and `reopenThreadPlan` return `(text) => Change | null`. They
+  re-parse the text they run on and accept only the same line number with the identical
+  `raw` comment (never offsets), so a CRLF disk text and an LF editor buffer agree, and a
+  moved or edited marker refuses. Apply them through `plugin.notes`.
+
+## Template filling (`core/template.ts`)
+
+One filler for new chapters, "Insert from a template" and the universe's entry templates.
+`templateVars(title, now)` and `renderTemplate` fill `{{title}}`, `{{date}}` and
+`{{time}}`. `splitTemplate` separates a template's properties (top-level `key:` lines with
+their indented and list lines, kept as written, no YAML library) from its body.
+`mergeProperties(noteText, props)` is a `Change` that adds only the missing properties
+(never overwrites, null for an unclosed frontmatter). `planTemplateInsert(noteText,
+cursor, template, vars)` gives the non-overlapping changes for one editor transaction: the
+merged properties and the body at the cursor, never inside the frontmatter, on a line of
+its own after a closing `---`. `core/chapter-plan.ts` re-exports the pieces it used to own.
 
 ## Vault index (`core/vault-index.ts`, `core/index-hub.ts`, `core/vault-indexes.ts`)
 
@@ -1083,3 +1135,95 @@ logic lives in core (`stages`, `works`, `left-off`); the desk draws and records.
 - **Settings** it reads: the `stages` mapping and `otherStatusColors` (Stages and Other
   status colors in the settings tab), `statusProperty`, `homeNote`, `openHomeOnStartup`.
   The rest comes from `plugin.works`, never from a scan.
+
+### universe (`src/universe/`, 0.6)
+
+Serves every stage as the world around the works: a shared set of entries (characters,
+places…), the open threads of a story, and the commands that make them. Opt-in: the mode
+setting (`universeMode`: off, per book, universe) decides how much exists. Roadmap:
+ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
+
+`UniverseModule` (`index.ts`) owns the indexes and gives the three UI parts one API:
+`mode()`, `enabled()`, `entries(scope)`, `universes()`, `threads(scope, open)`,
+`worksIn(scope)`, `scopeOf(file)`, `createEntry()`, `closeThread()`, `showThreads()` and
+`onChange(cb)`. Views and dialogs never read the indexes directly.
+
+- **Scope** (`scope.ts`, `scopeFor`, pure). The question every feature asks first:
+  `{ kind: "none" | "book" | "universe", root, note }`. Universe mode tries, in order: the
+  file's own universe property (a chapter's wins over its book note's), the book note's
+  property, being inside the universe folder, being inside a default-universe folder, being
+  in a book (per-book rules), else none. The universe folder is not a setting: it is the
+  folder beside the universe note with the same basename (`universeRootOf`;
+  `universeNotePath` is the one place the note path is built). A link that resolves to no
+  note joins nothing. The module feeds it a `ScopeLookup` built on `books.classify` and
+  the metadata cache.
+- **Settings** (`settings.ts`, pure). `UniverseSettings` extends the plugin settings;
+  `normalizeUniverse` fills any missing or wrong-typed value with the English default.
+  Five fixed entry types (`ENTRY_KINDS`), each `{ value, folder, template, label }`;
+  five forms (`FORM_KINDS`); `threadClosedWord`; `universeNote` (path, `.md` added);
+  `defaultUniverseFolders`. The author's own words live in `data.json`. The section in
+  Settings is drawn by `settings-ui.ts`.
+- **Entries index** (`entries.ts`). A `plugin.index` spec over notes whose type property
+  holds an entry type's value, giving `{ path, name, kind, aliases, scope }`. The scope is
+  computed when queried, not stored, so a change to a book note's property can't leave a
+  stale answer. Snapshots and template notes (the type templates, the templates folder,
+  the chapter template) are never entries or threads (`isUniverseNote`), and the index
+  is empty while the mode is off. `entriesIn`, `groupByKind` and
+  `searchEntries` (folded, accent-blind) are pure.
+- **Threads index** (`threads.ts`). A content-mode spec that parses each note's thread
+  markers, in every mode. A query is a scope (or the tracked works when the mode is off),
+  and a chapter belongs to its book note, so threads and counts group by work.
+- **First seen** (`first-seen.ts`). `data.threadSeen` is path → thread text → time, kept
+  in plugin data and never written into notes. Recorded on index change, moved with
+  `plugin.index.follow`, dropped with a deleted note, pruned for missing files at layout
+  ready, and kept when a thread disappears and returns with the same text.
+- **Works tab** (`works-list.ts`, `view-works.ts`). The universe's works from
+  `plugin.works`, grouped by the form property (unknown or missing → "No form"), sorted by
+  stage (published first) then name; the count comes from `plugin.measure`, filled in
+  after the first draw, and a redraw happens only when a count actually landed.
+- **Panel** (`view.ts`, `view-entries.ts`, `view-threads.ts`, `view-works.ts`,
+  `view-parts.ts`, `panel-model.ts`). `UniverseView` (type `escrita-universe`, tabs Entries,
+  Threads, Works) and `ThreadsView` (type `escrita-threads`, the threads only, used when
+  the mode is off) share `PanelBase`, which redraws after the module's `onChange`, the
+  active leaf and the metadata cache, debounced. The tab, the collapsed groups and "show
+  closed" live in the leaf's state. The panel can set a note's universe property ("Add to
+  <universe>"), only on that click and only where it is missing, through
+  `processFrontMatter`. "Insert link" goes through `plugin.notes` and refuses a cursor in
+  the properties (moved to the body start), code or a comment (`linkInsertPoint`).
+  Closing a thread opens a popover with an optional answer and a preview of the marker;
+  `pickStillValid` drops a pick whose marker changed.
+- **Create entry** (`create.ts`, `create-logic.ts`, `new-entry.ts`). The modal
+  (`Modal`, board 17) and `createEntry`: the name from the selection (`nameFromSelection`),
+  `findDuplicate` against names and aliases, the note built by `entryText` (type property,
+  universe property in universe mode only, template merged with the shared template code),
+  the universe link written with `fileToLinktext`. The optional link on the selection goes
+  through `plugin.notes`.
+- **Threads in the editor** (`create.ts`, `create-logic.ts`). `plantThreadPlan` (pure) places
+  a marker at the cursor and never changes prose structure; "Plant a thread" and the
+  editor-menu items (Create universe entry, Plant a thread, Close or Reopen thread, Show
+  open threads) call it. `threadMarkerExtension` is a CodeMirror `ViewPlugin` registered
+  with `registerEditorExtension`: a line decoration (the margin flag, muted when every
+  thread on the line is closed) and a mark decoration over a closed marker only.
+- **Migration** (`migration.ts`, `migrate-plan.ts`, `migrate.ts`). `planMigration` (pure)
+  matches each file in the book folder to the deepest type folder, never takes a chapter,
+  lists name clashes and counts the notes missing the type property. The preview modal
+  (board 18) has two checkboxes (add the type property; add the universe property to the
+  book note) and applies the plan one note at a time with `fileManager.renameFile`, adding
+  properties with `processFrontMatter` only where missing. Moving into a non-default
+  universe also adds the universe property to each moved note.
+- **Mode off.** Obsidian can't unregister a view or a command. The view types stay
+  registered; `syncMode` closes the panel's leaves when the mode goes off; every universe
+  command (`open-universe`, `create-entry`, `move-book-entries`) hides itself with a
+  `checkCallback` or `editorCheckCallback` that reads the mode. "Plant a thread", "Close
+  thread" and "Show open threads" work in every mode. IMPROVEMENTS 6 would replace this
+  with real load and unload.
+- **Commands** (no default hotkeys): Open the universe panel, Show open threads, Plant a
+  thread, Create universe entry, Close thread, Move this book's entries to the universe.
+  The migration also shows in a book note's file menu in universe mode.
+- **Strings.** `strings.ts` (commands, settings), `view-strings.ts`, `create-strings.ts`
+  and `migrate-strings.ts`, each with English and pt-BR; the type labels are the writer's
+  own and default to the localized names. Styles: `styles.css`, `view.css`, `create.css`,
+  `migrate.css`, all `escrita-` classes on Obsidian variables, touch targets at least
+  32px.
+- **Tests.** `tests/universe-*.test.ts` (scope, entries, create, panel, threads, migration,
+  works), `tests/threads.test.ts`, `tests/template.test.ts`, `tests/note-text-plans.test.ts`.

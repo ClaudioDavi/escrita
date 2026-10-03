@@ -125,6 +125,41 @@ The **Snapshots** panel lists the active note's snapshots with their length and 
 
 Snapshots are plain `.txt` files in `Escrita/Snapshots/<note path>/` (the folder is a setting), so search, graph and links ignore them. **Obsidian Sync** copies them only with "Sync all other types" turned on in its settings; git, iCloud, Dropbox and Syncthing copy them as they are.
 
+### Insert from a template
+
+Set a **Templates folder** in the settings, then run **Insert from a template**. It lists the notes in that folder (with their path under the name), and the one you pick goes in at the cursor, or at the end of your selection. `{{title}}`, `{{date}}` (YYYY-MM-DD) and `{{time}}` (HH:mm) are filled in, and the template's properties are added to your note only where it doesn't have them yet; nothing is overwritten. It all goes in as one change, so one undo takes it back. It works in the editor (Live Preview or Source). Beats and placeholders in a template work as usual once inserted.
+
+### Open threads
+
+A thread is a loose end you plant in one story for a later one, written as a comment on its own line:
+
+```
+%% thread: who wrote the letters? %%
+```
+
+**Plant a thread** (command, or the editor menu) puts the marker at your cursor. If you selected text, it becomes the thread's text and stays in your prose. A small flag in the margin shows a line with an open thread. **Show open threads** lists every open thread with the date Escrita first saw it, grouped by work; click one to jump to it. It works in every mode: with the universe off, it covers the works Escrita tracks; per book, the book; with a universe, the universe's works.
+
+To close a thread, use **Close thread** (cursor on the marker), the editor menu, or the button in the list. You can name the work that answers it, and the marker becomes `%% thread closed: who wrote the letters? → [[The House]] %%`. A closed marker is muted and struck through in the editor, and **Reopen thread** undoes it. Escrita rewrites the marker only if it is exactly as it was when you asked; if it moved or changed, nothing is touched. The word for closed is a setting. The dates are kept in Escrita's data, never in your notes.
+
+### Shared universe
+
+Off by default. Turn on **Shared universe** in the settings to keep characters, places, objects, groups and events that your stories share. For a walkthrough of setting it up, with threads and templates, see [the universe guide](docs/GUIDE-universe.md).
+
+- **Per book**: entries live inside each book, in folders named for their type (`Characters/`, `Places/`…).
+- **Universe**: entries are shared across works. A **universe note** (for example `Universe.md`) names the universe, and the folder beside it with the same name (`Universe/`) holds the entries.
+
+A work joins a universe with a `universe` property that links the universe note (`universe: "[[Universe]]"`). A chapter takes its book's, unless it has its own. Notes inside the universe folder join without a property, and so do notes in the folders you list in the settings. An entry is a note with a `type` property (`character`, `place`, `object`, `group` or `event`; the words are settings, and so are the folder, template and menu name for each type). The folder is only where new entries go, so entries can move freely.
+
+The **universe panel** has three tabs:
+
+- **Entries**: grouped by type, searchable by name and alias. Each row can open the note, open it to the side, insert a link at your cursor, or show it in the file explorer; the + buttons create an entry. If the active note is outside any universe, an **Add to** button sets its `universe` property (only when you click it).
+- **Threads**: the open threads of the universe, as above.
+- **Works**: the works in the universe grouped by their `form` property (short story, essay, novella, novel, poem, fragment), or by their folder's form when they have none (the "Form by folder" setting); works with no form go under "No form", by stage and name, each with a dot in its stage color and its word count. Click one to open it where you left off.
+
+**Create universe entry** (command, or the editor menu with some text selected) asks for the type, then makes the note in the type's folder from its template, with `type` and `universe` set, and can turn the selected text into a link and add an alias. If an entry with that name or alias exists, it offers to open it instead.
+
+**Move this book's entries to the universe** moves a book's `Characters/`, `Places/`… notes into the universe's folders, after a preview. Links update. A name that already exists is never overwritten. Two boxes in the preview add the `type` property where a note lacks it (from the folder it came from) and the `universe` property to the book note; nothing already there is changed. Changing the mode never moves or edits notes.
+
 ## How books are organized
 
 A note is a book when a folder with the same name sits next to it and holds a chapters folder:
@@ -144,6 +179,7 @@ Markers inside chapters are single-line comments:
 ```
 %% beat: The letters in the tin box %%             a scene beat from the outline
 %% XXX: check if the cellar has a window %%        a placeholder
+%% thread: who wrote the letters? %%             a thread, for a later story
 ---                                                a scene break, with blank lines around it
 ```
 
@@ -164,6 +200,9 @@ A beat counts as written when prose follows it before the next beat, scene break
 - **Darlings**: the darlings note inside a book, and the note used for everything else.
 - **Editor**: Enter, Enter, Enter; paragraph style; smart typography, where it applies, quote style and dialogue dash; spellcheck on demand.
 - **Revision**: the language (Automatic, Português (Brasil) or English), the word lists note (path, with a **Create** button), the echo window (default 40 words, 10 to 200) and the long sentence length (default 45 words, 15 to 200), **Skip quotes** (lines that start with `>` are not read), one toggle for each rule, and **Show dialogue share** and **Show readability**.
+- **Templates**: the templates folder used by **Insert from a template**. Empty turns the command off.
+- **Universe**: the mode (off, per book, universe), the universe note (with a **Create** button), the folders whose notes join the universe without the property, the universe, type and form properties, the six form words, the form of each folder ("Form by folder", as `Folder: form` lines), and for each of the five entry types its value, folder, template and name in menus (you can rename them, not add or remove any). There is no separate folder setting: entries live in the folder beside the universe note.
+- **Threads**: the thread word (default `thread`) and the word that marks a closed thread (default `closed`; use your own language, for example `fechado`). Both work in every mode.
 - **Snapshots**: the snapshots folder (default `Escrita/Snapshots`; a folder that holds notes or sits inside a tracked folder is refused; a folder starting with a dot is hidden, but Obsidian Sync skips it; changing it doesn't move existing snapshots), the snapshot before the day's first edit, and how many automatic snapshots to keep per note.
 
 ## Commands
@@ -179,6 +218,9 @@ A beat counts as written when prose follows it before the next beat, scene break
 | Revision lens | Toggle revision lens, Next revision lens match, Previous revision lens match, Create the word lists note |
 | Snapshots | Take a snapshot, Open snapshots, Compare with the last snapshot, Browse snapshots of deleted notes |
 | Publishing | Publish this note, Unpublish this note |
+| Templates | Insert from a template |
+| Threads | Plant a thread, Close thread, Show open threads |
+| Universe (when the mode isn't off) | Open the universe panel, Create universe entry, Move this book's entries to the universe |
 
 Escrita sets no hotkeys. Bind the ones you use often in Settings → Hotkeys. For example, Ctrl/Cmd+Shift+X for **Insert placeholder**.
 
@@ -219,6 +261,17 @@ To try your build, link or copy the repository folder into a test vault's `.obsi
 To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updates `manifest.json` and `versions.json`), commit, then push a tag with the bare version number (for example `git tag 0.1.1 && git push --tags`). The release workflow builds the plugin and drafts a GitHub release with `main.js`, `manifest.json` and `styles.css`; publish the draft when it looks right.
 
 ## Changelog
+
+### 0.6.0
+
+- **Shared universe** (off by default): characters, places, objects, groups and events that your stories share. Three modes: off, per book (entries inside each book) and universe (entries in the folder beside a universe note). A work joins with a `universe` property, through its book, or by sitting in one of the folders you list. Five entry types, renamable, each with its folder, template and name in menus. Changing the mode never moves or edits notes. A walkthrough is in [the universe guide](docs/GUIDE-universe.md).
+- **Universe panel**: **Entries** (grouped by type, searchable by name and alias ignoring accents, with open, insert link and show in explorer), **Threads** and **Works** (grouped by form, by stage and name, with stage dots and word counts; a click opens where you left off). An **Add to** button joins the note you're in to the universe, only when you click it. A picker appears when there is more than one universe.
+- **Create universe entry**: from a selection in the editor menu, the command or the panel. It makes the note from the type's template with `type` and `universe` set, can link the selected text (one undo) and add an alias, and offers to open an entry that already has that name or alias. It never overwrites a note.
+- **Move this book's entries to the universe**: moves a book's `Characters/`, `Places/`… notes into the universe after a preview, with links updated. Names that already exist are listed and left in place, chapters are never moved, and two boxes add a missing `type` and the book's `universe` property.
+- **Forms**: a `form` property (short story, essay, novella, novel, poem, fragment; the words are settings), and **Form by folder** so works take their form from their folder (`Short stories: short story`) without the property.
+- **Open threads**: `%% thread: … %%` marks a loose end for a later story. **Plant a thread** inserts one at the cursor, the editor flags it in the margin, and the panel (or **Show open threads** when the universe is off) lists them by work with the date each was first seen. Close one with an optional answer (`%% thread closed: … → [[The House]] %%`) and reopen it; both only write if the marker is unchanged. The thread word and the closed word are settings.
+- **Insert from a template**: a **Templates folder** setting and a command that inserts a template at the cursor, fills `{{title}}`, `{{date}}` and `{{time}}`, adds only the properties the note lacks, and undoes in one step.
+- Internal: the outline's beat edits now go through the shared note text port, so a chapter open in an editor is edited there and the change joins its undo history.
 
 ### 0.5.1
 
