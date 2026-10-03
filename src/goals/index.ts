@@ -1,7 +1,9 @@
 import { Notice, TAbstractFile, TFile, debounce } from "obsidian";
 import { EditorView, type ViewUpdate } from "@codemirror/view";
 import type EscritaPlugin from "../main";
-import type { EscritaModule } from "../data";
+import { FeatureModule } from "../core/module-context";
+import type { Follower } from "../core/vault-index";
+import type { FeatureId } from "../core/features";
 import { dropFromMap, isUnder, renameInMap } from "../core/path-keys";
 import { writingDay } from "../core/dates";
 import { countSelection } from "../core/wordcount";
@@ -21,7 +23,9 @@ import {
  * Word goals: tracks real typing in the active file, shows progress in the
  * status bar and the progress modal, and runs writing sprints.
  */
-export class GoalsModule implements EscritaModule {
+export class GoalsModule extends FeatureModule {
+  readonly id: FeatureId = "goals";
+  readonly slots = { editors: 1 };
   /** word count of each file when we last looked, so each change yields a delta */
   private baseline = new Map<string, number>();
   /** the active file plus files left moments ago, whose pending editor save still counts as typing */
@@ -37,7 +41,9 @@ export class GoalsModule implements EscritaModule {
   private sprintTimer: number | null = null;
   private modal: ProgressModal | null = null;
 
-  constructor(private plugin: EscritaPlugin) {}
+  constructor(private plugin: EscritaPlugin) {
+    super();
+  }
 
   get sprint(): Sprint | null {
     return this.currentSprint;
@@ -54,28 +60,28 @@ export class GoalsModule implements EscritaModule {
     return writingDay(new Date(), this.plugin.settings.dayEndsAt);
   }
 
-  load(): void {
-    const { plugin } = this;
+  onload(): void {
+    const { plugin, ctx } = this;
     const { workspace, vault } = plugin.app;
 
     this.status = new StatusBar(
-      plugin.addStatusBarItem(),
-      (el, type, handler) => plugin.registerDomEvent(el, type, handler),
+      ctx.statusBar(),
+      (el, type, handler) => this.registerDomEvent(el, type, handler),
       () => this.openProgress(),
       () => this.stopSprint(),
     );
     this.status.setVisible(plugin.settings.showStatusBar);
 
     // Obsidian hides the status bar on mobile: the ribbon (and the commands) open progress there.
-    plugin.addRibbonIcon("target", t("goals.cmd.open"), () => this.openProgress());
+    ctx.ribbon("target", t("goals.cmd.open"), () => this.openProgress());
 
-    plugin.addCommand({ id: "open-progress", name: t("goals.cmd.open"), callback: () => this.openProgress() });
-    plugin.addCommand({
+    ctx.command({ id: "open-progress", name: t("goals.cmd.open"), callback: () => this.openProgress() });
+    ctx.command({
       id: "start-sprint",
       name: t("goals.cmd.start"),
       callback: () => this.startSprint(plugin.settings.sprintMinutes, plugin.settings.sprintTarget),
     });
-    plugin.addCommand({
+    ctx.command({
       id: "stop-sprint",
       name: t("goals.cmd.stop"),
       checkCallback: (checking) => {
@@ -85,44 +91,63 @@ export class GoalsModule implements EscritaModule {
       },
     });
 
-    plugin.registerEditorExtension(EditorView.updateListener.of((u) => this.onEditorUpdate(u)));
+    ctx.editor([EditorView.updateListener.of((u) => this.onEditorUpdate(u))]);
 
-    plugin.registerEvent(workspace.on("file-open", (file) => {
+    this.registerEvent(workspace.on("file-open", (file) => {
       this.activeFiles.focus(file?.path ?? null, Date.now());
       this.selection = 0;
       this.prime(file);
       this.refreshStatus();
     }));
-    plugin.registerEvent(vault.on("modify", (file) => this.onModify(file)));
+    this.registerEvent(vault.on("modify", (file) => this.onModify(file)));
     // Frontmatter edits (a new target, limit or unit) change the piece segment.
-    plugin.registerEvent(plugin.app.metadataCache.on("changed", (file) => {
+    this.registerEvent(plugin.app.metadataCache.on("changed", (file) => {
       if (file.path === workspace.getActiveFile()?.path) this.refreshStatus();
     }));
-    // plugin.measure drops and moves cached counts itself (its handlers run first)
-    plugin.register(plugin.index.follow({
+    // plugin.measure drops and moves cached counts itself (its handlers run first).
+    // The history rename is a data follower (dataFollowers), so it also runs while goals is off.
+    ctx.follow({
       moved: (oldPath, newPath) => this.onRename(oldPath, newPath),
       deleted: (path) => {
         dropFromMap(this.baseline, path);
         this.activeFiles.forget(path);
         this.refreshStatus();
       },
-    }));
+    });
 
     // Day rollover and anything else that drifts: a cheap refresh once a minute.
-    plugin.registerInterval(window.setInterval(() => this.renderStatus(), 60_000));
+    this.registerInterval(window.setInterval(() => this.renderStatus(), 60_000));
 
-    workspace.onLayoutReady(() => {
+    // A sprint that was running when goals was switched off carries on, its count kept.
+    if (this.currentSprint) this.sprintTimer = window.setInterval(() => this.tickSprint(), 1000);
+
+    ctx.onLayoutReady(() => {
       this.activeFiles.focus(workspace.getActiveFile()?.path ?? null, Date.now());
       this.prime(workspace.getActiveFile());
       this.refreshStatus();
     });
   }
 
-  unload(): void {
+  onunload(): void {
     this.refreshStatus.cancel();
+    // The timer stops, the sprint and its count stay (a sprint is not lost by a switch-off).
     this.clearSprintTimer();
-    this.currentSprint = null;
+    this.modal?.close();
     this.modal = null;
+    // Nothing watched the files while off: a stale baseline would count words typed meanwhile.
+    this.baseline.clear();
+    this.activeFiles = new ActiveFiles();
+    this.selection = 0;
+    this.status = null;   // its element is removed by the context
+  }
+
+  /** Keeps the history of a renamed book or piece current even while goals is off (Q8). */
+  dataFollowers(): Follower[] {
+    return [{
+      moved: (oldPath, newPath) => {
+        if (renameBook(this.plugin.data.history, oldPath, newPath)) this.plugin.requestSave();
+      },
+    }];
   }
 
   settingsChanged(): void {
@@ -208,9 +233,6 @@ export class GoalsModule implements EscritaModule {
     renameInMap(this.baseline, oldPath, newPath);
     for (const k of [...this.baseline.keys()]) {
       if (isUnder(k, newPath) && !this.plugin.books.classify(k).tracked) this.baseline.delete(k);
-    }
-    if (renameBook(this.plugin.data.history, oldPath, newPath)) {
-      this.plugin.requestSave();
     }
     this.refreshStatus();
   }
@@ -312,8 +334,8 @@ export class GoalsModule implements EscritaModule {
     }
     const sprint = new Sprint(minutes, target, Date.now());
     this.currentSprint = sprint;
+    this.clearSprintTimer();
     this.sprintTimer = window.setInterval(() => this.tickSprint(), 1000);
-    this.plugin.registerInterval(this.sprintTimer);
     new Notice(sprint.target > 0
       ? t("goals.sprint.started", { min: fmt(sprint.minutes), target: unitAmount("words", sprint.target) })
       : t("goals.sprint.startedNoTarget", { min: fmt(sprint.minutes) }));
