@@ -6,7 +6,8 @@
 
 import { TFile, TFolder, debounce, type Editor, type MarkdownFileInfo, type MarkdownView, type TAbstractFile } from "obsidian";
 import type EscritaPlugin from "../main";
-import type { EscritaModule } from "../data";
+import { FeatureModule } from "../core/module-context";
+import type { FeatureId } from "../core/features";
 import type { ExplorerItem, Decoration } from "../core/explorer-decorations";
 import { ancestors, inBook, inSnapshots } from "../core/classify";
 import type { Book } from "../core/books";
@@ -22,7 +23,6 @@ const DRAW_MS = 300;
 const LIVE_MS = 500;
 
 interface Last {
-  counts: boolean;
   folders: boolean;
   target: boolean;
   /** settings that change which files are tracked or what a book is */
@@ -31,7 +31,8 @@ interface Last {
   props: string;
 }
 
-export class ExplorerModule implements EscritaModule {
+export class ExplorerModule extends FeatureModule {
+  readonly id: FeatureId = "explorerCounts";
   private loaded = false;
   /** the first pass is done: counts may be drawn */
   private ready = false;
@@ -46,7 +47,6 @@ export class ExplorerModule implements EscritaModule {
   /** the books whose note is tracked; null: list again */
   private shapes: BookShape[] | null = null;
   private pending = new Set<string>();
-  private undraw: (() => void) | null = null;
   private last: Last | null = null;
   private abbrev: Abbrev = { k: "{n}k", m: "{n}M" };
   private liveEditor: { editor: Editor; file: TFile } | null = null;
@@ -59,37 +59,39 @@ export class ExplorerModule implements EscritaModule {
   /** a moved folder can bring notes into the tracked folders that were never counted */
   private rebuildSoon = debounce(() => { void this.rebuild(); }, DRAW_MS, true);
 
-  constructor(private plugin: EscritaPlugin) {}
+  constructor(private plugin: EscritaPlugin) {
+    super();
+  }
 
-  load(): void {
+  onload(): void {
     const p = this.plugin;
     this.loaded = true;
     this.last = this.snapshot();
     this.abbrev = { k: t("explorer.thousands"), m: t("explorer.millions") };
-    this.undraw = p.decorations.add("count", (it) => this.draw(it));
-    p.register(p.measure.onChange((paths) => this.changed(paths)));
+    this.ctx.decorate("count", (it) => this.draw(it));
+    this.register(p.measure.onChange((paths) => this.changed(paths)));
 
-    p.app.workspace.onLayoutReady(() => {
+    this.ctx.onLayoutReady(() => {
       if (!this.loaded) return;
       const { vault, metadataCache, workspace } = p.app;
       // Registered after layout ready so the vault's initial "create" events are skipped.
-      p.registerEvent(vault.on("create", (f) => this.structure(f)));
-      p.registerEvent(vault.on("delete", (f) => {
+      this.registerEvent(vault.on("create", (f) => this.structure(f)));
+      this.registerEvent(vault.on("delete", (f) => {
         this.forgetTracked(f.path, f instanceof TFolder);
         this.structure(f);
       }));
-      p.registerEvent(vault.on("rename", (f, oldPath) => {
+      this.registerEvent(vault.on("rename", (f, oldPath) => {
         if (f instanceof TFolder) this.forgetTracked(oldPath, true);
         this.structure(f, oldPath);
       }));
       // a new unit, target or limit changes no count, so measure stays silent
-      p.registerEvent(metadataCache.on("changed", (f) => this.propsChanged(f)));
-      p.registerEvent(workspace.on("editor-change", (editor, info) => this.typed(editor, info)));
+      this.registerEvent(metadataCache.on("changed", (f) => this.propsChanged(f)));
+      this.registerEvent(workspace.on("editor-change", (editor, info) => this.typed(editor, info)));
       if (p.settings.explorerCounts) void this.rebuild();
     });
   }
 
-  unload(): void {
+  onunload(): void {
     this.loaded = false;
     this.ready = false;
     this.generation++;
@@ -97,8 +99,6 @@ export class ExplorerModule implements EscritaModule {
     this.fullSoon.cancel();
     this.liveSoon.cancel();
     this.rebuildSoon.cancel();
-    this.undraw?.();
-    this.undraw = null;
     this.reset();
   }
 
@@ -107,18 +107,6 @@ export class ExplorerModule implements EscritaModule {
     const was = this.last ?? now;
     this.last = now;
     const p = this.plugin;
-    if (now.counts !== was.counts) {
-      if (!now.counts) {
-        this.generation++;
-        this.ready = false;
-        this.reset();
-        p.decorations.refresh("count");
-      } else if (p.app.workspace.layoutReady) {
-        void this.rebuild();
-      }
-      return;
-    }
-    if (!now.counts) return;
     if (now.tracked !== was.tracked) {
       if (p.app.workspace.layoutReady) void this.rebuild();
       return;
@@ -134,7 +122,6 @@ export class ExplorerModule implements EscritaModule {
   private snapshot(): Last {
     const s = this.plugin.settings;
     return {
-      counts: s.explorerCounts,
       folders: s.explorerFolderTotals,
       target: s.explorerShowTarget,
       tracked: JSON.stringify([s.trackFolders, s.excludeFolders, s.chaptersFolder, s.chapterTemplate, s.snapshotsFolder]),
