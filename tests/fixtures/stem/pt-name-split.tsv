@@ -1,0 +1,64 @@
+# Escrita stem fixture, Portuguese (pt-BR), "name" profile (name matching: would a reader call these the same person or place?).
+# One pair per line, tab-separated: the two words must produce different stem keys.
+# Source: written by hand from linguistic judgment (inflection, gender and number, diminutives and augmentatives, adverbs, clitics) before any stemmer code existed. Not tuned to code, not copied from NLTK, Snowball or any corpus.
+# Pairs and groups are chosen from common vocabulary; the spec is docs/PLAN-0.5.md Q1-Q6 and tasks 1.1 and 1.2.
+# Rows are frozen (docs/PLAN-0.5.md, Ownership rules): later tasks may add rows, never change or delete one. A row that looks wrong goes to the author (gate G3).
+# Lines starting with # and blank lines are comments.
+Maria	Mário
+Ana	ano
+Teo	Teodoro
+Rosa	roso
+Mariano	Mariana
+João	Joana
+Pedro	Pedra
+Paulo	Paula
+Carlos	Carla
+Marco	Marta
+Silvio	Silvia
+Júlio	Júlia
+Antônio	Antônia
+Rafael	Rafaela
+Daniel	Daniela
+Gabriel	Gabriela
+José	Josefa
+Luís	Luísa
+Lúcio	Lúcia
+Cláudio	Cláudia
+Fernando	Fernanda
+Roberto	Roberta
+Adriano	Adriana
+Eduardo	Eduarda
+Marcelo	Marcela
+Sandro	Sandra
+Vítor	Vitória
+Raimundo	Raimunda
+Otávio	Otávia
+Ivo	Iva
+Inês	Inácio
+Clara	Claro
+Lara	Lauro
+Leo	Leonardo
+Aline	Alice
+Mara	Marta
+Dora	Dorival
+Lucas	Lúcia
+Joel	Joelma
+Henrique	Henriqueta
+Maria	Marta
+Maria	Marina
+Mário	Marília
+Teresa	Terêncio
+Rui	Rute
+Ari	Ariel
+Noé	Noel
+Nina	Nino
+Ada	Adão
+Tomé	Tomás
+Elias	Elisa
+Elias	Eliana
+Davi	Dalva
+Lia	Lila
+Sara	Saulo
+Bia	Beto
+Dino	Dina
+Edna	Edgar

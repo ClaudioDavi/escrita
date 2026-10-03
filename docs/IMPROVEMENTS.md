@@ -51,26 +51,30 @@ darlings, publish and snapshots, and darlings and outline create folders through
 
 ## Loose ends from 0.2.1
 
-Small; good for a release whose features don't touch the candidates above. The
-editor ones (wrappers, `insertSceneBreak`, `enter-flow`) are scheduled for 0.5, with
-the revision lens.
+Small; good for a release whose features don't touch the candidates above. The editor
+ones shipped in 0.5 (see "Done"). What is left:
 
-- Remove the compatibility wrappers only tests use: `editor/context.blockStateAt`,
-  `bodyStart`, `inProperties`, and `core/markers.bodyStartLine`. They rejoin lines and
-  segment again.
-- `editor/index.ts` `insertSceneBreak` calls `inProperties(doc.split("\n"))`; use
-  `segmentDoc` like the other editor paths.
-- `editor/enter-flow` rebuilds a lines array on every Enter; read the `Markdown`
-  object directly.
-- `outline/beats-edit.isBreak` should use `core/markers.isSceneBreakLine` (would stop
-  a `---` inside code from counting as a scene break; needs its own changelog line).
 - The publish check could warn about an unclosed `<!--`, whose following words are
   counted although Reading view hides them. Needs a check id and strings.
 - Test the Obsidian side of the classifier (`core/books.ts`: `instanceof` checks,
   root folder filtering) with a small fake, and try nested books in a real vault.
-- - Open questions pinned by tests in `tests/markdown-consumers.test.ts`: `%%` inside a
+- Open questions pinned by tests in `tests/markdown-consumers.test.ts`: `%%` inside a
   closed `<!-- -->`, a fence inside an open `%%`, `%%` inside `$$`, escaped backticks.
   Check each against Reading view and flip the rule where it differs.
+
+## Known issues
+
+### Lens marks can stay on an old result
+
+**Found in 0.5.0, to fix in 0.5.1, with a test.** The author edited the word lists
+note and saw a name that is in the list (*Mariana*) still marked as a name variant in
+Obsidian. Turning the lens off and on cleared it. The pure analysis of the same files
+gives the right answer, so the stale result is in the refresh path, not in the rules.
+
+Where to look in `src/lens/index.ts` and its neighbours: the session's `invalidate`,
+`run`'s text cache (the same text never recomputes, so a changed list must change the
+cache key), `LensMarks.adopt`, and the shown cache. Write a test that edits the lists
+note while the lens is on and expects the marks to follow.
 
 ## Done
 
@@ -82,3 +86,4 @@ the revision lens.
 | 0.3.0 | File explorer decoration adapter (`core/explorer-decorations`) (candidate 4) |
 | 0.3.0 | Note text port (`core/note-text`, `plugin.notes`), partial: the outline's beat re-checks remain (candidate 3) |
 | 0.4.0 | Vault index (`core/vault-index`, `core/index-hub`, `plugin.index`; candidate 2). Migrated: placeholders, publish records, dialogue focus, goals history and baseline, the desk's works, `leftOff` and the home note path. Still waiting: the measurer, the explorer's tracked set and first pass, and the snapshots store (they keep their own path-keyed state) |
+| 0.5.0 | The 0.2.1 editor loose ends: the compatibility wrappers (`blockStateAt`, `bodyStart`, `inProperties`, `core/markers.bodyStartLine`) are gone, `insertSceneBreak` and `enter-flow` read the `Markdown` from the segmenter, and `outline/beats-edit.isBreak` uses `isSceneBreakLine`. Still open: the `<!--` publish check, the classifier fake and the parity questions |

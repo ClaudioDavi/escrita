@@ -1,0 +1,57 @@
+# Escrita stem fixture, English, "name" profile (name matching: would a reader call these the same person or place?).
+# One pair per line, tab-separated: the two words must produce different stem keys.
+# Source: written by hand from linguistic judgment (inflection, gender and number, diminutives and augmentatives, adverbs, clitics) before any stemmer code existed. Not tuned to code, not copied from NLTK, Snowball or any corpus.
+# Pairs and groups are chosen from common vocabulary; the spec is docs/PLAN-0.5.md Q1-Q6 and tasks 1.1 and 1.2.
+# Rows are frozen (docs/PLAN-0.5.md, Ownership rules): later tasks may add rows, never change or delete one. A row that looks wrong goes to the author (gate G3).
+# Lines starting with # and blank lines are comments.
+James	Jame
+Agnes	Agn
+Teo	Teodor
+Ann	Anna
+Mark	Mary
+Jon	John
+Eric	Erica
+Alex	Alexa
+Max	Maxine
+Dan	Dana
+Don	Donna
+Jack	Jackie
+Will	Willa
+Paul	Paula
+Carl	Carla
+Joe	Joel
+Chris	Christ
+Louis	Lou
+Grace	Gray
+Nick	Nicole
+Les	Leslie
+Ross	Ros
+Moses	Mose
+Jess	Jes
+Charles	Charle
+Thomas	Thoma
+Lucas	Luca
+Silas	Sila
+Bess	Bes
+Rose	Rosa
+Ray	Raya
+Tim	Tina
+Dean	Deana
+Jo	Joy
+Ed	Eddie
+Sue	Susan
+Al	Alan
+Ian	Iain
+Ivan	Ivana
+Leon	Leona
+Neil	Nell
+Rob	Robin
+Ron	Rona
+Stan	Stanley
+Vic	Vicky
+Tess	Tessa
+Pete	Peter
+Ken	Kent
+Bob	Bobby
+Ida	Ido
+Ana	Anna

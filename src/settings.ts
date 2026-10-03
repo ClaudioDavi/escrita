@@ -1,6 +1,10 @@
 import { App, PluginSettingTab, Setting, moment, type ColorComponent } from "obsidian";
 import type EscritaPlugin from "./main";
-import { lang, t } from "./i18n";
+import { lang, locale, t } from "./i18n";
+import { listsPath } from "./lens/lists";
+import { listsTarget } from "./lens/shown";
+import { lensLang } from "./lens/lang";
+import { RULES } from "./lens/types";
 import { cleanWeekdays } from "./core/merge";
 import { invalidDatesOff } from "./core/daysoff";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, STAGES, hexColor, normalizeStages, stageConflicts, type Stage, type StageMapping } from "./core/stages";
@@ -92,6 +96,18 @@ export interface EscritaSettings {
   quoteStyle: QuoteStyle;
   dialogueDash: boolean;
   spellcheckOnDemand: boolean;
+
+  // Revision lens
+  lensLanguage: "auto" | "pt-BR" | "en";
+  /** path of the word lists note; empty = none */
+  lensListsNote: string;
+  lensEchoWindow: number;
+  lensLongSentence: number;
+  /** rules turned off; an array so mergeDefaults copies it and a future rule starts on */
+  lensRulesOff: string[];
+  lensSkipQuotes: boolean;
+  lensShowDialogue: boolean;
+  lensShowReadability: boolean;
 }
 
 export const DEFAULT_SETTINGS: EscritaSettings = {
@@ -146,6 +162,15 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   quoteStyle: "curly",
   dialogueDash: true,
   spellcheckOnDemand: false,
+
+  lensLanguage: "auto",
+  lensListsNote: "",
+  lensEchoWindow: 40,
+  lensLongSentence: 45,
+  lensRulesOff: [],
+  lensSkipQuotes: true,
+  lensShowDialogue: true,
+  lensShowReadability: true,
 };
 
 /** Settings as saved, with defaults filled in and list fields cleaned (used by loadAll). */
@@ -159,7 +184,16 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   for (const k of PROPERTY_KEYS) s[k] = (typeof s[k] === "string" ? s[k].trim() : "") || DEFAULT_SETTINGS[k];
   s.snapshotsFolder = snapshotsRoot(s.snapshotsFolder);
   s.snapshotsKeepAuto = Number.isFinite(s.snapshotsKeepAuto) ? Math.max(1, Math.round(s.snapshotsKeepAuto)) : DEFAULT_SETTINGS.snapshotsKeepAuto;
+  s.lensLanguage = s.lensLanguage === "pt-BR" || s.lensLanguage === "en" ? s.lensLanguage : "auto";
+  s.lensListsNote = typeof s.lensListsNote === "string" ? listsPath(s.lensListsNote) : DEFAULT_SETTINGS.lensListsNote;
+  s.lensEchoWindow = clampInt(s.lensEchoWindow, 10, 200, DEFAULT_SETTINGS.lensEchoWindow);
+  s.lensLongSentence = clampInt(s.lensLongSentence, 15, 200, DEFAULT_SETTINGS.lensLongSentence);
+  s.lensRulesOff = Array.isArray(s.lensRulesOff) ? s.lensRulesOff.filter((x): x is string => typeof x === "string") : [];
   return s;
+}
+
+function clampInt(v: unknown, min: number, max: number, fallback: number): number {
+  return typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(min, Math.round(v))) : fallback;
 }
 
 /** Frontmatter property names a piece or book is read from; normalizeSettings trims them and restores empty ones. */
@@ -210,6 +244,7 @@ export class EscritaSettingTab extends PluginSettingTab {
         .onChange(async (v) => { s.summaryProperty = v.trim() || "summary"; await save(); }));
 
     this.stagesSettings(containerEl, save);
+    this.lensSettings(containerEl, save);
 
     new Setting(containerEl).setName(t("settings.goals")).setHeading();
     new Setting(containerEl)
@@ -394,6 +429,101 @@ export class EscritaSettingTab extends PluginSettingTab {
    * warning under the rows, the other-status-colors box and the home note rows.
    * A duplicate word never blocks saving; the first stage wins (stageOf).
    */
+  private lensSettings(containerEl: HTMLElement, save: () => Promise<void>): void {
+    const s = this.plugin.settings;
+    new Setting(containerEl).setName(t("settings.lens")).setHeading();
+    containerEl.createDiv({ cls: "setting-item-description escrita-lens-desc", text: t("settings.lens.desc") });
+
+    const languageRow = new Setting(containerEl)
+      .setName(t("settings.lens.language"))
+      .setDesc(t("settings.lens.language.desc"))
+      .addDropdown((d) => {
+        d.addOption("auto", t("settings.lens.language.auto"));
+        d.addOption("pt-BR", t("settings.lens.language.pt"));
+        d.addOption("en", t("settings.lens.language.en"));
+        d.setValue(s.lensLanguage).onChange(async (v) => {
+          s.lensLanguage = v === "pt-BR" || v === "en" ? v : "auto";
+          await save();
+          this.display(); // the gerund rule is named for the language
+        });
+      });
+    languageRow.settingEl.addClass("escrita-lens-stack");
+
+    const listsRow = new Setting(containerEl)
+      .setName(t("settings.lens.lists"))
+      .setDesc(t("settings.lens.lists.desc"))
+      .addText((c) => {
+        c.setPlaceholder(listsTarget("", lensLang(s.lensLanguage, locale()))).setValue(s.lensListsNote);
+        c.inputEl.setAttr("aria-label", t("settings.lens.lists"));
+        c.inputEl.addEventListener("blur", () => {
+          const path = listsPath(c.getValue());
+          c.setValue(path);
+          if (path === s.lensListsNote) return;
+          s.lensListsNote = path;
+          void save();
+        });
+      })
+      .addButton((b) => b.setButtonText(t("settings.lens.lists.create"))
+        .onClick(async () => { await this.plugin.lens.createLists(); this.display(); }));
+    listsRow.settingEl.addClass("escrita-lens-stack");
+
+    const numberRow = (key: "lensEchoWindow" | "lensLongSentence", name: string, min: number, max: number) => {
+      new Setting(containerEl)
+        .setName(t(`settings.lens.${name}`))
+        .setDesc(t(`settings.lens.${name}.desc`))
+        .addText((c) => {
+          c.inputEl.type = "text";
+          c.inputEl.inputMode = "numeric";
+          c.inputEl.addClass("escrita-lens-number");
+          c.inputEl.setAttr("aria-label", t(`settings.lens.${name}`));
+          c.setValue(String(s[key]));
+          const commit = (final: boolean) => {
+            const raw = c.getValue().trim();
+            const n = Number(raw);
+            if (raw !== "" && /^\d+$/.test(raw) && n >= min && n <= max && n !== s[key]) { s[key] = n; void save(); }
+            if (final) c.setValue(String(s[key]));
+          };
+          c.onChange(() => commit(false));
+          c.inputEl.addEventListener("blur", () => commit(true));
+        })
+        .controlEl.createSpan({ cls: "setting-item-description", text: t("settings.lens.words") });
+    };
+    numberRow("lensEchoWindow", "echoWindow", 10, 200);
+    numberRow("lensLongSentence", "longSentence", 15, 200);
+
+    new Setting(containerEl)
+      .setName(t("settings.lens.skipQuotes"))
+      .setDesc(t("settings.lens.skipQuotes.desc"))
+      .addToggle((c) => c.setValue(s.lensSkipQuotes).onChange(async (v) => { s.lensSkipQuotes = v; await save(); }));
+
+    new Setting(containerEl).setName(t("settings.lens.rules")).setHeading();
+    const lens = lensLang(s.lensLanguage, locale());
+    const english = lens === "en";
+    for (const r of RULES) {
+      const key = r === "gerund" && english ? "gerund.en" : r;
+      const desc = r === "adverb"
+        ? t(`settings.lens.rule.adverb.${lens ?? "none"}.desc`)
+        : t(`settings.lens.rule.${key}.desc`);
+      const row = new Setting(containerEl).setName(t(`lens.rule.${key}`));
+      if (desc !== "") row.setDesc(desc);
+      row.addToggle((c) => c.setValue(!s.lensRulesOff.includes(r)).onChange(async (v) => {
+        const off = s.lensRulesOff.filter((x) => x !== r);
+        if (!v) off.push(r);
+        s.lensRulesOff = off;
+        await save();
+      }));
+    }
+
+    new Setting(containerEl).setName(t("settings.lens.measures")).setHeading();
+    new Setting(containerEl)
+      .setName(t("settings.lens.showDialogue"))
+      .addToggle((c) => c.setValue(s.lensShowDialogue).onChange(async (v) => { s.lensShowDialogue = v; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.lens.showReadability"))
+      .setDesc(t("settings.lens.showReadability.desc"))
+      .addToggle((c) => c.setValue(s.lensShowReadability).onChange(async (v) => { s.lensShowReadability = v; await save(); }));
+  }
+
   private stagesSettings(containerEl: HTMLElement, save: () => Promise<void>): void {
     const s = this.plugin.settings;
     new Setting(containerEl).setName(t("settings.stages")).setHeading();

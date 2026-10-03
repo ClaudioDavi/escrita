@@ -1,0 +1,176 @@
+# Escrita stem fixture, Portuguese (pt-BR), "word" profile (echoes: would a reader call these the same word?).
+# One group per line, tab-separated: every word in a group must produce the same stem key.
+# Source: written by hand from linguistic judgment (inflection, gender and number, diminutives and augmentatives, adverbs, clitics) before any stemmer code existed. Not tuned to code, not copied from NLTK, Snowball or any corpus.
+# Pairs and groups are chosen from common vocabulary; the spec is docs/PLAN-0.5.md Q1-Q6 and tasks 1.1 and 1.2.
+# Rows are frozen (docs/PLAN-0.5.md, Ownership rules): later tasks may add rows, never change or delete one. A row that looks wrong goes to the author (gate G3).
+# Lines starting with # and blank lines are comments.
+olhar	olhou	olhando	olhares	olharam	olhava	olhei
+falar	falou	falando	falavam	falaremos
+andar	andou	andando	andaram
+chegar	chegou	chegando	chegaram
+cantar	cantou	cantando	cantaram
+comer	comeu	comendo	comeram	comia
+beber	bebeu	bebendo	beberam
+vender	vendeu	vendendo	venderam
+partir	partiu	partindo	partiram
+abrir	abriu	abrindo	abriram
+correr	correu	correndo	correram
+esperar	esperou	esperando	esperaram
+caminhar	caminhou	caminhando	caminharam
+pensar	pensou	pensando	pensaram
+gritar	gritou	gritando	gritaram
+sorrir	sorriu	sorrindo	sorriram
+perguntar	perguntou	perguntando	perguntaram
+responder	respondeu	respondendo	responderam
+entrar	entrou	entrando	entraram
+sentar	sentou	sentando	sentaram
+levantar	levantou	levantando	levantaram
+chorar	chorou	chorando	choraram
+dançar	dançou	dançando	dançaram
+procurar	procurou	procurando	procuraram
+encontrar	encontrou	encontrando	encontraram
+guardar	guardou	guardando	guardaram
+escutar	escutou	escutando	escutaram
+lembrar	lembrou	lembrando	lembraram
+tocar	tocou	tocando	tocaram
+mostrar	mostrou	mostrando	mostraram
+chamar	chamou	chamando	chamaram
+passar	passou	passando	passaram
+deixar	deixou	deixando	deixaram
+voltar	voltou	voltando	voltaram
+abraçar	abraçou	abraçando	abraçaram
+beijar	beijou	beijando	beijaram
+estudar	estudou	estudando	estudaram
+trabalhar	trabalhou	trabalhando	trabalharam
+escrever	escreveu	escrevendo	escreveram
+mexer	mexeu	mexendo	mexeram
+vencer	venceu	vencendo	venceram
+temer	temeu	temendo	temeram
+descer	desceu	descendo	desceram
+sofrer	sofreu	sofrendo	sofreram
+decidir	decidiu	decidindo	decidiram
+subir	subiu	subindo	subiram
+sumir	sumiu	sumindo	sumiram
+fugir	fugiu	fugindo	fugiram
+dormir	dormiu	dormindo	dormiram
+menino	meninos	menina	meninas
+gato	gatos	gata	gatas	gatinho	gatinhos
+amigo	amigos	amiga	amigas	amiguinho	amiguinhos
+casa	casas	casinha	casinhas
+livro	livros	livrinho	livrinhos
+pouco	pouquinho	poucos	poucas
+café	cafés	cafezinho
+homem	homens
+mulher	mulheres	mulherzinha
+porta	portas	portinha
+janela	janelas	janelinha
+cachorro	cachorros	cachorra	cachorrinho
+professor	professores	professora	professoras
+escritor	escritores	escritora	escritoras
+pintor	pintores	pintora
+luz	luzes	luzinha
+animal	animais
+papel	papéis	papelzinho
+jornal	jornais
+hotel	hotéis
+mar	mares
+flor	flores	florzinha
+mãe	mães	mãezinha
+pai	pais	paizinho
+avó	avós	avozinha
+sol	sóis	solzinho
+pé	pés	pezinho
+copo	copos	copinho
+mesa	mesas	mesinha
+cadeira	cadeiras	cadeirinha
+carro	carros	carrinho	carrão
+chave	chaves	chavinha
+bola	bolas	bolinha
+mala	malas	malinha
+banco	bancos	banquinho
+barco	barcos	barquinho
+porco	porcos	porquinho
+lago	lagos	laguinho
+jogo	jogos	joguinho
+gatão	gatões
+amigão	amigões
+casarão	casarões
+pobre	pobres	pobrezinho	pobrezinha
+bonito	bonita	bonitos	bonitas
+velho	velha	velhos	velhas
+pequeno	pequena	pequenos	pequenas
+grande	grandes
+alto	alta	altos	altas
+novo	nova	novos	novas
+escuro	escura	escuros	escuras
+claro	clara	claros	claras	claramente
+vermelho	vermelha	vermelhos	vermelhas
+branco	branca	brancos	brancas
+preto	preta	pretos	pretas
+cansado	cansada	cansados	cansadas
+feliz	felizes	felizmente
+triste	tristes	tristemente
+forte	fortes
+doce	doces
+fácil	fáceis
+difícil	difíceis
+útil	úteis
+árvore	árvores
+página	páginas
+médico	médica	médicos	médicas
+música	músicas
+lágrima	lágrimas
+pássaro	pássaros	passarinho
+história	histórias
+rápido	rápida	rapidamente	rápidos
+lento	lenta	lentamente
+calmo	calma	calmamente	calmos
+simples	simplesmente
+cuidadoso	cuidadosa	cuidadosamente
+silencioso	silenciosa	silenciosamente
+olhou-me	olhou
+olhou-a	olhou
+disse-lhe	disse
+dizendo-lhe	dizendo
+olhando-a	olhando
+levantou-se	levantou
+sentou-se	sentou
+abraçou-o	abraçou
+chamou-a	chamou
+perguntou-lhe	perguntou
+olharam-se	olharam
+viu-se	viu
+sorriu-lhe	sorriu
+esperou-o	esperou
+procurou-os	procurou
+cantando-lhe	cantando
+filho	filhos	filha	filhas	filhinho
+irmão	irmãos
+vizinho	vizinhos	vizinha	vizinhas
+pastor	pastores	pastora
+senhor	senhores	senhora	senhoras
+doutor	doutores	doutora
+rei	reis
+lei	leis
+vez	vezes
+voz	vozes
+paz	pazes
+nariz	narizes	narizinho
+raiz	raízes
+país	países
+mês	meses
+francês	franceses	francesa
+português	portugueses	portuguesa
+inglês	ingleses	inglesa
+cidadão	cidadãos
+lição	lições
+canção	canções
+coração	corações
+botão	botões
+leão	leões
+avião	aviões
+balão	balões
+limão	limões
+mãozinha	mãozinhas
+final	finais	finalmente
+certo	certa	certos	certamente

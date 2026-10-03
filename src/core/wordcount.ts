@@ -35,18 +35,65 @@ export function proseOnly(md: string): string {
   return stripMarkup(s);
 }
 
+/**
+ * What is not a word, in the order it is removed (embeds and images before wikilinks
+ * and links). The one table behind stripMarkup and readerMask, so they can't drift.
+ * `keep` is the capture group left as text; a match with none goes entirely.
+ */
+const MARKUP: readonly { re: RegExp; keep?: number }[] = [
+  { re: /!\[\[[^\]]*\]\]/g },                                      // embeds
+  { re: /!\[[^\]]*\]\([^)]*\)/g },                                 // images
+  { re: /\[\[([^\]|]*\|)?([^\]]*)\]\]/g, keep: 2 },               // wikilinks → alias or target
+  { re: /\[([^\]]*)\]\([^)]*\)/g, keep: 1 },                       // md links → text
+  { re: /https?:\/\/\S+/g },                                         // bare urls
+  { re: /^[ \t]*(?:[-*_][ \t]*){3,}$/gm },                           // scene breaks / rules
+  { re: /^[ \t]*>[ \t]?(\[![^\]]*\][+-]?)?/gm },                    // quotes, callout headers
+  { re: /^[ \t]*#{1,6}[ \t]+/gm },                                   // heading marks
+  { re: /^[ \t]*(?:[-*+]|\d+[.)])[ \t]+(\[.\][ \t]+)?/gm },         // list marks
+  { re: /(^|\s)#[\p{L}\p{N}_/-]+/gu, keep: 1 },                      // tags
+];
+
+/** Where the kept group sits inside its match (groups are found in order; none overlap). */
+function keptAt(m: string, groups: readonly (string | undefined)[], keep: number): number {
+  let from = 0;
+  for (let k = 1; k <= keep; k++) {
+    const g = groups[k - 1];
+    if (g === undefined) continue;
+    const at = m.indexOf(g, from);
+    if (k === keep) return at;
+    from = at + g.length;
+  }
+  return 0;
+}
+
+const blank = (s: string): string => s.replace(/[^\r\n]/g, " ");
+
 /** Link targets, embeds, urls, rules, quote/heading/list marks and tags: never words. */
 function stripMarkup(s: string): string {
-  s = s.replace(/!\[\[[^\]]*\]\]/g, " ");               // embeds
-  s = s.replace(/!\[[^\]]*\]\([^)]*\)/g, " ");          // images
-  s = s.replace(/\[\[([^\]|]*\|)?([^\]]*)\]\]/g, "$2"); // wikilinks → alias or target
-  s = s.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");        // md links → text
-  s = s.replace(/https?:\/\/\S+/g, " ");                // bare urls
-  s = s.replace(/^[ \t]*(?:[-*_][ \t]*){3,}$/gm, " ");  // scene breaks / rules
-  s = s.replace(/^[ \t]*>[ \t]?(\[![^\]]*\][+-]?)?/gm, " "); // quotes, callout headers
-  s = s.replace(/^[ \t]*#{1,6}[ \t]+/gm, " ");          // heading marks
-  s = s.replace(/^[ \t]*(?:[-*+]|\d+[.)])[ \t]+(\[.\][ \t]+)?/gm, " "); // list marks
-  s = s.replace(/(^|\s)#[\p{L}\p{N}_/-]+/gu, "$1");     // tags
+  for (const { re, keep } of MARKUP) {
+    s = s.replace(re, (...a: unknown[]) => (keep === undefined ? " " : (a[keep] as string | undefined) ?? ""));
+  }
+  return s;
+}
+
+/**
+ * The reader mask: the masked document (code, comments and frontmatter already
+ * blanked) with the markup of MARKUP blanked too, to spaces, offset for offset and
+ * line breaks kept. Heading text stays (it is in the word count); the lens blanks it.
+ */
+export function readerMask(md: Markdown): string {
+  let s = md.masked();
+  for (const { re, keep } of MARKUP) {
+    s = s.replace(re, (...a: unknown[]) => {
+      const m = a[0] as string;
+      if (keep === undefined) return blank(m);
+      const groups = a.slice(1, a.length - 2) as (string | undefined)[];
+      const g = groups[keep - 1];
+      if (g === undefined || g === "") return blank(m);
+      const at = keptAt(m, groups, keep);
+      return blank(m.slice(0, at)) + g + blank(m.slice(at + g.length));
+    });
+  }
   return s;
 }
 

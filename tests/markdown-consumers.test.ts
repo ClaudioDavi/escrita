@@ -2,10 +2,10 @@ import { describe, it, expect } from "vitest";
 import { segment } from "../src/core/markdown";
 import { countCharacters, countSelection, countWords } from "../src/core/wordcount";
 import { measureText } from "../src/core/measure";
-import { bodyStartLine, isSceneBreakLine, parseBeats, parsePlaceholders } from "../src/core/markers";
-import { blockStateAt, bodyLineIn } from "../src/editor/context";
+import { isSceneBreakLine, parseBeats, parsePlaceholders } from "../src/core/markers";
+import { blockStateIn, bodyLineIn } from "../src/editor/context";
 import { dialogueInDoc } from "../src/editor/dialogue";
-import { decideEnter, trailingBreakKeep } from "../src/editor/enter-flow";
+import { decideEnter, trailingBreakKeep, withoutTrailingBreak } from "../src/editor/enter-flow";
 import { scanBeats } from "../src/outline/model";
 import { insertBeat } from "../src/outline/beats-edit";
 import { placeholderSpans, scan } from "../src/placeholders/logic";
@@ -33,10 +33,11 @@ import { runChecks, unclosedComment } from "../src/publish/checks";
 //     counts over-count after a stray line-start <!-- (Reading view hides the rest)
 // D12 the selection count uses the file count's rules on the whole document
 // D13 Enter flow never removes a --- inside code or a comment
+// D15 (0.5, 2.6) the outline's beat edits ignore a --- in code or a comment
 // D14 %% inside a closed <!-- --> is literal (first opener wins): counts and the editor
 //     read past it; publish still blocks an odd %% count inside one (parity unverified)
 //
-// Columns: blocks = blockStateAt per line (F frontmatter, C code, % comment, M math);
+// Columns: blocks = blockStateIn per line (F frontmatter, C code, % comment, M math);
 // enter = decideEnter on the last line after appending two blank lines ("blank" style).
 
 interface Row {
@@ -54,7 +55,7 @@ const ROWS: Row[] = [
       words: 0,
       chars: 0,
       selection: 0,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ".",
       beats: "",
       scanBeats: "",
@@ -73,7 +74,7 @@ const ROWS: Row[] = [
       words: 6,
       chars: 26,
       selection: 6,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . .",
       beats: "",
       scanBeats: "",
@@ -92,7 +93,7 @@ const ROWS: Row[] = [
       words: 4,
       chars: 15,
       selection: 4,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". F F",
       beats: "",
       scanBeats: "",
@@ -111,7 +112,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". F F",
       beats: "",
       scanBeats: "",
@@ -131,7 +132,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1, // D12, was 3
-      bodyStartLine: 3,
+      bodyLine: 3,
       blocks: ". F F .",
       beats: "",
       scanBeats: "",
@@ -150,7 +151,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1,
-      bodyStartLine: 2,
+      bodyLine: 2,
       blocks: ". F .",
       beats: "",
       scanBeats: "",
@@ -170,7 +171,7 @@ const ROWS: Row[] = [
       words: 2, // D5, was 5
       chars: 11, // D5, was 22
       selection: 2, // D5, was 5
-      bodyStartLine: 3,
+      bodyLine: 3,
       blocks: ". F F .",
       beats: "",
       scanBeats: "",
@@ -190,7 +191,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1, // D12, was 3
-      bodyStartLine: 3,
+      bodyLine: 3,
       blocks: ". F F . . .", // D5, was ". . . . . ."
       beats: "",
       scanBeats: "",
@@ -209,7 +210,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 3,
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . . . .",
       beats: "",
       scanBeats: "",
@@ -229,7 +230,7 @@ const ROWS: Row[] = [
       words: 0,
       chars: 0,
       selection: 0, // D12, was 2
-      bodyStartLine: 3,
+      bodyLine: 3,
       blocks: ". F F",
       beats: "",
       scanBeats: "",
@@ -249,7 +250,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 3, // D4, was 11
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . C C .",
       beats: "",
       scanBeats: "",
@@ -269,7 +270,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 3, // D4, was 7
       selection: 2, // D4, was 4
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . C C C C .",
       beats: "",
       scanBeats: "",
@@ -289,7 +290,7 @@ const ROWS: Row[] = [
       words: 1, // D4, was 0
       chars: 5, // D4, was 0
       selection: 1, // D4, was 2
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". C C .",
       beats: "",
       scanBeats: "",
@@ -308,7 +309,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 1,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". C C .",
       beats: "",
       scanBeats: "",
@@ -328,7 +329,7 @@ const ROWS: Row[] = [
       words: 4, // D4, was 1
       chars: 15, // D4, was 1
       selection: 4, // D4, was 5
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . . C", // D4, was ". C C ."
       beats: "",
       scanBeats: "",
@@ -348,7 +349,7 @@ const ROWS: Row[] = [
       words: 0,
       chars: 0,
       selection: 0, // D12, was 4
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". C C C",
       beats: "",
       scanBeats: "",
@@ -367,7 +368,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 11,
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . . . .",
       beats: "",
       scanBeats: "",
@@ -387,7 +388,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 1,
       selection: 1, // D12, was 2
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . C C",
       beats: "",
       scanBeats: "",
@@ -406,7 +407,7 @@ const ROWS: Row[] = [
       words: 3,
       chars: 5,
       selection: 3,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". % . .",
       beats: "",
       scanBeats: "",
@@ -425,7 +426,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 7,
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . %",
       beats: "",
       scanBeats: "",
@@ -445,7 +446,7 @@ const ROWS: Row[] = [
       words: 4,
       chars: 17,
       selection: 4, // D12, was 1
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". .", // D8, was ". %"
       beats: "",
       scanBeats: "",
@@ -464,7 +465,7 @@ const ROWS: Row[] = [
       words: 0,
       chars: 0,
       selection: 0,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ".",
       beats: "",
       scanBeats: "",
@@ -483,7 +484,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 5,
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". .",
       beats: "",
       scanBeats: "",
@@ -503,7 +504,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". C C .",
       beats: "",
       scanBeats: "",
@@ -523,7 +524,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 9,
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ".",
       beats: "",
       scanBeats: "",
@@ -543,7 +544,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1, // D12, was 2
-      bodyStartLine: 3,
+      bodyLine: 3,
       blocks: ". F F .",
       beats: "",
       scanBeats: "",
@@ -563,7 +564,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 3,
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ".",
       beats: "",
       scanBeats: "",
@@ -583,7 +584,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 6,
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". %",
       beats: "",
       scanBeats: "",
@@ -602,7 +603,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . . . . . .",
       beats: "0:a:w | 5:b:u",
       scanBeats: "0:a:a | 5:b:b",
@@ -622,7 +623,7 @@ const ROWS: Row[] = [
       words: 0,
       chars: 0,
       selection: 0,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . C C .",
       beats: "0:a:w", // D2, was "0:a:w | 2:b:w"
       scanBeats: "0:a:a", // D2, was "0:a:a | 2:b:b"
@@ -642,7 +643,7 @@ const ROWS: Row[] = [
       words: 3,
       chars: 12,
       selection: 3,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". % % .",
       beats: "", // D2, was "1:x:u"
       scanBeats: "", // D2, was "1:a:x"
@@ -662,7 +663,7 @@ const ROWS: Row[] = [
       words: 0,
       chars: 0,
       selection: 0,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . C C C . . .",
       beats: "0:a:w | 6:b:u", // D2, was "0:a:w | 3:q:w | 6:b:u"
       scanBeats: "0:a:a | 6:b:b", // D2, was "0:a:a | 3:b:q | 6:c:b"
@@ -682,7 +683,7 @@ const ROWS: Row[] = [
       words: 0,
       chars: 0,
       selection: 0, // D12, was 1
-      bodyStartLine: 3,
+      bodyLine: 3,
       blocks: ". F F . .",
       beats: "3:real:u",
       scanBeats: "3:a:real",
@@ -702,7 +703,7 @@ const ROWS: Row[] = [
       words: 0,
       chars: 0,
       selection: 0, // D12, was 2
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . .",
       beats: "0:a:u", // D10, was "0:a:w"
       scanBeats: "0:a:a",
@@ -721,7 +722,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". .",
       beats: "",
       scanBeats: "",
@@ -740,7 +741,7 @@ const ROWS: Row[] = [
       words: 3,
       chars: 15,
       selection: 3,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". M M .",
       beats: "",
       scanBeats: "",
@@ -760,7 +761,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 9,
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". M %M %M", // D9, was ". M M ."
       beats: "",
       scanBeats: "",
@@ -780,7 +781,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . . .", // D9, was ". M M M"
       beats: "",
       scanBeats: "",
@@ -800,7 +801,7 @@ const ROWS: Row[] = [
       words: 3,
       chars: 5,
       selection: 3, // D12, was 5
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". % . .", // D10, was ". . . ."
       beats: "",
       scanBeats: "",
@@ -820,7 +821,7 @@ const ROWS: Row[] = [
       words: 0,
       chars: 0,
       selection: 0, // D12, was 1
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ".",
       beats: "",
       scanBeats: "",
@@ -840,7 +841,7 @@ const ROWS: Row[] = [
       words: 4, // D11, was 1
       chars: 19, // D11, was 1
       selection: 4,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . .",
       beats: "",
       scanBeats: "",
@@ -860,7 +861,7 @@ const ROWS: Row[] = [
       words: 1, // D7, was 0
       chars: 5, // D7, was 0
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". % % .",
       beats: "",
       scanBeats: "",
@@ -880,7 +881,7 @@ const ROWS: Row[] = [
       words: 3, // D6, was 2
       chars: 8, // D6, was 5
       selection: 3,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ".",
       beats: "",
       scanBeats: "",
@@ -900,7 +901,7 @@ const ROWS: Row[] = [
       words: 3,
       chars: 5,
       selection: 3,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ".",
       beats: "",
       scanBeats: "",
@@ -920,7 +921,7 @@ const ROWS: Row[] = [
       words: 2, // D7, was 1
       chars: 4, // D7, was 1
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ".",
       beats: "",
       scanBeats: "",
@@ -940,7 +941,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 8,
       selection: 2, // D12, was 1
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . .", // D8, was ". % %"
       beats: "",
       scanBeats: "",
@@ -959,7 +960,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . . C C C",
       beats: "",
       scanBeats: "",
@@ -979,7 +980,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . . C C C C",
       beats: "",
       scanBeats: "",
@@ -999,7 +1000,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . . % % % %",
       beats: "",
       scanBeats: "",
@@ -1018,7 +1019,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . . . .",
       beats: "",
       scanBeats: "",
@@ -1037,7 +1038,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 5,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . . .",
       beats: "",
       scanBeats: "",
@@ -1056,7 +1057,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 3,
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . % .",
       beats: "",
       scanBeats: "",
@@ -1075,7 +1076,7 @@ const ROWS: Row[] = [
       words: 0,
       chars: 0,
       selection: 0,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". C C .",
       beats: "",
       scanBeats: "",
@@ -1095,7 +1096,7 @@ const ROWS: Row[] = [
       words: 6,
       chars: 32,
       selection: 6, // D12, was 11
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". .",
       beats: "",
       scanBeats: "",
@@ -1115,7 +1116,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 9,
       selection: 2, // D12, was 3
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . C C . . .",
       beats: "",
       scanBeats: "",
@@ -1135,7 +1136,7 @@ const ROWS: Row[] = [
       words: 3, // D14, was 1
       chars: 18, // D14, was 6
       selection: 3,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . . . .", // D14, was ". . . % %"
       beats: "",
       scanBeats: "",
@@ -1155,7 +1156,7 @@ const ROWS: Row[] = [
       words: 1, // D14, was 0
       chars: 5, // D14, was 0
       selection: 1, // D12, was 2
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ".",
       beats: "",
       scanBeats: "",
@@ -1175,7 +1176,7 @@ const ROWS: Row[] = [
       words: 1, // D14, was 0
       chars: 1, // D14, was 0
       selection: 1, // D12, was 2
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ".",
       beats: "",
       scanBeats: "",
@@ -1195,7 +1196,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 4,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". .",
       beats: "", // D3, was "0:a %% %% beat: b:w"
       scanBeats: "", // D3, was "0:a:a %% %% beat: b"
@@ -1215,7 +1216,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 7, // D6, was 5
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ".",
       beats: "",
       scanBeats: "",
@@ -1235,7 +1236,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 9,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . . .", // D4, was ". C C ."
       beats: "",
       scanBeats: "",
@@ -1255,7 +1256,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 7,
       selection: 1, // D12, was 2
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". M CM CM M .", // D9, was ". M M M M ."
       beats: "",
       scanBeats: "",
@@ -1275,7 +1276,7 @@ const ROWS: Row[] = [
       words: 2,
       chars: 3,
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . .", // D9, was ". M M"
       beats: "",
       scanBeats: "",
@@ -1294,7 +1295,7 @@ const ROWS: Row[] = [
       words: 1,
       chars: 1,
       selection: 1,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". C C . .",
       beats: "",
       scanBeats: "",
@@ -1314,7 +1315,7 @@ const ROWS: Row[] = [
       words: 2, // D11, was 0 (Reading view hides it all: an over-count)
       chars: 14, // D11, was 0
       selection: 2,
-      bodyStartLine: 0,
+      bodyLine: 0,
       blocks: ". . . . .",
       beats: "",
       scanBeats: "",
@@ -1331,10 +1332,9 @@ const ROWS: Row[] = [
 const CTX = { path: "a.md", placeholderMarker: "XXX", recommendedProperties: [] as string[] };
 
 function observe(text: string): Record<string, unknown> {
-  const lines = text.split(/\r?\n/);
   const elines = text.split("\n");
   const blocks = elines.map((_, i) => {
-    const s = blockStateAt(elines, i);
+    const s = blockStateIn(segment(text), i);
     return (s.frontmatter ? "F" : "") + (s.code ? "C" : "") + (s.comment ? "%" : "") + (s.math ? "M" : "") || ".";
   }).join(" ");
   const el = (text + "\n\n").split("\n");
@@ -1342,17 +1342,17 @@ function observe(text: string): Record<string, unknown> {
     words: countWords(text),
     chars: countCharacters(text, { spaces: true }),
     selection: countSelection(segment(text), [{ from: 0, to: text.length }]),
-    bodyStartLine: bodyStartLine(lines),
+    bodyLine: segment(text).bodyLine,
     blocks,
     beats: parseBeats(text).map((b) => `${b.line}:${b.text}:${b.written ? "w" : "u"}`).join(" | "),
-    scanBeats: scanBeats(lines).map((b) => `${b.line}:${b.letter}:${b.text}`).join(" | "),
+    scanBeats: scanBeats(segment(text)).map((b) => `${b.line}:${b.letter}:${b.text}`).join(" | "),
     placeholders: parsePlaceholders(text, "XXX").map((p) => `${p.line}:${p.from}-${p.to}:${p.text}`).join(" | "),
     spans: placeholderSpans(text, "XXX").map((s) => `${s.from}-${s.to}/${s.noteFrom}-${s.noteTo}`).join(" | "),
     unclosed: unclosedComment(text),
     checks: runChecks(text, {}, CTX).filter((c) => c.level !== "passed")
       .map((c) => `${c.id}${c.line !== undefined ? "@" + c.line : ""}`).join(" "),
-    enter: decideEnter(el, el.length - 1, "blank"),
-    trailingKeep: trailingBreakKeep(text.split("\n")),
+    enter: decideEnter(segment(el.join("\n")), el.length - 1, "blank"),
+    trailingKeep: trailingBreakKeep(segment(text)),
   };
 }
 
@@ -1384,21 +1384,28 @@ describe("editor entry points", () => {
   it("take a segmentation (segmentDoc) and answer like the line/string forms", () => {
     for (const row of ROWS) {
       const text = row.text.replace(/\r\n/g, "\n"); // an editor document has LF lines
-      const lines = text.split("\n");
-      const el = (text + "\n\n").split("\n");
       const md = segment(text);
-      expect(scanBeats(md), row.name).toEqual(scanBeats(lines));
       expect(placeholderSpans(md, "XXX"), row.name).toEqual(placeholderSpans(text, "XXX"));
-      expect(trailingBreakKeep(md), row.name).toEqual(trailingBreakKeep(lines));
-      for (let i = 0; i < el.length; i++) {
-        expect(decideEnter(segment(el.join("\n")), i, "blank"), `${row.name} line ${i}`).toBe(decideEnter(el, i, "blank"));
-      }
       expect(unclosedComment(md), row.name).toBe(unclosedComment(text));
     }
   });
 });
 
 describe("consumer regressions", () => {
+  // Intended behaviour change (0.5, Risk 6, 1.9): ending a chapter on a vault file drops
+  // the trailing break but keeps the file's own line endings. It used to rewrite a
+  // mixed LF/CRLF file to all CRLF.
+  it("D-1.9: removing a trailing break keeps a mixed file's line endings", () => {
+    expect(withoutTrailingBreak("a\r\nb\n\n---\r\n")).toBe("a\r\nb\n");
+  });
+
+  // Intended behaviour change (0.5, Q34, 2.6): the outline's beat edits read a scene break
+  // through isSceneBreakLine, so a `---` in code or a comment is no break next to a beat.
+  it("D-2.6: insertBeat does not take a --- in a fenced block for a scene break", () => {
+    const text = "%% beat: a %%\n\n```\n---\n```\n";
+    expect(insertBeat(text, 0, "b")).toBe("%% beat: a %%\n\n```\n---\n```\n\n---\n\n%% beat: b %%\n");
+  });
+
   it("a placeholder in a fenced block is nowhere", () => {
     const text = "```\n%% XXX: a %%\n```";
     expect(parsePlaceholders(text, "XXX")).toEqual([]);
@@ -1410,14 +1417,14 @@ describe("consumer regressions", () => {
   it("a beat in a fenced block is not a beat, for the outline or the ghosts", () => {
     const text = "%% beat: a %%\ntexto\n\n```\n%% beat: b %%\n```\n";
     expect(parseBeats(text).map((b) => b.text)).toEqual(["a"]);
-    expect(scanBeats(text.split("\n")).map((b) => b.text)).toEqual(["a"]);
+    expect(scanBeats(segment(text)).map((b) => b.text)).toEqual(["a"]);
   });
 
   it("ghost letters equal outline letters", () => {
     const text = "%% beat: a %%\n%%\n%% beat: x %%\n%%\n%% beat: b %%\n```\n%% beat: c %%\n```\n%% beat: d %%";
     const beats = parseBeats(text);
     expect(beats.map((b) => b.text)).toEqual(["a", "b", "d"]);
-    expect(scanBeats(text.split("\n")).map((g) => [g.line, g.text, g.letter]))
+    expect(scanBeats(segment(text)).map((g) => [g.line, g.text, g.letter]))
       .toEqual(beats.map((b, i) => [b.line, b.text, "abc"[i]]));
   });
 
@@ -1429,12 +1436,12 @@ describe("consumer regressions", () => {
   });
 
   it("Enter after a line with %% inside inline code makes a scene break", () => {
-    expect(decideEnter(["use `%%` here", "", ""], 2, "blank")).toBe("break");
+    expect(decideEnter(segment("use `%%` here\n\n"), 2, "blank")).toBe("break");
   });
 
   it("never removes a --- inside an open fence", () => {
-    expect(trailingBreakKeep("prosa\n\n```\n\n---\n".split("\n"))).toBeNull();
-    expect(decideEnter("prosa\n\n```\n\n---\n\n".split("\n"), 6, "blank")).toBe("normal");
+    expect(trailingBreakKeep(segment("prosa\n\n```\n\n---\n"))).toBeNull();
+    expect(decideEnter(segment("prosa\n\n```\n\n---\n\n"), 6, "blank")).toBe("normal");
   });
 
   it("inserting a beat keeps indices consistent when a beat-looking line sits in code", () => {

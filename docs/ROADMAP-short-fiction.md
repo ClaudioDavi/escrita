@@ -49,7 +49,7 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 0.2.0 | No-network guard (0) · Publish check (1) · Targets per piece + days off (2) · Outline for a single note (3) | XS + S + S + S | Shipped |
 | 0.3.0 | Word counts in the file explorer (6) · Dialogue focus (7) · Snapshots with word-level compare (4) | S + S + M | Shipped |
 | 0.4.0 | The writing desk: stages, stage snapshot, home block (11) · Move a paragraph or scene (8) | S–M + S | Shipped |
-| 0.5 | Revision lens, pt-BR and English rules, with dialogue share and readability (5) | M–L | Planned |
+| 0.5.0 | Revision lens, pt-BR and English rules, with dialogue share and readability (5) · stemmers | M–L | Shipped |
 | 0.6 | Insert from a template (9) | S | Planned |
 | 0.8 | Submissions (12), with export (novel roadmap, 7) | S | Planned |
 | 1.0 | Set up a writing vault (10) | S | Planned |
@@ -259,60 +259,96 @@ manual check on mobile.
 
 ---
 
-## 5. Revision lens (v0.5)
+## 5. Revision lens (v0.5, shipped in 0.5.0)
 
 **Why.** Short fiction and essays are revised sentence by sentence. Style checkers
 (ProWritingAid, iA Writer Style Check, Harper) are English-only or need a server. This
 is a local, rule-based pass: **no AI, no network**.
 
 **How it works.** Off by default; the command "Toggle revision lens" turns it on for
-the active note (like spellcheck on demand). It underlines matches in the editor (a
-CodeMirror decoration, one color per rule, subtle) and opens a side panel with counts
-per rule, **per 1,000 words** so pieces of different lengths compare. Clicking a count
-steps through its matches. It only suggests; it never changes text.
+the active note (like spellcheck on demand), for this session only, and opens the side
+panel. In Reading view the command shows a Notice instead. It underlines matches in the
+editor (a CodeMirror decoration, one color per rule, subtle) and the panel shows counts
+per rule, **per 1,000 words** so pieces of different lengths compare. Clicking a rule's
+step buttons selects its next or previous match (shown as "3 / 12"). Two commands,
+"Next revision lens match" and "Previous revision lens match", step the rule you chose
+last (echoes until then), so they work from the mobile toolbar; neither has a default
+hotkey. On a phone the right drawer closes after a step from the panel, and a short
+Notice shows the rule and position ("Gerúndios · 2 / 9"), since the counter has gone
+with the drawer. It only suggests; it never changes text, only moves the selection.
+
+**Language.** Set in the settings: Automatic (the default), Português (Brasil) or
+English. Automatic follows Obsidian's language: any `pt` locale gives pt-BR, any `en`
+locale gives English. Any other locale gives **no language**: echoes, adverbs, gerunds
+and readability are off (running English rules on Spanish prose would be confidently
+wrong), the panel says "Choose a language in settings" with an "Open settings" button
+that opens Escrita's settings tab, and crutch words, name variants, long sentences and
+dialogue share still work.
 
 **Rules** (each on/off in settings; language from a setting, `pt-BR` or `en`):
 
 | Rule | pt-BR | en |
 |---|---|---|
-| Echoes | Same stem within N words (default 40), ignoring stop words | same |
-| Adverbs | Words ending in `-mente`, minus an exceptions list (`mente`, `semente`, `demente`, `clemente`, `veemente`, `ente`…) | Words ending in `-ly`, minus exceptions (`only`, `family`, `reply`, `early`…) |
-| Gerunds | `-ando/-endo/-indo` minus exceptions (`quando`, `mundo`, `lindo`, `segundo`, `fundo`, `redondo`…); gerundismo `ir/estar + estar + gerúndio`; 3+ gerunds in one sentence | "began to / started to + verb" |
-| Crutch words | From the user's list note | same |
-| Name variants | Words within edit distance 1–2 of a name in the name list (not the name itself) | same |
-| Long sentences | Sentences over N words (default 45) | same |
+| Echoes | The same stem (the `"word"` profile) within N words (default 40, every word counts). Each later occurrence is one match, with the earlier one drawn fainter. The window runs across paragraphs and starts over at a scene break and at a heading. Ignored: stop words, words under 4 letters, words under `## Ignorar`, listed names, and any word the note capitalizes in mid-sentence (a name needs no list: a sentence-initial *Fernando* is still a name) | same |
+| Adverbs | Words ending in `-mente` with at least 3 letters before it (so `mente`, `semente`, `demente` and `ente` never match), minus an exceptions list (`clemente`, `veemente`, `dormente`, and the subjunctives of `-mentar` verbs such as `aumente`, `comente`, `lamente`). Capitalized words in mid-sentence are names, not adverbs | Words ending in `-ly`, 5 letters or more, minus about 45 exceptions (`only`, `family`, `reply`, `early`…) |
+| Gerunds | `-ando/-endo/-indo`, also with a clitic (*dizendo-lhe*, *olhando-a*; the match spans the whole word), minus exceptions (`quando`, `mundo`, `lindo`, `segundo`, `fundo`, `redondo`…) and minus names (listed, or capitalized in mid-sentence, as *Fernando*, *Armando*). Gerundismo: a form of `ir`, then a form of `estar`, then a gerund, in one sentence with at most one word between the parts (*vou estar enviando*); *deve estar chegando* is normal Portuguese and never matches. A sentence with 3 or more gerunds gets one extra match spanning it | "began to / started to + verb" (also *begins, begun, beginning, start, starts, starting*), over the whole construction. `-ing` chains are not flagged |
+| Crutch words | From the user's list note: exact phrases, whole words, any case, any line break or run of spaces inside. No stemming, so list *começou a* and *começaram a* both | same |
+| Name variants | A capitalized word close to a name in the name list, by the name's length: 3 letters or fewer, only a transposition or a doubled or undoubled letter (*Aan*, *Anna*; never *Asa* against *Ana*); 4–5 letters, one edit; 6 or more, two. Not the name itself, not another form of it by the `"name"` stem, not a listed or ignored word, and not a word the note also writes in lowercase (so a sentence-initial *Teu* doesn't flag against *Teo*) | same |
+| Long sentences | Sentences over N words (default 45), dialogue included; one match per sentence, drawn as a faint tint so it doesn't stack under the word marks | same |
 
 **Measures** (in the lens panel, above the rule counts; for the note, and for the
-selection when there is one). They describe the text; they don't underline anything.
+selection when there is one, labelled "Selection"; the rule counts stay whole-note, so
+stepping has one stable list). They describe the text; they don't underline anything.
+Every lens number counts the same words (the words the lens read), so rates, the dialogue
+share and readability agree. The lens skips headings, `$$` math blocks and, with the
+setting on (the default), `>` quote lines, so it can differ a little from the status
+bar's word count.
 
 - **Dialogue share**: the percentage of words that are speech, from the same
   `dialogueInDoc` that dialogue focus uses (feature 7), so dash dialogue counts. Per
-  scene too, split at scene breaks, so a chapter shows where it is all talk or none.
+  scene too, split at scene breaks and shown when the note has more than one scene, so a
+  chapter shows where it is all talk or none.
 - **Readability**: average sentence length, average word length in syllables, and a
   reading-ease score. pt-BR: Flesch adapted to Portuguese (Martins et al., 1996:
-  `248.835 − 1.015 × words per sentence − 84.6 × syllables per word`), with the usual
-  bands (very easy to very hard). English: Flesch reading ease. Shown with its band, not
-  as a grade to chase.
+  `248.835 − 1.015 × words per sentence − 84.6 × syllables per word`), in four bands
+  (very easy, easy, hard, very hard). English: Flesch reading ease, in seven bands.
+  Shown with its band and what it means, not as a grade to chase; "—" under 100 words
+  or 3 sentences, and off when there is no language.
 
 Syllables are counted by rule (vowel groups, with Portuguese diphthongs and hiatus, and
-English silent `e`), approximate on purpose; tests pin a word list per language and the
+English silent `e`), approximate on purpose (about 95% exact on running text); a pt
+rising sequence counts as two (*histó-ri-a*). Tests pin a word list per language and the
 score of the sample conto. Book-wide measures wait for N 10.
 
 **Stemming.** Two stemmers ship in this version, both in `core/stem/` so the universe
 (U 1.2, 1.4) can reuse them without depending on the revision lens:
 
-- **Portuguese**: a small suffix-stripping stemmer (RSLP-style: plural, feminine,
-  augmentative/diminutive, adverb, noun and verb suffix steps), so
-  *olhar / olhou / olhando / olhares* share a stem, and *Mariazinha* shares a stem with *Maria*.
-- **English**: a light Porter-style stemmer (plural, possessive, `-ed`, `-ing`, `-ly`,
-  common noun and verb suffixes), so *walk / walks / walked / walking* share a stem.
+- **Portuguese**: a small suffix-stripping stemmer in the shape of RSLP (clitic split,
+  adverb, plural, feminine, augmentative/diminutive, verb suffix, final vowel and
+  accents), so *olhar / olhou / olhando / olhares* share a stem, and *Mariazinha* shares
+  a stem with *Maria*. There is no noun-suffix step: it would merge *casa* with
+  *casamento* and *mente* with *mentira*.
+- **English**: a light Porter2 stemmer: possessive (step 0), plural (1a, with `-es` also
+  after x, z, ch and sh), `-ed` and `-ing` with undoubling and a restored `e` (1b), `y`
+  to `i` (1c), Porter2's final-`e` rule, and `-ly` on stems of 4 letters or more, so
+  *walk / walks / walked / walking* share a stem. Steps 2 to 4 stay out (*universe* is
+  not *university*).
 
-One interface for both, `stem(word, lang)`, picked by the revision language setting.
-Pure TypeScript, tests on real word lists in each language; accept imperfection, prefer
-missing a match over a wrong one.
+One interface for both, `stem(word, lang, profile)`, with the language picked by the
+revision language setting. The `"word"` profile is the one above. `"name"` is the light
+profile for people and places: plural and diminutive/augmentative only in Portuguese, no
+feminine step, so *Mariano* and *Mariana* stay apart (so do *Maria* and *Mário*); in
+English the possessive and a simple plural, never Porter (*James* stays *james*). Pure
+TypeScript, tests on real word lists in each language; accept imperfection, prefer
+missing a match over a wrong one. The expected word lists are frozen fixtures: a change
+to a stem key is a matching change for everything that reuses it.
 
 **User lists in the vault.** One note, path in settings (author: `Modelos/Revisão.md`),
-with headed sections the plugin reads:
+with headed sections the plugin reads. Headings are Portuguese or English, in any case
+and with or without accents (`Vícios` / `Crutch words`, `Nomes` / `Names`, `Ignorar` /
+`Ignore`), one entry per line; list markers, `%% %%` comments and anything under other
+headings are skipped. The note is re-read when it changes, and the setting follows it
+when it is renamed.
 
 ```
 ## Vícios
@@ -328,20 +364,42 @@ Teo
 olhar
 ```
 
-**Dismissing.** A match can be dismissed ("ignore here"); dismissals are stored in
-plugin data by note path + rule + matched text + surrounding words, so they survive
-edits elsewhere in the note.
+`Ignorar` covers echoes, adverbs, gerunds and name variants, and adds to the built-in
+exceptions; it does not cover crutch words, which the writer listed on purpose. Matching
+never folds accents for a single word (*está* is not *esta*). The built-in pt-BR tables
+(stop words, exceptions) are language data, applied when the language is pt-BR; nothing
+needs editing in code. There is no built-in crutch list. The command **"Create the word
+lists note"** (also a button in the settings) writes a new note with the three headings
+and a short starter crutch list in the lens language (pt-BR: *de repente, começou a, meio
+que, viu, ouviu, sentiu, percebeu*; en: *all of a sudden, started to, sort of, saw, heard,
+felt, noticed*). It never overwrites: if the note exists, it opens it and says so. With an
+empty note the crutch and name rules stay silent, and the panel says "Add a word lists
+note" (or "Word lists note not found" when the setting points at a missing note).
+
+**Dismissing.** A match can be dismissed ("Ignore here"), from the editor's context menu
+on a match (a disabled header names it: "Advérbio: lentamente") and from the panel while
+stepping. Dismissals are stored in plugin data by note path + rule + matched text + up to
+three words either side, so they survive edits elsewhere in the note, follow the note
+when it is renamed, and are dropped when it is deleted (500 per note at most). Dismissed
+matches are left out of everything: marks, counts, rates and stepping. To undo, the panel
+shows "N ignored · Clear" for the note; Clear asks "Show the 2 ignored matches in this
+note again?" (Cancel / Show) before bringing them back.
 
 **Skip** frontmatter, comments, code, links' targets and quotes in `>` blocks (setting).
 
 **Pure, tested:** tokenizer (Portuguese letters, hyphenated words, apostrophes),
-sentence splitter (handles `…`, `—` dialogue, abbreviations like `Sr.` and `Dra.`),
-Portuguese and English stemmers, each rule as a function `(text, options) → Match[]`, per-1,000 rate.
+sentence splitter (handles `…`, `—` dialogue, abbreviations like `Sr.` and `Dra.`; our
+own, not `Intl.Segmenter`), Portuguese and English stemmers, each rule as a function
+over the tokens and sentences built once per pass, with `analyze(md, options)` as the
+text-level function, and the per-1,000 rate.
 
-**Done when** the rules produce stable, explainable matches on a sample conto (keep one
-as a fixture in `tests/fixtures/`), the editor stays responsive on a 10,000-word note
-(compute in the view plugin only for the visible range plus a cached full pass for the
-panel, debounced), and the no-network test still passes.
+**Done when** the rules produce stable, explainable matches on a sample conto (an
+original text written for the tests, not the author's, kept as a fixture in
+`tests/fixtures/`), the editor stays responsive on a 10,000-word note (one debounced full
+pass, 400 ms after the last change, 800 ms on mobile; underlines drawn only for the
+visible range from the cached pass, and mapped through edits between passes so they don't
+jump; the pass itself under 60 ms locally, with a looser ceiling in CI), and the
+no-network test still passes.
 
 ---
 
@@ -661,9 +719,11 @@ renaming the conto updates the link, and the notes read well with Escrita turned
 | Snapshots | Folder | `Escrita/Snapshots` | same |
 | | Auto snapshot before first edit of the day | off | (author's choice) |
 | | Keep automatic snapshots | 20 | same |
-| Revision | Language | from Obsidian's language | `pt-BR` |
+| Revision | Language | Automatic (from Obsidian's language) | `pt-BR` |
 | | Word lists note | (empty) | `Modelos/Revisão.md` |
 | | Echo window / long sentence length | 40 / 45 | same |
+| | Skip quotes (`>` lines) | on | same |
+| | One toggle per rule | all on | same |
 | | Show dialogue share / readability | on / on | same |
 | Templates | Templates folder | (empty) | `Modelos` |
 

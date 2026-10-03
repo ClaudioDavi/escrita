@@ -8,6 +8,7 @@ import {
 } from "../src/outline/model";
 import { statusColor, normalizeStages } from "../src/core/stages";
 import { parseBeats } from "../src/core/markers";
+import { segment } from "../src/core/markdown";
 import { countWords } from "../src/core/wordcount";
 
 const B = (s: string) => `%% beat: ${s} %%`;
@@ -325,12 +326,12 @@ describe("reordering", () => {
 describe("scanBeats", () => {
   it("letters beats in order and skips frontmatter", () => {
     const lines = ["---", "x: %% beat: no %%", "---", B("one"), "text", "  %% beat: two %%  ", "%% beat:three%%", "%% XXX: no %%"];
-    expect(scanBeats(lines)).toEqual([
+    expect(scanBeats(segment(lines.join("\n")))).toEqual([
       { line: 3, text: "one", letter: "a" },
       { line: 5, text: "two", letter: "b" },
       { line: 6, text: "three", letter: "c" },
     ]);
-    expect(scanBeats([])).toEqual([]);
+    expect(scanBeats(segment(""))).toEqual([]);
   });
 });
 

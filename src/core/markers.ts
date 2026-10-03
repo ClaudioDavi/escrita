@@ -36,11 +36,6 @@ export function placeholderRegex(marker: string): RegExp {
   return new RegExp(`%%[ \\t]*${escapeRe(marker)}(?![\\p{L}\\p{N}_-]):?[ \\t]*([^\\n]*?)[ \\t]*%%`, "gu");
 }
 
-/** Index of the first body line (after a closed frontmatter), 0-based. */
-export function bodyStartLine(lines: string[]): number {
-  return segment(lines.join("\n")).bodyLine;
-}
-
 // Markers are read through core/markdown: a marker is a closed, single-line %%
 // comment span, so `%% … %%` inside code, frontmatter, an HTML comment or a
 // multi-line comment is not a marker (the same rule as the publish check).

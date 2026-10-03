@@ -147,16 +147,12 @@ export interface GhostBeat {
   letter: string;
 }
 
-function isLines(doc: readonly string[] | Markdown): doc is readonly string[] {
-  return Array.isArray(doc);
-}
-
 /**
  * Beat lines of a document (as parseBeats reads them), lettered by their order like
  * the outline. The editor passes `segmentDoc(state.doc)` to share its segmentation.
  */
-export function scanBeats(doc: readonly string[] | Markdown): GhostBeat[] {
-  return parseBeats(isLines(doc) ? doc.join("\n") : doc).map((b, i) => ({ line: b.line, text: b.text, letter: beatLetter(i) }));
+export function scanBeats(doc: Markdown): GhostBeat[] {
+  return parseBeats(doc).map((b, i) => ({ line: b.line, text: b.text, letter: beatLetter(i) }));
 }
 
 // ---------------------------------------------------------------- canvas board

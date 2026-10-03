@@ -60,27 +60,12 @@ export function blockStateIn(md: Markdown, at: number): BlockState {
   return st;
 }
 
-/** Block context at the start of line `at` (0-based) of a document given as lines. */
-export function blockStateAt(lines: readonly string[], at: number): BlockState {
-  return blockStateIn(segment(lines.join("\n")), at);
-}
-
 /**
  * The editor's first body line of a segmented document: after a closed
  * frontmatter, else 0; an unclosed one makes every line properties (lineCount).
  */
 export function bodyLineIn(md: Markdown): number {
   return md.unclosedFrontmatter ? md.lineCount : md.bodyLine;
-}
-
-/** bodyLineIn for a document given as lines. */
-export function bodyStart(lines: readonly string[]): number {
-  return bodyLineIn(segment(lines.join("\n")));
-}
-
-/** True when line `at` is part of the properties block, its opening and closing `---` included. */
-export function inProperties(lines: readonly string[], at: number): boolean {
-  return at < bodyStart(lines);
 }
 
 export function inBlock(st: BlockState): boolean {

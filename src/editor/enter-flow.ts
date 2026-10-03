@@ -49,55 +49,43 @@ export function paragraphBlankLines(style: ParagraphStyle): number {
   return style === "single" ? 1 : 2;
 }
 
+/** The text of line `i` (no line ending). */
+function lineText(md: Markdown, i: number): string {
+  return md.text.slice(md.lineStart(i), md.lineEnd(i));
+}
+
 /** First line of the run of empty lines that ends at `line` (inclusive). */
-function runStart(lines: readonly string[], line: number): number {
+function runStart(md: Markdown, line: number): number {
   let i = line;
-  while (i > 0 && isEmptyLine(lines[i - 1])) i--;
+  while (i > 0 && isEmptyLine(lineText(md, i - 1))) i--;
   return i;
-}
-
-/**
- * A document as the Enter flow reads it: its lines and their segmentation.
- * Editor callers pass `segmentDoc(state.doc)` so the pass is shared per version.
- */
-type Doc = readonly string[] | Markdown;
-
-function read(doc: Doc): { lines: readonly string[]; md: Markdown } {
-  if (!isMarkdown(doc)) return { lines: doc, md: segment(doc.join("\n")) };
-  const lines: string[] = [];
-  for (let i = 0; i < doc.lineCount; i++) lines.push(doc.text.slice(doc.lineStart(i), doc.lineEnd(i)));
-  return { lines, md: doc };
-}
-
-function isMarkdown(doc: Doc): doc is Markdown {
-  return !Array.isArray(doc);
 }
 
 /**
  * What Enter should do on `cursorLine` (0-based) with an empty selection.
  * The caller checks the setting, the selection and that the file is a chapter.
+ * Editor callers pass `segmentDoc(state.doc)` so the pass is shared per version.
  */
-export function decideEnter(doc: Doc, cursorLine: number, style: ParagraphStyle): EnterDecision {
-  const { lines, md } = read(doc);
-  if (cursorLine < 0 || cursorLine >= lines.length) return "normal";
-  if (!isEmptyLine(lines[cursorLine])) return "normal";
+export function decideEnter(md: Markdown, cursorLine: number, style: ParagraphStyle): EnterDecision {
+  if (cursorLine < 0 || cursorLine >= md.lineCount) return "normal";
+  if (!isEmptyLine(lineText(md, cursorLine))) return "normal";
   const body = bodyLineIn(md);
   if (cursorLine < body) return "normal";
   if (inBlock(blockStateIn(md, cursorLine))) return "normal";
 
-  const start = runStart(lines, cursorLine);
+  const start = runStart(md, cursorLine);
   const empties = cursorLine - start + 1;
   if (empties < paragraphBlankLines(style)) return "normal";
   const above = start - 1;
   if (above < body) return "normal"; // nothing but properties (or nothing) above
 
   if (isSceneBreakAt(md, above, body)) {
-    for (let i = cursorLine + 1; i < lines.length; i++) if (!isEmptyLine(lines[i])) return "normal";
+    for (let i = cursorLine + 1; i < md.lineCount; i++) if (!isEmptyLine(lineText(md, i))) return "normal";
     return "chapter";
   }
   // the line above closes (or sits in) a multi-line comment: not prose
   if (blockStateIn(md, above).comment) return "normal";
-  return isProseLine(lines[above]) ? "break" : "normal";
+  return isProseLine(lineText(md, above)) ? "break" : "normal";
 }
 
 export interface LineEdit {
@@ -113,8 +101,8 @@ export interface LineEdit {
  * The scene-break edit for a "break" decision: the empty run ending at the
  * cursor becomes blank, ---, blank, cursor line. Put the cursor at the end of `insert`.
  */
-export function breakEdit(lines: readonly string[], cursorLine: number): LineEdit {
-  return { fromLine: runStart(lines, cursorLine), toLine: cursorLine, insert: "\n---\n\n" };
+export function breakEdit(md: Markdown, cursorLine: number): LineEdit {
+  return { fromLine: runStart(md, cursorLine), toLine: cursorLine, insert: "\n---\n\n" };
 }
 
 /**
@@ -122,15 +110,22 @@ export function breakEdit(lines: readonly string[], cursorLine: number): LineEdi
  * number of lines to keep (everything up to the last non-empty line before
  * the break). Null when the text doesn't end that way.
  */
-export function trailingBreakKeep(doc: Doc): number | null {
-  const { lines, md } = read(doc);
-  let i = lines.length - 1;
-  while (i >= 0 && isEmptyLine(lines[i])) i--;
+export function trailingBreakKeep(md: Markdown): number | null {
+  let i = md.lineCount - 1;
+  while (i >= 0 && isEmptyLine(lineText(md, i))) i--;
   if (i < 0) return null;
   const body = bodyLineIn(md);
   // never a --- inside code or a comment: that text is not ours to delete
   if (!isSceneBreakAt(md, i, body)) return null;
   let keep = i;
-  while (keep > body && isEmptyLine(lines[keep - 1])) keep--;
+  while (keep > body && isEmptyLine(lineText(md, keep - 1))) keep--;
   return keep;
+}
+
+/** The text without its trailing scene break; the input itself when there is none. */
+export function withoutTrailingBreak(text: string): string {
+  const md = segment(text);
+  const keep = trailingBreakKeep(md);
+  if (keep === null) return text;
+  return keep > 0 ? text.slice(0, md.lineStart(keep)) : "";
 }

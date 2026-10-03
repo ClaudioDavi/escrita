@@ -162,3 +162,33 @@ describe("decideNoteKey", () => {
     expect(decideNoteKey(k({ mod: true }))).toEqual({ type: "default" });
   });
 });
+
+describe("beats edits next to code and comments (0.5, 2.6)", () => {
+  it("insertBeat treats a --- in a fenced block as prose, not a scene break", () => {
+    const t = L(B("a"), "", "```", "---", "```", "", B("b"));
+    const out = insertBeat(t, 0, "x");
+    expect(out).toBe(L(B("a"), "", "```", "---", "```", "", "---", "", B("x"), "", "---", "", B("b")));
+    expect(out).toContain("```\n---\n```");
+  });
+
+  it("removeBeat keeps a --- inside a fenced block", () => {
+    const t = L(B("a"), "", "```", "---", "```", "", "---", "", B("b"));
+    const out = removeBeat(t, 1);
+    expect(out).toContain("```\n---\n```");
+    expect(parseBeats(out).map((b) => b.text)).toEqual(["a"]);
+  });
+
+  it("removeBeat keeps a --- inside a comment", () => {
+    const t = L("%%", "---", "%%", B("a"));
+    expect(removeBeat(t, 0)).toContain("%%\n---\n%%");
+  });
+
+  it("CRLF chapters keep their line endings", () => {
+    const t = "---\r\nx: 1\r\n---\r\n%% beat: a %%\r\nUm.\r\n\r\n```\r\n---\r\n```\r\n";
+    const out = insertBeat(t, 0, "b");
+    expect(out.replace(/\r\n/g, "")).not.toMatch(/[\r\n]/);
+    expect(out.split("\n").every((l, i, a) => i === a.length - 1 || l.endsWith("\r"))).toBe(true);
+    expect(parseBeats(out).map((b) => b.text)).toEqual(["a", "b"]);
+    expect(removeBeat(out, 1)).toBe(t);
+  });
+});

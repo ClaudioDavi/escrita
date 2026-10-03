@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (0.4.0 at the time of writing). The author's
+Current version: see `manifest.json` (0.5.0 at the time of writing). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down
@@ -58,7 +58,7 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
 
 - `src/main.ts` builds the services, then each module (`src/<module>/index.ts`,
   `class <Name>Module implements EscritaModule`). Modules: goals, outline,
-  placeholders, darlings, editor, publish, explorer, snapshots, desk.
+  placeholders, darlings, editor, lens, publish, explorer, snapshots, desk.
 - **Shared services on `plugin`** (use them; never re-derive):
   - `books.classify(x)`: what a file is (chapter, book note, note…), its book,
     `tracked`, `piece`, `snapshot`, `stage`. Backed by `core/classify.ts`.
@@ -133,9 +133,12 @@ and what upkeep it asks of the writer.
 
 - **0.4 (shipped), the writing desk**: stages, the stage snapshot, the home block with
   "where you left off" (SF 11), moving a paragraph or scene (SF 8), the vault index.
-- **0.5 (next), revision**: stemmers in `core/stem/` (shared with the universe) and the revision lens
+- **0.5 (shipped), revision**: stemmers in `core/stem/` (shared with the universe) and the revision lens
   (SF 5). Improvement: the 0.2.1 editor loose ends.
-- **0.6–0.9**: the shared universe (opt-in, off by default), DOCX/Markdown export
+- **0.6 (next), universe foundations**: universe modes and container, create entry from
+  selection, open threads, insert from a template (U 1.1, U 1.3, U 1.5, SF 9).
+  Improvement: the outline's beat re-checks through the note text port (IMPROVEMENTS 3).
+- **0.7–0.9**: the shared universe (opt-in, off by default), DOCX/Markdown export
   with submissions (0.8, SF 12), universe phase 2.
 - **0.10**: EPUB, book-wide publish check, "Read the book".
 - **1.0**: universe + manuscript export complete, mobile pass, docs in both
@@ -147,4 +150,5 @@ data follows renames in three separate places, the measurer, the explorer's trac
 set and the snapshots store (IMPROVEMENTS 2, done in 0.4 for everything else, which
 follows through `plugin.index.follow`); the outline's beat
 re-checks still bypass the note text port (IMPROVEMENTS 3); a few Markdown parity
-questions with Reading view are pinned in `tests/markdown-consumers.test.ts`.
+questions with Reading view are pinned in `tests/markdown-consumers.test.ts`; lens marks
+can stay on an old result after the word lists note changes (IMPROVEMENTS, known issues; fix in 0.5.1).

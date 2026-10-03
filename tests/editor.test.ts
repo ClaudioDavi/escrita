@@ -1,58 +1,60 @@
 import { describe, it, expect } from "vitest";
-import { blockStateAt, inlineProtected } from "../src/editor/context";
-import { breakEdit, decideEnter, isProseLine, trailingBreakKeep } from "../src/editor/enter-flow";
+import { blockStateIn, bodyLineIn, inlineProtected } from "../src/editor/context";
+import { breakEdit, decideEnter, isProseLine, trailingBreakKeep, withoutTrailingBreak } from "../src/editor/enter-flow";
+import { segment } from "../src/core/markdown";
 import { typographyFor, type TypographyOptions } from "../src/editor/typography";
 import { sceneBreakEdit } from "../src/editor/scene-break";
 import { spellcheckSuppressed } from "../src/editor/spellcheck";
 
 const L = (s: string) => s.split("\n");
+const D = (s: string) => segment(s);
 
 /** Apply a LineEdit to lines, return the new text. */
 function applyLineEdit(lines: string[], e: { fromLine: number; toLine: number; insert: string }): string {
   return [...lines.slice(0, e.fromLine), e.insert, ...lines.slice(e.toLine + 1)].join("\n");
 }
 
-describe("blockStateAt", () => {
+describe("blockStateIn", () => {
   it("detects frontmatter, including the closing line", () => {
-    const lines = L("---\na: 1\n---\nbody");
-    expect(blockStateAt(lines, 0).frontmatter).toBe(false);
-    expect(blockStateAt(lines, 1).frontmatter).toBe(true);
-    expect(blockStateAt(lines, 2).frontmatter).toBe(true);
-    expect(blockStateAt(lines, 3).frontmatter).toBe(false);
+    const lines = D("---\na: 1\n---\nbody");
+    expect(blockStateIn(lines, 0).frontmatter).toBe(false);
+    expect(blockStateIn(lines, 1).frontmatter).toBe(true);
+    expect(blockStateIn(lines, 2).frontmatter).toBe(true);
+    expect(blockStateIn(lines, 3).frontmatter).toBe(false);
   });
   it("treats unclosed frontmatter as frontmatter", () => {
-    expect(blockStateAt(L("---\na: 1\nmore"), 2).frontmatter).toBe(true);
+    expect(blockStateIn(D("---\na: 1\nmore"), 2).frontmatter).toBe(true);
   });
   it("accepts ... as the frontmatter closer", () => {
-    expect(blockStateAt(L("---\na: 1\n...\nbody"), 3).frontmatter).toBe(false);
+    expect(blockStateIn(D("---\na: 1\n...\nbody"), 3).frontmatter).toBe(false);
   });
   it("tracks fenced code with backticks and tildes", () => {
-    const lines = L("a\n```js\nx\n```\nb\n~~~~\n```\n~~~~\nc");
-    expect(blockStateAt(lines, 2).code).toBe(true);
-    expect(blockStateAt(lines, 4).code).toBe(false);
-    expect(blockStateAt(lines, 6).code).toBe(true); // ``` inside ~~~~ doesn't close
-    expect(blockStateAt(lines, 8).code).toBe(false);
+    const lines = D("a\n```js\nx\n```\nb\n~~~~\n```\n~~~~\nc");
+    expect(blockStateIn(lines, 2).code).toBe(true);
+    expect(blockStateIn(lines, 4).code).toBe(false);
+    expect(blockStateIn(lines, 6).code).toBe(true); // ``` inside ~~~~ doesn't close
+    expect(blockStateIn(lines, 8).code).toBe(false);
   });
   it("needs a fence at least as long to close", () => {
-    const lines = L("````\n```\nx\n````\ny");
-    expect(blockStateAt(lines, 2).code).toBe(true);
-    expect(blockStateAt(lines, 4).code).toBe(false);
+    const lines = D("````\n```\nx\n````\ny");
+    expect(blockStateIn(lines, 2).code).toBe(true);
+    expect(blockStateIn(lines, 4).code).toBe(false);
   });
   it("tracks math blocks and multi-line comments", () => {
-    const lines = L("$$\nx^2\n$$\n%%\nnote\n%%\n$$x$$\n%% beat: b %%\nz");
-    expect(blockStateAt(lines, 1).math).toBe(true);
-    expect(blockStateAt(lines, 3).math).toBe(false);
-    expect(blockStateAt(lines, 4).comment).toBe(true);
-    expect(blockStateAt(lines, 6).comment).toBe(false);
-    const end = blockStateAt(lines, 8);
+    const lines = D("$$\nx^2\n$$\n%%\nnote\n%%\n$$x$$\n%% beat: b %%\nz");
+    expect(blockStateIn(lines, 1).math).toBe(true);
+    expect(blockStateIn(lines, 3).math).toBe(false);
+    expect(blockStateIn(lines, 4).comment).toBe(true);
+    expect(blockStateIn(lines, 6).comment).toBe(false);
+    const end = blockStateIn(lines, 8);
     expect(end.math || end.comment || end.code).toBe(false);
   });
   it("ignores markers inside code", () => {
-    expect(blockStateAt(L("```\n%%\n$$\n```\nx"), 4)).toEqual({ frontmatter: false, code: false, math: false, comment: false });
+    expect(blockStateIn(D("```\n%%\n$$\n```\nx"), 4)).toEqual({ frontmatter: false, code: false, math: false, comment: false });
   });
   it("handles empty input and out of range", () => {
-    expect(blockStateAt([], 0).frontmatter).toBe(false);
-    expect(blockStateAt(L("a"), 10).code).toBe(false);
+    expect(blockStateIn(D(""), 0).frontmatter).toBe(false);
+    expect(blockStateIn(D("a"), 10).code).toBe(false);
   });
 });
 
@@ -108,116 +110,116 @@ describe("isProseLine", () => {
 
 describe("decideEnter", () => {
   it("normal Enter until the paragraph spacing is exceeded (blank style)", () => {
-    expect(decideEnter(L("prose"), 0, "blank")).toBe("normal"); // not an empty line
-    expect(decideEnter(L("prose\n"), 1, "blank")).toBe("normal"); // 1 empty
-    expect(decideEnter(L("prose\n\n"), 2, "blank")).toBe("break"); // 2 empty
-    expect(decideEnter(L("prose\n\n\n\n"), 4, "blank")).toBe("break");
+    expect(decideEnter(D("prose"), 0, "blank")).toBe("normal"); // not an empty line
+    expect(decideEnter(D("prose\n"), 1, "blank")).toBe("normal"); // 1 empty
+    expect(decideEnter(D("prose\n\n"), 2, "blank")).toBe("break"); // 2 empty
+    expect(decideEnter(D("prose\n\n\n\n"), 4, "blank")).toBe("break");
   });
   it("single style breaks one Enter sooner", () => {
-    expect(decideEnter(L("prose\n"), 1, "single")).toBe("break");
+    expect(decideEnter(D("prose\n"), 1, "single")).toBe("break");
   });
   it("counts only empty lines above the cursor, including whitespace-only", () => {
-    expect(decideEnter(L("prose\n  \n\t"), 2, "blank")).toBe("break");
-    expect(decideEnter(L("prose\n\n\n"), 1, "blank")).toBe("normal");
+    expect(decideEnter(D("prose\n  \n\t"), 2, "blank")).toBe("break");
+    expect(decideEnter(D("prose\n\n\n"), 1, "blank")).toBe("normal");
   });
   it("works with prose after the cursor (break mid-chapter)", () => {
-    expect(decideEnter(L("a\n\n\nb"), 2, "blank")).toBe("break");
+    expect(decideEnter(D("a\n\n\nb"), 2, "blank")).toBe("break");
   });
   it("never inside frontmatter or right under it", () => {
-    expect(decideEnter(L("---\n\n\n---\n"), 2, "blank")).toBe("normal");
-    expect(decideEnter(L("---\na: 1\n---\n\n"), 4, "blank")).toBe("normal");
-    expect(decideEnter(L("---\na: 1\n---\n\n\n"), 5, "single")).toBe("normal");
+    expect(decideEnter(D("---\n\n\n---\n"), 2, "blank")).toBe("normal");
+    expect(decideEnter(D("---\na: 1\n---\n\n"), 4, "blank")).toBe("normal");
+    expect(decideEnter(D("---\na: 1\n---\n\n\n"), 5, "single")).toBe("normal");
   });
   it("unclosed frontmatter disables it", () => {
-    expect(decideEnter(L("---\nprose\n\n"), 3, "blank")).toBe("normal");
+    expect(decideEnter(D("---\nprose\n\n"), 3, "blank")).toBe("normal");
   });
   it("not in code, math or comment blocks", () => {
-    expect(decideEnter(L("```\ncode\n\n\n```"), 3, "blank")).toBe("normal");
-    expect(decideEnter(L("$$\nx\n\n\n$$"), 3, "blank")).toBe("normal");
-    expect(decideEnter(L("%%\nnote\n\n\n%%"), 3, "blank")).toBe("normal");
-    expect(decideEnter(L("```\ncode\n```\n\n"), 4, "blank")).toBe("normal"); // above is a fence
+    expect(decideEnter(D("```\ncode\n\n\n```"), 3, "blank")).toBe("normal");
+    expect(decideEnter(D("$$\nx\n\n\n$$"), 3, "blank")).toBe("normal");
+    expect(decideEnter(D("%%\nnote\n\n\n%%"), 3, "blank")).toBe("normal");
+    expect(decideEnter(D("```\ncode\n```\n\n"), 4, "blank")).toBe("normal"); // above is a fence
   });
   it("not after lists, headings, quotes, tables, beats", () => {
     for (const above of ["- item", "1. item", "# Title", "> quote", "| a |", "%% beat: b %%"]) {
-      expect(decideEnter(L(`${above}\n\n`), 2, "blank"), above).toBe("normal");
+      expect(decideEnter(D(`${above}\n\n`), 2, "blank"), above).toBe("normal");
     }
   });
   it("not on a line with text or out of range", () => {
-    expect(decideEnter(L("prose\n\nx"), 2, "blank")).toBe("normal");
-    expect(decideEnter(L("prose"), 5, "blank")).toBe("normal");
-    expect(decideEnter(L("prose"), -1, "blank")).toBe("normal");
-    expect(decideEnter([""], 0, "blank")).toBe("normal");
-    expect(decideEnter(L("\n\n"), 2, "blank")).toBe("normal"); // nothing above
+    expect(decideEnter(D("prose\n\nx"), 2, "blank")).toBe("normal");
+    expect(decideEnter(D("prose"), 5, "blank")).toBe("normal");
+    expect(decideEnter(D("prose"), -1, "blank")).toBe("normal");
+    expect(decideEnter(D(""), 0, "blank")).toBe("normal");
+    expect(decideEnter(D("\n\n"), 2, "blank")).toBe("normal"); // nothing above
   });
   it("chapter after a trailing scene break", () => {
-    expect(decideEnter(L("prose\n\n---\n\n"), 4, "blank")).toBe("chapter");
-    expect(decideEnter(L("prose\n\n---\n\n\n  "), 4, "blank")).toBe("chapter"); // only whitespace follows
-    expect(decideEnter(L("prose\n\n***\n\n"), 4, "blank")).toBe("chapter");
-    expect(decideEnter(L("prose\n\n---\n"), 3, "single")).toBe("chapter");
+    expect(decideEnter(D("prose\n\n---\n\n"), 4, "blank")).toBe("chapter");
+    expect(decideEnter(D("prose\n\n---\n\n\n  "), 4, "blank")).toBe("chapter"); // only whitespace follows
+    expect(decideEnter(D("prose\n\n***\n\n"), 4, "blank")).toBe("chapter");
+    expect(decideEnter(D("prose\n\n---\n"), 3, "single")).toBe("chapter");
   });
   it("no chapter when anything follows the cursor", () => {
-    expect(decideEnter(L("prose\n\n---\n\n\nmore"), 4, "blank")).toBe("normal");
+    expect(decideEnter(D("prose\n\n---\n\n\nmore"), 4, "blank")).toBe("normal");
   });
   it("no chapter straight after typing --- (spacing not reached yet)", () => {
-    expect(decideEnter(L("prose\n\n---\n"), 3, "blank")).toBe("normal");
+    expect(decideEnter(D("prose\n\n---\n"), 3, "blank")).toBe("normal");
   });
   it("a setext heading underline is not a scene break", () => {
-    expect(decideEnter(L("Title\n---\n\n"), 3, "blank")).toBe("normal");
+    expect(decideEnter(D("Title\n---\n\n"), 3, "blank")).toBe("normal");
   });
   it("a break right after the frontmatter still counts", () => {
-    expect(decideEnter(L("---\na: 1\n---\n---\n\n"), 5, "blank")).toBe("chapter");
+    expect(decideEnter(D("---\na: 1\n---\n---\n\n"), 5, "blank")).toBe("chapter");
   });
   it("frontmatter closer is not a scene break", () => {
-    expect(decideEnter(L("---\na: 1\n---\n\n\n"), 5, "blank")).toBe("normal");
+    expect(decideEnter(D("---\na: 1\n---\n\n\n"), 5, "blank")).toBe("normal");
   });
   it("a break at the very start of a file without frontmatter", () => {
     // line 0 "---" with no closer is treated as unclosed frontmatter → safe no-op
-    expect(decideEnter(L("---\n\n"), 2, "blank")).toBe("normal");
+    expect(decideEnter(D("---\n\n"), 2, "blank")).toBe("normal");
   });
 });
 
 describe("breakEdit", () => {
   it("turns the empty run into blank, ---, blank, cursor line", () => {
     const lines = L("prose\n\n");
-    const e = breakEdit(lines, 2);
+    const e = breakEdit(D(lines.join("\n")), 2);
     expect(e).toEqual({ fromLine: 1, toLine: 2, insert: "\n---\n\n" });
     expect(applyLineEdit(lines, e)).toBe("prose\n\n---\n\n");
   });
   it("collapses longer runs and keeps text below", () => {
     const lines = L("a\n\n\n\nb");
-    const e = breakEdit(lines, 3);
+    const e = breakEdit(D(lines.join("\n")), 3);
     expect(applyLineEdit(lines, e)).toBe("a\n\n---\n\n\nb");
   });
   it("single style", () => {
     const lines = L("a\n");
-    expect(applyLineEdit(lines, breakEdit(lines, 1))).toBe("a\n\n---\n\n");
+    expect(applyLineEdit(lines, breakEdit(D(lines.join("\n")), 1))).toBe("a\n\n---\n\n");
   });
   it("after the break, the next Enter makes a chapter", () => {
-    const lines = L(applyLineEdit(L("prose\n\n"), breakEdit(L("prose\n\n"), 2)));
-    expect(decideEnter(lines, lines.length - 1, "blank")).toBe("chapter");
-    expect(decideEnter(lines, lines.length - 1, "single")).toBe("chapter");
+    const lines = L(applyLineEdit(L("prose\n\n"), breakEdit(D("prose\n\n"), 2)));
+    expect(decideEnter(D(lines.join("\n")), lines.length - 1, "blank")).toBe("chapter");
+    expect(decideEnter(D(lines.join("\n")), lines.length - 1, "single")).toBe("chapter");
   });
 });
 
 describe("trailingBreakKeep", () => {
   it("finds the lines to keep", () => {
-    expect(trailingBreakKeep(L("prose\n\n---\n\n"))).toBe(1);
-    expect(trailingBreakKeep(L("a\nb\n\n\n* * *"))).toBe(2);
+    expect(trailingBreakKeep(D("prose\n\n---\n\n"))).toBe(1);
+    expect(trailingBreakKeep(D("a\nb\n\n\n* * *"))).toBe(2);
   });
   it("keeps the frontmatter", () => {
-    expect(trailingBreakKeep(L("---\na: 1\n---\n\n---\n"))).toBe(3);
-    expect(trailingBreakKeep(L("---\na: 1\n---\n---\n"))).toBe(3);
+    expect(trailingBreakKeep(D("---\na: 1\n---\n\n---\n"))).toBe(3);
+    expect(trailingBreakKeep(D("---\na: 1\n---\n---\n"))).toBe(3);
   });
   it("null when the text doesn't end with a break", () => {
-    expect(trailingBreakKeep(L("prose\n"))).toBeNull();
-    expect(trailingBreakKeep(L("---\na: 1\n---\n"))).toBeNull(); // frontmatter closer
-    expect(trailingBreakKeep(L("Title\n---"))).toBeNull(); // setext heading
-    expect(trailingBreakKeep([""])).toBeNull();
-    expect(trailingBreakKeep([])).toBeNull();
+    expect(trailingBreakKeep(D("prose\n"))).toBeNull();
+    expect(trailingBreakKeep(D("---\na: 1\n---\n"))).toBeNull(); // frontmatter closer
+    expect(trailingBreakKeep(D("Title\n---"))).toBeNull(); // setext heading
+    expect(trailingBreakKeep(D(""))).toBeNull();
+    expect(trailingBreakKeep(D(""))).toBeNull();
   });
   it("never drops prose", () => {
     const lines = L("one\n\ntwo\n\n---\n\n\n");
-    const keep = trailingBreakKeep(lines)!;
+    const keep = trailingBreakKeep(D(lines.join("\n")))!;
     expect(lines.slice(0, keep).join("\n")).toBe("one\n\ntwo");
   });
 });
@@ -367,5 +369,26 @@ describe("spellcheckSuppressed", () => {
     expect(spellcheckSuppressed(true, true)).toBe(false);
     expect(spellcheckSuppressed(false, false)).toBe(false);
     expect(spellcheckSuppressed(false, true)).toBe(false);
+  });
+});
+
+describe("withoutTrailingBreak", () => {
+  it("drops the break and blank lines of an LF file", () => {
+    expect(withoutTrailingBreak("one\n\ntwo\n\n---\n\n")).toBe("one\n\ntwo\n");
+  });
+  it("keeps a CRLF file's endings", () => {
+    expect(withoutTrailingBreak("one\r\n\r\ntwo\r\n\r\n---\r\n\r\n")).toBe("one\r\n\r\ntwo\r\n");
+  });
+  it("keeps a mixed LF/CRLF file's own endings", () => {
+    expect(withoutTrailingBreak("one\r\ntwo\nthree\r\n\n---\r\n")).toBe("one\r\ntwo\nthree\r\n");
+  });
+  it("returns the same string when there is no trailing break", () => {
+    const text = "one\r\n\ntwo\n";
+    expect(withoutTrailingBreak(text)).toBe(text);
+    expect(withoutTrailingBreak("---\na: 1\n---\n")).toBe("---\na: 1\n---\n");
+  });
+  it("a text that is only a break gives an empty string", () => {
+    expect(withoutTrailingBreak("* * *\n")).toBe("");
+    expect(withoutTrailingBreak("\n---\n\n")).toBe("");
   });
 });

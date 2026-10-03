@@ -1,0 +1,42 @@
+# Escrita stem fixture, English, "name" profile (name matching: would a reader call these the same person or place?).
+# One group per line, tab-separated: every word in a group must produce the same stem key.
+# Source: written by hand from linguistic judgment (inflection, gender and number, diminutives and augmentatives, adverbs, clitics) before any stemmer code existed. Not tuned to code, not copied from NLTK, Snowball or any corpus.
+# Pairs and groups are chosen from common vocabulary; the spec is docs/PLAN-0.5.md Q1-Q6 and tasks 1.1 and 1.2.
+# Rows are frozen (docs/PLAN-0.5.md, Ownership rules): later tasks may add rows, never change or delete one. A row that looks wrong goes to the author (gate G3).
+# Lines starting with # and blank lines are comments.
+Teo	Teo's	Teo’s	Teos	teo	TEO
+James	James's	James’s	James'
+Mary	Mary's	Marys
+Anna	Anna's	Annas
+Tom	Tom's	Toms
+Jack	Jack's	Jacks
+Harry	Harry's	Harrys
+Emma	Emma's	Emmas
+Oliver	Oliver's	Olivers
+Alice	Alice's	Alices
+Peter	Peter's	Peters
+Smith	Smith's	Smiths
+Jones	Jones's	Jones'
+Paris	Paris's
+London	London's
+Lucy	Lucy's	Lucys
+Ben	Ben's	Bens
+Sam	Sam's	Sams
+Rose	Rose's	Roses
+Grace	Grace's	Graces
+Charles	Charles's	Charles'
+Thomas	Thomas's	Thomas'
+Lucas	Lucas's	Lucas'
+Ruth	Ruth's	Ruths
+Edward	Edward's	Edwards
+Henry	Henry's	Henrys
+Frank	Frank's	Franks
+Clara	Clara's	Claras
+Nora	Nora's	Noras
+Leo	Leo's	Leos
+Eva	Eva's	Evas
+Max	Max's	Maxes
+Ivy	Ivy's	Ivys
+Owen	Owen's	Owens
+Lisbon	Lisbon's
+Brazil	Brazil's

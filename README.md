@@ -69,6 +69,27 @@ Hide spelling squiggles while you draft, then turn them on with **Toggle spellch
 
 **Toggle dialogue focus** dims everything in the note except speech, so you can read a scene's dialogue on its own. Speech is a line that opens with a dash (—, – or ―), switched to narration and back by spaced dashes inside the paragraph (`— Vem cá — disse ela. — Agora.`), plus anything in double quotes of your quote style (and straight `"`). A hard-wrapped line inside a paragraph stays speech. Code, properties and comments are never speech. It works in Live Preview and Source mode, not in Reading view, and stays on for that note until you turn it off or restart Obsidian.
 
+### Revision lens
+
+**Toggle revision lens** underlines what is worth rereading in the active note and opens a panel on the right. It only suggests: it never changes your text, nothing leaves your device, and it stays on for that note until you turn it off or restart Obsidian. It works in Live Preview and Source mode, not in Reading view.
+
+Six rules, each with its own underline style, each can be switched off in the settings:
+
+- **Echoes**: the same word, or one of the same family (*olhar / olhou / olhando*), within 40 words. The window starts over at a scene break and at a heading. Names, stop words and words under 4 letters are left alone.
+- **Adverbs**: words in `-mente` (Portuguese) or `-ly` (English), minus real words that only look like adverbs (*mente, semente, only, family*).
+- **Gerunds**: `-ando`, `-endo` and `-indo` words, *gerundismo* (*vou estar enviando*) and three or more gerunds in one sentence. In English the rule is "started to / began to" instead.
+- **Crutch words**: the words and phrases you list in your word lists note. They match whole words, in any case, exactly as written, so list both *começou a* and *começaram a*.
+- **Name variants**: a capitalized word that looks like a misspelling of a name you list (*Maira* for *Maria*). The name itself, its plural or diminutive, and a word you also write in lowercase are never flagged.
+- **Long sentences**: sentences of more than 45 words, dialogue included.
+
+The panel shows, for the whole note (or for the selection, labelled "Selection"): the **dialogue share** (the percentage of words that are speech, with each scene's share when the note has several) and **readability** (average sentence length, syllables per word and a reading-ease score with its band: Flesch adapted to Portuguese by Martins et al. 1996, or Flesch for English). Below, one row per rule with its count, the rate **per 1,000 words** so pieces of different lengths compare, and previous and next buttons that select the match ("3 / 12"). **Next revision lens match** and **Previous revision lens match** do the same for the rule you stepped last, handy from the mobile toolbar. On a phone the drawer closes after a step and a short notice shows where you are.
+
+To drop a match you disagree with, use **Ignore here** in the editor's context menu on it, or in the panel while stepping. Escrita remembers it by the note, the rule, the word and the words around it, so it survives edits elsewhere in the note, and the panel offers "N ignored · Clear" to bring them back. Dismissals follow the note when you rename it.
+
+**Word lists note.** A note you choose in the settings with three headings, in Portuguese or English: `## Vícios` / `## Crutch words`, `## Nomes` / `## Names`, `## Ignorar` / `## Ignore`, one entry per line. **Ignore** words stay out of echoes, adverbs, gerunds and name variants (not crutch words, which you listed on purpose). **Create the word lists note** makes one for you, with the three headings and a short starter list of crutch words, and never touches a note that exists. Without a word lists note the crutch and name rules stay silent and everything else works.
+
+**Language.** The language setting is Automatic (follow Obsidian), Português (Brasil) or English. In another Obsidian language the echo, adverb, gerund and readability rules are off, and the panel offers **Open settings** so you can choose one; crutch words, name variants, long sentences and dialogue share still work. Syllable counts are approximate on purpose, and the lens skips headings, math blocks and (by default) `>` quotes, so its word count can differ a little from the status bar's.
+
 ### Home note and where you left off
 
 Put a code block like this in any note, then set it as your **Home note** in the settings:
@@ -140,6 +161,7 @@ A beat counts as written when prose follows it before the next beat, scene break
 - **Placeholders**: the marker word, and whether to mark files in the file explorer.
 - **Darlings**: the darlings note inside a book, and the note used for everything else.
 - **Editor**: Enter, Enter, Enter; paragraph style; smart typography, where it applies, quote style and dialogue dash; spellcheck on demand.
+- **Revision**: the language (Automatic, Português (Brasil) or English), the word lists note (path, with a **Create** button), the echo window (default 40 words, 10 to 200) and the long sentence length (default 45 words, 15 to 200), **Skip quotes** (lines that start with `>` are not read), one toggle for each rule, and **Show dialogue share** and **Show readability**.
 - **Snapshots**: the snapshots folder (default `Escrita/Snapshots`; a folder that holds notes or sits inside a tracked folder is refused; a folder starting with a dot is hidden, but Obsidian Sync skips it; changing it doesn't move existing snapshots), the snapshot before the day's first edit, and how many automatic snapshots to keep per note.
 
 ## Commands
@@ -152,6 +174,7 @@ A beat counts as written when prose follows it before the next beat, scene break
 | Darlings | Move selection to darlings, Open darlings |
 | Editor | Toggle spellcheck, Insert scene break, Toggle dialogue focus, Move paragraph up, Move paragraph down, Move scene up, Move scene down |
 | Home | Open the home note |
+| Revision lens | Toggle revision lens, Next revision lens match, Previous revision lens match, Create the word lists note |
 | Snapshots | Take a snapshot, Open snapshots, Compare with the last snapshot, Browse snapshots of deleted notes |
 | Publishing | Publish this note, Unpublish this note |
 
@@ -194,6 +217,19 @@ To try your build, link or copy the repository folder into a test vault's `.obsi
 To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updates `manifest.json` and `versions.json`), commit, then push a tag with the bare version number (for example `git tag 0.1.1 && git push --tags`). The release workflow builds the plugin and drafts a GitHub release with `main.js`, `manifest.json` and `styles.css`; publish the draft when it looks right.
 
 ## Changelog
+
+### 0.5.0
+
+- **Revision lens**: **Toggle revision lens** underlines what is worth rereading in the active note and opens a panel. Six rules: echoes, adverbs, gerunds (in English, "started to"), crutch words, name variants and long sentences, each with its own underline and its own switch in the settings. It only suggests and never changes your text. Portuguese (Brasil) and English; in another Obsidian language the panel offers **Open settings** to choose one.
+- **Panel measures**: dialogue share (and each scene's share), readability (words per sentence, syllables per word and a reading-ease score with its band: Flesch adapted to Portuguese, or Flesch for English), and each rule's count per 1,000 words. They describe the text and don't grade it.
+- **Stepping**: previous and next buttons for each rule ("3 / 12"), and the commands **Next revision lens match** and **Previous revision lens match** for the rule you stepped last. On a phone the drawer closes after a step and a short notice shows where you are.
+- **Ignore here**: drop a match you disagree with from the editor's context menu or the panel. It is remembered by the note, the rule, the word and the words around it, follows renames, and the panel's "N ignored · Clear" brings the matches back.
+- **Word lists note**: a note you choose in the settings with `## Vícios` / `## Crutch words`, `## Nomes` / `## Names` and `## Ignorar` / `## Ignore`. **Create the word lists note** makes one with a short starter list and never touches an existing note.
+- **Revision settings**: language, word lists note, echo window, long sentence length, **Skip quotes**, a toggle per rule, and **Show dialogue share** and **Show readability**.
+- **Stemmers**: small Portuguese and English stemmers (`core/stem/`) that group *olhar / olhou / olhando* and keep *casa* and *casamento* apart. Internal for now; the universe will use them later for matching names.
+- **Editor loose ends**: the old editor helpers are gone and the editor reads the Markdown segmenter everywhere. Two behaviour changes follow.
+  - A `---` inside a code block or a comment no longer counts as a scene break next to a beat in the outline.
+  - Removing a trailing scene break in a note that is closed keeps the note's own line endings.
 
 ### 0.4.0
 

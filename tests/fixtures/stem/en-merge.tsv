@@ -1,0 +1,152 @@
+# Escrita stem fixture, English, "word" profile (echoes: would a reader call these the same word?).
+# One group per line, tab-separated: every word in a group must produce the same stem key.
+# Source: written by hand from linguistic judgment (inflection, gender and number, diminutives and augmentatives, adverbs, clitics) before any stemmer code existed. Not tuned to code, not copied from NLTK, Snowball or any corpus.
+# Pairs and groups are chosen from common vocabulary; the spec is docs/PLAN-0.5.md Q1-Q6 and tasks 1.1 and 1.2.
+# Rows are frozen (docs/PLAN-0.5.md, Ownership rules): later tasks may add rows, never change or delete one. A row that looks wrong goes to the author (gate G3).
+# Lines starting with # and blank lines are comments.
+walk	walks	walked	walking
+look	looks	looked	looking
+talk	talks	talked	talking
+jump	jumps	jumped	jumping
+laugh	laughs	laughed	laughing
+cough	coughs	coughed	coughing
+reach	reaches	reached	reaching
+watch	watches	watched	watching
+push	pushes	pushed	pushing
+kiss	kisses	kissed	kissing
+miss	misses	missed	missing
+fix	fixes	fixed	fixing
+whisper	whispers	whispered	whispering
+shout	shouts	shouted	shouting
+open	opens	opened	opening
+call	calls	called	calling
+turn	turns	turned	turning
+wait	waits	waited	waiting
+learn	learns	learned	learning
+listen	listens	listened	listening
+answer	answers	answered	answering
+follow	follows	followed	following
+wonder	wonders	wondered	wondering
+hope	hopes	hoped	hoping
+love	loves	loved	loving
+dance	dances	danced	dancing
+move	moves	moved	moving
+smile	smiles	smiled	smiling
+close	closes	closed	closing
+change	changes	changed	changing
+stare	stares	stared	staring
+decide	decides	decided	deciding
+arrive	arrives	arrived	arriving
+race	races	raced	racing
+use	uses	used	using
+stop	stops	stopped	stopping
+run	runs	running
+sit	sits	sitting
+get	gets	getting
+plan	plans	planned	planning
+drop	drops	dropped	dropping
+beg	begs	begged	begging
+nod	nods	nodded	nodding
+shop	shops	shopped	shopping
+rub	rubs	rubbed	rubbing
+grab	grabs	grabbed	grabbing
+slip	slips	slipped	slipping
+trip	trips	tripped	tripping
+play	plays	played	playing
+stay	stays	stayed	staying
+enjoy	enjoys	enjoyed	enjoying
+try	tries	tried	trying
+carry	carries	carried	carrying
+cry	cries	cried	crying
+study	studies	studied	studying
+hurry	hurries	hurried	hurrying
+worry	worries	worried	worrying
+marry	marries	married	marrying
+copy	copies	copied	copying
+quick	quickly
+slow	slowly	slows	slowed
+quiet	quietly
+soft	softly
+loud	loudly
+bright	brightly
+sudden	suddenly
+careful	carefully
+nervous	nervously
+dog	dogs	dog's	dogs'
+cat	cats	cat's	cats'
+girl	girls	girl's	girls'
+boy	boys	boy's	boys'
+door	doors	door's
+house	houses	house's
+city	cities	city's
+baby	babies	baby's
+lady	ladies	lady's
+story	stories	story's
+party	parties
+fly	flies
+day	days
+key	keys
+hand	hands	hand's
+eye	eyes	eye's
+tree	trees	tree's
+window	windows
+box	boxes
+church	churches
+bush	bushes
+glass	glasses
+dish	dishes
+wish	wishes	wished	wishing
+branch	branches
+fox	foxes
+word	words	word's
+book	books
+room	rooms
+street	streets
+friend	friends	friend's	friends'
+night	nights
+light	lights	lighted
+heart	hearts	heart's
+voice	voices
+face	faces	faced	facing
+place	places	placed	placing
+shake	shakes	shaking
+take	takes	taking
+make	makes	making
+write	writes	writing
+ride	rides	riding
+hide	hides	hiding
+slide	slides	sliding
+bake	bakes	baked	baking
+joke	jokes	joked	joking
+rule	rules	ruled	ruling
+scare	scares	scared	scaring
+share	shares	shared	sharing
+snore	snores	snored	snoring
+tire	tires	tired	tiring
+hop	hops	hopped	hopping
+tap	taps	tapped	tapping
+chat	chats	chatted	chatting
+pat	pats	patted	patting
+spin	spins	spinning
+win	wins	winning
+swim	swims	swimming
+swing	swings	swinging
+ring	rings	ringing
+sing	sings	singing
+bring	brings	bringing
+cook	cooks	cooked	cooking
+cool	cools	cooled	cooling
+fill	fills	filled	filling
+spill	spills	spilled	spilling
+roll	rolls	rolled	rolling
+pull	pulls	pulled	pulling
+hunt	hunts	hunted	hunting
+point	points	pointed	pointing
+paint	paints	painted	painting
+cut	cuts	cutting
+put	puts	putting
+let	lets	letting
+set	sets	setting
+hit	hits	hitting
+shut	shuts	shutting
+split	splits	splitting

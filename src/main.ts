@@ -31,6 +31,9 @@ import { VaultIndexesShell } from "./core/vault-indexes";
 import { WorksService } from "./core/works-index";
 import { DeskModule } from "./desk";
 import { deskStrings } from "./desk/strings";
+import { LensModule } from "./lens";
+import { lensStrings } from "./lens/strings";
+import { cleanDismissed } from "./lens/dismiss";
 import { SnapshotsModule } from "./snapshots";
 import { snapshotsStrings } from "./snapshots/strings";
 
@@ -63,6 +66,7 @@ export default class EscritaPlugin extends Plugin {
   snapshots!: SnapshotsModule;
   desk!: DeskModule;
   publish!: PublishModule;
+  lens!: LensModule;
   private modules: EscritaModule[] = [];
 
   /** Persist data soon; for frequent writes such as word tracking. */
@@ -71,7 +75,7 @@ export default class EscritaPlugin extends Plugin {
   async onload(): Promise<void> {
     for (const s of [
       coreStrings, goalsStrings, outlineStrings, placeholdersStrings, darlingsStrings, editorStrings, publishStrings,
-      explorerStrings, snapshotsStrings, deskStrings,
+      explorerStrings, snapshotsStrings, deskStrings, lensStrings,
     ]) {
       registerStrings(s);
     }
@@ -107,12 +111,13 @@ export default class EscritaPlugin extends Plugin {
     this.explorer = new ExplorerModule(this);
     this.darlings = new DarlingsModule(this);
     this.editor = new EditorModule(this);
+    this.lens = new LensModule(this);
     // before publish: "Before publishing" snapshots
     this.snapshots = new SnapshotsModule(this);
     this.publish = new PublishModule(this);
     this.desk = new DeskModule(this);
     this.modules = [
-      this.goals, this.outline, this.placeholders, this.explorer, this.darlings, this.editor, this.snapshots, this.publish, this.desk,
+      this.goals, this.outline, this.placeholders, this.explorer, this.darlings, this.editor, this.lens, this.snapshots, this.publish, this.desk,
     ];
     for (const m of this.modules) await m.load();
 
@@ -137,6 +142,7 @@ export default class EscritaPlugin extends Plugin {
       history: isRecord(raw.history) ? raw.history : {},
       publish: isRecord(raw.publish) ? (raw.publish as Record<string, PublishRecord>) : {},
       leftOff: cleanLeftOff(raw.leftOff),
+      lensDismissed: cleanDismissed(raw.lensDismissed),
     };
   }
 

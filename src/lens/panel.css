@@ -1,0 +1,150 @@
+/* Revision lens panel (task 4.2). Colors follow the theme; the rule keys mirror the editor marks. */
+
+.escrita-lens {
+  --escrita-lens-c-echo: rgba(var(--color-orange-rgb), 0.9);
+  --escrita-lens-c-adverb: rgba(var(--color-blue-rgb), 0.85);
+  --escrita-lens-c-gerund: rgba(var(--color-purple-rgb), 0.9);
+  --escrita-lens-c-crutch: rgba(var(--color-pink-rgb), 0.85);
+  --escrita-lens-c-name: rgba(var(--color-cyan-rgb), 0.85);
+  --escrita-lens-c-long: rgba(var(--color-yellow-rgb), 0.22);
+  --escrita-lens-target: 32px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  min-height: 100%;
+  overflow-y: auto;
+  font-size: var(--font-ui-small);
+}
+body.is-mobile .escrita-lens { --escrita-lens-target: 40px; font-size: var(--font-ui-medium); }
+body.is-phone .escrita-lens-detail, body.is-phone .escrita-lens-rate, body.is-phone .escrita-lens-rate-header { display: none; }
+
+.escrita-lens-head {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.escrita-lens-title { font-size: var(--font-ui-medium); font-weight: var(--font-semibold); color: var(--text-normal); }
+.escrita-lens-sub { font-size: var(--font-ui-smaller); color: var(--text-muted); }
+
+.escrita-lens-section {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.escrita-lens-selection { background: var(--background-secondary-alt, var(--background-secondary)); }
+.escrita-lens-selection-title { font-size: var(--font-ui-smaller); font-weight: var(--font-semibold); color: var(--text-accent); }
+.escrita-lens-line { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.escrita-lens-num { font-variant-numeric: tabular-nums; }
+.escrita-lens-band { color: var(--text-muted); }
+.escrita-lens-muted { font-size: var(--font-ui-smaller); color: var(--text-muted); line-height: 1.5; }
+.escrita-lens-faint { color: var(--text-faint); }
+.escrita-lens-readability { padding-top: 8px; }
+.escrita-lens-section > .escrita-lens-btn { margin-top: 6px; }
+.escrita-lens-bar { height: 4px; border-radius: 2px; background: var(--background-modifier-border); }
+.escrita-lens-bar-fill { width: var(--escrita-lens-share, 0%); height: 4px; border-radius: 2px; background: var(--text-muted); }
+.escrita-lens-scenes { display: flex; flex-direction: column; gap: 3px; padding-top: 2px; font-size: var(--font-ui-smaller); color: var(--text-muted); }
+
+.escrita-lens-rules { display: flex; flex-direction: column; padding: 8px 0; }
+.escrita-lens-rules-note { padding: 0 16px 4px; }
+.escrita-lens-rate-header { align-self: flex-end; padding: 0 16px 4px; font-size: 11px; color: var(--text-faint); }
+
+.escrita-lens-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  min-height: var(--escrita-lens-target);
+  padding: 0 8px 0 16px;
+  border-radius: var(--radius-m);
+}
+body.is-phone .escrita-lens-row { min-height: 44px; padding-inline-start: 14px; }
+.escrita-lens-row:hover { background: var(--background-modifier-hover); }
+.escrita-lens-row.is-stepped { background: var(--background-modifier-hover); padding-bottom: 6px; }
+.escrita-lens-key { display: inline-block; width: 22px; height: 6px; flex-shrink: 0; }
+.escrita-lens-key-echo { border-bottom: 2px dotted var(--escrita-lens-c-echo); }
+.escrita-lens-key-adverb { border-bottom: 2px dashed var(--escrita-lens-c-adverb); }
+.escrita-lens-key-gerund { border-bottom: 2px dotted var(--escrita-lens-c-gerund); }
+.escrita-lens-key-crutch { border-bottom: 2px dashed var(--escrita-lens-c-crutch); }
+.escrita-lens-key-name { border-bottom: 3px double var(--escrita-lens-c-name); height: 5px; }
+.escrita-lens-key-long { background: var(--escrita-lens-c-long); height: 10px; border-radius: 2px; }
+.theme-light .escrita-lens { --escrita-lens-c-long: rgba(var(--color-yellow-rgb), 0.3); }
+.escrita-lens-key.is-dim { opacity: 0.5; }
+
+.escrita-lens-rulename {
+  flex: 1 1 0; min-width: 0; min-height: var(--escrita-lens-target);
+  padding: 0; background: transparent; border: 0; box-shadow: none;
+  color: var(--text-normal); text-align: start; font-size: inherit; cursor: pointer;
+}
+.escrita-lens-rulename:disabled { cursor: default; color: var(--text-muted); }
+.escrita-lens-rulename-dim { color: var(--text-muted); cursor: default; display: inline-flex; align-items: center; }
+.escrita-lens-row.is-stepped .escrita-lens-rulename { font-weight: var(--font-medium); }
+.escrita-lens-count { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.escrita-lens-rate { min-width: 34px; text-align: end; font-size: var(--font-ui-smaller); color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.escrita-lens-step {
+  width: var(--escrita-lens-target); height: var(--escrita-lens-target);
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m);
+  background: transparent; color: var(--text-muted); cursor: pointer;
+}
+.escrita-lens-step:disabled { opacity: 0.4; cursor: default; }
+.escrita-lens-step .svg-icon { width: 13px; height: 13px; }
+
+.escrita-lens-rulename:hover:not(:disabled), .escrita-lens-step:hover:not(:disabled) { color: var(--text-normal); background: var(--background-modifier-hover); }
+.escrita-lens-rulename:focus-visible, .escrita-lens-step:focus-visible, .escrita-lens-link:focus-visible,
+.escrita-lens-ignore:focus-visible, .escrita-lens-btn:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 1px; }
+
+.escrita-lens-substep {
+  flex: 0 0 100%; display: flex; justify-content: space-between; align-items: center;
+  padding-inline-start: 32px; font-size: var(--font-ui-smaller); color: var(--text-muted);
+}
+.escrita-lens-counter { color: var(--text-normal); font-variant-numeric: tabular-nums; }
+.escrita-lens-ignore {
+  min-height: var(--escrita-lens-target); padding: 0 8px; background: transparent; border: 0; box-shadow: none;
+  color: var(--text-muted); font-size: inherit; cursor: pointer;
+  text-decoration: underline dotted var(--text-faint); text-underline-offset: 3px;
+}
+.escrita-lens-ignore:disabled { opacity: 0.4; cursor: default; }
+
+.escrita-lens-row-wait { padding-top: 4px; padding-bottom: 4px; }
+.escrita-lens-hint { flex: 0 0 100%; padding-inline-start: 32px; font-size: var(--font-ui-smaller); color: var(--text-muted); line-height: 1.5; }
+.escrita-lens-hint.is-error { color: var(--text-error); }
+
+.escrita-lens-link {
+  min-height: var(--escrita-lens-target); padding: 0 4px; background: transparent; border: 0; box-shadow: none;
+  color: var(--text-accent); font-size: inherit; cursor: pointer;
+}
+.escrita-lens-link:hover { color: var(--text-accent-hover); }
+
+.escrita-lens-btn { min-height: var(--escrita-lens-target); padding: 0 14px; align-self: flex-start; }
+
+.escrita-lens-empty {
+  flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 12px;
+  padding: 24px 20px; line-height: 1.55; color: var(--text-normal);
+}
+.escrita-lens-empty-quiet { color: var(--text-muted); }
+
+.escrita-lens-foot {
+  margin-top: auto;
+  min-height: var(--escrita-lens-target); display: flex; align-items: center; gap: 2px;
+  padding: 6px 16px 10px; border-top: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-smaller); color: var(--text-faint);
+}
+
+.escrita-lens-confirm {
+  position: absolute; inset-inline: 16px; top: 110px; z-index: 2;
+  display: flex; flex-direction: column; gap: 14px; padding: 16px;
+  background: var(--background-primary); border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-l); box-shadow: var(--shadow-l); line-height: 1.5;
+}
+.escrita-lens-confirm-buttons { display: flex; justify-content: flex-end; gap: 8px; }
+body.is-phone .escrita-lens-foot { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); font-size: var(--font-ui-small); }
+body.is-mobile .escrita-lens-confirm { top: 96px; }
+
+/* Settings tab, "Revision" section (artboard 15). */
+.escrita-lens-desc { padding-bottom: 12px; }
+.escrita-lens-number { width: 80px; text-align: end; }
+.setting-item.escrita-lens-stack select, .setting-item.escrita-lens-stack input[type="text"] { width: 220px; }
+body.is-mobile .escrita-lens-number { min-height: 40px; width: 72px; }
+body.is-mobile .setting-item.escrita-lens-stack { flex-direction: column; align-items: stretch; gap: 8px; }
+body.is-mobile .setting-item.escrita-lens-stack .setting-item-control { width: 100%; justify-content: stretch; }
+body.is-mobile .setting-item.escrita-lens-stack select,
+body.is-mobile .setting-item.escrita-lens-stack input[type="text"] { flex: 1 1 auto; width: auto; min-height: 40px; }
+body.is-mobile .setting-item.escrita-lens-stack button { min-height: 40px; padding: 0 14px; }

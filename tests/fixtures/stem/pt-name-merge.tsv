@@ -1,0 +1,49 @@
+# Escrita stem fixture, Portuguese (pt-BR), "name" profile (name matching: would a reader call these the same person or place?).
+# One group per line, tab-separated: every word in a group must produce the same stem key.
+# Source: written by hand from linguistic judgment (inflection, gender and number, diminutives and augmentatives, adverbs, clitics) before any stemmer code existed. Not tuned to code, not copied from NLTK, Snowball or any corpus.
+# Pairs and groups are chosen from common vocabulary; the spec is docs/PLAN-0.5.md Q1-Q6 and tasks 1.1 and 1.2.
+# Rows are frozen (docs/PLAN-0.5.md, Ownership rules): later tasks may add rows, never change or delete one. A row that looks wrong goes to the author (gate G3).
+# Lines starting with # and blank lines are comments.
+Maria	Mariazinha	Marias	maria	MARIA
+João	Joãozinho	Joões
+Ana	Anazinha	Anas
+Luiz	Luizinho	Luizes
+Paulo	Paulozinho	Paulos
+Pedro	Pedrozinho	Pedros
+José	Josés
+Joaquim	Joaquins
+Silva	Silvas
+Souza	Souzas
+Ricardo	Ricardos	Ricardozinho
+Marcelo	Marcelos
+Fernanda	Fernandas	Fernandazinha
+Roberto	Robertos
+Eduardo	Eduardos
+Manuel	Manuéis
+Natal	Natais
+Teresa	Teresas
+Lúcia	Lúcias	Lúciazinha
+Júlia	Júlias	Júliazinha
+Beatriz	Beatrizes
+Helena	Helenas	Helenazinha
+Sofia	Sofias
+Clara	Claras	Clarazinha
+Lara	Laras
+Rita	Ritas
+Laura	Lauras
+Paula	Paulas
+Carla	Carlas
+Sandra	Sandras
+Vítor	Vítores
+Santiago	Santiagos
+Alice	Alices
+Carolina	Carolinas
+Antônio	Antônios
+Sérgio	Sérgios
+Márcio	Márcios
+Tiago	Tiagos	Tiagozinho
+Bruno	Brunos	Brunozinho
+Felipe	Felipes
+Zélia	Zélias
+Olívia	Olívias
+Amanda	Amandas

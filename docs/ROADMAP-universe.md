@@ -110,11 +110,14 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
 - **Matching**: each entry's file name and `aliases` matched as whole words in the prose
   of every work in the universe (`core/wordcount.proseOnly` text, so comments and
   frontmatter don't count). Case-insensitive by default; per-entry `caseSensitive`.
-- **Portuguese inflection**: plural, feminine, diminutive and augmentative forms
-  (*Maria / Mariazinha*, *menino / meninos / menina*) through the Portuguese stemmer in
-  `core/stem/` (built in v0.5 with the revision lens, short-fiction roadmap feature 5).
-  English: plural and possessive (`Teo's`) through the English stemmer from the same
-  module.
+- **Portuguese inflection**: shipped in 0.5 as the stemmers in `core/stem/`, built with
+  the revision lens (short-fiction roadmap feature 5). People and places match through
+  `stem(word, lang, "name")`: plural, diminutive and augmentative (*Maria / Mariazinha*),
+  and the feminine is skipped on purpose (*Mariano / Mariana* are different people).
+  Common-noun entries and aliases match through `"word"` (*menino / meninos / menina*).
+  A case-sensitive entry compares casing before the stem. English: plural and possessive
+  (`Teo's`) through the English stemmer from the same module. The sentence splitter and
+  title abbreviations (*Sr.*, *Dra.*) are in `core/sentences.ts`.
 - **Ignore list** per entry (`ignore` property) for names that are also common words
   (a character named "Rosa", a place called "Porto"). An ignore entry can be a phrase
   ("Rosa dos ventos"), so the name still counts elsewhere.
@@ -144,7 +147,8 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
 - **Names without an entry** (a tab in the universe panel, from v0.7 when the matcher
   exists): capitalized words that recur across works, aren't at a sentence start, and
   match no entry or alias, each with a Create button that opens this modal. A dismiss
-  list keeps ordinary words out.
+  list keeps ordinary words out. "Sentence start" comes from the sentence splitter and
+  title abbreviations already in `core/sentences.ts` (0.5).
 
 ### 1.4 Names into spellcheck and the revision lens (v0.7)
 
@@ -153,7 +157,8 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
   API; use the Electron session spellchecker only on desktop behind a guard
   (`isDesktopApp`, try/catch), and on mobile skip it. Never remove words the user added.
 - The revision lens's name-variant rule reads names from the universe instead of (or in
-  addition to) its word-list note: *Marianna* when the entry is *Mariana*.
+  addition to) its word-list note: *Marianna* when the entry is *Mariana*. The rule has
+  taken a `names` option since 0.5, so this only feeds it entries.
 
 ### 1.5 Open threads (v0.6)
 

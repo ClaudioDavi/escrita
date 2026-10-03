@@ -14,6 +14,11 @@ export function registerStrings(s: Strings): void {
   for (const [lang, d] of Object.entries(s)) dicts[lang] = Object.assign(dicts[lang] ?? {}, d);
 }
 
+/** The raw Obsidian locale ("es", "pt-br"), with no fallback to a language Escrita has strings for. */
+export function locale(): string {
+  return moment.locale() || "en";
+}
+
 export function lang(): string {
   const l = (moment.locale() || "en").toLowerCase();
   if (l.startsWith("pt")) return "pt-BR";

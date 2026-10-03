@@ -7,7 +7,8 @@
 // touched. Each line keeps its own ending (LF or CRLF, even mixed) and a
 // missing final newline stays missing.
 
-import { SCENE_BREAK, beatLine, bodyStartLine, parseBeats } from "../core/markers";
+import { beatLine, isSceneBreakLine, parseBeats } from "../core/markers";
+import { segment, type Markdown } from "../core/markdown";
 
 interface Doc {
   lines: string[];
@@ -18,6 +19,8 @@ interface Doc {
   /** the text ended with a line break */
   trailingEol: boolean;
   body: number;
+  /** the text's segmentation: code, comments and frontmatter are known to it */
+  md: Markdown;
 }
 
 function split(text: string): Doc {
@@ -30,7 +33,8 @@ function split(text: string): Doc {
   }
   const trailingEol = lines.length > 1 && lines[lines.length - 1] === "";
   if (trailingEol) { lines.pop(); eols.pop(); }
-  return { lines, eols, eol, trailingEol, body: bodyStartLine(lines) };
+  const md = segment(text);
+  return { lines, eols, eol, trailingEol, body: md.bodyLine, md };
 }
 
 /**
@@ -68,7 +72,7 @@ export function cleanBeatText(s: string): string {
 }
 
 const blank = (s: string | undefined) => s !== undefined && s.trim() === "";
-const isBreak = (s: string | undefined) => s !== undefined && SCENE_BREAK.test(s);
+const isBreak = (doc: Doc, k: number) => isSceneBreakLine(doc.md, k);
 
 /**
  * Insert a new beat at the end of beat `afterIndex`'s scene (-1 = before the
@@ -79,7 +83,7 @@ const isBreak = (s: string | undefined) => s !== undefined && SCENE_BREAK.test(s
 export function insertBeat(text: string, afterIndex: number, beatText: string): string {
   const doc = split(text);
   const { lines } = doc;
-  const beats = parseBeats(lines.join("\n"));
+  const beats = parseBeats(doc.md);
   const after = Math.max(-1, Math.min(Math.floor(afterIndex), beats.length - 1));
   const start = after < 0 ? doc.body : beats[after].line;
   const next = after + 1 < beats.length ? beats[after + 1].line : -1;
@@ -89,7 +93,7 @@ export function insertBeat(text: string, afterIndex: number, beatText: string): 
   let k = end - 1;
   while (k >= start && blank(lines[k])) k--;
   let closingBreak = -1;
-  if (k >= start && isBreak(lines[k]) && !(after >= 0 && k === start)) {
+  if (k >= start && isBreak(doc, k) && !(after >= 0 && k === start)) {
     closingBreak = k;
     k--;
     while (k >= start && blank(lines[k])) k--;
@@ -120,7 +124,7 @@ export function insertBeat(text: string, afterIndex: number, beatText: string): 
 /** Replace beat `i`'s text. Returns the text unchanged when there is no such beat. */
 export function setBeatText(text: string, i: number, beatText: string): string {
   const doc = split(text);
-  const beats = parseBeats(doc.lines.join("\n"));
+  const beats = parseBeats(doc.md);
   const b = beats[i];
   if (!b) return text;
   const indent = /^[ \t]*/.exec(doc.lines[b.line])?.[0] ?? "";
@@ -137,7 +141,7 @@ export function setBeatText(text: string, i: number, beatText: string): string {
 export function removeBeat(text: string, i: number): string {
   const doc = split(text);
   const { lines } = doc;
-  const beats = parseBeats(lines.join("\n"));
+  const beats = parseBeats(doc.md);
   const b = beats[i];
   if (!b) return text;
 
@@ -147,8 +151,8 @@ export function removeBeat(text: string, i: number): string {
     while (a >= doc.body && blank(lines[a])) a--;
     let z = b.line + 1;
     while (z < lines.length && blank(lines[z])) z++;
-    const breakBefore = a >= doc.body && isBreak(lines[a]);
-    const breakAfter = z < lines.length && isBreak(lines[z]);
+    const breakBefore = a >= doc.body && isBreak(doc, a);
+    const breakAfter = z < lines.length && isBreak(doc, z);
     let c = a - 1;
     while (c >= doc.body && blank(lines[c])) c--;
     const contentBeforeBreak = breakBefore && c >= doc.body;
@@ -190,7 +194,7 @@ export function appendBeat(text: string, beatText: string): string {
 /** True when the body (after frontmatter) holds nothing but blank lines. */
 export function isBlankBody(text: string): boolean {
   const lines = text.split(/\r?\n/);
-  return lines.slice(bodyStartLine(lines)).every((l) => l.trim() === "");
+  return lines.slice(segment(text).bodyLine).every((l) => l.trim() === "");
 }
 
 /** Index of the beat whose scene contains 0-based `line` (-1 when before the first beat). */
@@ -213,7 +217,7 @@ export { minimalChange } from "../core/note-text";
 export function insertFirstBeat(text: string, beatText: string): string {
   const doc = split(text);
   const { lines } = doc;
-  if (parseBeats(lines.join("\n")).length) return insertBeat(text, -1, beatText);
+  if (parseBeats(doc.md).length) return insertBeat(text, -1, beatText);
   let k = doc.body;
   while (k < lines.length && blank(lines[k])) k++;
   if (k < lines.length && /^#[ \t]+\S/.test(lines[k])) {

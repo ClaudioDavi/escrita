@@ -6,8 +6,8 @@ import type { EscritaModule } from "../data";
 import { t } from "../i18n";
 import { dropFromSet, renameInSet } from "../core/path-keys";
 import { segment, segmentDoc } from "../core/markdown";
-import { blockStateIn, inBlock, inProperties } from "./context";
-import { breakEdit, decideEnter, trailingBreakKeep } from "./enter-flow";
+import { blockStateIn, bodyLineIn, inBlock } from "./context";
+import { breakEdit, decideEnter, trailingBreakKeep, withoutTrailingBreak } from "./enter-flow";
 import { typographyFor } from "./typography";
 import { sceneBreakEdit } from "./scene-break";
 import { spellcheckExtensions, spellcheckSuppressed } from "./spellcheck";
@@ -186,7 +186,7 @@ export class EditorModule implements EscritaModule {
     const cursor = editor.getCursor("to");
     const doc = editor.getValue();
     // the whole properties block, its opening and closing --- included
-    if (inProperties(doc.split("\n"), cursor.line)) {
+    if (cursor.line < bodyLineIn(segment(doc))) {
       new Notice(t("editor.noBreakInProperties"));
       return;
     }
@@ -219,7 +219,7 @@ export class EditorModule implements EscritaModule {
     if (this.creatingChapter) return true; // swallow repeats while the chapter is being made
 
     if (decision === "break") {
-      const edit = breakEdit(state.doc.toJSON(), cursorLine);
+      const edit = breakEdit(segmentDoc(state.doc), cursorLine);
       const from = state.doc.line(edit.fromLine + 1).from;
       const to = state.doc.line(edit.toLine + 1).to;
       view.dispatch({
@@ -290,13 +290,7 @@ export class EditorModule implements EscritaModule {
       view.dispatch({ changes: { from, to: doc.length, insert: keep > 0 ? "\n" : "" }, userEvent: "delete" });
       return;
     }
-    await this.plugin.app.vault.process(file, (text) => {
-      const eol = text.includes("\r\n") ? "\r\n" : "\n";
-      const lines = text.split(/\r?\n/);
-      const keep = trailingBreakKeep(lines);
-      if (keep === null) return text;
-      return keep > 0 ? lines.slice(0, keep).join(eol) + eol : "";
-    });
+    await this.plugin.app.vault.process(file, (text) => withoutTrailingBreak(text));
   }
 
   // ---- smart typography -----------------------------------------------------

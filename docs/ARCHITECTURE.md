@@ -31,7 +31,7 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   `works` (`WorksReader`, `core/works-index.ts`: the live list of works, one entry per
   tracked book, note or chapter; `get`, `list`, `isReady`, `onReady`, `onChange`; built on
   `index`), and the other modules (`goals`, `outline`,
-  `placeholders`, `explorer`, `darlings`, `editor`, `snapshots`, `publish`, `desk`).
+  `placeholders`, `explorer`, `darlings`, `editor`, `lens`, `snapshots`, `publish`, `desk`).
 - **Pure core** (no Obsidian imports, unit tested): `core/markdown.ts` (the one
   Markdown segmenter, see below), `core/wordcount.ts`,
   `core/markers.ts` (beat/placeholder/scene-break syntax), `core/book.ts`
@@ -60,6 +60,16 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   exports `isBeatLine` and `isSceneBreakAt` (a real scene break in the body, not a
   setext underline). `countCharacters(md, { spaces })`
   in `core/wordcount.ts` counts on `proseOnly` text with whitespace runs collapsed.
+  The 0.5 core, shared with the revision lens and the coming universe: `core/stem/`
+  (the stemmers, see "Stemmers"), `core/tokens.ts` (`tokens(text, from?, to?)`: words
+  with offsets by the one word rule, `wordRegex`; and `findPhrase`, whole-word phrase
+  matching), `core/sentences.ts` (`sentences(mask, md, lang, from?, to?)`: our own
+  splitter, with per-language abbreviation lists, so a title like *Dona* or *Dr.* does
+  not end a sentence and "not at a sentence start" is answerable) and `readerMask(md)` in
+  `core/wordcount.ts` (the masked document with link targets, embeds, urls, tags and
+  heading, list and quote marks blanked to spaces, offset for offset). `readerMask` and
+  `stripMarkup` (behind `proseOnly` and the word count) run one pattern table, so they
+  can't drift. Core never imports the lens.
   Reuse these; don't duplicate.
 - **Never re-detect frontmatter, fences, inline code or comments**: ask
   `segment(text)` or `segmentDoc(doc)` from `core/markdown.ts` (see "Markdown
@@ -96,6 +106,15 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   - **Restoring a snapshot's properties is a raw text replace** of the frontmatter block
     (through the note text port, anchored and checked), not `processFrontMatter`: a
     restore must give back the old text byte for byte, comments and key order included.
+  - **The lens reaches CodeMirror's view through a cast** (`src/lens/ui.ts`, `cmOf` and
+    the editor-menu handler): `(editor as unknown as { cm?: EditorView }).cm`. Obsidian
+    does not type `Editor.cm`, and stepping and "Ignore here" need the view's state to
+    read the mapped match list. Read-only use, and only in editing mode; a missing `cm`
+    gives `null` and the feature does nothing.
+  - **The lens opens Escrita's settings tab through `app.setting`** (`LensUi.openSettings`
+    in `src/lens/ui.ts`), for the "Open settings" button of the no-language state:
+    `setting.open()` then `setting.openTabById(manifest.id)`, behind a cast and a
+    try/catch. Obsidian has no public call for it; if it is missing nothing happens.
   - **Writes into a note's text go through `plugin.notes`** (the editor when the note is
     open in source or Live Preview, else `vault.process`), never straight to
     `vault.process` or an editor.
@@ -301,6 +320,50 @@ Open questions (each is a one-place flip pinned by a row in
 block (opens a comment here), escaped backticks, and `%%` inside a closed
 `<!-- -->` (literal here; check before release, since it decides whether text
 after the comment is hidden in Reading view).
+
+## Stemmers (`core/stem/`, shipped in 0.5)
+
+One function, `stem(word, lang, profile = "word")`, in `core/stem/index.ts`; `lang` is
+`"pt"` or `"en"`, `profile` is `"word"` or `"name"`. Pure TypeScript, no `obsidian`
+import, no dependency, no copied word list: written by hand from the published
+algorithms (Orengo and Huyck 2001 for the RSLP shape, Porter2). It serves the revision
+lens now; the universe (U 1.2, U 1.4) reuses it without importing the lens.
+
+- **Contract.** `stem` normalizes first: NFC, `toLowerCase()` (no locale), `’` to `'`.
+  Callers pass raw tokens. The result is an opaque key, **compared for equality only**
+  (never shown, never stored as a word). The key is case-folded, so a caller that must
+  be case-sensitive (U 1.2's per-entry `caseSensitive`) compares the raw token's casing
+  first and uses `stem` only for inflection. A bounded memo per (lang, profile) keeps
+  repeated calls cheap. A token with no letter comes back as it is.
+- **`"word"` profile** (echoes, ignore lists, and common-noun universe entries):
+  - pt: clitic split, adverb, plural, feminine, augmentative/diminutive, verb suffix,
+    final vowel, accents. *olhar / olhou / olhando / olhares* share a key.
+  - en: Porter2 step 0 (possessive), 1a (plural, with `-es` also after x, z, ch and sh),
+    1b (`-ed` / `-ing`, undoubling, restoring `e`), 1c (`y` to `i`), Porter2's final-`e`
+    rule, and `-ly` on stems of 4 or more letters (words like *family* and *reply* are
+    kept).
+- **`"name"` profile** (people and places): pt, plural and diminutive/augmentative only;
+  no feminine step and no vowel or accent removal, so *Maria / Mariazinha* share a key
+  but *Maria / Mário* and *Mariano / Mariana* do not. en, the possessive and a simple
+  plural `-s` on stems of 3 or more letters that don't end in `s`; never Porter (*James*
+  stays `james`). Minimum stem is 2 characters. This narrows U 1.2's "plural, feminine,
+  diminutive and augmentative" for person and place entries.
+- **`splitClitic(normalized)`** (`core/stem/pt.ts`): strips one known clitic after the
+  last hyphen (`me te se lhe lhes nos vos o a os as lo la los las no na`), returning
+  `{ base, clitic }`. The word rules use it to test a token's base (*dizendo-lhe* is a
+  gerund; *olhou-me* stems like *olhou*). Mesoclisis (*dir-se-ia*) is not handled; other
+  compounds stay one token.
+- **Out, on purpose.** The pt noun-suffix step (`-mento`, `-ção`, `-dade`, `-ista`): it
+  merges *casa / casamento* and *mente / mentira*. Porter2 steps 2 to 5 (*universe /
+  university*). The feminine step in `"name"`. The rule is to prefer missing a match over
+  a wrong one.
+- **Stop words** (`core/stem/stopwords.ts`): our own lists, 150 to 250 per language,
+  written by hand, so the universe can reuse them. `isStopWord(normalized, lang)`. English
+  contractions (*don't*, *she'd*) are stop words matched whole before stemming.
+- **Fixtures are the contract.** `tests/fixtures/stem/*.tsv` pin the merge and split
+  pairs (*bola / bolo*, *sede / seda* and *ponto / ponta* stay apart); a change to a key
+  after the universe uses it is a matching change, so never change a fixture row to make
+  a test pass.
 
 ## Design reference
 
@@ -544,6 +607,9 @@ the works list use it first). `plugin.index` is the hub; a module adds a spec an
   `setBeatText(text, i, beatText)`; `removeBeat(text, i)` removes only the comment line
   (plus an orphaned scene break it leaves behind when the beat was unwritten) and never
   touches prose; `moveBeatOut(text, i)` for Shift+Tab (only allowed on unwritten beats).
+  A scene break is `core/markers.isSceneBreakLine` (so a `---` inside code or a comment is
+  not one), and the re-parses use the `Markdown` the edit already holds (`parseBeats(doc.md)`),
+  not a rejoined lines array (0.5).
 - **Outline view** (`ItemView`, type `escrita-outline`, icon `list-tree`, ribbon icon +
   command "Open outline", opens in the right sidebar): the design's panel. Follows the
   active file's book; when the active file isn't in a book, keeps the last book shown,
@@ -706,6 +772,16 @@ the works list use it first). `plugin.index` is the hub; a module adds a spec an
   (nothing to swap with) it does nothing, silently. Nothing is removed, so there is
   nothing to keep in darlings. The paragraph style (`single` or `blank`) decides what a
   paragraph is.
+- **Reads the `Markdown` directly** (0.5). The compatibility wrappers `blockStateAt`,
+  `bodyStart` and `inProperties` (and `core/markers.bodyStartLine`) are gone: callers use
+  `blockStateIn(md, line)`, `bodyLineIn(md)` and `md.bodyLine`. `decideEnter`,
+  `trailingBreakKeep` and `breakEdit` in `enter-flow.ts` take a `Markdown` only, and the
+  Enter handler passes `segmentDoc(state.doc)`, so no lines array is rebuilt on each Enter.
+  `insertSceneBreak` asks `bodyLineIn(segment(doc))` (an unclosed frontmatter still counts
+  as properties). The vault path of removing a chapter's trailing break is the pure
+  `withoutTrailingBreak(text)`: it keeps the file's own line endings (a mixed LF/CRLF file
+  is no longer rewritten to all CRLF) and returns the input itself when there is no
+  trailing break.
 - **Commands**: "Toggle spellcheck", "Insert scene break" (inserts `\n\n---\n\n` normalized
   around the cursor), and the four move commands above.
 
@@ -783,6 +859,110 @@ the works list use it first). `plugin.index` is the hub; a module adds a spec an
   the visible lines only (`dimPlan`, paragraph widening capped at 200 lines each way);
   zero work while off. Toggling dispatches a `StateEffect` to every editor, not
   `updateOptions()`. No cursor un-dim.
+
+### revision lens (`src/lens/`, shipped in 0.5)
+
+Serves the **revision** stage. Off by default; "Toggle revision lens" turns it on for one
+note, for this session (not saved, follows renames, like dialogue focus). It only
+suggests: it decorates and moves the selection, and never writes prose. The only file it
+writes is a new word lists note, on an explicit command. No network (`tests/no-network.test.ts`
+scans its files).
+
+- **What it reads** (the reader mask). `core/wordcount.readerMask(md)`, then
+  `analyze.readMask` blanks whole heading lines, `$$` math blocks (through
+  `editor/context.blockStateIn`; math is an editor overlay, not a segmenter span) and,
+  with "Skip quotes" on (the default), `>` lines. Offsets never move, so every match
+  position is a document offset. Frontmatter, code and comments are blank by `segment`.
+  One token list over that mask (`core/tokens`) feeds every rule and every number, so
+  rates, the dialogue share and readability share one denominator ("words the lens
+  read"); a small difference from the status bar count is expected. The lens imports the
+  editor's pure `editor/dialogue.dialogueInDoc` and `editor/context` (`blockStateIn`,
+  `inBlock`, `bodyLineIn`) read-only; they are pure, the universe won't need them, and
+  their signatures must not change for the lens's sake.
+- **Rules and kinds** (`rules-stem.ts`, `rules-words.ts`, `types.ts`). Six rules, ids
+  `echo`, `adverb`, `gerund`, `crutch`, `name`, `long`. A `Match` is `{ rule, kind, from,
+  to, text, related? }` with kind `base`, `gerundismo`, `chain` or `started`; an echo's
+  `related` is the earlier occurrence. Rules take the tokens and sentences built once per
+  pass and return matches whatever the settings; `analyze` filters. Language-bound rules
+  (echo, adverb, gerund) are off when the language is `null` (a locale that is neither pt
+  nor en). Built-in tables (`lexicon.ts`: adverb and gerund exceptions, forms of *ir* and
+  *estar*, English start verbs) are language data picked by the language, not the
+  author's values. Words the note capitalizes in mid-sentence count as names for the echo
+  and gerund rules (`inferredNames`), on top of the listed names, so a sentence-initial
+  *Fernando* is not a gerund and a repeated name is not an echo. Name variants take
+  `names: string[]` as an option and never read the lists note, so the universe can feed
+  them its entries. The rules themselves are specified in SF 5.
+- **The session** (`session.ts`, pure, time injected). Per path: on or off, a **version
+  counter** (the session owns versions; CodeMirror has none, and two panes on one note
+  would each invent theirs), a pending timer and a cache of the last pass with the text
+  it came from. `changed(path, text)` bumps the version and schedules one full pass after
+  the quiet time: **400 ms** (`LENS_SETTLE_MS`), **800 ms** on mobile
+  (`LENS_SETTLE_MOBILE_MS`). `now` runs immediately. The same text never recomputes
+  (stepping and toggling reuse the cache), and a result older than the path's latest
+  version is dropped. `invalidate` (settings or lists changed) recomputes the notes that
+  are on. Zero work while the lens is off.
+- **Full pass, visible marks, one position list.** The pass (`analyze.ts`) is O(words),
+  with a memoized stemmer and a sliding echo window, never pairwise. Decorations are
+  built only for the visible ranges (`visible`, a binary search over the sorted matches).
+  The pass keeps its intermediates (`LensPass`: mask, tokens, sentences, speech ranges,
+  syllables per token), so selection measures slice them (`measuresFor`) instead of
+  re-reading the note. In `decorations.ts` a CodeMirror state field holds **the mapped
+  match list**: the last result's matches mapped through every edit
+  (`ChangeSet.mapPos`), replaced when a result for the latest version arrives. Marks,
+  `matchAt` (the context menu), stepping and dismissal keys all read that list, never
+  stale offsets from the session. Marks only, never line classes, so they compose with
+  dialogue focus; colors are Obsidian variables at low alpha, with dotted, dashed or
+  double underlines that never look like the spellcheck squiggle, and long sentences as a
+  faint tint (`editor.css`).
+- **Performance budget.** `tests/lens-analyze.test.ts` has a CI ceiling on a generated
+  10,000-word note (analyze under 300 ms, `visible` under 1 ms, `measuresFor` under
+  5 ms) that catches quadratic code, and a local budget that runs only with
+  `ESCRITA_PERF=1`: the median of five runs under 60 ms, which keeps a phone under its
+  800 ms settle. CI machine speed varies too much to pin the tighter number.
+- **Measures** (`measures.ts`, `readability.ts`, `syllables.ts`). Dialogue share is
+  speech words over words read, from `dialogueInDoc` with the writer's quote and paragraph
+  styles, per scene when there is more than one (split at `isSceneBreakAt`). Readability
+  is Martins et al. (1996) for pt-BR in four bands and Flesch for English in seven; the
+  score shown is clamped to 0-100 and the raw value is pinned in tests; "—" under 100
+  words or 3 sentences, and off with no language. **Syllables are approximate on
+  purpose** (about 95% exact on running text): the pt counter follows the dictionary
+  split, so a rising sequence counts as two (*histó-ri-a*, *sé-ri-e*); the en counter
+  counts vowel groups with silent `e`, `-ed` and `-es` rules and a map of irregular
+  words. Pinned by fixtures in `tests/fixtures/syllables/`.
+- **Dismissals** (`dismiss.ts`, `shown.ts`, `panel-model.withoutDismissed`). A key is
+  rule + normalized matched text + up to 3 normalized words either side, read from the
+  live document at the match's mapped offsets; stored in `data.lensDismissed[path]` (500
+  per note, oldest dropped). The module builds the **shown result** once per result and
+  dismissal change, `withoutDismissed(result, m => !isDismissed(…))`, and marks, panel
+  counts, rates and stepping all read it. Dismissals follow renames through
+  `plugin.index.follow` (`renameKeys`, merging on a collision), drop on delete and are
+  pruned on layout ready; `cleanDismissed` makes saved data safe on load.
+- **The lists note** (`lists.ts`, `index.ts`). Headings `Vícios`/`Crutch words`,
+  `Nomes`/`Names`, `Ignorar`/`Ignore` (also `Crutches`), compared without case or
+  accents, any level `#` to `######`; one entry per line; list markers, blank lines,
+  `%% %%` comments, frontmatter and other headings' content are skipped. Read by a
+  content-mode vault index (`lens-lists`; `include` and `settingsKey` both from
+  `listsPath(setting)`), re-parsed on modify; the setting is normalized (trimmed, no outer
+  slash, `.md` added). A follower moves the setting on rename and saves; a delete leaves
+  it alone and the panel says the note is missing. "Create the word lists note" never
+  overwrites: it opens an existing note with a Notice; else `ensureFolder`,
+  `vault.create` with `starterNote`, and it sets the setting when it was empty. Crutch
+  phrases match exactly (whole words, any case), never stemmed.
+- **UI** (`ui.ts`, `view.ts`, `panel-model.ts`, `panel-format.ts`, `panel.css`). The panel
+  is a view, `escrita-lens`, in the right sidebar, following the most recent Markdown
+  note: measures, one row per rule (count, rate per 1,000, previous and next buttons, "3 /
+  12", "Ignore here" under the stepped row) and the empty states. `ui.ts` registers
+  everything (`registerView`, `registerEditorExtension`, `registerEvent` on
+  `editor-menu`, commands), steps with `editor.transaction({ selection })` plus
+  `scrollIntoView`, and on a phone closes the right drawer after a panel step and shows a
+  Notice. Commands: "Toggle revision lens", "Next revision lens match", "Previous
+  revision lens match", "Create the word lists note"; no hotkeys. The two private-API
+  casts it needs are listed under "Documented exceptions".
+- **Boundaries.** `lens` imports `core/*` and, read-only, `editor/dialogue` and
+  `editor/context`; core never imports the lens. The pure files import neither `obsidian`
+  nor `i18n`: `types`, `syllables`, `readability`, `lists`, `lang`, `dismiss`, `lexicon`,
+  `rules-words`, `rules-stem`, `measures`, `panel-model`, `session`, `analyze`,
+  `marks-model`.
 
 ### snapshots (`src/snapshots/`)
 
