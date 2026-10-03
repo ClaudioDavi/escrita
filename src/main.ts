@@ -35,6 +35,8 @@ import { LensModule } from "./lens";
 import { lensStrings } from "./lens/strings";
 import { cleanDismissed } from "./lens/dismiss";
 import { cleanSeen } from "./universe/first-seen";
+import type { FeatureRegistry } from "./core/feature-registry";
+import type { NamesPort } from "./core/names-source";
 import { SnapshotsModule } from "./snapshots";
 import { snapshotsStrings } from "./snapshots/strings";
 import { UniverseModule } from "./universe";
@@ -62,6 +64,8 @@ export default class EscritaPlugin extends Plugin {
   notes!: NoteService;
   index!: VaultIndexes;
   works!: WorksReader;
+  features!: FeatureRegistry;
+  names!: NamesPort;
 
   goals!: GoalsModule;
   outline!: OutlineModule;
@@ -153,6 +157,7 @@ export default class EscritaPlugin extends Plugin {
       leftOff: cleanLeftOff(raw.leftOff),
       lensDismissed: cleanDismissed(raw.lensDismissed),
       threadSeen: cleanSeen(raw.threadSeen),
+      povColors: {},
     };
   }
 

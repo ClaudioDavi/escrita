@@ -210,6 +210,26 @@ export function readBookGoal(frontmatter: Record<string, unknown> | null | undef
   };
 }
 
+/** A book note's default for its chapters: a target, and optionally the unit it is counted in (Q47). */
+export interface ChapterDefault { target: number; unit: PieceUnit | null }
+
+/** The book note's chapter target (via parseAmount) and unit, under the configured names; null when it sets no target. Stub until 1.4. */
+export function readChapterDefault(
+  fm: Record<string, unknown> | null | undefined,
+  props: { chapterTargetProperty: string; unitProperty: string },
+): ChapterDefault | null {
+  throw new Error("todo");
+}
+
+/** Per field: the chapter's own target wins, else the book default (Q48). Stub until 1.4. */
+export function effectivePiece(
+  own: Piece | null,
+  def: ChapterDefault | null,
+  ownUnit: PieceUnit | null,
+): { piece: Piece | null; source: "own" | "book" | null } {
+  throw new Error("todo");
+}
+
 // ── Progress ─────────────────────────────────────────────────────────────
 
 export type PieceState = "none" | "under" | "near" | "over";

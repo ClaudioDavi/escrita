@@ -8,6 +8,7 @@ import { RULES } from "./lens/types";
 import { cleanWeekdays } from "./core/merge";
 import { invalidDatesOff } from "./core/daysoff";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, STAGES, hexColor, normalizeStages, stageConflicts, type Stage, type StageMapping } from "./core/stages";
+import { cleanFeatures, type FeatureId } from "./core/features";
 import { renderUniverseSettings } from "./universe/settings-ui";
 import { defaultUniverseSettings, normalizeUniverse, type UniverseSettings } from "./universe/settings";
 import { DEFAULT_SNAPSHOTS_FOLDER, inFolder, snapshotsFolderProblem, snapshotsRoot, type SnapshotsFolderProblem } from "./core/classify";
@@ -60,6 +61,12 @@ export interface EscritaSettings extends UniverseSettings {
   deadlineProperty: string;
   /** property in a book's note holding its word goal */
   goalProperty: string;
+  /** property on a chapter holding its point of view (a link or text) */
+  povProperty: string;
+  /** property in a book's note holding the default target of its chapters */
+  chapterTargetProperty: string;
+  /** which features are on; a missing key means on (0.7); see core/features */
+  features: Partial<Record<FeatureId, boolean>>;
   /** weekdays off, 0 = Sunday … 6 = Saturday (see core/daysoff) */
   weekdaysOff: number[];
   /** specific days off, YYYY-MM-DD, one per line */
@@ -146,6 +153,9 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   unitProperty: "unit",
   deadlineProperty: "deadline",
   goalProperty: "goal",
+  povProperty: "pov",
+  chapterTargetProperty: "chapterTarget",
+  features: {},
   weekdaysOff: [],
   datesOff: "",
 
@@ -204,6 +214,7 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   s.lensRulesOff = Array.isArray(s.lensRulesOff) ? s.lensRulesOff.filter((x): x is string => typeof x === "string") : [];
   s.templatesFolder = typeof s.templatesFolder === "string" ? s.templatesFolder.trim().replace(/^\/+|\/+$/g, "") : "";
   s.threadKeyword = (typeof s.threadKeyword === "string" ? s.threadKeyword.trim() : "") || DEFAULT_SETTINGS.threadKeyword;
+  s.features = cleanFeatures(s.features);
   Object.assign(s, normalizeUniverse(s));
   return s;
 }
@@ -213,7 +224,7 @@ function clampInt(v: unknown, min: number, max: number, fallback: number): numbe
 }
 
 /** Frontmatter property names a piece or book is read from; normalizeSettings trims them and restores empty ones. */
-const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadlineProperty", "goalProperty"] as const;
+const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadlineProperty", "goalProperty", "povProperty", "chapterTargetProperty"] as const;
 
 /** What the color input holds while a stage has no color (not black, so black is a real choice). */
 const EMPTY_SWATCH = "#808080";
