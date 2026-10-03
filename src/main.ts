@@ -19,7 +19,6 @@ import { PlaceholdersModule } from "./placeholders";
 import { placeholdersStrings } from "./placeholders/strings";
 import { DarlingsModule } from "./darlings";
 import { darlingsStrings } from "./darlings/strings";
-import { EditorModule } from "./editor";
 import { editorStrings } from "./editor/strings";
 import { PublishModule } from "./publish";
 import { publishStrings } from "./publish/strings";
@@ -39,7 +38,7 @@ import { FeatureRegistry } from "./core/feature-registry";
 import type { FeatureId } from "./core/features";
 import type { FeatureModule } from "./core/module-context";
 import { NamesPort } from "./core/names-source";
-import { DialogueFocusFeature, MoveBlocksFeature, SpellcheckFeature, TemplatesFeature } from "./editor/features";
+import { TypingFeature, DialogueFocusFeature, MoveBlocksFeature, SpellcheckFeature, TemplatesFeature } from "./editor/features";
 import { StageSnapshotFeature } from "./snapshots/stage-feature";
 import { ThreadsFeature } from "./universe/threads-feature";
 import { SnapshotsModule } from "./snapshots";
@@ -79,7 +78,6 @@ export default class EscritaPlugin extends Plugin {
   placeholders!: PlaceholdersModule;
   explorer!: ExplorerModule;
   darlings!: DarlingsModule;
-  editor!: EditorModule;
   snapshots!: SnapshotsModule;
   desk!: DeskModule;
   publish!: PublishModule;
@@ -129,7 +127,6 @@ export default class EscritaPlugin extends Plugin {
     this.placeholders = new PlaceholdersModule(this);
     this.explorer = new ExplorerModule(this);
     this.darlings = new DarlingsModule(this);
-    this.editor = new EditorModule(this);
     this.lens = new LensModule(this);
     // before publish: "Before publishing" snapshots
     this.snapshots = new SnapshotsModule(this);
@@ -140,9 +137,9 @@ export default class EscritaPlugin extends Plugin {
     const modules = new Map<FeatureId, FeatureModule | EscritaModule>([
       ["goals", this.goals], ["outline", this.outline], ["placeholders", this.placeholders],
       ["explorerCounts", this.explorer], ["darlings", this.darlings],
-      ["typing", this.editor], ["dialogueFocus", new DialogueFocusFeature()],
-      ["moveBlocks", new MoveBlocksFeature()], ["templates", new TemplatesFeature()],
-      ["spellcheck", new SpellcheckFeature()],
+      ["typing", new TypingFeature(this)], ["dialogueFocus", new DialogueFocusFeature(this)],
+      ["moveBlocks", new MoveBlocksFeature(this)], ["templates", new TemplatesFeature(this)],
+      ["spellcheck", new SpellcheckFeature(this)],
       ["lens", this.lens], ["snapshots", this.snapshots], ["stageSnapshot", new StageSnapshotFeature()],
       ["publish", this.publish], ["desk", this.desk],
       ["universe", this.universe], ["threads", new ThreadsFeature()],
