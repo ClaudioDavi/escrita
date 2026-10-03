@@ -586,7 +586,7 @@ the stage of a work it serves, each with a switch and one line on what it does:
   placeholders, Enter flow and smart typography, dialogue focus, move a paragraph or
   scene, insert from a template, word counts in the explorer.
 - Revision: revision lens, snapshots, darlings.
-- The desk: stages and the home block.
+- Tracking ("Acompanhamento" in pt-BR): stages and the home block.
 - Publishing: publish check, and export and submissions once they ship.
 - The world: the universe (its switch is the universe mode, so there's one control, not
   two) and open threads.

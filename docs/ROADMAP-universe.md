@@ -52,6 +52,12 @@ Rules:
 - **Switching modes never moves or edits files.** Per book → universe offers the
   migration command (1.1) with a preview; universe → per book or off only hides
   features. Notes stay where they are.
+- **Keeping one note out (v0.7)**: `universe: false` makes a note standalone even when
+  it sits in a folder in the universe (an essay in a folder of contos). On a book note it
+  keeps the book's chapters out too, unless a chapter links a universe itself. It is
+  checked before every other rule, and it's a YAML boolean, so there's no word to
+  translate and no setting. The panel's "Add to" button doesn't show for such a note,
+  since the writer chose to keep it out.
 - **Mixed vaults**: in universe mode, a work without a `universe` property (and not in
   a folder with a default universe) is standalone. Its entries live in its own book
   folder (per-book rules) and are invisible to the universe.

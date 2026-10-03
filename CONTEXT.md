@@ -24,7 +24,8 @@ next months are short fiction (contos, essays), so short-fiction features come f
 | How the code is organized, module specs, conventions | `docs/ARCHITECTURE.md` |
 | Code improvements to schedule | `docs/IMPROVEMENTS.md` |
 | User-facing features, settings, commands, changelog, release steps | `README.md` |
-| How to use the universe, threads and templates (user guide) | `docs/GUIDE-universe.md` |
+| How to use the universe, threads and templates (user guide) | `docs/GUIDE-universe.md` (moves to `docs/guide/` in 0.7) |
+| Plan for the user documentation | `docs/ROADMAP.md`, "Documentation" |
 | Background research (local only, git-ignored) | `reports/Obsidian fiction writing gaps.md`, `research_notes/` |
 | Approved UI design (mockups) | design canvas https://claude.ai/artifact/DGww2xWiadXRuWqVv2jFv6 |
 
@@ -113,9 +114,10 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
 - **Every release includes at least one improvement** from IMPROVEMENTS.md, named in
   ROADMAP.md under the version, preferably one the version's features lean on.
 - **When a version ships**: move its row to "Shipped" in ROADMAP.md, add the changelog
-  entry to README.md, move the improvement to "Done" in IMPROVEMENTS.md, mark the
-  feature shipped in its topic roadmap, and plan the next version in ROADMAP.md before
-  editing the topic roadmaps.
+  entry to README.md, write or update the user guide pages for its features in
+  `docs/guide/` (English and pt-BR; ROADMAP.md, "Documentation"), move the improvement
+  to "Done" in IMPROVEMENTS.md, mark the feature shipped in its topic roadmap, and plan
+  the next version in ROADMAP.md before editing the topic roadmaps.
 - **Release mechanics**: `npm version <patch|minor> --no-git-tag-version` (updates
   `manifest.json` and `versions.json`), commit as the bare version (`0.3.0`), tag the
   bare version, push the tag; the workflow drafts a GitHub release with `main.js`,

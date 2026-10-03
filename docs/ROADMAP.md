@@ -22,7 +22,8 @@ Feature references below use the short names **SF** (short fiction), **N** (nove
 Prefer one the version's features lean on.
 
 When a version ships: move its row to "Shipped", add the changelog entry in the README,
-move the improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
+write or update the user guide for its features (see "Documentation"), move the
+improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 (features and improvement) here before editing the topic roadmaps.
 
 ## Shipped
@@ -50,7 +51,9 @@ also be switched off, which needs modules that load and unload at runtime.
 | Names into spellcheck and the revision lens | U 1.4 | S | Entry names and aliases stop being flagged; the name-variant rule reads them. |
 | POV and status in the outline | N 1 | S | POV can link to a character entry. |
 | Per-chapter targets | N 2 | S | The bar in the outline and a book default. |
+| Keep a note out of the universe | U 1.1 | XS | `universe: false` on a note (or a book note, for its chapters) makes it standalone even inside a folder in the universe. A YAML boolean, so no word to translate and no new setting. Small follow-up from 0.6 testing. |
 | Feature switches | SF 10 | M | A Features page: every feature has a switch, and an off feature isn't loaded. Data stays. Mockups first. Presets and the setup command stay in 1.0. |
+| User guide for 0.7 | Docs | S | Creates `docs/guide/` (English and pt-BR), moves the universe guide there, and writes the pages for this version's features: Features and settings, "appears in", POV and per-chapter targets. See "Documentation". |
 
 **Improvement:** modules that load and unload at runtime (IMPROVEMENTS.md, candidate 6).
 The feature switches stand on it, and the universe's mode-dependent commands and view
@@ -69,7 +72,7 @@ shipped as 0.4.0 and the lens as 0.5.0.
 | 0.8 | Export stages 1–2: Markdown manuscript and DOCX (Shunn and pt-BR presets), for a single note and for a book · Submissions · Companion-plugin guide | N 7, SF 12, N 6 | M–L + S + S | Submitting work |
 | 0.9 | Universe phase 2: timeline, facts over time, continuity checks, canon | U 2.1–2.4 | L | A consistent world |
 | 0.10 | Export stage 3: EPUB 3, validated by EPUBCheck in CI · Book-wide publish check and serial dashboard · "Read the book" view | N 7, N 4, N 8 | M + S + M | Books |
-| 1.0 | Stabilization: mobile pass, docs in English and pt-BR, migrations tested on the author's vault, community plugin submission · Set up a writing vault (creates the home note and a first writing layout, with presets: Essentials, Writer, Everything, built on the 0.7 feature switches) | SF 10 | M + S | Full release |
+| 1.0 | Stabilization: mobile pass, the user guide complete in English and pt-BR (see "Documentation"), migrations tested on the author's vault, community plugin submission · Set up a writing vault (creates the home note and a first writing layout, with presets: Essentials, Writer, Everything, built on the 0.7 feature switches) | SF 10 | M + S | Full release |
 
 Improvements: 0.6 is planned above, and 0.7 takes IMPROVEMENTS 6 (the feature switches
 stand on it); later versions pick from IMPROVEMENTS.md when
@@ -94,6 +97,46 @@ Notes:
   U 2.3, N 6 and N 7. StoryLine owns planning boards (corkboard, plot grid, beat sheets);
   Escrita doesn't compete there and stays the writing and revision plugin, Portuguese
   first.
+
+## Documentation
+
+Escrita's user documentation is a **guide in the repo**, in English and pt-BR, written
+as the features ship rather than all at once before 1.0. No website (rule 5): plain
+Markdown files that read well on GitHub and inside a vault.
+
+**Where.** `docs/guide/en/` and `docs/guide/pt-BR/`, the same file names in both. Images,
+if any, sit in `docs/guide/images/`. `docs/GUIDE-universe.md` moves there when the
+folder is created (0.7).
+
+**The guides**, one per stage of a work's life, the way the Features page groups them:
+
+| Guide | Covers |
+|---|---|
+| Getting started | Install, the first conto, the first book, the home note. From 1.0, the setup command |
+| Writing | Outline and ghost beats, goals and sprints, placeholders, Enter flow and typography, dialogue focus, moving blocks, templates, explorer counts |
+| Revision | The revision lens and its word lists, snapshots, darlings |
+| Tracking | Stages, the stage snapshot, the home block and where you left off |
+| Publishing | The publish check; export and submissions (0.8); EPUB (0.10) |
+| The world | The universe, entries, "appears in", open threads (today's universe guide) |
+| Features and settings | The Features page, what each switch turns off, presets (1.0) |
+| Other plugins | The companion-plugin guide (N 6, 0.8) |
+
+Each guide explains a task first ("revise a conto"), then the commands and settings it
+uses. Every command and setting appears in one guide.
+
+**The README** becomes the front door: what Escrita is, install, one line per feature
+linking to its guide, and the changelog. The long per-feature sections move into the
+guides.
+
+**Per version.** From 0.7, each version writes or updates the guide pages for its
+features, in both languages, as part of shipping. 0.7 creates the folder, moves the
+universe guide, and writes "Features and settings" and the 0.7 parts of "The world"
+and "Writing" (per-chapter targets, POV). The guides for features that shipped before
+0.7 (0.1 to 0.6) are written by 1.0, a few per version when a version has room.
+
+**Done (1.0) when** a new writer can go from install to a first conto with only
+"Getting started"; every command and setting is in a guide; the two languages match;
+and the README links to every guide.
 
 ## After 1.0
 

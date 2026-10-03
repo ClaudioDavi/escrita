@@ -67,7 +67,8 @@ A note belongs to a universe when the first of these applies:
 
 A chapter's own property wins over its book's. A note matching none of these is
 standalone: it isn't in any universe. There is no per-note way yet to keep one note out
-while its folder is in; move it to a folder outside the list.
+while its folder is in; move it to a folder outside the list. (Planned for 0.7:
+`universe: false` on the note.)
 
 ### Joining one note by hand
 
