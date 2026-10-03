@@ -3,6 +3,7 @@ import type { Strings } from "./i18n";
 // Shared strings: settings tab and anything used by more than one module.
 export const coreStrings: Strings = {
   en: {
+    "features.offNotice": "This feature is off. Turn it on in Escrita's settings.",
     "settings.books": "Books",
     "settings.chaptersFolder": "Chapters folder name",
     "settings.chaptersFolder.desc": "A note is a book when a folder with the same name sits next to it and holds this subfolder. Example: Novels/My Book.md + Novels/My Book/Chapters/.",
@@ -147,6 +148,7 @@ export const coreStrings: Strings = {
     "common.unit.charactersNoSpaces.other": "{n} characters (no spaces)",
   },
   "pt-BR": {
+    "features.offNotice": "Este recurso está desligado. Ligue-o nas configurações do Escrita.",
     "settings.books": "Livros",
     "settings.chaptersFolder": "Nome da pasta de capítulos",
     "settings.chaptersFolder.desc": "Uma nota é um livro quando existe, ao lado dela, uma pasta com o mesmo nome contendo esta subpasta. Exemplo: Romances/Meu Livro.md + Romances/Meu Livro/Capítulos/.",

@@ -70,6 +70,7 @@ export class VaultIndexesShell implements VaultIndexes {
   add<F extends IndexFile, V>(spec: IndexSpec<F, V>): VaultIndex<F, V> {
     return this.hub.add(spec as unknown as IndexSpec<TFile, V>) as unknown as VaultIndex<F, V>;
   }
+  remove<F extends IndexFile, V>(index: VaultIndex<F, V>): void { this.hub.remove(index as unknown as VaultIndex<TFile, V>); }
   follow(f: Follower): () => void { return this.hub.follow(f); }
   rebuild(name?: string): void { this.hub.rebuild(name); }
   settingsChanged(): void { this.hub.settingsChanged(); }

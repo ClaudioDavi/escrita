@@ -98,6 +98,20 @@ export class IndexHub<F extends IndexFile = IndexFile> {
     return index;
   }
 
+  /**
+   * Takes an index added with `add` out of the hub: stops its fallback timer, disposes
+   * it and forgets its spec, so it gets no more events and no settings rebuilds. A
+   * build in progress stops. Adding the same spec again builds a fresh index.
+   */
+  remove<V>(index: VaultIndex<F, V>): void {
+    const i = this.entries.findIndex((e) => (e.index as unknown) === index);
+    if (i < 0) return;
+    const [e] = this.entries.splice(i, 1);
+    if (e.fallback !== null) this.timers.clear(e.fallback);
+    e.fallback = null;
+    e.index.dispose();
+  }
+
   follow(f: Follower): () => void {
     this.followers.add(f);
     return () => { this.followers.delete(f); };
@@ -187,7 +201,7 @@ export class IndexHub<F extends IndexFile = IndexFile> {
 
   private each(fn: (e: Entry<F>) => void): void {
     for (const e of [...this.entries]) {
-      if (!e.started) continue; // the build will cover it
+      if (!e.started || !this.entries.includes(e)) continue; // the build will cover it; or it was removed meanwhile
       try { fn(e); } catch (err) { this.fail("", err); }
     }
   }

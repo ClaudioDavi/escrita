@@ -133,6 +133,9 @@ export class VaultIndex<F extends IndexFile, V> {
     this.fresh = null;
     this.readyCbs.clear();
     this.changeCbs.clear();
+    // a disposed index answers nothing (a feature that is off holds no data)
+    this.map = new Map();
+    this.ready = false;
   }
 
   // ---------------------------------------------------------------- build
