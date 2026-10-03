@@ -1,7 +1,19 @@
 // The names matcher (0.7 plan Q22-Q29, U 1.1 and U 1.4). Pure: no Obsidian imports.
-// Stubs until 1.2. Accents are folded in keys (Q23): Inês and Ines are one key.
+// Stubs until 1.2, except foldName. Accents are folded before stemming (Q23): Inês
+// and Ines are one key.
 
-import type { StemLang, StemProfile } from "./stem";
+import { normalizeWord, type StemLang, type StemProfile } from "./stem";
+
+/**
+ * The one accent fold for names (Q23): NFC, lowercase, ’ → ' (normalizeWord), then
+ * NFD, drop combining marks, NFC, trim. "Inês" and "Ines" give "ines". The matcher
+ * folds every word before stemming (key = stem(foldName(word))), and every exact
+ * comparison of names (Candidate.exact, NamesProvider.entryFor, POV keys) compares
+ * foldName forms.
+ */
+export function foldName(s: string): string {
+  return normalizeWord(s).normalize("NFD").replace(/\p{M}/gu, "").normalize("NFC").trim();
+}
 
 export interface NameSource {
   id: string;                        // the entry path
@@ -27,6 +39,7 @@ export interface NameTerm {
 
 export interface TermTable { terms: readonly NameTerm[]; lang: StemLang | null; signature: string }
 
+/** `exact`: the occurrence's foldName form equals the term's. */
 export interface Candidate { id: string; exact: boolean; origin: TermOrigin }
 
 export interface Occurrence { from: number; to: number; text: string; candidates: readonly Candidate[] }

@@ -3,9 +3,14 @@
 
 import { EMPTY_TABLE, type TermTable } from "./names";
 
+/**
+ * A source of names. Any change to what `tableFor` or `entryFor` answers must call the
+ * `onChange` callbacks: the port's `version()` only grows then, and the lens keys its
+ * passes on it.
+ */
 export interface NamesProvider {
   tableFor(path: string): TermTable;                              // the terms of the note's scope
-  entryFor(text: string, path: string): { path: string; name: string } | null;  // exact folded name or alias (POV, Q41)
+  entryFor(text: string, path: string): { path: string; name: string } | null;  // name or alias whose foldName form equals foldName(text) (POV, Q41)
   version(): number;
   onChange(cb: () => void): () => void;
 }

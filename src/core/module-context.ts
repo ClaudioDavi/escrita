@@ -23,7 +23,8 @@ export interface EditorSlot { set(exts: readonly Extension[]): void }
 
 export interface ModuleContext {
   command(cmd: Command): void;                                   // raw id recorded before addCommand; removed on unload (Q2, G0a)
-  ribbon(icon: string, title: string, cb: (e: MouseEvent) => void): HTMLElement;   // removed or hidden on unload (G0f)
+  /** G0f: null (nothing added) when the feature is off at startup; turned off at runtime, the icon stays until restart and its click shows that the feature is off. */
+  ribbon(icon: string, title: string, cb: (e: MouseEvent) => void): HTMLElement | null;
   statusBar(): HTMLElement;                                      // el.remove() on unload; on mobile the element is detached (obsidian.d.ts:4941-4947)
   view(type: string, create: ViewCreator): void;                 // binds a declared slot (Q3); throws for an undeclared type; leaves detached on unload
   editor(initial?: readonly Extension[]): EditorSlot;            // takes the next declared slot (Q4); emptied on unload

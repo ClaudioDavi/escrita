@@ -8,6 +8,6 @@
 import type { StemLang } from "./stem";
 
 export const NAME_TITLES: Record<StemLang, readonly string[]> = {
-  pt: ["Dona", "Dom", "Seu", "Sr", "Sra", "Srta", "Dr", "Dra", "Padre", "Frei", "Irmã", "Tia", "Tio", "Vó", "Vô"],
+  pt: ["Dona", "Dom", "Seu", "Sr", "Sra", "Srta", "Dr", "Dra", "Padre", "Frei", "Irmã", "Irmão", "Senhor", "Senhora", "Doutor", "Doutora", "Tia", "Tio", "Vó", "Vô"],
   en: ["Mr", "Mrs", "Ms", "Miss", "Dr", "Sir", "Lady", "Lord", "Aunt", "Uncle"],
 };

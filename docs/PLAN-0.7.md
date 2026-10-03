@@ -33,8 +33,8 @@ agents build to the recommendation unless the author says otherwise.
 
 | # | Question | Recommendation |
 |---|---|---|
-| Q1 | Candidate 6 says each module becomes a `Component` and "`removeChild` undoes all of it". Is that true? | **Only in part.** A `Component` can `registerEvent`, `registerDomEvent`, `registerInterval` and `register(cb)` (obsidian.d.ts:1835-1913). `registerView` (:4974), `registerEditorExtension` (:5019), `registerMarkdownCodeBlockProcessor` (:5001), `addCommand`, `addRibbonIcon` and `addStatusBarItem` exist only on `Plugin` and have no undo, except `removeCommand` (:4962) and `el.remove()`. So each module gets a `ModuleContext` (task 1.1) that is the one place touching those Plugin-only calls. It records a disposer for each and runs them on unload. Events, DOM events, intervals and callbacks go on the module's own `Component`. |
-| Q2 | Commands: `removeCommand` (since Obsidian 1.7.2) or hide them with `checkCallback`? | **`removeCommand`, and raise `minAppVersion` from 1.6.6 to 1.7.2** (manifest.json:5). SF 10 says an off feature has "no commands", and `checkCallback` leaves the command in the hotkeys list. Gate G0a checks the id form `removeCommand` expects (the raw id or `escrita:<id>`) in a real vault. If G0a fails, the context falls back to `checkCallback` gating (today's universe pattern, universe/index.ts:383-431), and the deviation is noted. Feature-detecting both paths is rejected (see "Issues not applied"). |
+| Q1 | Candidate 6 says each module becomes a `Component` and "`removeChild` undoes all of it". Is that true? | **Only in part.** A `Component` can `registerEvent`, `registerDomEvent`, `registerInterval` and `register(cb)` (obsidian.d.ts:1835-1913). `registerView` (:4974), `registerEditorExtension` (:5019), `registerMarkdownCodeBlockProcessor` (:5001), `addCommand`, `addRibbonIcon` and `addStatusBarItem` exist only on `Plugin` and have no undo, except `removeCommand` (:4962). A ribbon icon has no public undo at all (G0f): `el.remove()` and `el.toggle(false)` don't last, so a feature that is off at startup never adds its icon, and one turned off at runtime keeps it until the next restart, its click showing a notice that the feature is off. So each module gets a `ModuleContext` (task 1.1) that is the one place touching those Plugin-only calls. It records a disposer for each and runs them on unload. Events, DOM events, intervals and callbacks go on the module's own `Component`. |
+| Q2 | Commands: `removeCommand` (since Obsidian 1.7.2) or hide them with `checkCallback`? | **`removeCommand`, and raise `minAppVersion` from 1.6.6 to 1.7.2** (manifest.json:5). SF 10 says an off feature has "no commands", and `checkCallback` leaves the command in the hotkeys list. Gate G0a checks the id form `removeCommand` expects (the raw id or `escrita:<id>`) in a real vault. G0a passed (the raw id; see G0), so no `checkCallback` fallback is needed. Feature-detecting both paths is rejected (see "Issues not applied"). |
 | Q3 | Views can't be unregistered (no `unregisterView` in obsidian.d.ts). | **A view slot, declared up front.** Each module declares its slots in a `slots` field read at construction (view types, code block languages, whether it has a Reading-view post-processor, how many editor slots), because a module that is off at startup never runs its load and so could never name its types (0.1). The context registers each declared view type once for the plugin's life, at plugin load, whether the feature is on or not; `ctx.view(type, create)` only binds the creator, and throws for a type the module didn't declare. The factory builds the real view when the feature is on and an empty placeholder view when it is off (a restored leaf from the saved layout can arrive before the registry runs). Switching a feature off detaches its leaves (`getLeavesOfType`, as universe/index.ts:373 does). At layout ready the registry detaches leaves of features that are off. ARCHITECTURE's "don't detach leaves in `onunload`" (ARCHITECTURE.md:95-96) is about the plugin unloading; a switch the writer flips is different, and the conventions say so (5.3). |
 | Q4 | Editor extensions can't be removed either. | **An extension slot**: one mutable array per slot, registered once at plugin load. `ctx.editor(initial?)` returns `{ set(exts) }`, because three modules refill their arrays after load, not only push (outline/index.ts:88-91 empties and refills on `settingsChanged`; editor/index.ts:150-155 splices the spellcheck array on a setting or the toggle command; placeholders/index.ts:95 pushes). The registry empties every slot of a feature on unload and calls `workspace.updateOptions()` once per apply, not once per feature (it is "fairly expensive", obsidian.d.ts:8039); a module that calls `set` mid-session calls `updateOptions` itself, as it does today. The slot replaces the three copies of the trick (editor/index.ts:73, outline/index.ts:78, placeholders/index.ts:96). |
 | Q5 | The desk's `escrita-works` code block processor (desk/index.ts:30), and the Reading-view post-processor "Appears in" needs (Q34). | **A code block slot and a post-processor slot**, each registered once in `init()` from the module's declared `slots`. With the desk off the code block slot draws the block's source as plain `pre > code`, the way Obsidian shows an unknown language; the post-processor slot does nothing while its feature is off. Unloading the desk unloads the live `DeskBlock`s it tracks (desk/index.ts:19). A processor only runs when a section renders, so on a desk toggle the desk re-renders open Markdown leaves (`previewMode.rerender(true)`, obsidian.d.ts:4088, and a Live Preview refresh); otherwise turning it off leaves empty containers and turning it on leaves plain code until the next render. `MarkdownPreviewRenderer.unregisterPostProcessor` (obsidian.d.ts:4047) is not used (untested, and rendered blocks stay until re-rendered). |
@@ -52,7 +52,7 @@ agents build to the recommendation unless the author says otherwise.
 
 | # | Question | Recommendation |
 |---|---|---|
-| Q15 | What counts as "false"? | **The YAML boolean `false`, and the string `"false"` too if gate G0g shows the Properties editor writes a string.** `universe` already holds links (`[[Universo]]`), so its vault-wide property type is text and the Properties editor shows a text field, not a checkbox. If typing `false` there saves the string, today's code reads it as a link that names no note and the note silently stays in through the folder rules (scope.ts:85-94, :109-112). So: if G0g finds the string, `"false"` (trimmed, any case) counts as false too, and the "Issues not applied" entry is reversed; if G0g finds the boolean, only the boolean counts. Either way the guide shows the source-mode form `universe: false`. |
+| Q15 | What counts as "false"? | **The YAML boolean `false`, and the string `"false"` (trimmed, any case).** Decided by G0g: the Properties editor writes the string. `universe` already holds links (`[[Universo]]`), so its vault-wide property type is text and the Properties editor shows a text field, not a checkbox; typing `false` there saves `universe: "false"` (a list field saves `- "false"`, which is not `false`). Today's code reads that as a link that names no note and the note silently stays in through the folder rules (scope.ts:85-94, :109-112). The former "Issues not applied" entry (not accepting the string) is reversed. The guide shows the source-mode form `universe: false`. |
 | Q16 | "Checked before every other rule": also before the universe folder and the universe note? | **Yes, literally.** A note in the universe folder with `universe: false` is out, and so is the universe note itself if it carries it. Tests pin both. Today `linkText(false)` returns null (scope.ts:69), so the value is skipped and the folder rules win (scope.ts:109-112). |
 | Q17 | What scope does an opted-out note get? | **Its book scope, else none** (`bookScope`, scope.ts:100). A book whose note says `false` keeps per-book rules for its own files, like a standalone book in a mixed vault (scope.ts:113). Per-book mode and off mode are unchanged (scope.ts:98-101). |
 | Q18 | On a book note: chapters only, or every file of the book? | **Every file of the book**, as the positive property already works: the loop at scope.ts:103 visits the file, then its book note, and `lookup.book` covers chapters and other files of the book (universe/index.ts:340-343). A file's own link wins over its book note's `false`; a file's own `false` wins over its book note's link. |
@@ -65,13 +65,13 @@ agents build to the recommendation unless the author says otherwise.
 |---|---|---|
 | Q21 | Which text does the matcher read? The spec says `proseOnly`, but "click to jump" needs offsets, and `proseOnly` collapses them (core/wordcount.ts:21-37). | **`readerMask(md)`** (core/wordcount.ts:84-99): the same words as `proseOnly`, offset for offset. Headings count, as they do for the word count. Frontmatter, comments, code and link targets don't. |
 | Q22 | Which terms use the `"name"` stem profile and which `"word"`? The spec says people and places use `"name"`, common-noun entries `"word"`; object, group and event are open. | **By the term, not the kind**: a name or alias whose first letter is uppercase uses `"name"` (*Maria / Mariazinha*, *Os Almeida*); a lowercase alias uses `"word"` (*o menino / os meninos*). This reads the spec's "common-noun entries and aliases" through what the writer typed, with no per-kind rule. |
-| Q23 | Accents. The lens keeps accents (core/stem/index.ts:15-17); the universe's search folds them (entries.ts:132). | **The matcher folds accents** (author, G2): *Inês* and *Ines* are one key, as are *Mário* and *Mario*. A term's key is the stem with accents removed after stemming (NFD, drop combining marks, NFC), so the stemmer itself is unchanged and the lens keeps its accent-aware keys. Writers are inconsistent with accents in names, and a missed mention is worse here than a rare merge. The panel's search keeps `foldText`. |
+| Q23 | Accents. The lens keeps accents (core/stem/index.ts:15-17); the universe's search folds them (entries.ts:132). | **The matcher folds accents, before stemming** (author, G2; review H1): *Inês* and *Ines* are one key, as are *Tomás/Tomas*, *Thaís/Thais*, *Andrés/Andres* and *Mário/Mario*. A word's key is `stem(foldName(word), lang, profile)`, where `foldName` (`src/core/names.ts`, filled in 0.1b) is `normalizeWord`, then NFD, drop combining marks, NFC, trim. Folding after stemming fails: the pt stemmer drops a bare `-es`/`-as`/`-is` but not an accented one, so *Inês* gave `ines` and *Ines* gave `ine`. The same fold applies to every word the matcher compares: occurrence tokens, term words, ignore phrases, titles and the `nameTitles` setting (so *Irma* matches *Irmã*, and *Vó* and *Vô* fold together, which is harmless). Every exact comparison of names compares `foldName` forms too: `Candidate.exact`, `NamesProvider.entryFor` and the POV keys. The stemmer itself is unchanged and the lens keeps its accent-aware keys. Writers are inconsistent with accents in names, and a missed mention is worse here than a rare merge. The panel's search keeps `foldText`. |
 | Q24 | Which language? | **The writing language** (Q14), through `matchLang(setting, locale)` in `core/names.ts`, the same mapping as `lensLang` (lens/lang.ts:10-16). With no language (a locale that is neither pt nor en), terms match by exact normalized form, with no stemming. |
-| Q25 | Multi-word names and aliases (*Dona Maria*, *Rosa dos ventos*). | **Phrase matching** through `findPhrase` (core/tokens.ts:26-40) with the term's stem on each word. Only whitespace (a line break included) and emphasis marks may sit between the words, the crutch rule (lens/rules-words.ts:202-204). At one position the longest match wins; overlaps resolve left to right. |
+| Q25 | Multi-word names and aliases (*Dona Maria*, *Rosa dos ventos*). | **Phrase matching** through `findPhrase` (core/tokens.ts:26-40) with the term's stem on each word. Only whitespace (a line break included) and emphasis marks may sit between the words, the crutch rule (lens/rules-words.ts:202-204). At one position the longest match wins; overlaps resolve left to right. **Articles inside a multi-word term** (review H2, option a): in pt, an article or contraction inside a multi-word term matches its number variant, so *o menino* matches *os meninos* and *rosa do vento* matches *rosa dos ventos*: o/os, a/as, do/dos, da/das, no/nos, na/nas, um/uns, uma/umas each map to one key; genders are never merged (*o* never matches *a*). Only inside multi-word terms; a single-word term never matches an article (Q27). **Hyphens**: a hyphenated token (*Maria-José*) also matches as its parts, for name matching only, when both parts are letters and the joined form is not itself a term; so *Maria-José* is a mention of the entry *Maria José*, and *rosa-dos-ventos* is matched by the ignore phrase *rosa dos ventos*. |
 | Q26 | Collisions: the pt `"name"` stem gives *Marcos* and *Marco* one key (`marco`), likewise *Carlos/Carlo*, *Lucas/Luca*; two entries can share a first name. | **Each occurrence keeps its candidate entries; the query decides.** Candidates are filtered to the note's scope. Then an entry whose term has the exact surface form wins, an explicit name or alias beats a derived first name, and if more than one is left the occurrence counts for none ("prefer missing a match over a wrong one", SF 5). The stem fixtures stay frozen. |
 | Q27 | Very short or common terms. | **A term of one letter, or a single stop word in the matcher language (`isStopWord`, core/stem/stopwords.ts:82), never matches.** Everything else follows the spec: case-insensitive by default, with the per-entry `ignore` list for names that are also words (*Rosa*, *Porto*). |
 | Q28 | The per-entry properties `caseSensitive`, `ignore` and `firstName`: literal keys, or settings? Rule 6 says every property name is a setting. | **Settings with those English defaults**: `caseSensitiveProperty`, `ignoreProperty`, `firstNameProperty`, in the universe settings (universe/settings.ts), shown in one collapsed "Entry properties" group. `aliases` stays Obsidian's own key (entries.ts:38-49). |
-| Q29 | First name as an alias: titles, collisions, kinds. | **Characters only. Leading titles are skipped, then the first word becomes an alias when at least one more word follows** (*Dona Benta Encerrabodes* → *Benta*). The spec says "unless it's a title"; skipping the title and taking the next word is a reading, listed in "Deviations". **Titles are language data, built in per language** and picked by the writing language (Q14), like the lens's lexicon ("language tables picked by the language setting, not the author's values", lens/lexicon.ts:1-3) and the stop words (core/stem/stopwords.ts:82): pt *Dona, Dom, Seu, Sr., Sra., Srta., Dr., Dra., Padre, Frei, Irmã, Tia, Tio, Vó, Vô*, en *Mr, Mrs, Ms, Miss, Dr, Sir, Lady, Lord, Aunt, Uncle*, in `src/core/name-titles.ts` (pure data). An English-only default would make *Dona Benta Encerrabodes* derive *Dona*, and every "dona" in prose would count. A setting `nameTitles` (newline-separated, dot optional, **empty by default**) extends the table, as the word lists note extends the lexicon. With no language, both tables apply. `firstName: false` turns it off. A derived first name loses to any explicit name or alias (Q26). |
+| Q29 | First name as an alias: titles, collisions, kinds. | **Characters only. Leading titles are skipped, then the first word becomes an alias when at least one more word follows** (*Dona Benta Encerrabodes* → *Benta*). **The full name minus its leading titles is also a term** (`origin: "first"`, so it loses to an explicit name, Q26): *Dona Maria Clara* also gives *Maria Clara*. A bare surname is never derived: *Mr Brown* gives nothing, since only one word follows the title. The spec says "unless it's a title"; skipping the title and taking the next word is a reading, listed in "Deviations". **Titles are language data, built in per language** and picked by the writing language (Q14), like the lens's lexicon ("language tables picked by the language setting, not the author's values", lens/lexicon.ts:1-3) and the stop words (core/stem/stopwords.ts:82): pt *Dona, Dom, Seu, Sr., Sra., Srta., Dr., Dra., Senhor, Senhora, Doutor, Doutora, Padre, Frei, Irmã, Irmão, Tia, Tio, Vó, Vô*, en *Mr, Mrs, Ms, Miss, Dr, Sir, Lady, Lord, Aunt, Uncle*, in `src/core/name-titles.ts` (pure data). An English-only default would make *Dona Benta Encerrabodes* derive *Dona*, and every "dona" in prose would count. A setting `nameTitles` (newline-separated, dot optional, **empty by default**) extends the table, as the word lists note extends the lexicon. With no language, both tables apply. `firstName: false` turns it off. A derived first name loses to any explicit name or alias (Q26). |
 | Q30 | Explicit links. | **A `[[Teo]]` or `[Teo](Teo.md)` in prose is one mention of the note it resolves to**, when that note is an entry; its display text is not matched again. Embeds and frontmatter links don't count. The index stores the link path; the query resolves it with `getFirstLinkpathDest`, so the index stays pure and a rename of the entry needs no rebuild. |
 | Q31 | Which notes are scanned, and how is the result grouped? | **Every Markdown note except snapshots and templates** (`isUniverseNote`, entries.ts:79-81), filtered at query time to the entry's scope (scope is never stored, Q20); `compute` returns `undefined` for a note with no occurrences and no links, so empty notes cost no memory. Filtering scope at compute time instead would go stale when a book note's `universe` changes (Q20), so the scan stays vault-wide (see "Issues not applied"). An entry's own note never counts for itself. Groups: **works** first (a book with its chapters under it, then standalone works, in the Works tab's order: `groupWorks` puts forms first, then `compareWorks`, works-list.ts:71-84), then **other notes in scope** (other entries, the universe note, loose notes), collapsed. The "other notes" group goes beyond U 1.2's "every work and chapter" and is listed in "Deviations". |
 | Q32 | "First/last mention" and "story order". | **Inside a book only, by chapter order.** Across works there is no order until the phase 2 timeline, so the section shows no first or last there. A narrowing, listed in "Deviations". |
@@ -125,19 +125,22 @@ each edit; the author confirms them in G2.
 |---|---|---|---|---|
 | Q2 | SF 10 | reading | Commands removed with `removeCommand`; `minAppVersion` 1.7.2 | One sentence in SF 10 and the README install note. |
 | Q3 | SF 10 | reading | View types stay registered; an off feature's leaves are closed | Add to "A feature that is off is not loaded". |
+| G0f | SF 10 | narrowing | A feature turned off at runtime keeps its ribbon icon until the next restart; a click shows that the feature is off. Off at startup, it never adds the icon | Add to "A feature that is off is not loaded". |
 | Q8 | SF 10 | addition | Data followers run while a feature is off, so its data follows renames; the snapshots rename handler also moves snapshot files on disk while snapshots is off | Add to "Its data stays", naming the snapshots exception. |
 | Q10 | SF 10 | reading | `explorerCounts`, `spellcheckOnDemand` and `universeMode` are the switches; their old controls leave their sections | One sentence in SF 10. |
 | Q11 | SF 10 | addition | With the desk off, the universe's Works tab opens a work at the top, ignoring "where you left off" | One sentence in SF 10. |
 | Q13 | SF 10 | reading | Settings hide row by row by the feature that reads them; shared property names and folders move to an always-shown section | Add to "A feature that is off is not loaded". |
 | Q9 | SF 10 | reading | 17 switches; spellcheck on demand and the stage snapshot get their own; stages stay always on | Rewrite the feature list. |
 | Q14 | SF 5, SF 10 | addition | "Writing language" moves out of the Revision section, same key | One line in SF 5's settings and SF 10. |
-| Q15 | U 1.1 | reading | If G0g finds the Properties editor writes a string, `"false"` counts as false too | One clause in the "Keeping one note out" bullet. |
+| Q15 | U 1.1 | reading | The string `"false"` (trimmed, any case) counts as false too, because the Properties editor writes a string (G0g) | One clause in the "Keeping one note out" bullet. |
 | Q16–Q18 | U 1.1 | reading | `false` beats the universe folder and the universe note; it applies to every file of a book, not only chapters | Rewrite the "Keeping one note out" bullet. |
 | Q21 | U 1.2 | reading | The matcher reads the reader mask (offsets kept), not `proseOnly`; headings count | Rewrite "Matching". |
 | Q22 | U 1.2 | reading | `"name"` or `"word"` by the term's capital letter, not by entry kind | Rewrite "Portuguese inflection". |
+| Q23 | U 1.2 | addition | Accents are folded before stemming in every word the matcher compares | One sentence in "Portuguese inflection". |
+| Q25 | U 1.2 | addition | Inside a multi-word term, pt articles and contractions match their number variants (o/os, do/dos…; genders never merged); hyphenated names also match as their parts | Add to "Matching". |
 | Q26–Q27 | U 1.2 | addition | Tie-break for shared keys; one-letter and stop-word terms never match | Add a "Collisions" bullet. |
 | Q28 | U 1.2 | reading | The three per-entry property names are settings | Name the settings. |
-| Q29 | U 1.2 | reading | Leading titles are skipped and the next word becomes the first name; titles are built-in pt and en tables picked by the writing language, extended by `nameTitles` | Rewrite "First name as an alias". |
+| Q29 | U 1.2 | reading | Leading titles are skipped and the next word becomes the first name; the full name minus its titles is also a term; a bare surname is never derived; titles are built-in pt and en tables picked by the writing language, extended by `nameTitles` | Rewrite "First name as an alias". |
 | Q31 | U 1.2 | addition | An "Other notes" group (other entries, the universe note, loose notes in scope) after the works | Add to the "Output" bullet. |
 | IMPROVEMENTS 10 | U 1.2 | reading | The matcher lives in `src/core/names.ts`, not `src/universe/match.ts`, so the lens, spellcheck and the outline share it without importing the universe | Rewrite the "Index" bullet's last sentence. |
 | Q32 | U 1.2 | narrowing | First and last mention only inside a book | Rewrite the "Output" bullet. |
@@ -209,15 +212,39 @@ gated task starts.
   the call and builds a fresh `Command` object on each load (check that reusing one
   would prefix it twice). On a phone: what the mobile toolbar shows for a pinned
   command that was removed.
+  **Cleared. Result 2026-10-03, from Obsidian 1.13.7 app.js:** `Plugin.removeCommand`
+  takes the **raw id** and adds the prefix itself (`escrita:<id>` removes nothing).
+  `addCommand` rewrites `id` and `name` on the object it is given, so reusing one gives
+  `escrita:escrita:x`: the context builds a **fresh `Command` object on each load**.
+  Adding the same id again overwrites the map entry. Removal drops only default
+  hotkeys; **custom hotkeys survive** in `hotkeys.json` and work again once the command
+  is back. The **mobile toolbar goes stale until restart**: it is rebuilt only when its
+  config changes, so a pinned removed command keeps a dead button, and a re-added one
+  reappears only after that rebuild; editing the toolbar while the feature is off drops
+  the pin for good. Accepted, and noted for the guide (5.3).
 - **G0b** (gates 1.1): a second `registerView` for one type throws or not (the plan
   never does it; this confirms the view slot is needed), and a restored leaf of an
   unregistered type at startup.
+  **Cleared. Result 2026-10-03, from Obsidian 1.13.7 app.js:** a second `registerView`
+  for one type **throws**, so each view type is registered **once for the plugin's
+  life** (the view slot, Q3). A restored leaf of an unregistered type becomes an
+  "unknown pane" placeholder that keeps its state, and comes back by itself when the
+  type is registered. `Plugin.registerView`'s unload callback detaches leaves only when
+  the user disables the plugin, so unregistering leaves ghost panes: **unloading a
+  feature must detach its leaves itself** (`getLeavesOfType`), which the slot design
+  already does.
 - **G0c** (gates 4.4): a `Decoration.mark({attributes: {spellcheck: "false"}})` over a
   misspelt name in Live Preview: is the squiggle gone on desktop (Chromium), Android
   (Chromium WebView) and iOS (WebKit, tested separately)?
+  **Open**: needs a device; the spike plugin (see G0d) marks a word with and without
+  the attribute.
 - **G0d** (gates the Reading-view half of 4.2): a Markdown post-processor that finds
   the note's last section (`ctx.getSectionInfo`) and appends a block after it, across
   re-renders, long notes and edits in a split pane.
+  **Open**: needs a device. Spike plugin at
+  `/tmp/claude-1000/-home-claudio-projects-escrita/38fd51ce-9f6d-4599-8fd7-904877f86374/scratchpad/escrita-spike/`
+  (not committed; its README has the steps). Expected risk: Reading view re-renders
+  only changed sections, so an edit at the end may leave two blocks.
 - **G0e**: the author accepts `minAppVersion` 1.7.2 (released in 2024). **Accepted
   2026-10-03** (with Q2).
 - **G0f** (gates 1.1): a ribbon icon removed with `el.remove()` and added again, on
@@ -225,12 +252,33 @@ gated task starts.
   menu, or duplicate one? If it does, the context hides the icon with
   `el.toggle(false)` while the feature is off and shows it again on load, adding it
   once for the plugin's life.
+  **Cleared. Result 2026-10-03, from Obsidian 1.13.7 app.js: the fallback above
+  fails.** The ribbon keeps each icon as an entry `escrita:<title>` in
+  `leftRibbon.items`; any ribbon change (another plugin's icon, a reorder) re-inserts
+  the element and calls `toggle(!hidden)`, so neither `el.remove()` nor
+  `el.toggle(false)` lasts. "Configure ribbon" and the phone ribbon menu list every
+  entry until restart, whichever way it was removed; only Obsidian's own unload
+  (`removeRibbonAction`, private) clears the callback. **Decision, with no private
+  API:** a feature that is off at startup never adds its ribbon icon; a feature turned
+  off at runtime keeps its icon until the next restart, and clicking it shows a notice
+  that the feature is off. Turned on again, the icon is added with the same title,
+  which updates the same entry (no duplicate). The title stays the same across loads.
 - **G0g** (gates 1.5): in a vault where `universe` holds links, type `false` into the
   `universe` field of the Properties editor and read the file: the YAML boolean or the
   string `"false"`? This decides Q15.
+  **Cleared. Result 2026-10-03, from Obsidian 1.13.7 app.js:** the text field saves the
+  typed text, and frontmatter is written by `yaml` 2 (`universe: "false"`); a list
+  field writes `- "false"`; the boolean is written only when the writer changes the
+  property type to checkbox. So the **string `"false"`** (trimmed, any case) counts as
+  false, as does the YAML boolean (Q15). A device run with the spike plugin can confirm
+  the in-editor save path; it doesn't block 1.5.
 - **G0h** (before 3.2 pins its ceiling): time `segment + readerMask + findNames` per
   1,000 words with 300 entries on desktop and on a mid-range phone; record both here.
   3.2's ceilings are derived from these figures.
+  **Open**: measured by this run once 1.2 lands (a `vitest bench`, not committed with
+  fixed numbers: 300 entries with accented pt-BR aliases, 2,000-word prose with about 2%
+  name hits, median of 20 runs after 5 warm-ups; the phone figure from the spike plugin
+  with `names.ts` bundled in).
 
 **G1. Design canvas mockups** (rule 7), on
 https://claude.ai/artifact/DGww2xWiadXRuWqVv2jFv6. The author approves them before
@@ -390,7 +438,7 @@ export interface FeatureSlots {
 export interface EditorSlot { set(exts: readonly Extension[]): void }   // the module calls updateOptions after a mid-session set
 export interface ModuleContext {
   command(cmd: Command): void;                                   // raw id recorded before addCommand; removed on unload (Q2, G0a)
-  ribbon(icon: string, title: string, cb: (e: MouseEvent) => void): HTMLElement;   // removed or hidden on unload (G0f)
+  ribbon(icon: string, title: string, cb: (e: MouseEvent) => void): HTMLElement | null;   // G0f: null when off at startup; turned off at runtime the icon stays and its click shows a notice
   statusBar(): HTMLElement;                                      // el.remove() on unload; on mobile the element is detached (obsidian.d.ts:4941-4947)
   view(type: string, create: ViewCreator): void;                 // binds a declared slot (Q3); throws for an undeclared type; leaves detached on unload
   editor(initial?: readonly Extension[]): EditorSlot;            // takes the next declared slot (Q4); emptied on unload
@@ -449,7 +497,7 @@ export interface NameSource {
 export type TermOrigin = "name" | "alias" | "first";
 export interface NameTerm { id: string; text: string; words: readonly string[]; keys: readonly string[]; profile: StemProfile; origin: TermOrigin; caseSensitive: boolean }
 export interface TermTable { terms: readonly NameTerm[]; lang: StemLang | null; signature: string }
-export interface Candidate { id: string; exact: boolean; origin: TermOrigin }
+export interface Candidate { id: string; exact: boolean; origin: TermOrigin }   // exact: same foldName form as the term
 export interface Occurrence { from: number; to: number; text: string; candidates: readonly Candidate[] }
 export function matchLang(setting: "auto" | "pt-BR" | "en", locale: string): StemLang | null;
 /** `extraTitles` is the `nameTitles` setting; the built-in tables (core/name-titles.ts) are picked by `lang` (both when null). */
@@ -460,14 +508,16 @@ export function findNames(mask: string, table: TermTable, from?: number, to?: nu
 export function pickEntry(o: Occurrence, inScope: (id: string) => boolean): string | null;
 export function capitalizedTerms(table: TermTable): string[];   // for the lens (Q38)
 export const EMPTY_TABLE: TermTable;
+export function foldName(s: string): string;   // FILLED in 0.1b (Q23)
 ```
 
 `src/core/names-source.ts` (filled here, it is small):
 
 ```ts
+/** Any change to what tableFor or entryFor answers must call the onChange callbacks (review L5). */
 export interface NamesProvider {
   tableFor(path: string): TermTable;                              // the terms of the note's scope
-  entryFor(text: string, path: string): { path: string; name: string } | null;  // exact folded name or alias (POV, Q41)
+  entryFor(text: string, path: string): { path: string; name: string } | null;  // name or alias with the same foldName form (POV, Q41)
   version(): number;
   onChange(cb: () => void): () => void;
 }
@@ -491,12 +541,12 @@ export interface MentionCtx {
   inScope(notePath: string): boolean;                             // live scope (Q20, Q31)
   candidateInScope(notePath: string, id: string): boolean;
   resolve(linkpath: string, from: string): string | null;
-  workOf(notePath: string): { work: string; chapter: number | null } | null;   // null: other notes
+  workOf(notePath: string): { work: string; chapter: number | null } | null;   // chapter: 1-based position (Chapter.index), not its number; null: other notes
   /** Position of a work in the Works tab's order (groupWorks then compareWorks, works-list.ts:71-84); 5.1 builds it from plugin.works. */
   workRank(work: string): number;
 }
 export interface MentionRow { path: string; count: number; first: { from: number; to: number } }
-export interface WorkMentions { work: string; count: number; notes: MentionRow[]; firstChapter?: string; lastChapter?: string }
+export interface WorkMentions { work: string; count: number; notes: MentionRow[]; firstChapter?: string; lastChapter?: string }   // chapter paths
 export interface AppearsIn { works: WorkMentions[]; other: MentionRow[]; total: number; workCount: number }
 export function appearsIn(all: Iterable<[string, NoteMentions]>, ctx: MentionCtx): AppearsIn;
 export function mentionsSame(a: NoteMentions, b: NoteMentions): boolean;
@@ -513,17 +563,17 @@ export interface ChapterRow {
   words: number; count: number; progress: Progress | null;
   beats: BeatMarker[]; placeholders: number; bodyBlank: boolean;   // parseBeats, core/markers.ts:138
 }
-export interface RowsPort {
-  chapters(book: Book): { path: string; basename: string }[];
+export interface RowsPort<B> {                 // generic, so tests pass a plain book (review L1)
+  chapters(book: B): { path: string; basename: string }[];
   read(path: string): Promise<{ text: string; mtime: number }>;
   frontmatter(path: string): Record<string, unknown> | undefined;
   counts(path: string, seed: { text: string; mtime: number }, unit: PieceUnit): Promise<Counts>;
   placeholders(path: string): number;          // 0 when the feature is off
-  chapterDefault(book: Book): ChapterDefault | null;
+  chapterDefault(book: B): ChapterDefault | null;
   resolvePov(value: unknown, path: string): PovValue | null;
   settings(): RowSettings;
 }
-export function loadRows(port: RowsPort, book: Book): Promise<ChapterRow[]>;
+export function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRow[]>;
 // pov.ts
 export const POV_PALETTE = ["red", "orange", "yellow", "green", "cyan", "blue", "purple", "pink"] as const;
 export type PovColor = typeof POV_PALETTE[number];
@@ -572,6 +622,18 @@ Additive fields:
 - `EscritaData.povColors: Record<string, PovColor>` (default `{}`).
 - Plugin fields: `features!: FeatureRegistry`, `names!: NamesPort`.
 
+**0.1b [core] `foldName`** (review M1), done 2026-10-03 after the wave 0 review. A
+filled, tested `export function foldName(s: string): string` in `src/core/names.ts`:
+`normalizeWord` (NFC, lowercase, ’ → '), then NFD, drop `\p{M}`, NFC, trim. Tests in
+`tests/names-fold.test.ts`. It is the one fold for names: the matcher's keys
+(`stem(foldName(word))`, Q23), `Candidate.exact` (1.2), `entryFor` (3.1) and the POV
+keys (1.3) all compare `foldName` forms, so no task writes its own. In the same
+follow-up, type-only changes from the review: `RowsPort<B>` and `loadRows<B>` in
+`src/outline/rows.ts` (L1); `MentionCtx.workOf`'s `chapter` documented as the chapter's
+position and `firstChapter`/`lastChapter` as paths in `src/universe/mentions.ts` (M3);
+the `onChange` duty documented on `NamesProvider` (L5); the pt titles gain *Irmão,
+Senhor, Senhora, Doutor, Doutora* in `src/core/name-titles.ts` (L6).
+
 **0.2 Names fixtures**, a different agent from 1.2, effort S–M. Runs in parallel with
 0.1 (no shared file).
 
@@ -581,25 +643,35 @@ Additive fields:
   mention that must not match), each with a header comment saying where the values
   come from. Expected values are written from the specs, not from any code.
 - Must-have cases, pt: *Mariazinha* and *Marias* → Maria; *Mariano* and *Mariana* apart;
-  *Marcos* entry and *Marco* entry in one scope (each exact form wins; a plural form
-  that fits both is `-`); *Rosa* the character inside "rosa dos ventos" with that
-  phrase in `ignore` (`-`), and elsewhere (Rosa); *Dona Maria Clara* with first name
-  *Maria* and another entry *Maria José* (bare *Maria* is `-`, ambiguous); a
-  case-sensitive *Porto* (lowercase *porto* `-`); an alias "o menino" with *os
-  meninos* (`"word"`); a name split by a line break and by `*emphasis*`; a mention in
-  a heading (counts); in a comment, a code block and frontmatter (`-`);
-  `[[Teo|o menino]]` (one mention of Teo, no match for "o menino" inside it); *Inês*
-  and *Ines* both → Inês, and *Mario* → Mário (Q23).
+  *Marcos* entry and *Marco* entry in one scope (each exact form wins; "os dois
+  Marcos" → Marcos, since the exact form wins; no form fits both, so there is no `-`
+  row for it); *Rosa* the character inside "rosa dos ventos" with that phrase in
+  `ignore` (`-`), and elsewhere (Rosa); *Dona Maria Clara* with first name *Maria* and
+  another entry *Maria José* (bare *Maria* is `-`, ambiguous; "Maria Clara" without
+  *Dona* → Dona Maria Clara, Q29); a case-sensitive *Porto* (lowercase *porto* `-`,
+  all-caps *PORTO* in a heading `-`, and lowercase *porto* at the start of a sentence
+  `-`); an alias "o menino" with *os meninos* (→ the entry, Q25's article rule;
+  `"word"`); a name split by a line break and by `*emphasis*`; a mention in a heading
+  (counts); in a comment, a code block and frontmatter (`-`); `[[Teo|o menino]]` (one
+  mention of Teo, no match for "o menino" inside it); accents folded before stemming
+  (Q23): *Inês* and *Ines* → Inês, *Tomás* and *Tomas* → Tomás, *Thaís* and *Thais* →
+  Thaís, *Andrés* and *Andres* → Andrés, *Mario* → Mário; hyphens (Q25): *Maria-José* →
+  Maria José, and *rosa-dos-ventos* is `-` (the ignore phrase covers it).
 - pt titles: *Dona Benta Encerrabodes* gives the first name *Benta* through the built-in
-  pt titles, and a bare "dona" in prose is `-`.
-- en: *Teo's* and *Teos* → Teo; *James* not stemmed to *jame*; *Mr Brown* with titles;
-  a one-letter alias and a stop-word alias (`-`).
+  pt titles, and a bare "dona" in prose is `-`; *Irmão*, *Senhor*, *Senhora*, *Doutor*
+  and *Doutora* are skipped like the others (*Doutor Paulo Mendes* gives *Paulo*); *Irma*
+  without the accent is skipped as *Irmã*.
+- en: *Teo's* and *Teos* → Teo; *James* not stemmed to *jame*; *Mr Brown* with titles
+  (a bare *Brown* is `-`: no surname is derived, Q29); a one-letter alias and a
+  stop-word alias (`-`).
+- These defaults were recorded after the wave 0 review; the author reviews them at G3
+  with the rest of the rows.
 - Done when the files parse and the author has the G3 link. The rows are then frozen.
 
 ## Wave 1: foundations (parallel)
 
 **1.1 [core] The registry, the module context and index removal**, depends on 0.1, G0a,
-G0b, G0e, effort M. **The improvement.**
+G0b, G0e, G0f (all cleared), effort M. **The improvement.**
 - Fill `src/core/features.ts` (the functions), `src/core/module-context.ts`,
   `src/core/feature-registry.ts`; change `src/core/index-hub.ts`,
   `src/core/vault-index.ts`, `src/core/vault-indexes.ts`, `src/main.ts`,
@@ -607,7 +679,10 @@ G0b, G0e, effort M. **The improvement.**
   (`happy-dom` as a dev dependency); create `vitest.config.ts`,
   `tests/support/obsidian.ts`, `tests/support/fake-plugin.ts`,
   `tests/features.test.ts`, `tests/module-context.test.ts`,
-  `tests/index-hub-remove.test.ts`.
+  `tests/index-hub-remove.test.ts`. Keep `tests/core-features.test.ts` (from 0.1;
+  review L3) and add the new `cleanFeatures` and title cases to it rather than
+  repeating them in `tests/features.test.ts`, so the two files don't diverge. Fix the
+  header comments of the files it fills (review L2).
 - `VaultIndex.dispose()` also clears its map and sets it not ready
   (core/vault-index.ts:126-136 leaves the map answering today).
 - `IndexHub.add` returns the index as today, plus `IndexHub.remove(index)`: clears its
@@ -615,8 +690,13 @@ G0b, G0e, effort M. **The improvement.**
   `remove`. `settingsChanged` and `rebuild` then never see a removed spec.
 - `ModuleContext` (one per module, owned by the registry): records each disposer and
   runs them in reverse on unload. Commands go through `plugin.addCommand` and
-  `removeCommand` with the id form G0a found, a fresh `Command` object per load. Ribbon
-  icons are removed or hidden as G0f found. Slots are created in `init()` from each
+  `removeCommand` with the raw id (G0a), a fresh `Command` object per load. Ribbon icons
+  per G0f, with no private API: `ribbon()` returns null and adds nothing when the
+  feature is off at startup; a feature turned off at runtime keeps its icon until the
+  next restart, and the context swaps its callback for one that shows a notice that the
+  feature is off (a new string in `src/strings.ts`); turned on again, the icon is added
+  with the same title, which updates the same ribbon entry. A view slot unloads by
+  detaching its leaves itself (G0b: unregistering leaves ghost panes). Slots are created in `init()` from each
   module's `slots`: every declared view type, extension array, code block processor
   and post-processor is registered once on the plugin. A view slot's factory builds
   the module's view when the feature is on and a bare placeholder `ItemView` when it is
@@ -673,7 +753,9 @@ G0b, G0e, effort M. **The improvement.**
     follower and twice in a row ends in the right state; `unloadAll` runs modules in
     reverse `FEATURE_IDS` order before the final persist, and twice is harmless; a
     status bar element that was never attached (mobile) is removed without error; a
-    disposed index answers nothing.
+    disposed index answers nothing; a ribbon icon is never added for a feature off at
+    startup, and after a runtime switch-off its click shows the notice and runs
+    nothing; switched on again, one icon with the same title.
   - `index-hub-remove.test.ts` (MemoryVault and ManualTimers): a removed spec stops
     receiving events and settings rebuilds; re-adding one with the same name builds
     it again; removing during a build stops it.
@@ -685,22 +767,33 @@ G0b, G0e, effort M. **The improvement.**
   `tests/names-fixtures.test.ts`.
 - `compileTerms`: per source, the name and each alias become terms (the first word of
   a person's name after skipping titles, Q29, becomes an `origin: "first"` term).
-  Each word is normalized (`normalizeWord`, core/stem/index.ts:16) and stemmed with the
-  term's profile (Q22) and the table's language; with no language the key is the
-  normalized word. Terms of one letter or a single stop word are dropped (Q27). The
+  Each word is folded with `foldName` (0.1b: `normalizeWord`, then accents removed)
+  **before** it is stemmed with the term's profile (Q22) and the table's language:
+  `key = stem(foldName(word), lang, profile)`; with no language the key is the folded
+  word. The same fold applies to occurrence tokens, ignore phrases, the built-in titles
+  and `nameTitles` (Q23). In a multi-word term, pt articles and contractions key to
+  their number pair (Q25). The full name minus its leading titles is also a term
+  (Q29). Terms of one letter or a single stop word are dropped (Q27). The
   signature is a stable string of every input that changes matching (Q33).
 - `findNames`: `tokens(mask)` (core/tokens.ts:11-19), then a lookup by first-word key
   into a map of terms, then `findPhrase`-style extension for multi-word terms with
   the gap rule (Q25). Longest match per position; ignore phrases (matched the same
   way) remove occurrences inside their span. A case-sensitive term needs the raw
   casing to match before the stem (core/stem/index.ts:19-22). `exact` is true when
-  the occurrence's normalized text equals the term's.
+  the occurrence's `foldName` text equals the term's. A hyphenated token also matches
+  as its parts when both are letters and the joined form isn't a term (Q25). Fix the
+  file's header comment (it says U 1.1; the matcher is U 1.2; review L2).
 - `pickEntry` per Q26. `capitalizedTerms` per Q38. `matchLang` like `lensLang`
   (lens/lang.ts:10-16) mapped to `StemLang`.
 - Tests: each fixture file through `readerMask(segment(text))` gives the expected
   mentions (resolved with `pickEntry` and an all-in-scope predicate); unit cases for
   titles, the gap rule, the longest match, ignore spans, case-sensitive terms, no
   language, an empty table, the signature changing only when matching inputs change;
+  accent pairs with the same key (*Inês/Ines*, *Tomás/Tomas*, *Thaís/Thais*,
+  *Andrés/Andres*, *Mário/Mario*) and `exact` true for both forms; *Irma* skipped as a
+  title; *o menino* matching *os meninos* and *a menina* not matching *o menino*;
+  *Maria-José* matching the entry *Maria José*; *Maria Clara* matching *Dona Maria
+  Clara*; a bare *Brown* matching nothing;
   a **CI ceiling**: 300 entries against a 10,000-word note under 100 ms, and a local
   budget (`it.skipIf(!!process.env.CI)`) of 20 ms median, recorded in ARCHITECTURE.
 
@@ -708,6 +801,10 @@ G0b, G0e, effort M. **The improvement.**
 improvement.**
 - Fill `src/outline/rows.ts` and `src/outline/pov.ts`; create
   `tests/outline-rows.test.ts` and `tests/outline-pov.test.ts`.
+- `RowsPort<B>` and `loadRows<B>(port, book)` are generic over the book (0.1b), so the
+  tests pass a plain object; titles and labels come from `chapterTitle` and
+  `chapterNumber` (core/book.ts, pure) applied to the port's `basename`. Fix the header
+  comments of `rows.ts` and `pov.ts` (they say "until 2.2"; review L2).
 - `loadRows(port, book)`: for each chapter, in order, read text and frontmatter
   through the port, title and summary as today (`str`/`oneLine`, outline/view.ts:72-78,
   moved here; `stringOf` at outline/index.ts:256 goes in 2.2), status and its stage
@@ -717,8 +814,8 @@ improvement.**
   `noteProgress`, beats (`parseBeats`, core/markers.ts:138, as outline/view.ts:291), the placeholder count from the port, and
   `bodyBlank`. Reads run in parallel, as `measure.book` does.
 - `pov.ts` per Q41–Q45: `povValue` uses `linkText` semantics (copied, no universe
-  import) and the resolver; folded keys use NFC, lowercase, trimmed and accent folding
-  (Q23), the label as written.
+  import) and the resolver; text keys are `foldName` forms (0.1b, Q23), so *Inês* and
+  *Ines* share a colour, the label as written.
 - Tests: rows from a fake port (status, POV link and text, own target, book default
   with own unit, no piece, placeholders from the port, characters unit); `assignColors`
   is stable across calls and orders, never reassigns, repeats after eight;
@@ -730,12 +827,17 @@ improvement.**
 - Fill `readChapterDefault` and `effectivePiece` in `src/core/measure.ts`; create
   `tests/measure-chapter.test.ts`.
 - Per Q47–Q48, using `parseAmount` and `parseUnit`. `effectivePiece` keeps the own
-  piece's `limit`, `deadline` and unit, and fills only a missing `target`.
+  piece's `limit` and `deadline`, and fills only a missing `target`. The unit follows
+  Q47 (review M2): `ownUnit ?? def?.unit ?? "words"`, where `ownUnit` is null when the
+  chapter has no unit property. `readPiece` always sets a unit (`parseUnit` gives
+  `"words"` when the property is missing), so `own.unit` is ignored when `ownUnit` is
+  null.
 - Tests: own target wins; default fills; own limit kept with a default target; unit
-  precedence (own, then book, then words); a bad or zero amount gives no default; no
-  frontmatter.
+  precedence (own, then book, then words); a chapter with only a `deadline` in a book
+  whose unit is `characters` gives characters; a bad or zero amount gives no default;
+  no frontmatter.
 
-**1.5 `universe: false` in the scope rules**, depends on 0.1, G0g, effort S
+**1.5 `universe: false` in the scope rules**, depends on 0.1, G0g (cleared), effort S
 - Change `src/universe/scope.ts`; change `tests/universe-scope.test.ts`.
 - In the loop at scope.ts:103-108, read `lookup.universe(path)` first: `false` returns
   `bookScope` (Q17); a link joins as today. The file comes before its book note, so a
@@ -747,7 +849,9 @@ improvement.**
   default folder, on the universe note itself; on a book note (chapters and a
   `Characters/` file out, a chapter with its own link in); a chapter's `false` under a
   linking book note; per-book and off modes unchanged; `true`, `0` and `""` behave as
-  before; the string `"false"` as G0g decided (Q15); `keptOut` for each.
+  before; the YAML boolean `false` and the string `"false"` (trimmed, any case:
+  `" False "`, `"FALSE"`) both count as false, a list `["false"]` does not (Q15, G0g);
+  `keptOut` for each.
 
 **1.6 The mentions model**, depends on 0.1, effort S–M
 - Fill `src/universe/mentions.ts`; create `tests/universe-mentions.test.ts`.
@@ -758,10 +862,13 @@ improvement.**
 - `appearsIn` per Q26, Q30–Q32: occurrences resolved with `pickEntry` against
   `candidateInScope`; links resolved with `resolve` and counted when they hit the
   entry; the entry's own note skipped; notes out of scope skipped; grouped by
-  `workOf`, works ordered by `workRank`, chapters by number, first and last
-  chapter only inside a book; `first` is the earliest range in each note.
-- Tests with a fake `find` and fake ctx: grouping, ordering, self-mentions, scope
-  filtering, links counted once, an ambiguous occurrence counted nowhere, an empty
+  `workOf`, works ordered by `workRank`, chapters by their position in the book
+  (`Chapter.index`, books.ts:14; not the chapter number, which can be null or repeat;
+  review M3), first and last chapter only inside a book, held as chapter paths (the
+  view labels them); `first` is the earliest range in each note. Fix the header
+  comment (it says "until 3.2"; review L2).
+- Tests with a fake `find` and fake ctx: grouping, ordering (two unnumbered chapters
+  ordered by position), self-mentions, scope filtering, links counted once, an ambiguous occurrence counted nowhere, an empty
   result; `mentionsSame` compares ranges and candidates.
 
 ## Wave 2: every module on the registry (parallel)
@@ -915,8 +1022,9 @@ draws plain code while off; `openWork` with the desk off ignores `leftOff`.
   create, delete or rename (core/vault-index.ts:333-336).
 - `UniverseNamesProvider implements NamesProvider`: one `TermTable` over every entry
   for the mentions index (`globalTable()`), and `tableFor(path)` per scope, cached by
-  scope key and the global signature. `entryFor` matches folded names and aliases
-  exactly (`foldText`, entries.ts:132) among the scope's entries. `version()` bumps
+  scope key and the global signature. `entryFor` matches names and aliases
+  whose `foldName` form (core/names.ts, 0.1b) equals `foldName(text)` among the scope's
+  entries (not `foldText`, which stays for the panel's search). `version()` bumps
   only when a table's signature changes (not on thread edits). The universe provides
   it to `plugin.names` on load and withdraws it on unload.
 - Tests: `sameEntry` with each new field; scope not stored; the spec is not structural; the provider's table per
@@ -1150,8 +1258,9 @@ Back up `.obsidian/plugins/escrita/data.json` first.
    universe row shows "Universe", and the universe section has no mode dropdown of
    its own.
 2. Turn each feature off in turn: its commands leave the palette and the hotkeys list,
-   its views close, its menu items, ribbon icon and status bar item go (also from
-   "Manage ribbon"), its settings rows hide while rows another feature reads stay
+   its views close, its menu items and status bar item go; its ribbon icon stays until
+   the next restart and a click on it says the feature is off (G0f); after a restart
+   with the feature off the icon is gone (also from "Configure ribbon"); its settings rows hide while rows another feature reads stay
    (property names, track folders, the placeholder marker while publish is on). Turn it on again: all of it comes back once (no duplicate command,
    decoration or status bar item), with no restart, and the active tab doesn't move.
 3. Turn snapshots off: the stage snapshot's switch greys out. Publish a note: it
@@ -1253,8 +1362,8 @@ Back up `.obsidian/plugins/escrita/data.json` first.
    folder per task, a lifecycle test per module, the 5.4 grep, and manual checks 1–7
    over every feature.
 2. **Obsidian behaviour the d.ts doesn't state** (`removeCommand`'s id, a duplicate
-   view type, restored leaves of off features). G0 answers each before 1.1; the
-   context has a `checkCallback` fallback for commands.
+   view type, restored leaves of off features). G0a, G0b and G0f answered each from
+   the 1.13.7 app code before 1.1.
 3. **The obsidian stub drifts from the real API.** It only backs lifecycle tests; the
    real API is exercised by manual checks. The stub lists exactly what `src/` imports,
    so a new import fails loudly in tests.
@@ -1280,9 +1389,11 @@ Back up `.obsidian/plugins/escrita/data.json` first.
 8. **`spellcheck="false"` may not be honoured on mobile.** G0c decides per platform
    (WebKit on iOS tested separately); the lens half ships regardless, and the deviation
    says so. Autocorrect on phone keyboards is not addressed.
-8b. **Ribbon icons and removed commands may leave traces** in "Manage ribbon", the
-   mobile ribbon menu or the mobile toolbar. G0a and G0f decide; the fallback hides the
-   icon instead of removing it.
+8b. **Ribbon icons and removed commands leave traces** (G0a, G0f). A feature turned off
+   at runtime keeps its ribbon icon until restart (its click says the feature is off),
+   and a pinned command keeps a dead button in the mobile toolbar until restart; editing
+   the toolbar while the feature is off drops the pin. Accepted, with no private API,
+   and written into the guide and the changelog.
 9. **The Reading-view section may be fragile.** G0d decides; the fallback is the panel
    only.
 10. **Stale offsets on "click to jump".** A stored range is checked against the live
@@ -1322,8 +1433,6 @@ Back up `.obsidian/plugins/escrita/data.json` first.
   They don't block loading; everything is bundled.
 - **The full outline split** (candidate 5). Only the rows slice is taken; key
   dispatch, drag and drop and the refresh race stay.
-- **Accepting the string `"false"`** for `universe`, unless G0g shows the Properties
-  editor writes a string for a text-typed property (Q15); then this is reversed.
 - **POV colours on the canvas board.** Canvas colours are a fixed set; later.
 - **Migrating "Plant a thread" and template insert onto `plugin.notes`.** ARCHITECTURE
   already lists them as the deliberate synchronous gap (ARCHITECTURE.md:126-130).
@@ -1340,7 +1449,12 @@ Back up `.obsidian/plugins/escrita/data.json` first.
   snapshots, against SF 10's "turning it back on loses nothing"; reconciling on load
   can't know where a deleted path went. Taken: always on, listed as a deviation.
 - **A panel hint for `universe: "false"`** (first critic 5, second option). Superseded by
-  G0g: either the string counts or the Properties editor writes the boolean.
+  G0g: the string counts (Q15). (An earlier entry here, "not accepting the string
+  `"false"`", was reversed by G0g and moved into Q15.)
+- **Hiding a ribbon icon with `el.toggle(false)` or removing it with
+  `removeRibbonAction`** (G0f). The first doesn't last (any ribbon change shows it
+  again); the second is a private API and still leaves the entry in "Configure ribbon"
+  until restart. Taken: the icon stays until restart and says the feature is off.
 - **Modules as children of the plugin, with the order checked in G0b** (review C1,
   second option). The registry calling `load`/`unload` itself makes the order ours,
   whatever Obsidian does with children.

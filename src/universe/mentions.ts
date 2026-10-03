@@ -19,6 +19,7 @@ export interface MentionCtx {
   inScope(notePath: string): boolean;                             // live scope (Q20, Q31)
   candidateInScope(notePath: string, id: string): boolean;
   resolve(linkpath: string, from: string): string | null;
+  /** `chapter` is the chapter's 1-based position in its book (Chapter.index), not its number; null: not a chapter. */
   workOf(notePath: string): { work: string; chapter: number | null } | null;   // null: other notes
   /** Position of a work in the Works tab's order (groupWorks then compareWorks, works-list.ts:71-84); 5.1 builds it from plugin.works. */
   workRank(work: string): number;
@@ -26,6 +27,7 @@ export interface MentionCtx {
 
 export interface MentionRow { path: string; count: number; first: { from: number; to: number } }
 
+/** `firstChapter`/`lastChapter` are chapter paths (the view labels them), set only inside a book (Q32). */
 export interface WorkMentions { work: string; count: number; notes: MentionRow[]; firstChapter?: string; lastChapter?: string }
 
 export interface AppearsIn { works: WorkMentions[]; other: MentionRow[]; total: number; workCount: number }

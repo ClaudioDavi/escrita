@@ -1,7 +1,6 @@
 // A chapter's row, loaded once for the outline view and the board (0.7 plan Q51,
 // IMPROVEMENTS 7). Pure: no Obsidian or CodeMirror imports, no i18n. Stub until 2.2.
 
-import type { Book } from "../core/books";
 import type { BeatMarker } from "../core/markers";
 import type { ChapterDefault, Counts, Piece, PieceUnit, Progress } from "../core/measure";
 import type { Stage } from "../core/stages";
@@ -27,17 +26,18 @@ export interface RowSettings {
   chapterTargetProperty: string;
 }
 
-export interface RowsPort {
-  chapters(book: Book): { path: string; basename: string }[];
+/** Generic over the book type, so tests pass a plain object; titles and labels come from chapterTitle/chapterNumber (core/book.ts). */
+export interface RowsPort<B> {
+  chapters(book: B): { path: string; basename: string }[];
   read(path: string): Promise<{ text: string; mtime: number }>;
   frontmatter(path: string): Record<string, unknown> | undefined;
   counts(path: string, seed: { text: string; mtime: number }, unit: PieceUnit): Promise<Counts>;
   placeholders(path: string): number;          // 0 when the feature is off
-  chapterDefault(book: Book): ChapterDefault | null;
+  chapterDefault(book: B): ChapterDefault | null;
   resolvePov(value: unknown, path: string): PovValue | null;
   settings(): RowSettings;
 }
 
-export function loadRows(port: RowsPort, book: Book): Promise<ChapterRow[]> {
+export function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRow[]> {
   throw new Error("todo");
 }
