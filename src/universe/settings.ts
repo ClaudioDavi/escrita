@@ -40,6 +40,16 @@ export interface UniverseSettings {
   formValues: Record<FormKind, string>;
   /** newline-separated `Folder: form word` lines: the form of works in a folder without the property */
   formFolders: string;
+  /** per-entry property: `true` makes the name match only with its own capitalization */
+  caseSensitiveProperty: string;
+  /** per-entry property: phrases where the name must not match ("rosa dos ventos") */
+  ignoreProperty: string;
+  /** per-entry property: `false` stops a character's first name from matching on its own */
+  firstNameProperty: string;
+  /** newline-separated extra titles skipped before a first name, beyond the built-in tables (core/name-titles) */
+  nameTitles: string;
+  /** underline recognized names in the editor (off by default) */
+  underlineNames: boolean;
 }
 
 const ENTRY_DEFAULTS: Record<EntryKind, { folder: string; label: string }> = {
@@ -76,6 +86,11 @@ export function defaultUniverseSettings(): UniverseSettings {
     formProperty: "form",
     formValues: { ...FORM_DEFAULTS },
     formFolders: "",
+    caseSensitiveProperty: "caseSensitive",
+    ignoreProperty: "ignore",
+    firstNameProperty: "firstName",
+    nameTitles: "",
+    underlineNames: false,
   };
 }
 
@@ -120,5 +135,10 @@ export function normalizeUniverse(raw: unknown): UniverseSettings {
     formProperty: str(src.formProperty, d.formProperty),
     formValues: d.formValues,
     formFolders: typeof src.formFolders === "string" ? src.formFolders : "",
+    caseSensitiveProperty: str(src.caseSensitiveProperty, d.caseSensitiveProperty),
+    ignoreProperty: str(src.ignoreProperty, d.ignoreProperty),
+    firstNameProperty: str(src.firstNameProperty, d.firstNameProperty),
+    nameTitles: typeof src.nameTitles === "string" ? src.nameTitles : "",
+    underlineNames: src.underlineNames === true,
   };
 }
