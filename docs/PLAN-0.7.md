@@ -275,7 +275,11 @@ gated task starts.
 - **G0h** (before 3.2 pins its ceiling): time `segment + readerMask + findNames` per
   1,000 words with 300 entries on desktop and on a mid-range phone; record both here.
   3.2's ceilings are derived from these figures.
-  **Open**: measured by this run once 1.2 lands (a `vitest bench`, not committed with
+  **Desktop figure (measured, `npx vitest bench --run tests/names.bench.ts`)**: about
+  1.7-1.9 ms per 1,000 words (median of 20 runs after 5 warm-ups; 300 entries compiled to
+  1,310 terms; 2,000 words, 42 hits = 2.1%; whole run 3.4-3.8 ms, min 2.3 ms). Phone
+  figure still **open** (spike plugin with `names.ts` bundled in).
+  Method, as planned: measured by this run once 1.2 lands (a `vitest bench`, not committed with
   fixed numbers: 300 entries with accented pt-BR aliases, 2,000-word prose with about 2%
   name hits, median of 20 runs after 5 warm-ups; the phone figure from the spike plugin
   with `names.ts` bundled in).

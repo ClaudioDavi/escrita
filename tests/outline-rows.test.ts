@@ -1,16 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
-
-// Task 1.4 fills effectivePiece in parallel; the rows are tested against its contract (Q47-Q48).
-vi.mock("../src/core/measure", async (orig) => {
-  const actual = await orig<typeof import("../src/core/measure")>();
-  return {
-    ...actual,
-    effectivePiece: (own: any, def: any, ownUnit: any) => {
-      if (own?.target !== undefined || !def) return { piece: own, source: own ? "own" : null };
-      return { piece: { ...own, target: def.target, unit: ownUnit ?? def.unit ?? "words" }, source: "book" };
-    },
-  };
-});
+import { describe, expect, it } from "vitest";
 
 import { loadRows, type RowsPort, type RowSettings } from "../src/outline/rows";
 import { DEFAULT_STAGES } from "../src/core/stages";

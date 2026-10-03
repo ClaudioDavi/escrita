@@ -1,16 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { segment } from "../src/core/markdown";
 import type { Occurrence } from "../src/core/names";
-
-// 1.2 fills the real pickEntry in the same wave; this stand-in follows Q26.
-vi.mock("../src/core/names", () => ({
-  pickEntry(o: Occurrence, inScope: (id: string) => boolean): string | null {
-    let c = o.candidates.filter((x) => inScope(x.id));
-    if (c.some((x) => x.exact)) c = c.filter((x) => x.exact);
-    if (c.some((x) => x.origin !== "first")) c = c.filter((x) => x.origin !== "first");
-    return c.length === 1 ? c[0]!.id : null;
-  },
-}));
 
 import { appearsIn, computeMentions, mentionsSame, type MentionCtx, type NoteMentions } from "../src/universe/mentions";
 
