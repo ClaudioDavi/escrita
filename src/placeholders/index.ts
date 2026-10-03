@@ -1,7 +1,7 @@
 import { MarkdownView, Notice, TFile, debounce, type Editor, type PaneType, type WorkspaceLeaf } from "obsidian";
-import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
-import type { EscritaModule } from "../data";
+import { FeatureModule } from "../core/module-context";
+import type { FeatureId } from "../core/features";
 import { folderList } from "../core/lists";
 import type { VaultIndex } from "../core/vault-index";
 import { snapshotsRoot } from "../core/classify";
@@ -14,20 +14,22 @@ import { PLACEHOLDERS_VIEW, PlaceholdersView } from "./view";
 export { PLACEHOLDERS_VIEW } from "./view";
 export type { IndexedMarker } from "./logic";
 
-export class PlaceholdersModule implements EscritaModule {
-  /** the vault index; set in load() */
+export class PlaceholdersModule extends FeatureModule {
+  readonly id: FeatureId = "placeholders";
+  readonly slots = { views: [PLACEHOLDERS_VIEW], editors: 1 };
+  /** the vault index; set in onload(), null while the feature is off */
   private idx: VaultIndex<TFile, IndexedMarker[]> | null = null;
-  private extensions: Extension[] = [];
-  private loaded = false;
+  /** Subscribers to onChange. They outlive a load: the index feeds them only while loaded. */
+  private listeners = new Set<() => void>();
   private lastMarker = "";
   private lastExclude = "";
   private lastSnapshots = "";
   private lastDots = true;
   private dotsSoon = debounce(() => this.applyDots(), 100, true);
-  /** removes the explorer dot drawer and its dots */
-  private undraw: (() => void) | null = null;
 
-  constructor(private plugin: EscritaPlugin) {}
+  constructor(private plugin: EscritaPlugin) {
+    super();
+  }
 
   // ---------------------------------------------------------------- public API
 
@@ -56,9 +58,11 @@ export class PlaceholdersModule implements EscritaModule {
     return out;
   }
 
-  /** Called whenever the index changes. Returns the unsubscribe function. */
+  /** Called whenever the index changes, while the feature is on. Returns the unsubscribe function. */
   onChange(cb: () => void): () => void {
-    return this.idx?.onChange(() => cb()) ?? (() => undefined);
+    const entry = () => cb();
+    this.listeners.add(entry);
+    return () => { this.listeners.delete(entry); };
   }
 
   /** True once the first full index has been built. */
@@ -68,15 +72,15 @@ export class PlaceholdersModule implements EscritaModule {
 
   // ---------------------------------------------------------------- lifecycle
 
-  load(): void {
+  onload(): void {
     const p = this.plugin;
-    this.loaded = true;
+    const ctx = this.ctx;
     this.lastMarker = this.marker();
     this.lastExclude = p.settings.excludeFolders;
     this.lastSnapshots = p.settings.snapshotsFolder;
     this.lastDots = p.settings.showExplorerDots;
 
-    const idx = p.index.add<TFile, IndexedMarker[]>(placeholderSpec<TFile>({
+    const idx = ctx.index<TFile, IndexedMarker[]>(placeholderSpec<TFile>({
       marker: () => this.marker(),
       exclude: () => this.excluded(),
       settingsKey: () => JSON.stringify([this.marker(), p.settings.excludeFolders, p.settings.snapshotsFolder]),
@@ -90,45 +94,43 @@ export class PlaceholdersModule implements EscritaModule {
       this.applyDots();
     });
 
-    p.registerView(PLACEHOLDERS_VIEW, (leaf) => new PlaceholdersView(leaf, p));
+    ctx.view(PLACEHOLDERS_VIEW, (leaf) => new PlaceholdersView(leaf, p));
+    ctx.editor([placeholderDecorations(() => this.marker())]);
 
-    this.extensions.push(placeholderDecorations(() => this.marker()));
-    p.registerEditorExtension(this.extensions);
-
-    p.addCommand({
+    ctx.command({
       id: "insert-placeholder",
       name: t("placeholders.cmd.insert"),
       editorCallback: (editor) => this.insert(editor),
     });
-    p.addCommand({
+    ctx.command({
       id: "next-placeholder",
       name: t("placeholders.cmd.next"),
       editorCallback: (editor) => this.step(editor, 1),
     });
-    p.addCommand({
+    ctx.command({
       id: "previous-placeholder",
       name: t("placeholders.cmd.prev"),
       editorCallback: (editor) => this.step(editor, -1),
     });
-    p.addCommand({
+    ctx.command({
       id: "open-placeholders",
       name: t("placeholders.cmd.open"),
       callback: () => { void this.openView(); },
     });
 
     // A small dot after files with placeholders in the file explorer (silent: no tooltip).
-    this.undraw = p.decorations.add("dot", (it) =>
+    ctx.decorate("dot", (it) =>
       !it.folder && p.settings.showExplorerDots && this.countFor(it.path) > 0 ? {} : null);
-    p.register(idx.onChange(() => this.dotsSoon()));
-
+    // One subscription per load; the index is disposed on unload, which ends it.
+    idx.onChange(() => {
+      for (const cb of [...this.listeners]) cb();
+      this.dotsSoon();
+    });
   }
 
-  unload(): void {
-    this.loaded = false;
+  onunload(): void {
     this.idx = null;
     this.dotsSoon.cancel();
-    this.undraw?.();
-    this.undraw = null;
   }
 
   settingsChanged(): void {
