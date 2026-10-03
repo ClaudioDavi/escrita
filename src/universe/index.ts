@@ -1,7 +1,6 @@
 // The universe module (ROADMAP-universe "Modes", 1.1, 1.3, 1.5). It owns:
 //   * the entries index   (notes whose type property names an entry type)
-//   * the threads index   (every note's thread markers, in every mode)
-//   * the first-seen store (when each thread was first seen, in plugin data)
+//   (the threads index and the first-seen store moved to ThreadsFeature)
 //   * the mode-dependent commands, menus and views
 // and gives the three UI builders one small API: entries(), threads(), worksIn(),
 // scopeOf(), universes(), closeThread(), createEntry()… (documented on each method).
@@ -12,26 +11,27 @@
 // migrate.css) is the migration. Pure logic: entries.ts, threads.ts, first-seen.ts,
 // works-list.ts, migration.ts, new-entry.ts, scope.ts (all tested, no Obsidian imports).
 //
-// Mode off: the panel's view type stays registered (Obsidian can't unregister a view)
-// but its leaves are closed and every universe command hides itself; threads still work
-// (command "Show open threads" opens the standalone threads view).
+// Mode off: the feature registry unloads this module (0.7): its leaves are closed, its
+// commands and menus are gone, its index is dropped. Open threads are a separate feature
+// (threads-feature.ts) and keep working; "Show open threads" opens the standalone view.
+// The stateless helpers (scopeOf, closeThread, answerLink, worksIn, createUniverseNote…)
+// stay callable while this module is unloaded.
 
-import { MarkdownView, TFile, normalizePath } from "obsidian";
+import { TFile, normalizePath } from "obsidian";
 import type EscritaPlugin from "../main";
-import type { EscritaModule } from "../data";
+import { FeatureModule } from "../core/module-context";
 import { t } from "../i18n";
 import { closeThreadPlan, reopenThreadPlan, type ThreadMarker } from "../core/markers";
 import type { VaultIndex } from "../core/vault-index";
 import { entriesIn, entriesSpec, type Entry } from "./entries";
-import { dropSeen, pruneSeen, recordSeen, renameSeen } from "./first-seen";
 import { entryPath, entryText } from "./new-entry";
-import { linkText, scopeFor, universeNotePath, universeRootOf, type Scope, type ScopeLookup } from "./scope";
+import { keptOut, linkText, scopeFor, universeNotePath, universeRootOf, type Scope, type ScopeLookup } from "./scope";
 import type { EntryKind, UniverseMode } from "./settings";
-import { collectThreads, inScope, threadsSpec, type NoteThreads, type ThreadRef } from "./threads";
+import { inScope, type ThreadRef } from "./threads";
 import { formFor, type WorkInfo } from "./works-list";
-import { addEditorMenuItems, closeThreadAtCursor, createEntryFromSelection, plantThread, threadAtCursor, threadMarkerExtension } from "./create";
+import { addUniverseEditorMenuItems, createEntryFromSelection, inSource } from "./create";
 import { addMigrateFileMenuItem, migrateActiveBook } from "./migrate";
-import { THREADS_VIEW, ThreadsView, UNIVERSE_VIEW, UniverseView, activateThreadsView, activateUniverseView } from "./view";
+import { UNIVERSE_VIEW, UniverseView, activateThreadsView, activateUniverseView } from "./view";
 
 /** A universe the vault knows: the settings' one, and any other a work or entry links to. */
 export interface UniverseInfo {
@@ -59,57 +59,38 @@ export class CreateEntryError extends Error {
 
 const NONE: Scope = { kind: "none", root: "", note: null };
 
-export class UniverseModule implements EscritaModule {
+export class UniverseModule extends FeatureModule {
+  readonly id = "universe" as const;
+  readonly slots = { views: [UNIVERSE_VIEW] };
   private entriesIdx: VaultIndex<TFile, Entry> | null = null;
-  private threadsIdx: VaultIndex<TFile, NoteThreads> | null = null;
   private listeners = new Set<() => void>();
-  private lastMode: UniverseMode | null = null;
 
-  constructor(private plugin: EscritaPlugin) {}
+  constructor(private plugin: EscritaPlugin) { super(); }
 
-  load(): void {
+  /** Loaded while the mode is not off (the registry decides); the stateless helpers below work either way. */
+  onload(): void {
     const p = this.plugin;
-    this.entriesIdx = p.index.add<TFile, Entry>(entriesSpec<TFile>({
+    const entries = this.ctx.index<TFile, Entry>(entriesSpec<TFile>({
       settings: () => p.settings,
       frontmatter: (f) => p.books.frontmatter(f),
       scope: (f) => this.scopeOf(f),
     }));
-    this.threadsIdx = p.index.add<TFile, NoteThreads>(threadsSpec<TFile>(() => p.settings));
+    this.entriesIdx = entries;
+    this.register(entries.onChange(() => this.emit()));
+    this.register(entries.onReady(() => this.emit()));
 
-    const entries = this.entriesIdx;
-    const threads = this.threadsIdx;
-    p.register(entries.onChange(() => this.emit()));
-    p.register(entries.onReady(() => this.emit()));
-    p.register(threads.onReady(() => { this.recordAll(); this.emit(); }));
-    p.register(threads.onChange((changes) => {
-      let dirty = false;
-      for (const c of changes) {
-        if (c.after && recordSeen(p.data.threadSeen, c.path, c.after.map((x) => x.text), Date.now())) dirty = true;
-      }
-      if (dirty) p.requestSave();
-      this.emit();
-    }));
-
-    // first-seen dates follow renames and go with deleted notes (index.follow runs before the indexes' own events)
-    p.register(p.index.follow({
-      moved: (oldPath, newPath) => { if (renameSeen(p.data.threadSeen, oldPath, newPath)) p.requestSave(); },
-      deleted: (path) => { if (dropSeen(p.data.threadSeen, path)) p.requestSave(); },
-    }));
-    p.app.workspace.onLayoutReady(() => {
-      const exists = (path: string) => p.app.vault.getAbstractFileByPath(path) !== null;
-      if (pruneSeen(p.data.threadSeen, exists)) p.requestSave();
-    });
-
-    p.registerView(UNIVERSE_VIEW, (leaf) => new UniverseView(leaf, p));
-    p.registerView(THREADS_VIEW, (leaf) => new ThreadsView(leaf, p));
-    p.registerEditorExtension(threadMarkerExtension(p));
+    this.ctx.view(UNIVERSE_VIEW, (leaf) => new UniverseView(leaf, p));
     this.registerCommands();
     this.registerMenus();
-    this.syncMode();
+    this.emit();
+  }
+
+  onunload(): void {
+    this.entriesIdx = null;   // the context disposes the index
+    this.emit();
   }
 
   settingsChanged(): void {
-    this.syncMode();
     this.emit();
   }
 
@@ -131,9 +112,9 @@ export class UniverseModule implements EscritaModule {
     return () => { this.listeners.delete(cb); };
   }
 
-  /** Whether both indexes finished their first build (lists may be partial before). */
+  /** Whether the entries and threads indexes finished their first build (lists may be partial before). */
   isReady(): boolean {
-    return !!this.entriesIdx?.isReady() && !!this.threadsIdx?.isReady();
+    return !!this.entriesIdx?.isReady() && this.plugin.threads.isReady();
   }
 
   /** The scope of a note (kind none / book / universe, with its root folder and naming note), per scopeFor and the current mode. */
@@ -185,29 +166,26 @@ export class UniverseModule implements EscritaModule {
     return entriesIn(live, scope);
   }
 
-  /**
-   * The threads of a scope (open and closed; `{ open: true }` drops the closed), by note
-   * path then position. Scope kind none means the tracked works (mode off, or a note
-   * outside any book in per-book mode); book and universe scopes cover every note of
-   * that book or universe, entries included. Each ref carries its first-seen time (ms).
-   */
+  /** The threads of a scope (see ThreadsFeature.threads); [] while open threads are off. */
   threads(scope: Scope, opts: { open?: boolean } = {}): ThreadRef[] {
-    const all = this.threadsIdx?.entries() ?? [];
-    const belongs = scope.kind === "none"
-      ? (path: string) => this.plugin.books.classify(path).tracked
-      : (path: string) => inScope(this.scopeOf(path), scope);
-    return collectThreads(all, belongs, this.plugin.data.threadSeen, opts.open === true);
+    return this.plugin.threads.threads(scope, opts);
   }
 
   /** The threads of one note, in order (open and closed). */
   threadsOf(path: string): ThreadRef[] {
-    return collectThreads(this.threadsIdx?.entries() ?? [], (p) => p === path, this.plugin.data.threadSeen);
+    return this.plugin.threads.threadsOf(path);
   }
 
   /** When the thread with this text was first seen in the note (ms since epoch), or null. Kept in plugin data, never in the note. */
   firstSeen(path: string, text: string): number | null {
     const ref = this.threadsOf(path).find((r) => r.thread.text === text);
     return ref ? ref.firstSeen : null;
+  }
+
+  /** Whether `universe: false` keeps this note out of the universe (its own, or its book note's), by the same rules as scopeOf. */
+  keptOut(file: TFile | string): boolean {
+    const path = typeof file === "string" ? file : file.path;
+    return keptOut(path, this.lookup(), this.plugin.settings);
   }
 
   /**
@@ -351,98 +329,41 @@ export class UniverseModule implements EscritaModule {
     };
   }
 
-  private recordAll(): void {
-    const p = this.plugin;
-    let dirty = false;
-    for (const [path, list] of this.threadsIdx?.entries() ?? []) {
-      if (recordSeen(p.data.threadSeen, path, list.map((x) => x.text), Date.now())) dirty = true;
-    }
-    if (dirty) p.requestSave();
-  }
-
-  private emit(): void {
+  /** Tells the panel and the threads view that something they show changed. */
+  emit(): void {
     for (const cb of [...this.listeners]) {
       try { cb(); } catch (e) { console.error("Escrita: a universe listener failed", e); }
     }
   }
 
-  /** Mode off closes the panel; the commands check the mode themselves, so nothing else changes. */
-  private syncMode(): void {
-    const mode = this.mode();
-    if (mode === "off" && this.lastMode !== "off") {
-      for (const leaf of this.plugin.app.workspace.getLeavesOfType(UNIVERSE_VIEW)) leaf.detach();
-    }
-    this.lastMode = mode;
-  }
-
   private registerCommands(): void {
     const p = this.plugin;
-    p.addCommand({
+    this.ctx.command({
       id: "open-universe",
       name: t("universe.cmd.open"),
-      checkCallback: (checking) => {
-        if (!this.enabled()) return false;
-        if (!checking) void activateUniverseView(p);
-        return true;
-      },
+      callback: () => { void activateUniverseView(p); },
     });
-    p.addCommand({
-      id: "show-threads",
-      name: t("universe.cmd.showThreads"),
-      callback: () => { void this.showThreads(); },
-    });
-    p.addCommand({
-      id: "plant-thread",
-      name: t("universe.cmd.plantThread"),
-      editorCheckCallback: (checking, editor, ctx) => {
-        if (!inSource(ctx)) return false;
-        if (!checking) plantThread(p, editor);
-        return true;
-      },
-    });
-    p.addCommand({
+    this.ctx.command({
       id: "create-entry",
       name: t("universe.cmd.createEntry"),
       editorCheckCallback: (checking, editor, ctx) => {
-        if (!this.enabled() || !inSource(ctx)) return false;
+        if (!inSource(ctx)) return false;
         if (!checking) createEntryFromSelection(p, editor, ctx.file);
         return true;
       },
     });
-    p.addCommand({
-      id: "close-thread",
-      name: t("universe.cmd.closeThread"),
-      editorCheckCallback: (checking, editor, ctx) => {
-        if (!inSource(ctx) || !ctx.file) return false;
-        const thread = threadAtCursor(p, editor);
-        if (!thread || thread.closed) return false;
-        if (!checking) closeThreadAtCursor(p, editor, ctx.file, thread);
-        return true;
-      },
-    });
-    p.addCommand({
+    this.ctx.command({
       id: "move-book-entries",
       name: t("universe.cmd.migrate"),
-      checkCallback: (checking) => {
-        if (!this.enabled()) return false;
-        if (!checking) migrateActiveBook(p, p.app.workspace.getActiveFile());
-        return true;
-      },
+      callback: () => { migrateActiveBook(p, p.app.workspace.getActiveFile()); },
     });
   }
 
   private registerMenus(): void {
     const p = this.plugin;
-    p.registerEvent(p.app.workspace.on("editor-menu", (menu, editor, info) => addEditorMenuItems(p, menu, editor, info)));
-    p.registerEvent(p.app.workspace.on("file-menu", (menu, file) => {
+    this.registerEvent(p.app.workspace.on("editor-menu", (menu, editor, info) => addUniverseEditorMenuItems(p, menu, editor, info)));
+    this.registerEvent(p.app.workspace.on("file-menu", (menu, file) => {
       if (this.mode() === "universe") addMigrateFileMenuItem(p, menu, file);
     }));
   }
 }
-
-/** The command runs in the editor (Live Preview or Source), not Reading view. */
-function inSource(ctx: unknown): ctx is MarkdownView & { file: TFile } {
-  return ctx instanceof MarkdownView && ctx.getMode() === "source";
-}
-
-

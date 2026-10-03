@@ -83,6 +83,7 @@ export default class EscritaPlugin extends Plugin {
   publish!: PublishModule;
   lens!: LensModule;
   universe!: UniverseModule;
+  threads!: ThreadsFeature;
 
   /** Persist data soon; for frequent writes such as word tracking. */
   requestSave = debounce(() => { void this.persist(); }, 2000, true);
@@ -133,6 +134,7 @@ export default class EscritaPlugin extends Plugin {
     this.publish = new PublishModule(this);
     this.desk = new DeskModule(this);
     this.universe = new UniverseModule(this);
+    this.threads = new ThreadsFeature(this);
     // keyed by feature id; the 0.6 modules are wrapped by the registry until they move over (wave 2)
     const modules = new Map<FeatureId, FeatureModule | EscritaModule>([
       ["goals", this.goals], ["outline", this.outline], ["placeholders", this.placeholders],
@@ -142,7 +144,7 @@ export default class EscritaPlugin extends Plugin {
       ["spellcheck", new SpellcheckFeature(this)],
       ["lens", this.lens], ["snapshots", this.snapshots], ["stageSnapshot", new StageSnapshotFeature(this)],
       ["publish", this.publish], ["desk", this.desk],
-      ["universe", this.universe], ["threads", new ThreadsFeature()],
+      ["universe", this.universe], ["threads", this.threads],
     ]);
     this.features = new FeatureRegistry(this, modules);
     this.features.init();

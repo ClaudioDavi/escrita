@@ -243,7 +243,7 @@ describe("universe: false", () => {
     for (const v of [true, 0, "", "0", "true"]) {
       const lv = lookup({ props: { "Universe/Characters/Ana.md": v } });
       expect(sc("Universe/Characters/Ana.md", undefined, lv).kind).toBe("universe");
-      expect(keptOut("Universe/Characters/Ana.md", lv)).toBe(false);
+      expect(keptOut("Universe/Characters/Ana.md", lv, base())).toBe(false);
     }
   });
 
@@ -251,19 +251,35 @@ describe("universe: false", () => {
     for (const v of ["false", " False ", "FALSE"]) {
       const lv = lookup({ props: { "Universe/Characters/Ana.md": v } });
       expect(sc("Universe/Characters/Ana.md", undefined, lv)).toEqual(NONE);
-      expect(keptOut("Universe/Characters/Ana.md", lv)).toBe(true);
+      expect(keptOut("Universe/Characters/Ana.md", lv, base())).toBe(true);
     }
     const lv = lookup({ props: { "Universe/Characters/Ana.md": ["false"] } });
     expect(sc("Universe/Characters/Ana.md", undefined, lv).kind).toBe("universe");
-    expect(keptOut("Universe/Characters/Ana.md", lv)).toBe(false);
+    expect(keptOut("Universe/Characters/Ana.md", lv, base())).toBe(false);
+  });
+
+  it("keptOut and scopeFor agree when a chapter's own link names nothing, under a book note set to false", () => {
+    const lv = lookup({
+      notes: ["Universe.md"], books: w.books,
+      props: { "Novels/A Casa.md": false, "Novels/A Casa/Chapters/01 X.md": "[[Nowhere]]", "Novels/A Casa/Chapters/02 Y.md": "[[Universe]]" },
+    });
+    expect(sc("Novels/A Casa/Chapters/01 X.md", undefined, lv)).toEqual({ kind: "book", root: "Novels/A Casa", note: "Novels/A Casa.md" });
+    expect(keptOut("Novels/A Casa/Chapters/01 X.md", lv, base())).toBe(true);
+    // a link that resolves wins in both
+    expect(sc("Novels/A Casa/Chapters/02 Y.md", undefined, lv).kind).toBe("universe");
+    expect(keptOut("Novels/A Casa/Chapters/02 Y.md", lv, base())).toBe(false);
+    // an unresolved link that names the settings' universe still joins it, in both
+    const lv2 = lookup({ notes: [], books: w.books, props: { "Novels/A Casa.md": false, "Novels/A Casa/Chapters/01 X.md": "[[Universe]]" } });
+    expect(sc("Novels/A Casa/Chapters/01 X.md", undefined, lv2).kind).toBe("universe");
+    expect(keptOut("Novels/A Casa/Chapters/01 X.md", lv2, base())).toBe(false);
   });
 
   it("keptOut: own false, book false without own link, own link wins, plain notes stay in", () => {
-    expect(keptOut("Contos/Fora.md", l)).toBe(true);
-    expect(keptOut("Novels/A Casa.md", l)).toBe(true);
-    expect(keptOut("Novels/A Casa/Chapters/01 X.md", l)).toBe(true);
-    expect(keptOut("Novels/A Casa/Chapters/02 Dentro.md", l)).toBe(false);
-    expect(keptOut("Novels/Solo.md", l)).toBe(false);
-    expect(keptOut("Other/Plain.md", l)).toBe(false);
+    expect(keptOut("Contos/Fora.md", l, base())).toBe(true);
+    expect(keptOut("Novels/A Casa.md", l, base())).toBe(true);
+    expect(keptOut("Novels/A Casa/Chapters/01 X.md", l, base())).toBe(true);
+    expect(keptOut("Novels/A Casa/Chapters/02 Dentro.md", l, base())).toBe(false);
+    expect(keptOut("Novels/Solo.md", l, base())).toBe(false);
+    expect(keptOut("Other/Plain.md", l, base())).toBe(false);
   });
 });

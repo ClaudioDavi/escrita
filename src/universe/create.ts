@@ -453,24 +453,35 @@ async function reopenAtCursor(plugin: EscritaPlugin, file: TFile, thread: Thread
   new Notice(ok ? t("universe.create.reopen.done", { note: file.basename }) : t("universe.create.close.changed"));
 }
 
+/** The command runs in the editor (Live Preview or Source), not Reading view. */
+export function inSource(ctx: unknown): ctx is MarkdownView & { file: TFile } {
+  return ctx instanceof MarkdownView && ctx.getMode() === "source";
+}
+
 // ------------------------------------------------------------------- menu
 
 /**
- * The editor right-click menu: "Create universe entry" (only for a one-line selection of up
- * to 60 characters and the mode not off), "Plant a thread", and "Close thread…" /
- * "Reopen thread" and "Show open threads" on a thread's line. Registered by index.ts on the
+ * The editor right-click menu, in two parts so each feature registers its own: the universe's
+ * "Create universe entry" (only for a one-line selection of up to 60 characters), and the
+ * threads' "Plant a thread", "Close thread…" / "Reopen thread" and "Show open threads" on a
+ * thread's line. Registered by the universe module and the threads feature on the
  * workspace's editor-menu event.
  */
-export function addEditorMenuItems(plugin: EscritaPlugin, menu: Menu, editor: Editor, info: MarkdownView | MarkdownFileInfo): void {
+export function addUniverseEditorMenuItems(plugin: EscritaPlugin, menu: Menu, editor: Editor, info: MarkdownView | MarkdownFileInfo): void {
   const file = info.file;
   if (!file || file.extension !== "md") return;
-  if (plugin.universe.enabled() && nameFromSelection(editor.getSelection()) !== null) {
+  if (nameFromSelection(editor.getSelection()) !== null) {
     menu.addItem((item) => item
       .setTitle(t("universe.cmd.createEntry"))
       .setIcon("user")
       .setSection("escrita")
       .onClick(() => createEntryFromSelection(plugin, editor, file)));
   }
+}
+
+export function addThreadsEditorMenuItems(plugin: EscritaPlugin, menu: Menu, editor: Editor, info: MarkdownView | MarkdownFileInfo): void {
+  const file = info.file;
+  if (!file || file.extension !== "md") return;
   menu.addItem((item) => item
     .setTitle(t("universe.cmd.plantThread"))
     .setIcon("flag")
