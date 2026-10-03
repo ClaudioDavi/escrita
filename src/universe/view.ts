@@ -332,6 +332,7 @@ export class UniverseView extends PanelBase {
     const file = this.app.workspace.getActiveFile();
     if (!info || !file || file.extension !== "md") return;
     if (this.plugin.universe.scopeOf(file).kind === "universe") return;
+    if (this.plugin.universe.keptOut(file)) return;   // `universe: false`: the writer said no
     if (!this.isWorkLike(file)) return;
     const row = body.createDiv({ cls: "escrita-universe-notin" });
     row.createSpan({ cls: "escrita-universe-muted", text: t("universe.view.notInUniverse", { title: file.basename }) });

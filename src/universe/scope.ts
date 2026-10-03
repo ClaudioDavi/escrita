@@ -102,13 +102,19 @@ function isFalse(value: unknown): boolean {
   return value === false || (typeof value === "string" && value.trim().toLowerCase() === "false");
 }
 
-/** True when the note is kept out of the universe: its own `false`, or its book note's `false` with no own link. */
-export function keptOut(path: string, lookup: ScopeLookup): boolean {
-  const own = lookup.universe(path);
-  if (isFalse(own)) return true;
-  if (linkText(own) !== null) return false;
+/**
+ * True when `universe: false` keeps the note out: its own `false`, or its book note's `false`
+ * when its own link names nothing. An own link wins only when it resolves (the same test
+ * scopeFor makes), so the two always agree.
+ */
+export function keptOut(path: string, lookup: ScopeLookup, settings: ScopeSettings): boolean {
   const book = lookup.book(path);
-  return book !== null && book.note !== path && isFalse(lookup.universe(book.note));
+  for (const p of book ? [path, book.note] : [path]) {
+    if (isFalse(lookup.universe(p))) return true;
+    const link = linkText(lookup.universe(p));
+    if (link !== null && universeFromLink(link, p, settings, lookup)) return false;
+  }
+  return false;
 }
 
 export function scopeFor(file: { path: string }, settings: ScopeSettings, lookup: ScopeLookup): Scope {
