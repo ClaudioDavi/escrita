@@ -4,8 +4,7 @@ import { lensStrings } from "../src/lens/strings";
 import { RULES } from "../src/lens/types";
 
 const KEYS = [
-  "settings.lens", "settings.lens.desc", "settings.lens.language", "settings.lens.language.desc",
-  "settings.lens.language.auto", "settings.lens.language.pt", "settings.lens.language.en",
+  "settings.lens", "settings.lens.desc",
   "settings.lens.lists", "settings.lens.lists.desc", "settings.lens.lists.create",
   "settings.lens.echoWindow", "settings.lens.echoWindow.desc", "settings.lens.longSentence",
   "settings.lens.longSentence.desc", "settings.lens.words", "settings.lens.skipQuotes",
