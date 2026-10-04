@@ -121,6 +121,20 @@ written here before the gated task starts).
 - **G0a** (gates 2.3): a DOCX from the STORE zip opens without a repair prompt in Word,
   LibreOffice, Google Docs and Pages. It must have double spacing, a header with the
   page number field, and a page break per chapter.
+  **Passed in part. Result 2026-10-04:** a throwaway generator (`make-docx.mjs`, not
+  committed) wrote a Shunn file (Letter) and a pt-BR file (A4). Each had a title page,
+  a Prólogo with no number, numbered chapters, a `#` scene break and travessão dialogue.
+  The zip was STORE with CRC32, 8 parts, about 9 KB. Both files open with no repair
+  prompt in **LibreOffice** (checked by the author, and converted headless to PDF)
+  and **Google Docs** (the author). The PDF shows:
+  - the page size
+  - a page break before each chapter
+  - the "Surname / Title / N" header with a live PAGE field, hidden on the title page
+  - double spacing and the half-inch indent
+  - italics kept
+
+  **Word and Pages not checked yet.** Task 2.3 may start. The Word and Pages check
+  moves to the manual verification before release.
 - **G0b** (gates 1.7): `vault.createBinary` and `modifyBinary` in a vault folder, on
   desktop and on Android and iOS. The file must show in the explorer, and a sync
   plugin must pick it up.
@@ -258,6 +272,7 @@ code that this plan didn't settle?
   - Open the file in LibreOffice and Word.
   - Check the header, the title page count, `#` scene breaks, travessão dialogue kept,
     and no `%%` text.
+- **Open both presets' DOCX in Word and Pages** (the rest of G0a): no repair prompt, header numbers, page breaks, spacing.
 - **Export a test book with a "Prólogo".** Check the chapter headings and that the
   `compile: false` chapter is left out.
 - **Submissions.**
