@@ -13,9 +13,8 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   `src/core/chapter-ops.ts` with its pure helpers `src/core/chapter-engine.ts` and `src/core/chapter-plan.ts`). If you need a change there, say so in your final
   report instead. `src/core/classify.ts` and `src/core/books.ts` are shared core
   that every module reads; change them only as a deliberate core-level refactor.
-- **Entry point.** `src/<module>/index.ts` exports `class <Name>Module implements EscritaModule`
-  with `constructor(private plugin: EscritaPlugin)`, `load()`, optional `unload()`
-  and `settingsChanged()`. `main.ts` already constructs and loads every module.
+- **Entry point.** A feature is a `FeatureModule` (`core/module-context.ts`) built in
+  `main.ts` and loaded and unloaded by the `FeatureRegistry` from the writer's switches.
 - **Plugin services** (on `this.plugin`): `settings` (see `src/settings.ts` —
   all settings already exist, with a settings tab), `data.history` (see `src/data.ts`),
   `requestSave()` (debounced persist), `saveSettings()`, `books` (`BookService`:

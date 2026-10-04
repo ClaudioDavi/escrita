@@ -25,7 +25,7 @@ function commit(c: TextComponent, fallback: () => string, apply: (v: string) => 
 
 const stripSlashes = (p: string) => p.replace(/^\/+|\/+$/g, "");
 
-export function renderUniverseSettings(plugin: EscritaPlugin, containerEl: HTMLElement, save: () => Promise<void>, _redisplay: () => void): void {
+export function renderUniverseSettings(plugin: EscritaPlugin, containerEl: HTMLElement, save: () => Promise<void>): void {
   const s = plugin.settings;
   const d = defaultUniverseSettings();
   const mode = s.universeMode;

@@ -7,7 +7,4 @@
 	text-underline-offset: 4px;
 	text-decoration-color: color-mix(in srgb, var(--interactive-accent) 55%, transparent);
 }
-/* With dialogue focus the name dims with the narration; the underline stays, fainter. */
-.escrita-name-underline:has(.escrita-dialogue-dim) {
-	text-decoration-color: color-mix(in srgb, var(--interactive-accent) 30%, transparent);
-}
+/* With dialogue focus the dim is a line decoration on an ancestor, so the underline fades with the line. */

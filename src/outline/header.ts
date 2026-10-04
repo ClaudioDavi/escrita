@@ -72,7 +72,10 @@ export function pruneFilter(model: HeaderModel, filter: { stages: Set<string>; p
   return changed;
 }
 
-/** POV chips shown before "+N" (the narrow sidebar); selected ones always show. */
+/**
+ * POV chips shown before "+N" when the width cannot be measured (a hidden pane, a test);
+ * with a width, fitPovChips decides. Selected ones always show.
+ */
 export const POV_CHIPS_VISIBLE = 4;
 
 export function visiblePovChips(povs: readonly ChipModel[], selected: ReadonlySet<string>, expanded: boolean): ChipModel[] {
@@ -81,6 +84,61 @@ export function visiblePovChips(povs: readonly ChipModel[], selected: ReadonlySe
 }
 
 // ------------------------------------------------------------------ drawing
+
+interface FitInput {
+  group: HTMLElement;
+  chips: HTMLElement[];
+  more: HTMLElement;
+  keys: string[];
+  selected: ReadonlySet<string>;
+  expanded: boolean;
+  /** which chips show when the width cannot be measured */
+  fallback: ReadonlySet<string>;
+}
+
+/**
+ * Collapses the POV chips to "+N" by the room the group has (Q44, board OutlinePov d): what
+ * wraps onto a second row hides, except the selected chips. Re-run when the width changes.
+ */
+export function fitPovChips(f: FitInput): void {
+  const setHidden = (i: number, hide: boolean) => f.chips[i].toggleClass("is-fit-hidden", hide);
+  const label = (hidden: number) => {
+    f.more.setText(hidden > 0 ? t("outline.chips.more", { n: fmt(hidden) }) : t("outline.chips.less"));
+    f.more.setAttr("aria-expanded", f.expanded ? "true" : "false");
+  };
+  const show = (on: boolean) => f.more.toggleClass("is-fit-hidden", !on);
+  f.chips.forEach((_, i) => setHidden(i, false));
+  show(false);
+  if (f.group.clientWidth === 0) {
+    // not laid out: the fixed cap
+    const hidden = f.keys.filter((k) => !f.fallback.has(k)).length;
+    f.keys.forEach((k, i) => setHidden(i, !f.fallback.has(k)));
+    show(hidden > 0 || (f.expanded && f.keys.length > POV_CHIPS_VISIBLE));
+    label(hidden);
+    return;
+  }
+  const row = f.chips[0]?.offsetTop ?? 0;
+  const overflow = f.chips.filter((c) => c.offsetTop > row).length;
+  if (overflow === 0) return;
+  if (f.expanded) {
+    show(true);
+    label(0);
+    return;
+  }
+  show(true);
+  const hideable = f.keys.map((k, i) => i).filter((i) => !f.selected.has(f.keys[i]));
+  let hidden = 0;
+  // hide from the end until nothing wraps, the "+N" button included
+  while (hidden < hideable.length) {
+    label(hidden);
+    const wraps = f.chips.some((c, i) => !c.hasClass("is-fit-hidden") && c.offsetTop > row) || f.more.offsetTop > row;
+    if (!wraps) break;
+    setHidden(hideable[hideable.length - 1 - hidden], true);
+    hidden++;
+  }
+  label(hidden);
+  if (hidden === 0) show(false);
+}
 
 /** The Status | POV segmented control, drawn into the header's tools. */
 export function renderColorToggle(tools: HTMLElement, mode: ColorBy, set: (m: ColorBy) => void): void {
@@ -99,6 +157,8 @@ export interface ChipsInput {
   povExpanded: boolean;
   shown: number;
   total: number;
+  /** a phone: the filtered line drops its explanation */
+  compact?: boolean;
 }
 
 export interface ChipsActions {
@@ -111,8 +171,9 @@ export interface ChipsActions {
 const LONG_PRESS_MS = 500;
 
 /** The stage chips, the POV chips and, while a filter is on, the "Showing 4 of 12" line. */
-export function renderChips(host: HTMLElement, v: ChipsInput, a: ChipsActions): void {
+export function renderChips(host: HTMLElement, v: ChipsInput, a: ChipsActions): () => void {
   host.empty();
+  let refit: () => void = () => {};
   const chip = (group: HTMLElement, c: ChipModel, on: boolean) => {
     const b = group.createEl("button", { cls: "escrita-outline-chip" });
     b.toggleClass("is-on", on);
@@ -134,9 +195,11 @@ export function renderChips(host: HTMLElement, v: ChipsInput, a: ChipsActions): 
 
   if (v.model.povs.length) {
     const g = host.createDiv({ cls: "escrita-outline-chips", attr: { role: "group", "aria-label": t("outline.chips.povs") } });
-    const shown = visiblePovChips(v.model.povs, v.filter.povs, v.povExpanded);
-    for (const c of shown) {
+    const fallback = new Set(visiblePovChips(v.model.povs, v.filter.povs, v.povExpanded).map((c) => c.key));
+    const chips: HTMLElement[] = [];
+    for (const c of v.model.povs) {
       const b = chip(g, c, v.filter.povs.has(c.key));
+      chips.push(b);
       let pressed = false;
       let timer: number | null = null;
       const cancel = () => { if (timer !== null) { b.win.clearTimeout(timer); timer = null; } };
@@ -152,23 +215,22 @@ export function renderChips(host: HTMLElement, v: ChipsInput, a: ChipsActions): 
       }, { passive: true });
       for (const ev of ["touchend", "touchmove", "touchcancel"]) b.addEventListener(ev, cancel, { passive: true });
     }
-    const hidden = v.model.povs.length - shown.length;
-    if (hidden > 0 || (v.povExpanded && v.model.povs.length > POV_CHIPS_VISIBLE)) {
-      const more = g.createEl("button", {
-        cls: "escrita-outline-chip is-more",
-        text: hidden > 0 ? t("outline.chips.more", { n: fmt(hidden) }) : t("outline.chips.less"),
-      });
-      more.setAttr("aria-expanded", v.povExpanded ? "true" : "false");
-      more.addEventListener("click", () => a.togglePovExpanded());
-    }
+    const more = g.createEl("button", { cls: "escrita-outline-chip is-more" });
+    more.addEventListener("click", () => a.togglePovExpanded());
+    refit = () => fitPovChips({
+      group: g, chips, more, keys: v.model.povs.map((c) => c.key), selected: v.filter.povs,
+      expanded: v.povExpanded, fallback,
+    });
+    refit();
   }
 
   if (v.filter.stages.size || v.filter.povs.size) {
     const line = host.createDiv({ cls: "escrita-outline-filtered", attr: { role: "status" } });
-    line.createSpan({ text: t("outline.filter.showing", { shown: fmt(v.shown), total: fmt(v.total) }) });
+    line.createSpan({ text: t(v.compact ? "outline.filter.showing.short" : "outline.filter.showing", { shown: fmt(v.shown), total: fmt(v.total) }) });
     const clear = line.createEl("button", { cls: "escrita-outline-link", text: t("outline.filter.clear") });
     clear.addEventListener("click", () => a.clear());
   }
+  return () => refit();
 }
 
 /**

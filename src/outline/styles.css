@@ -533,7 +533,7 @@ body.is-mobile .escrita-outline-seg-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--size-2-3);
-  min-height: 28px;
+  min-height: 32px;
   padding: 0 var(--size-4-2);
   border: 1px solid var(--background-modifier-border);
   border-radius: 14px;
@@ -703,4 +703,8 @@ body.is-mobile .escrita-outline-chip {
 
 .escrita-outline-menu-item:hover {
   background: var(--background-modifier-hover);
+}
+
+.escrita-outline-chip.is-fit-hidden {
+  display: none;
 }

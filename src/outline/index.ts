@@ -94,6 +94,8 @@ export class OutlineModule extends FeatureModule {
       checkCallback: (checking) => {
         const book = plugin.books.classify(plugin.app.workspace.getActiveFile()).book;
         if (!book) return false;
+        // Q44: while an outline for this book is filtered, its chapters are partly hidden
+        if (this.filteredOutline(book.note.path)) return false;
         if (!checking) void this.renumber(book);
         return true;
       },
@@ -116,6 +118,12 @@ export class OutlineModule extends FeatureModule {
 
   private ghostExtensions(): Extension[] {
     return this.plugin.settings.ghostBeats ? [ghostBeats()] : [];
+  }
+
+  /** True while an outline leaf showing this book hides chapters behind a filter. */
+  private filteredOutline(bookNotePath: string): boolean {
+    return this.plugin.app.workspace.getLeavesOfType(OUTLINE_VIEW).some((leaf) =>
+      leaf.view instanceof OutlineView && leaf.view.currentBook()?.note.path === bookNotePath && leaf.view.reorderBlocked());
   }
 
   /** The active note's book, else the book shown in the outline panel. */

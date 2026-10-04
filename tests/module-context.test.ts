@@ -4,7 +4,6 @@ import type { Extension } from "@codemirror/state";
 import { FeatureRegistry } from "../src/core/feature-registry";
 import type { FeatureId } from "../src/core/features";
 import { FeatureModule, type EditorSlot, type FeatureSlots } from "../src/core/module-context";
-import type { EscritaModule } from "../src/data";
 import type { Follower } from "../src/core/vault-index";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
 
@@ -45,7 +44,7 @@ beforeEach(() => {
 });
 
 function registryOf(...mods: FeatureModule[]): FeatureRegistry {
-  const map = new Map<FeatureId, FeatureModule | EscritaModule>(mods.map((m) => [m.id, m]));
+  const map = new Map<FeatureId, FeatureModule>(mods.map((m) => [m.id, m]));
   const r = new FeatureRegistry(plugin.asPlugin, map);
   plugin.features = r;
   r.init();
@@ -578,60 +577,6 @@ describe("unloadAll", () => {
     turn("goals", true);
     r.apply();
     expect(m.loads).toBe(1);
-  });
-});
-
-describe("the adapter for 0.6 modules", () => {
-  it("calls load and unload on an EscritaModule", () => {
-    const calls: string[] = [];
-    const legacy: EscritaModule = { load: () => { calls.push("load"); }, unload: () => { calls.push("unload"); }, settingsChanged: () => { calls.push("settings"); } };
-    const r = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, FeatureModule | EscritaModule>([["goals", legacy]]));
-    r.init();
-    r.apply();
-    r.settingsChanged();
-    r.unloadAll();
-    expect(calls).toEqual(["load", "settings", "unload"]);
-  });
-
-  it("a 0.6 module is never unloaded by a switch, and never registers twice", () => {
-    let loads = 0;
-    let unloads = 0;
-    const legacy: EscritaModule = {
-      load: () => { loads++; plugin.registerView("legacy-view", () => ({}) as never); },
-      unload: () => { unloads++; },
-    };
-    const r = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, FeatureModule | EscritaModule>([["snapshots", legacy]]));
-    r.init();
-    plugin.settings.features = { snapshots: false };
-    r.apply();
-    expect(r.isOn("snapshots")).toBe(true);
-    turn("snapshots", true);
-    r.apply();
-    turn("snapshots", false);
-    r.apply();
-    expect([loads, unloads]).toEqual([1, 0]);
-    expect(plugin.app.workspace.detached).toEqual([]);
-  });
-
-  it("keeps a 0.6 module that reads its own switch (explorer counts, universe mode) loaded", () => {
-    const calls: string[] = [];
-    const mk = (name: string): EscritaModule => ({ load: () => { calls.push(`load ${name}`); } });
-    plugin.settings.explorerCounts = false;
-    plugin.settings.universeMode = "off";
-    const r = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, FeatureModule | EscritaModule>([
-      ["explorerCounts", mk("explorer")], ["universe", mk("universe")],
-    ]));
-    r.init();
-    r.apply();
-    expect(calls).toEqual(["load explorer", "load universe"]);
-  });
-
-  it("a 0.6 module that throws in load is not marked loaded", () => {
-    const legacy: EscritaModule = { load: () => { throw new Error("boom"); } };
-    const r = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, FeatureModule | EscritaModule>([["goals", legacy]]));
-    r.init();
-    r.apply();
-    expect(r.isOn("goals")).toBe(false);
   });
 });
 

@@ -7,7 +7,6 @@ import { TFile, TFolder } from "./support/obsidian";
 import { FeatureRegistry } from "../src/core/feature-registry";
 import type { FeatureId } from "../src/core/features";
 import type { FeatureModule } from "../src/core/module-context";
-import type { EscritaModule } from "../src/data";
 import { SnapshotsModule, SNAPSHOTS_VIEW, COMPARE_VIEW } from "../src/snapshots";
 import { StageSnapshotFeature } from "../src/snapshots/stage-feature";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
@@ -67,7 +66,7 @@ function setup(): void {
   snap = new SnapshotsModule(plugin.asPlugin);
   (plugin as unknown as { snapshots: SnapshotsModule }).snapshots = snap;
   const stage = new StageSnapshotFeature(plugin.asPlugin);
-  const map = new Map<FeatureId, FeatureModule | EscritaModule>([["snapshots", snap], ["stageSnapshot", stage]]);
+  const map = new Map<FeatureId, FeatureModule>([["snapshots", snap], ["stageSnapshot", stage]]);
   registry = new FeatureRegistry(plugin.asPlugin, map);
   plugin.features = registry;
   registry.init();

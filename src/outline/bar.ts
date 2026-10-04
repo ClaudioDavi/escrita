@@ -21,8 +21,8 @@ export interface BarModel {
 
 /**
  * Null when there is nothing to measure against (no target and no limit): then the
- * chapter has no bar, as before. `inherited` is true when the target came from the book's
- * default; a chapter's own target is then labelled as such, so the writer can tell.
+ * chapter has no bar, as before. `chapterOwn` is true when the chapter has its own target; the label
+ * then says so, so the writer can tell it from the book's default.
  */
 export function barModel(
   progress: Progress | null, count: number, piece: Piece | null, unit: PieceUnit,

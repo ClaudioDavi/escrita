@@ -87,59 +87,6 @@
   width: 100%;
 }
 @media (max-width: 600px) {
-  .escrita-types {
-    gap: var(--size-4-3);
-  }
-  .escrita-types-head {
-    display: none;
-  }
-  .escrita-types-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--size-4-1);
-    padding: var(--size-4-2) 0;
-    border-top: 1px solid var(--background-modifier-border);
-  }
-  .escrita-types-name {
-    display: block;
-    font-weight: var(--font-semibold);
-  }
-  .escrita-types-cell {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .escrita-types-cell-label {
-    display: block;
-    color: var(--text-muted);
-    font-size: var(--font-ui-smaller);
-  }
-}
-
-/* "Names" rows (0.7, board 24 l): the extra titles box and the collapsed property names */
-.setting-item-control textarea.escrita-universe-titles {
-  width: 140px;
-  height: 64px;
-  resize: none;
-}
-.escrita-universe-props {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 150px;
-  gap: var(--size-4-2) var(--size-4-3);
-  align-items: center;
-  padding: var(--size-4-1) 0 var(--size-4-1) var(--size-4-4);
-}
-.escrita-universe-props[hidden] {
-  display: none;
-}
-.escrita-universe-props input {
-  min-height: 32px;
-  width: 100%;
-}
-.escrita-universe-settings-desc + .setting-item .setting-item-control .mod-cta,
-.setting-item-control .escrita-universe-titles + * {
-  /* no overrides: buttons keep Obsidian's own size */
-}
-@media (max-width: 600px) {
   .escrita-universe-props {
     grid-template-columns: minmax(0, 1fr);
     padding-left: 0;

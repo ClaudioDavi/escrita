@@ -1,6 +1,6 @@
 import { Plugin, debounce, setTooltip } from "obsidian";
 import { DEFAULT_SETTINGS, EscritaSettingTab, normalizeSettings, type EscritaSettings } from "./settings";
-import type { EscritaData, EscritaModule, PublishRecord } from "./data";
+import type { EscritaData, PublishRecord } from "./data";
 import { mergeDefaults } from "./core/merge";
 import { migrateSettings } from "./core/migrate";
 import { cleanLeftOff } from "./core/left-off";
@@ -136,8 +136,8 @@ export default class EscritaPlugin extends Plugin {
     this.desk = new DeskModule(this);
     this.universe = new UniverseModule(this);
     this.threads = new ThreadsFeature(this);
-    // keyed by feature id; the 0.6 modules are wrapped by the registry until they move over (wave 2)
-    const modules = new Map<FeatureId, FeatureModule | EscritaModule>([
+    // keyed by feature id
+    const modules = new Map<FeatureId, FeatureModule>([
       ["goals", this.goals], ["outline", this.outline], ["placeholders", this.placeholders],
       ["explorerCounts", this.explorer], ["darlings", this.darlings],
       ["typing", new TypingFeature(this)], ["dialogueFocus", new DialogueFocusFeature(this)],

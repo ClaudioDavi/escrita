@@ -1,6 +1,6 @@
-import { App, PluginSettingTab, Setting, moment, type ColorComponent } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting, moment, type ColorComponent } from "obsidian";
 import type EscritaPlugin from "./main";
-import { lang, locale, t } from "./i18n";
+import { fmt, lang, locale, plural, t } from "./i18n";
 import { listsPath } from "./lens/lists";
 import { listsTarget } from "./lens/shown";
 import { lensLang } from "./lens/lang";
@@ -378,13 +378,7 @@ export class EscritaSettingTab extends PluginSettingTab {
       .addText((c) => c.setPlaceholder("summary").setValue(s.summaryProperty)
         .onChange(async (v) => { s.summaryProperty = v.trim() || "summary"; await save(); }));
 
-    if (section(t("settings.goals"), ["dailyGoal", "dayEndsAt", "ignoreJumpsOver", "sprintMinutes", "showStatusBar", "weekdaysOff", "datesOff"])) {
-      if (shown("dailyGoal")) {
-        new Setting(containerEl)
-          .setName(t("settings.dailyGoal"))
-          .addText((c) => c.setValue(String(s.dailyGoal))
-            .onChange(async (v) => { s.dailyGoal = num(v, s.dailyGoal); await save(); }));
-      }
+    if (shown("dayEndsAt")) {
       new Setting(containerEl)
         .setName(t("settings.dayEndsAt"))
         .setDesc(t("settings.dayEndsAt.desc"))
@@ -392,6 +386,15 @@ export class EscritaSettingTab extends PluginSettingTab {
           for (let h = 0; h <= 6; h++) d.addOption(String(h), `${String(h).padStart(2, "0")}:00`);
           d.setValue(String(s.dayEndsAt)).onChange(async (v) => { s.dayEndsAt = Number(v); await save(); });
         });
+    }
+
+    if (section(t("settings.goals"), ["dailyGoal", "ignoreJumpsOver", "sprintMinutes", "showStatusBar", "weekdaysOff", "datesOff"])) {
+      if (shown("dailyGoal")) {
+        new Setting(containerEl)
+          .setName(t("settings.dailyGoal"))
+          .addText((c) => c.setValue(String(s.dailyGoal))
+            .onChange(async (v) => { s.dailyGoal = num(v, s.dailyGoal); await save(); }));
+      }
       if (shown("ignoreJumpsOver")) {
         new Setting(containerEl)
           .setName(t("settings.ignoreJumpsOver"))
@@ -450,7 +453,7 @@ export class EscritaSettingTab extends PluginSettingTab {
     if (section(t("settings.placeholders"), ["placeholderMarker", "showExplorerDots"])) {
       new Setting(containerEl)
         .setName(t("settings.placeholderMarker"))
-        .setDesc(t("settings.placeholderMarker.desc"))
+        .setDesc(t("settings.placeholderMarker.desc", { marker: s.placeholderMarker }))
         .addText((c) => c.setValue(s.placeholderMarker)
           .onChange(async (v) => { s.placeholderMarker = v.replace(/[^\p{L}\p{N}_-]/gu, "") || "XXX"; await save(); }));
       if (shown("showExplorerDots")) {
@@ -480,7 +483,7 @@ export class EscritaSettingTab extends PluginSettingTab {
     this.stagesSettings(containerEl, save);
     if (shown("homeNote")) this.homeSettings(containerEl, save);
     if (shown("snapshotsFolder")) this.snapshotsSettings(containerEl, save, num);
-    renderUniverseSettings(this.plugin, containerEl, save, () => this.display());
+    renderUniverseSettings(this.plugin, containerEl, save);
   }
 
   /**
@@ -520,7 +523,7 @@ export class EscritaSettingTab extends PluginSettingTab {
         const spec = FEATURE_SPECS.find((f) => f.id === id)!;
         const row = new Setting(containerEl).setName(t(`settings.features.${id}`));
         row.settingEl.addClass("escrita-feature-row");
-        row.setDesc(t(`settings.features.${id}.desc`));
+        row.setDesc(t(`settings.features.${id}.desc`, { marker: s.placeholderMarker, keyword: s.threadKeyword }));
 
         if (id === "universe") {
           row.addDropdown((d) => {
@@ -548,6 +551,7 @@ export class EscritaSettingTab extends PluginSettingTab {
         addSwitch(row, t(`settings.features.${id}`), shownOn, needs !== undefined, async (v) => {
           setFeature(s, id, v);
           await apply();
+          if (!v) void this.offNotice(id);
         });
         if (id === "snapshots" && !on && s.features.stageSnapshot !== false) {
           row.descEl.createDiv({ text: t("settings.features.snapshots.off") });
@@ -566,6 +570,40 @@ export class EscritaSettingTab extends PluginSettingTab {
         row.nameEl.createSpan({ cls: "escrita-tag", text: t("settings.features.export.tag") });
         addSwitch(row, t("settings.features.export"), false, true, async () => {});
       }
+    }
+  }
+
+  /** Turning off a feature that keeps data says what stays and where (board FeaturesStates, state 1). */
+  private async offNotice(id: FeatureId): Promise<void> {
+    const p = this.plugin;
+    const s = p.settings;
+    const say = (text: string) => { new Notice(text); };
+    switch (id) {
+      case "snapshots": {
+        let n = 0;
+        try {
+          for (const note of await p.snapshots.store.notesWithSnapshots()) n += (await p.snapshots.store.list(note)).length;
+        } catch { return; }
+        if (n > 0) say(plural("settings.features.off.snapshots", n, { n: fmt(n), folder: s.snapshotsFolder }));
+        return;
+      }
+      case "darlings":
+        say(t("settings.features.off.darlings"));
+        return;
+      case "goals": {
+        const n = Object.keys(p.data.history).length;
+        if (n > 0) say(plural("settings.features.off.goals", n, { n: fmt(n) }));
+        return;
+      }
+      case "lens":
+        say(t("settings.features.off.lens", { note: s.lensListsNote || listsTarget("", lensLang(s.lensLanguage, locale())) }));
+        return;
+      case "desk": {
+        const n = Object.keys(p.data.leftOff).length;
+        if (n > 0) say(plural("settings.features.off.desk", n, { n: fmt(n) }));
+        return;
+      }
+      default:
     }
   }
 
