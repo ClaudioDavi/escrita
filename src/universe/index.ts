@@ -20,11 +20,12 @@
 import { TFile, normalizePath } from "obsidian";
 import type EscritaPlugin from "../main";
 import { FeatureModule } from "../core/module-context";
-import { t } from "../i18n";
+import { locale, t } from "../i18n";
 import { closeThreadPlan, reopenThreadPlan, type ThreadMarker } from "../core/markers";
 import type { VaultIndex } from "../core/vault-index";
-import { entriesIn, entriesSpec, type Entry } from "./entries";
+import { entriesIn, entriesSpec, type Entry, type ScopedEntry } from "./entries";
 import { entryPath, entryText } from "./new-entry";
+import { UniverseNamesProvider } from "./names-provider";
 import { keptOut, linkText, scopeFor, universeNotePath, universeRootOf, type Scope, type ScopeLookup } from "./scope";
 import type { EntryKind, UniverseMode } from "./settings";
 import { inScope, type ThreadRef } from "./threads";
@@ -63,6 +64,7 @@ export class UniverseModule extends FeatureModule {
   readonly id = "universe" as const;
   readonly slots = { views: [UNIVERSE_VIEW] };
   private entriesIdx: VaultIndex<TFile, Entry> | null = null;
+  private namesProvider: UniverseNamesProvider | null = null;
   private listeners = new Set<() => void>();
 
   constructor(private plugin: EscritaPlugin) { super(); }
@@ -73,11 +75,24 @@ export class UniverseModule extends FeatureModule {
     const entries = this.ctx.index<TFile, Entry>(entriesSpec<TFile>({
       settings: () => p.settings,
       frontmatter: (f) => p.books.frontmatter(f),
-      scope: (f) => this.scopeOf(f),
     }));
     this.entriesIdx = entries;
-    this.register(entries.onChange(() => this.emit()));
-    this.register(entries.onReady(() => this.emit()));
+
+    // the names port: provided while loaded, withdrawn on unload (Q36)
+    const names = new UniverseNamesProvider({
+      entries: () => [...entries.entries()].map(([, e]) => e),
+      scopeOf: (path) => this.scopeOf(path),
+      language: () => p.settings.lensLanguage,
+      locale: () => locale(),
+      nameTitles: () => p.settings.nameTitles,
+    });
+    this.namesProvider = names;
+    this.register(p.names.provide(names));
+    // scope depends on other notes' properties, so a metadata change can move a note between tables
+    this.registerEvent(p.app.metadataCache.on("changed", () => names.refresh()));
+
+    this.register(entries.onChange(() => { names.refresh(); this.emit(); }));
+    this.register(entries.onReady(() => { names.refresh(); this.emit(); }));
 
     this.ctx.view(UNIVERSE_VIEW, (leaf) => new UniverseView(leaf, p));
     this.registerCommands();
@@ -87,10 +102,12 @@ export class UniverseModule extends FeatureModule {
 
   onunload(): void {
     this.entriesIdx = null;   // the context disposes the index
+    this.namesProvider = null;
     this.emit();
   }
 
   settingsChanged(): void {
+    this.namesProvider?.refresh();
     this.emit();
   }
 
@@ -154,16 +171,20 @@ export class UniverseModule extends FeatureModule {
     return list.sort((a, b) => Number(b.isDefault) - Number(a.isDefault) || a.name.localeCompare(b.name));
   }
 
+  /** The names provider while loaded (the mentions index reads `globalTable()` and the entries' readiness from here). */
+  names(): UniverseNamesProvider | null { return this.namesProvider; }
+
   /** The entry at a path, or undefined when the note isn't an entry (or the mode is off). */
   entry(path: string): Entry | undefined { return this.entriesIdx?.get(path); }
 
   /** The entries of a scope, by type order then name. Scope none gives []. */
   entries(scope: Scope): Entry[] {
-    // the scope is read now, not from the index: it depends on other notes (a book note's `universe` property)
-    const live = (function* (self: UniverseModule) {
-      for (const [, e] of self.entriesIdx?.entries() ?? []) yield { ...e, scope: self.scopeOf(e.path) };
-    })(this);
-    return entriesIn(live, scope);
+    return entriesIn(this.scopedEntries(), scope);
+  }
+
+  /** Every entry with its scope read now, not from the index: it depends on other notes (Q20). */
+  private *scopedEntries(): Generator<ScopedEntry> {
+    for (const [, e] of this.entriesIdx?.entries() ?? []) yield { ...e, scope: this.scopeOf(e.path) };
   }
 
   /** The threads of a scope (see ThreadsFeature.threads); [] while open threads are off. */

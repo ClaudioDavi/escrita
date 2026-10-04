@@ -93,7 +93,7 @@ describe("universe and threads load and unload", () => {
     plugin.settings.features = { ...plugin.settings.features, threads: true };
     registry.apply();
     expect(names()).toEqual([...UNIVERSE_COMMANDS, ...THREAD_COMMANDS].sort());
-    expect(plugin.liveListeners()).toBe(3);
+    expect(plugin.liveListeners()).toBe(4); // editor-menu, file-menu, the threads feature, and the names provider's metadata listener (3.1)
     expect((plugin.extensions[0] as unknown[]).length).toBe(1);
   });
 
