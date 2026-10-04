@@ -52,7 +52,6 @@ button.escrita-ai-count.is-open {
   display: flex;
   flex-direction: column;
   padding: var(--size-4-1) 0 var(--size-4-2) var(--size-4-6);
-  background: var(--background-secondary-alt);
   border-bottom: 1px solid var(--background-modifier-border);
 }
 .escrita-ai-row {
@@ -69,6 +68,8 @@ button.escrita-ai-count.is-open {
 button.escrita-ai-row {
   width: 100%;
   color: var(--text-muted);
+  /* `button.escrita-ai-btn { font: inherit }` would undo the row's size */
+  font-size: var(--font-ui-small);
 }
 .escrita-ai-row.is-chapter {
   padding-left: var(--size-4-4);

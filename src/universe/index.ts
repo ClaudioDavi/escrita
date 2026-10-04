@@ -135,8 +135,11 @@ export class UniverseModule extends FeatureModule {
         return b ? p.books.chapters(b).map((c) => c.file.path) : [];
       },
       isWork: (path) => {
+        if (entries.get(path)) return false;
+        // a book is a work even before its note has a status; a standalone note needs a stage
+        if (p.books.classify(path).kind === "book-note") return true;
         const e = p.works.get(path);
-        return !!e && (e.role === "book" || e.role === "note") && e.stage !== null && !entries.get(path);
+        return !!e && e.role === "note" && e.stage !== null;
       },
       worksIn: (scope) => this.worksIn(scope),
     });
