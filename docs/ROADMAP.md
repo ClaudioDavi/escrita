@@ -54,10 +54,27 @@ when they send a work out; export reads what the note already has.
 | Companion-plugin guide | N 6 | S | A guide page ("Other plugins") and a settings note; re-check each plugin's maintenance and running next to StoryLine. |
 | User guide for 0.8 | Docs | S | "Publishing" (the publish check, export, submissions) and "Other plugins", in English and pt-BR. |
 
-**Improvement:** each module owns its settings section (IMPROVEMENTS.md, candidate 11).
-Export brings a module with its own settings (presets, fonts, the manuscript header),
-and submissions add more; with candidate 11 they live in the module, and an off
-feature's section goes with it, instead of `settings.ts` growing again.
+**Improvements** (planned 2026-10-04 after an architecture and a measured performance
+review; details in [PLAN-0.8.md](PLAN-0.8.md)):
+
+- Each module owns its settings section, and feature metadata lives in one place
+  (IMPROVEMENTS 11, 20). Export and submissions bring settings and two feature ids.
+- The foundations export and submissions stand on:
+  - 15: the manuscript model, a note's prose as an editor receives it.
+  - 16: `classifyKey` and the `submission` field.
+  - 17: `notes.create`, with binary writes.
+  - 18: the book source.
+  - 19: readiness checks in core, with the unclosed `<!--` check.
+- Performance, all measured on a 3,020-note vault:
+  - Index passes yield on a time budget: the longest block goes from 125 ms to 14 ms
+    (21).
+  - The mentions index starts on demand. It is 85% of startup index work, about 20 s
+    on a phone (14).
+  - The mentions index no longer recomputes on every save while typing (21).
+  - Names matching is about 1.4× faster with caches that last across calls (22).
+  - Small redraw fixes (23).
+- If room: the lens memos (22) and one name fold (10).
+- Set aside after measuring: candidate 12, the shared read per flush.
 
 Open from 0.7, for the author on a device: gates G0c (does `spellcheck="false"` hold on
 Android and iOS?), G0d (the Reading-view "Appears in" section across re-renders), the
@@ -77,8 +94,7 @@ shipped as 0.4.0 and the lens as 0.5.0.
 | 0.10 | Export stage 3: EPUB 3, validated by EPUBCheck in CI · Book-wide publish check and serial dashboard · "Read the book" view | N 7, N 4, N 8 | M + S + M | Books |
 | 1.0 | Stabilization: mobile pass, the user guide complete in English and pt-BR (see "Documentation"), migrations tested on the author's vault, community plugin submission · Set up a writing vault (creates the home note and a first writing layout, with presets: Essentials, Writer, Everything, built on the 0.7 feature switches) | SF 10 | M + S | Full release |
 
-Improvements: 0.8 is planned above (IMPROVEMENTS 11, each module owns its settings
-section); later versions pick from IMPROVEMENTS.md when they're planned in detail.
+Improvements: 0.8 is planned above (PLAN-0.8.md); later versions pick from IMPROVEMENTS.md when they're planned in detail.
 
 Notes:
 

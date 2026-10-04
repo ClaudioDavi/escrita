@@ -161,7 +161,9 @@ and what upkeep it asks of the writer.
   user guide in `docs/guide/` (English and pt-BR; The world, Features and settings, Writing).
 - **0.8 (next), submitting work**: Markdown and DOCX export (Shunn and pt-BR presets) for a
   note and a book, submissions, the companion-plugin guide (N 7, SF 12, N 6).
-  Improvement: each module owns its settings section (IMPROVEMENTS 11).
+  Improvements: each module owns its settings section (IMPROVEMENTS 11, 20), the export
+  and submissions foundations (15–19), and measured performance work (14, 21–23).
+  Plan in `docs/PLAN-0.8.md`.
 - **0.9**: universe phase 2 (timeline, facts over time, continuity, canon), with "Unlinked
   mentions" and "Names without an entry" (moved there from 0.7).
 - **0.10**: EPUB, book-wide publish check, "Read the book".
@@ -172,10 +174,10 @@ and what upkeep it asks of the writer.
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and
 `goals/progress-modal.ts` are large and mostly untested (IMPROVEMENTS 5; the chapter rows
 were extracted to `outline/rows.ts` in 0.7, the first slice); path-keyed
-data follows renames in three separate places, the measurer, the explorer's tracked
-set and the snapshots store (IMPROVEMENTS 2, done in 0.4 for everything else, which
-follows through `plugin.index.follow`; since 0.7 those followers run even when their
-feature is off, and the snapshots one also moves files); the Reading-view "Appears in"
+data follows renames on its own vault events in two places, the measurer and the
+explorer's tracked set (IMPROVEMENTS 2, done in 0.4 for everything else, which follows
+through `plugin.index.follow`; the snapshots store moved there in 0.7, and since 0.7
+those followers run even when their feature is off); the Reading-view "Appears in"
 section and the phone checks for name marks and the names bench (G0c, G0d, G0h) are
 still open; two editor commands (plant a thread, insert
 from a template) still write straight to the editor instead of `plugin.notes`; a few Markdown parity
