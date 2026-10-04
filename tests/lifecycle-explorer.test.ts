@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FeatureRegistry } from "../src/core/feature-registry";
 import type { FeatureId } from "../src/core/features";
-import type { EscritaModule } from "../src/data";
 import type { FeatureModule } from "../src/core/module-context";
 import { ExplorerModule } from "../src/explorer";
 import { fakePlugin } from "./support/fake-plugin";
@@ -13,7 +12,7 @@ function setup() {
   plugin.books = { allBooks: () => [], chapters: () => [], classify: () => ({ tracked: false }) };
   (plugin.app.vault as unknown as { getMarkdownFiles(): unknown[] }).getMarkdownFiles = () => [];
   const mod = new ExplorerModule(plugin.asPlugin);
-  const reg = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, FeatureModule | EscritaModule>([["explorerCounts", mod]]));
+  const reg = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, FeatureModule>([["explorerCounts", mod]]));
   plugin.features = reg;
   reg.init();
   return { plugin, reg, listeners };

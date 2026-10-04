@@ -190,6 +190,10 @@ export class OutlineView extends ItemView {
   /** Q44: session only */
   private filter = { stages: new Set<string>(), povs: new Set<string>() };
   private povExpanded = false;
+  /** re-fits the POV chips to the width (the observer calls it when the width changes) */
+  private refitChips: (() => void) | null = null;
+  private chipsObserver: ResizeObserver | null = null;
+  private chipsWidth = 0;
   /** Q42: the colour of each POV key in the book shown */
   private colors: Record<string, PovColor> = {};
   private closeMenu: (() => void) | null = null;
@@ -272,6 +276,8 @@ export class OutlineView extends ItemView {
     // Drop a queued refresh and any in flight, so nothing renders into the closed view.
     this.requestRefresh.cancel();
     this.closeMenu?.();
+    this.chipsObserver?.disconnect();
+    this.chipsObserver = null;
     this.token++;
     this.book = null;
     this.note = null;
@@ -507,6 +513,7 @@ export class OutlineView extends ItemView {
     this.statsEl = header.createDiv({ cls: "escrita-outline-stats escrita-outline-sumr" });
     this.progressEl = header.createDiv({ cls: "escrita-outline-progress" });
     this.chipsEl = header.createDiv({ cls: "escrita-outline-chipbox" });
+    this.observeChips(this.chipsEl);
     this.renderStats();
 
     // Chapters
@@ -676,11 +683,23 @@ export class OutlineView extends ItemView {
     this.renderChips(model);
   }
 
+  private observeChips(el: HTMLElement): void {
+    this.chipsObserver?.disconnect();
+    this.chipsWidth = 0;
+    if (typeof ResizeObserver === "undefined") return;
+    this.chipsObserver = new ResizeObserver(() => {
+      if (el.clientWidth === this.chipsWidth) return;
+      this.chipsWidth = el.clientWidth;
+      this.refitChips?.();
+    });
+    this.chipsObserver.observe(el);
+  }
+
   private renderChips(model = this.model(this.rows)): void {
     if (!this.chipsEl) return;
-    renderChips(this.chipsEl, {
+    this.refitChips = renderChips(this.chipsEl, {
       model, filter: this.filter, povExpanded: this.povExpanded,
-      shown: this.shownRows(this.rows).length, total: this.rows.length,
+      shown: this.shownRows(this.rows).length, total: this.rows.length, compact: Platform.isMobile,
     }, {
       toggle: (group, key) => {
         const set = this.filter[group];

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { FeatureRegistry } from "../src/core/feature-registry";
 import type { FeatureId } from "../src/core/features";
 import type { FeatureModule } from "../src/core/module-context";
-import type { EscritaModule } from "../src/data";
 import { OutlineModule } from "../src/outline";
 import { OUTLINE_VIEW } from "../src/outline/view";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
@@ -25,7 +24,7 @@ function slotArray(): unknown[] {
 beforeEach(() => {
   plugin = fakePlugin();
   mod = new OutlineModule(plugin.asPlugin);
-  reg = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, FeatureModule | EscritaModule>([["outline", mod]]));
+  reg = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, FeatureModule>([["outline", mod]]));
   plugin.features = reg;
   reg.init();
 });

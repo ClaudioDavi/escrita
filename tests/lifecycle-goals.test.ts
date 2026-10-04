@@ -3,7 +3,6 @@ import { noticeLog } from "./support/obsidian";
 import { FeatureRegistry } from "../src/core/feature-registry";
 import type { FeatureId } from "../src/core/features";
 import type { FeatureModule } from "../src/core/module-context";
-import type { EscritaModule } from "../src/data";
 import { GoalsModule } from "../src/goals";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
 
@@ -31,7 +30,7 @@ beforeEach(() => {
   plugin = fakePlugin();
   (plugin as unknown as { books: unknown }).books = { classify: () => ({ tracked: false, kind: "note", book: null, markdown: false }) };
   goals = new GoalsModule(plugin.asPlugin);
-  const map = new Map<FeatureId, FeatureModule | EscritaModule>([["goals", goals]]);
+  const map = new Map<FeatureId, FeatureModule>([["goals", goals]]);
   registry = new FeatureRegistry(plugin.asPlugin, map);
   plugin.features = registry;
   registry.init();

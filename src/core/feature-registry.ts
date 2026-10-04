@@ -4,20 +4,18 @@
 // registry controls the order of load (FEATURE_IDS) and unload (reverse).
 
 import type EscritaPlugin from "../main";
-import type { EscritaModule } from "../data";
 import { FEATURE_IDS, planApply, wanted, type FeatureId, type FeatureSwitches } from "./features";
-import { FeatureModule, ModuleContextImpl, ModuleSlots } from "./module-context";
+import type { FeatureModule } from "./module-context";
+import { ModuleContextImpl, ModuleSlots } from "./module-context";
 
 /** Past this many passes a feature that keeps re-triggering apply() is cut off. */
 const MAX_PASSES = 10;
 
 interface Entry {
   id: FeatureId;
-  module: FeatureModule | EscritaModule;
-  /** a 0.6 module wrapped in the adapter (load/unload instead of onload/onunload) */
-  legacy: boolean;
+  module: FeatureModule;
   ctx: ModuleContextImpl;
-  slots: ModuleSlots | null;
+  slots: ModuleSlots;
 }
 
 export class FeatureRegistry {
@@ -30,22 +28,20 @@ export class FeatureRegistry {
   private slotsDirty = false;
   private layoutHooked = false;
 
-  constructor(private plugin: EscritaPlugin, modules: ReadonlyMap<FeatureId, FeatureModule | EscritaModule>) {
+  constructor(private plugin: EscritaPlugin, modules: ReadonlyMap<FeatureId, FeatureModule>) {
     for (const id of FEATURE_IDS) {
       const module = modules.get(id);
       if (!module) continue;
-      const legacy = !(module instanceof FeatureModule);
-      const slots = legacy ? null : new ModuleSlots(plugin, (module as FeatureModule).slots, () => { this.slotsDirty = true; });
-      this.entries.push({ id, module, legacy, ctx: new ModuleContextImpl(plugin, slots), slots });
+      const slots = new ModuleSlots(plugin, module.slots, () => { this.slotsDirty = true; });
+      this.entries.push({ id, module, ctx: new ModuleContextImpl(plugin, slots), slots });
     }
   }
 
   /** At plugin load: view, extension and code block slots; data followers of every module. */
   init(): void {
     for (const e of this.entries) {
-      e.slots?.register();
-      if (e.legacy) continue;
-      for (const f of (e.module as FeatureModule).dataFollowers?.() ?? []) this.plugin.index.follow(f);
+      e.slots.register();
+      for (const f of e.module.dataFollowers?.() ?? []) this.plugin.index.follow(f);
     }
   }
 
@@ -121,14 +117,7 @@ export class FeatureRegistry {
   }
 
   private want(): Set<FeatureId> {
-    const want = wanted(this.switches());
-    // A 0.6 module that has not moved onto FeatureModule yet stays loaded for good, as it was
-    // in 0.6.0: its load() registers views and the like on the plugin, which cannot be undone,
-    // so loading it a second time would throw (G0b). Wave 2 moves each one over.
-    for (const e of this.entries) {
-      if (e.legacy) want.add(e.id);
-    }
-    return want;
+    return wanted(this.switches());
   }
 
   /** One pass; the changes are fired by apply(), after updateOptions. */
@@ -154,14 +143,8 @@ export class FeatureRegistry {
     if (!e) return false;
     e.ctx.begin();
     try {
-      if (e.legacy) {
-        const r = (e.module as EscritaModule).load();
-        if (r) void Promise.resolve(r).catch((err) => console.error(`Escrita: ${id} failed to load`, err));
-      } else {
-        const m = e.module as FeatureModule;
-        m.attach(e.ctx);
-        m.load();
-      }
+      e.module.attach(e.ctx);
+      e.module.load();
     } catch (err) {
       console.error(`Escrita: ${id} failed to load`, err);
       this.stop(e);
@@ -178,15 +161,14 @@ export class FeatureRegistry {
     // Unregistering a view leaves ghost panes (G0b), so a switched-off feature closes its own leaves.
     // Before stop(): a view's onClose runs now, while the module is still whole.
     if (detachLeaves) {
-      for (const type of e.slots?.viewTypes ?? []) this.plugin.app.workspace.detachLeavesOfType(type);
+      for (const type of e.slots.viewTypes) this.plugin.app.workspace.detachLeavesOfType(type);
     }
     this.stop(e);
   }
 
   private stop(e: Entry): void {
     try {
-      if (e.legacy) (e.module as EscritaModule).unload?.();
-      else (e.module as FeatureModule).unload();
+      e.module.unload();
     } catch (err) {
       console.error(`Escrita: ${e.id} failed to unload`, err);
     }
@@ -201,7 +183,7 @@ export class FeatureRegistry {
       if (this.closed) return;
       for (const e of this.entries) {
         if (this.loaded.has(e.id)) continue;
-        for (const type of e.slots?.viewTypes ?? []) this.plugin.app.workspace.detachLeavesOfType(type);
+        for (const type of e.slots.viewTypes) this.plugin.app.workspace.detachLeavesOfType(type);
       }
     });
   }

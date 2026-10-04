@@ -5,7 +5,7 @@ import { outlineStrings } from "../src/outline/strings";
 import { noteProgress, type Counts, type Piece } from "../src/core/measure";
 import { DEFAULT_STAGES, type Stage } from "../src/core/stages";
 import { barModel } from "../src/outline/bar";
-import { headerModel, povCss, pruneFilter, summaryText, visiblePovChips } from "../src/outline/header";
+import { headerModel, fitPovChips, povCss, pruneFilter, summaryText, visiblePovChips } from "../src/outline/header";
 import type { ChapterRow } from "../src/outline/rows";
 
 beforeAll(() => { registerStrings(coreStrings); registerStrings(outlineStrings); });
@@ -102,5 +102,53 @@ describe("barModel", () => {
     const m = model(1000, target(2000, 4000))!;
     expect(m.targetMark).toBeCloseTo(0.5, 5);
     expect(m.fill).toBeCloseTo(0.25, 5);
+  });
+});
+
+describe("fitPovChips", () => {
+  /** a chip that wraps to row 1 once `perRow` chips before it are showing */
+  function fake(perRow: number, n: number) {
+    const hiddenSet = new Set<number>();
+    const chips = Array.from({ length: n }, (_, i) => ({
+      get offsetTop() { return visibleBefore(i) >= perRow ? 30 : 0; },
+      hasClass: () => hiddenSet.has(i),
+      toggleClass: (_c: string, on: boolean) => { if (on) hiddenSet.add(i); else hiddenSet.delete(i); },
+    }));
+    const visibleBefore = (i: number) => [...Array(i).keys()].filter((j) => !hiddenSet.has(j)).length;
+    let moreHidden = true;
+    let text = "";
+    const more = {
+      get offsetTop() { return visibleBefore(n) >= perRow ? 30 : 0; },
+      toggleClass: (_c: string, on: boolean) => { moreHidden = on; },
+      setText: (v: string) => { text = v; },
+      setAttr: () => {},
+    };
+    return { chips, more, hiddenSet, state: () => ({ moreHidden, text }) };
+  }
+  const input = (f: ReturnType<typeof fake>, over: object = {}) => ({
+    group: { clientWidth: 260 } as unknown as HTMLElement,
+    chips: f.chips as unknown as HTMLElement[], more: f.more as unknown as HTMLElement,
+    keys: f.chips.map((_, i) => `k${i}`), selected: new Set<string>(), expanded: false, fallback: new Set<string>(), ...over,
+  });
+
+  beforeAll(() => registerStrings(outlineStrings));
+
+  it("shows everything when it fits", () => {
+    const f = fake(5, 3);
+    fitPovChips(input(f));
+    expect(f.hiddenSet.size).toBe(0);
+    expect(f.state().moreHidden).toBe(true);
+  });
+  it("collapses to +N by the room, leaving space for the button", () => {
+    const f = fake(3, 6);
+    fitPovChips(input(f));
+    expect([...f.hiddenSet].sort()).toEqual([2, 3, 4, 5]);
+    expect(f.state().moreHidden).toBe(false);
+    expect(f.state().text).toBe("+4");
+  });
+  it("never hides a selected chip", () => {
+    const f = fake(3, 6);
+    fitPovChips(input(f, { selected: new Set(["k5"]) }));
+    expect(f.hiddenSet.has(5)).toBe(false);
   });
 });

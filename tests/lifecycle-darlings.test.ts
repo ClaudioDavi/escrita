@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TFile } from "./support/obsidian";
 import { FeatureRegistry } from "../src/core/feature-registry";
 import type { FeatureId } from "../src/core/features";
-import type { EscritaModule } from "../src/data";
 import { DarlingsModule, VIEW_DARLINGS } from "../src/darlings";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
 
@@ -21,7 +20,7 @@ beforeEach(() => {
   plugin = fakePlugin();
   plugin.books = { classify: () => ({ book: null }) };
   mod = new DarlingsModule(plugin.asPlugin);
-  reg = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, DarlingsModule | EscritaModule>([["darlings", mod]]));
+  reg = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, DarlingsModule>([["darlings", mod]]));
   plugin.features = reg;
   reg.init();
 });

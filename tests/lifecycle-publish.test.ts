@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { FeatureRegistry } from "../src/core/feature-registry";
 import type { FeatureId } from "../src/core/features";
 import type { FeatureModule } from "../src/core/module-context";
-import type { EscritaModule } from "../src/data";
 import { PublishModule } from "../src/publish";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
 
@@ -13,7 +12,7 @@ let registry: FeatureRegistry;
 beforeEach(() => {
   plugin = fakePlugin();
   module = new PublishModule(plugin.asPlugin);
-  const map = new Map<FeatureId, FeatureModule | EscritaModule>([["publish", module]]);
+  const map = new Map<FeatureId, FeatureModule>([["publish", module]]);
   registry = new FeatureRegistry(plugin.asPlugin, map);
   plugin.features = registry;
   registry.init();
