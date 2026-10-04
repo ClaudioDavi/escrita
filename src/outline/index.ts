@@ -1,6 +1,7 @@
 import { Notice, TFile, normalizePath, type Editor } from "obsidian";
 import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
+import type { Follower } from "../core/vault-index";
 import { FeatureModule, type EditorSlot, type FeatureSlots } from "../core/module-context";
 import type { Book } from "../core/books";
 import { safeFileName } from "../core/book";
@@ -13,6 +14,7 @@ import { buildBoard, canOverwriteBoard, mergeBoard, type BoardChapter } from "./
 import { reportError } from "./errors";
 import { ghostBeats } from "./ghost";
 import { loadRows } from "./rows";
+import { assignColors, renamePovKey, type PovColor } from "./pov";
 import { CreateBookModal, confirmAction } from "./modals";
 import { OUTLINE_VIEW, OutlineView, chaptersPort, str } from "./view";
 
@@ -30,6 +32,25 @@ export class OutlineModule extends FeatureModule {
   private editorSlot: EditorSlot | null = null;
 
   constructor(private plugin: EscritaPlugin) { super(); }
+
+  /** Q8: the POV colours follow a renamed note while the outline is off. A deleted note keeps its colour (never pruned). */
+  dataFollowers(): Follower[] {
+    const p = this.plugin;
+    return [{
+      moved: (oldPath, newPath) => {
+        if (renamePovKey(p.data.povColors, oldPath, newPath)) p.requestSave();
+      },
+    }];
+  }
+
+  /** Q42: the colour of each POV key. A key seen for the first time gets the next free colour and is saved. */
+  colorsFor(keys: readonly string[]): Record<string, PovColor> {
+    const store = this.plugin.data.povColors;
+    if (assignColors(keys, store)) this.plugin.requestSave();
+    const out: Record<string, PovColor> = {};
+    for (const k of keys) if (Object.prototype.hasOwnProperty.call(store, k)) out[k] = store[k];
+    return out;
+  }
 
   onload(): void {
     const plugin = this.plugin;

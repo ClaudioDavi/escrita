@@ -4,6 +4,9 @@ import {
   rowMatches, statusTally, type PovColor, type RowFilter,
 } from "../src/outline/pov";
 import type { ChapterRow } from "../src/outline/rows";
+import { vi } from "vitest";
+import { OutlineModule } from "../src/outline";
+import { fakePlugin } from "./support/fake-plugin";
 import { DEFAULT_STAGES, type Stage } from "../src/core/stages";
 
 const stages = {
@@ -145,5 +148,42 @@ describe("canReorder", () => {
     expect(canReorder(filter(["draft"]))).toBe(false);
     expect(canReorder(filter([], ["maria"]))).toBe(false);
     expect(canReorder(filter(["draft"], ["maria"]))).toBe(false);
+  });
+});
+
+describe("OutlineModule data followers and colorsFor", () => {
+  function setup(colors: Record<string, PovColor> = {}) {
+    const plugin = fakePlugin();
+    plugin.data.povColors = colors;
+    const save = vi.fn();
+    plugin.requestSave = Object.assign(save, { cancel: () => {} });
+    const mod = new OutlineModule(plugin.asPlugin);
+    const [f] = mod.dataFollowers();
+    return { plugin, mod, f, save };
+  }
+  it("moves the colour on a rename, without the module being loaded", () => {
+    const { plugin, f, save } = setup({ "Characters/Maria.md": "blue" });
+    f.moved!("Characters/Maria.md", "People/Maria.md");
+    expect(plugin.data.povColors).toEqual({ "People/Maria.md": "blue" });
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+  it("keeps the colour when the note is deleted", () => {
+    const { plugin, f, save } = setup({ "a.md": "blue" });
+    expect(f.deleted).toBeUndefined();
+    expect(plugin.data.povColors).toEqual({ "a.md": "blue" });
+    expect(save).not.toHaveBeenCalled();
+  });
+  it("saves only when a rename changed something", () => {
+    const { f, save } = setup({ "a.md": "blue" });
+    f.moved!("z.md", "y.md");
+    expect(save).not.toHaveBeenCalled();
+  });
+  it("colorsFor assigns, returns the colours and saves only on a new key", () => {
+    const { plugin, mod, save } = setup();
+    expect(mod.colorsFor(["a", "b"])).toEqual({ a: "red", b: "orange" });
+    expect(plugin.data.povColors).toEqual({ a: "red", b: "orange" });
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(mod.colorsFor(["b", "a"])).toEqual({ a: "red", b: "orange" });
+    expect(save).toHaveBeenCalledTimes(1);
   });
 });

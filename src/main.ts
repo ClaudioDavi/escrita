@@ -14,6 +14,7 @@ import { NoteService } from "./core/notes";
 import { GoalsModule } from "./goals";
 import { goalsStrings } from "./goals/strings";
 import { OutlineModule } from "./outline";
+import { cleanPovColors } from "./outline/pov";
 import { outlineStrings } from "./outline/strings";
 import { PlaceholdersModule } from "./placeholders";
 import { placeholdersStrings } from "./placeholders/strings";
@@ -173,7 +174,7 @@ export default class EscritaPlugin extends Plugin {
       leftOff: cleanLeftOff(raw.leftOff),
       lensDismissed: cleanDismissed(raw.lensDismissed),
       threadSeen: cleanSeen(raw.threadSeen),
-      povColors: {},
+      povColors: cleanPovColors(raw.povColors),
     };
   }
 
