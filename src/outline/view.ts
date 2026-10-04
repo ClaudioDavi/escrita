@@ -18,7 +18,14 @@ import {
 import { confirmAction } from "./modals";
 import { errorMessage } from "./errors";
 import { loadRows, type ChapterRow as LoadedRow, type RowsPort } from "./rows";
-import { povValue } from "./pov";
+import {
+  canReorder, filterActive, povValue, rowMatches, type PovColor, type RowFilter,
+} from "./pov";
+import {
+  headerModel, povCss, pruneFilter, renderChips, renderColorToggle, showPovMenu, summaryText,
+  type ChipModel, type ColorBy,
+} from "./header";
+import { renderPieceBar } from "./bar";
 
 export const OUTLINE_VIEW = "escrita-outline";
 
@@ -35,6 +42,8 @@ interface ChapterRow {
   beats: BeatMarker[];
   placeholders: number;
   bodyBlank: boolean;
+  /** the row loader's row (chapters only): stage, POV, piece, count and progress for the stripe, chips and bar */
+  data?: LoadedRow;
 }
 
 /** The row loader's row as the panel's own, keyed by file (0.7 plan 2.2). */
@@ -50,6 +59,7 @@ export function toViewRow(row: LoadedRow, file: TFile): ChapterRow {
     beats: row.beats,
     placeholders: row.placeholders,
     bodyBlank: row.bodyBlank,
+    data: row,
   };
 }
 
@@ -108,6 +118,9 @@ interface RowEls {
   title?: HTMLElement;
   summary?: HTMLElement;
   meta?: HTMLElement;
+  /** the stripe and the bar under the title line */
+  stripe?: HTMLElement;
+  bar?: HTMLElement;
   beats: { el: HTMLElement; text: HTMLElement }[];
 }
 
@@ -171,6 +184,15 @@ export class OutlineView extends ItemView {
   private lastActive: string | null | undefined = undefined;
   private statsEl: HTMLElement | null = null;
   private progressEl: HTMLElement | null = null;
+  private chipsEl: HTMLElement | null = null;
+  /** Q43: what the stripe follows; kept in the view's state, so Obsidian saves it with the layout */
+  private colorBy: ColorBy = "status";
+  /** Q44: session only */
+  private filter = { stages: new Set<string>(), povs: new Set<string>() };
+  private povExpanded = false;
+  /** Q42: the colour of each POV key in the book shown */
+  private colors: Record<string, PovColor> = {};
+  private closeMenu: (() => void) | null = null;
 
   private requestRefresh = debounce(() => { void this.refresh(); }, 300, true);
 
@@ -184,11 +206,12 @@ export class OutlineView extends ItemView {
 
   getState(): Record<string, unknown> {
     const note = this.target.mode === "note" ? this.target.path : undefined;
-    return { ...super.getState(), book: this.bookPath, note };
+    return { ...super.getState(), book: this.bookPath, note, colorBy: this.colorBy };
   }
 
   async setState(state: unknown, result: ViewStateResult): Promise<void> {
-    const s = state as { book?: unknown; note?: unknown } | null;
+    const s = state as { book?: unknown; note?: unknown; colorBy?: unknown } | null;
+    this.colorBy = s?.colorBy === "pov" ? "pov" : "status";
     if (s && typeof s.book === "string") {
       this.bookPath = s.book;
       this.target = { mode: "book", path: s.book };
@@ -200,6 +223,7 @@ export class OutlineView extends ItemView {
 
   /** Show a given book (by its note path). */
   showBook(notePath: string): void {
+    if (this.bookPath !== notePath) this.clearFilter();
     this.bookPath = notePath;
     this.target = { mode: "book", path: notePath };
     this.draftBefore = null;
@@ -234,6 +258,8 @@ export class OutlineView extends ItemView {
     this.registerEvent(vault.on("rename", (f, old) => onFs(f, old)));
     // Placeholder badges: the index only notifies when some file's markers change.
     this.register(this.plugin.placeholders.onChange(() => { if (this.book) this.requestRefresh(); }));
+    // Switching placeholders on or off changes every row's badge: the badges count 0 while it is off.
+    this.register(this.plugin.features.onChange((id) => { if (id === "placeholders" && this.book) this.requestRefresh(); }));
     this.registerDomEvent(this.contentEl, "focusout", () => {
       this.contentEl.win.setTimeout(() => {
         if ((this.book || this.note) && this.dirty && !this.fieldFocused() && !this.busy) void this.refresh(true);
@@ -245,6 +271,7 @@ export class OutlineView extends ItemView {
   async onClose(): Promise<void> {
     // Drop a queued refresh and any in flight, so nothing renders into the closed view.
     this.requestRefresh.cancel();
+    this.closeMenu?.();
     this.token++;
     this.book = null;
     this.note = null;
@@ -287,7 +314,7 @@ export class OutlineView extends ItemView {
     });
     this.lastActive = r.lastActive;
     if (r.target.mode === "book") {
-      if (this.bookPath !== r.target.path) this.draftBefore = null;
+      if (this.bookPath !== r.target.path) { this.draftBefore = null; this.clearFilter(); }
       this.bookPath = r.target.path;
     }
     this.target = r.target;
@@ -328,6 +355,8 @@ export class OutlineView extends ItemView {
     const { port, files } = chaptersPort(this.plugin);
     const s = this.plugin.settings;
     const rows = await loadRows(port, book);
+    // Q42: rows call colorsFor when they load, so a POV seen for the first time gets the next free colour
+    this.colors = this.plugin.outline.colorsFor(rows.flatMap((r) => (r.pov ? [r.pov.key] : [])));
     return rows.map((row) => {
       const file = files.get(row.path) as TFile;
       const fm = this.plugin.books.frontmatter(file);
@@ -363,6 +392,7 @@ export class OutlineView extends ItemView {
       return;
     }
     if (token !== this.token) return;
+    this.pruneFilter(rows);
     const sameBook = this.book?.note.path === book.note.path;
     if (!this.forceNext && sameBook && this.fieldFocused()) {
       // Keep `rows` matching what the panel shows until it can be re-rendered.
@@ -450,32 +480,39 @@ export class OutlineView extends ItemView {
     // Header
     const header = el.createDiv({ cls: "escrita-outline-header" });
     const top = header.createDiv({ cls: "escrita-outline-top" });
-    top.createDiv({ cls: "escrita-outline-heading", text: t("outline.viewTitle") });
+    const title = top.createDiv({ cls: "escrita-outline-titlerow" });
+    title.createDiv({ cls: "escrita-outline-heading is-book", text: t("outline.viewTitle") });
+    const books = this.plugin.books.allBooks();
+    if (books.length > 1) {
+      const sel = title.createEl("select", { cls: "dropdown escrita-outline-bookselect" });
+      sel.setAttr("aria-label", t("outline.bookSelect"));
+      for (const b of books) sel.createEl("option", { text: b.title, value: b.note.path });
+      sel.value = book.note.path;
+      sel.addEventListener("change", () => this.showBook(sel.value));
+    } else {
+      title.createDiv({ cls: "escrita-outline-book", text: book.title });
+    }
     const tools = top.createDiv({ cls: "escrita-outline-tools" });
+    renderColorToggle(tools, this.colorBy, (m) => {
+      this.colorBy = m;
+      this.app.workspace.requestSaveLayout();
+      this.render();
+    });
     const boardBtn = tools.createEl("button", { cls: "clickable-icon escrita-outline-tool" });
     setIcon(boardBtn, "layout-dashboard");
     setTooltip(boardBtn, t("outline.board"));
     boardBtn.setAttr("aria-label", t("outline.board"));
     boardBtn.addEventListener("click", () => { if (this.book) void this.plugin.outline.openBoard(this.book); });
 
-    const books = this.plugin.books.allBooks();
-    if (books.length > 1) {
-      const sel = header.createEl("select", { cls: "dropdown escrita-outline-bookselect" });
-      sel.setAttr("aria-label", t("outline.bookSelect"));
-      for (const b of books) sel.createEl("option", { text: b.title, value: b.note.path });
-      sel.value = book.note.path;
-      sel.addEventListener("change", () => this.showBook(sel.value));
-    } else {
-      header.createDiv({ cls: "escrita-outline-book", text: book.title });
-    }
-    this.statsEl = header.createDiv({ cls: "escrita-outline-stats" });
+    this.statsEl = header.createDiv({ cls: "escrita-outline-stats escrita-outline-sumr" });
     this.progressEl = header.createDiv({ cls: "escrita-outline-progress" });
+    this.chipsEl = header.createDiv({ cls: "escrita-outline-chipbox" });
     this.renderStats();
 
     // Chapters
     const list = el.createDiv({ cls: "escrita-outline-list" });
     const activePath = this.app.workspace.getActiveFile()?.path;
-    this.rows.forEach((row) => {
+    this.shownRows(this.rows).forEach((row) => {
       if (this.draftBefore === row.file) this.renderNewLine(list, row.file);
       this.renderChapter(list, row, row.file.path === activePath);
     });
@@ -620,18 +657,92 @@ export class OutlineView extends ItemView {
 
   private renderStats(): void {
     if (!this.statsEl || !this.progressEl || !this.book) return;
-    const beats = this.rows.reduce((n, r) => n + r.beats.length, 0);
-    this.statsEl.setText(`${plural("outline.chapters", this.rows.length)} · ${plural("outline.beats", beats)}`);
+    const stats = this.statsEl;
+    stats.empty();
+    const model = this.model(this.rows);
+    stats.createSpan({ cls: "escrita-outline-sum", text: summaryText(this.rows.length, model.tally) });
     const words = this.rows.reduce((n, r) => n + r.words, 0);
     const { goal } = this.plugin.measure.bookGoal(this.book);
+    const total = stats.createSpan({ cls: "escrita-outline-total" });
     this.progressEl.empty();
     if (goal) {
-      this.progressEl.createDiv({ cls: "escrita-outline-progress-text", text: t("outline.progress", { words: fmt(words), goal: fmt(goal) }) });
+      total.createSpan({ cls: "escrita-outline-total-now", text: fmt(words) });
+      total.createSpan({ text: ` / ${fmt(goal)}` });
       const bar = this.progressEl.createDiv({ cls: "escrita-outline-bar" });
       bar.createDiv({ cls: "escrita-outline-bar-fill" }).setCssProps({ width: `${Math.min(100, (words / goal) * 100).toFixed(1)}%` });
     } else {
-      this.progressEl.createDiv({ cls: "escrita-outline-progress-text", text: unitAmount("words", words) });
+      total.setText(unitAmount("words", words));
     }
+    this.renderChips(model);
+  }
+
+  private renderChips(model = this.model(this.rows)): void {
+    if (!this.chipsEl) return;
+    renderChips(this.chipsEl, {
+      model, filter: this.filter, povExpanded: this.povExpanded,
+      shown: this.shownRows(this.rows).length, total: this.rows.length,
+    }, {
+      toggle: (group, key) => {
+        const set = this.filter[group];
+        if (!set.delete(key)) set.add(key);
+        this.render();
+      },
+      clear: () => { this.clearFilter(); this.render(); },
+      togglePovExpanded: () => { this.povExpanded = !this.povExpanded; this.renderChips(); },
+      povMenu: (anchor, chip) => this.openPovMenu(anchor, chip),
+    });
+  }
+
+  /** The chips, summary and tally for these rows (the whole book, whatever the filter). */
+  private model(rows: readonly ChapterRow[]) {
+    const { stages, otherStatusColors } = this.plugin.settings;
+    return headerModel(
+      rows.flatMap((r) => (r.data ? [r.data] : [])), stages,
+      (word) => statusColor(word, stages, otherStatusColors), this.colors,
+    );
+  }
+
+  private get rowFilter(): RowFilter { return this.filter; }
+
+  /** Q44: the rows that pass the filter, in book order. */
+  private shownRows(rows: ChapterRow[]): ChapterRow[] {
+    if (!filterActive(this.rowFilter)) return rows;
+    return rows.filter((r) => r.data && rowMatches(r.data, this.rowFilter));
+  }
+
+  private clearFilter(): void {
+    this.filter.stages.clear();
+    this.filter.povs.clear();
+  }
+
+  /** Drop filter keys the book no longer has (a stage or POV that left it). */
+  private pruneFilter(rows: ChapterRow[]): void {
+    pruneFilter(this.model(rows), this.filter);
+  }
+
+  /** Q44: drag and moving chapters are off while a filter hides some of them (rule 1). */
+  reorderBlocked(): boolean {
+    return !canReorder(this.rowFilter);
+  }
+
+  /** Q42: the swatches write `data.povColors` (shared by every book) and ask for a save. */
+  private openPovMenu(anchor: HTMLElement, chip: ChipModel): void {
+    this.closeMenu?.();
+    const current = Object.prototype.hasOwnProperty.call(this.colors, chip.key) ? this.colors[chip.key] : null;
+    const path = chip.path;
+    const open = path ? () => { void this.openPath(path); } : null;
+    const close = showPovMenu(this, anchor, chip, current, (color) => {
+      this.plugin.data.povColors[chip.key] = color;
+      this.plugin.requestSave();
+      this.colors = { ...this.colors, [chip.key]: color };
+      this.render();
+    }, open);
+    this.closeMenu = close;
+  }
+
+  private async openPath(path: string): Promise<void> {
+    const f = this.app.vault.getAbstractFileByPath(path);
+    if (f instanceof TFile) await this.app.workspace.getLeaf(false).openFile(f);
   }
 
   private renderMeta(meta: HTMLElement, row: ChapterRow): void {
@@ -643,7 +754,8 @@ export class OutlineView extends ItemView {
       });
       setTooltip(badge, t("outline.placeholderTip"));
     }
-    if (row.status) {
+    // The stripe already shows the status in status mode; in POV mode the dot keeps it visible.
+    if (row.status && this.colorBy === "pov") {
       const dot = meta.createSpan({ cls: "escrita-outline-dot" });
       const color = statusColor(row.status, this.plugin.settings.stages, this.plugin.settings.otherStatusColors);
       if (color) dot.setCssProps({ "--escrita-dot": color });
@@ -685,13 +797,16 @@ export class OutlineView extends ItemView {
   private renderChapter(list: HTMLElement, row: ChapterRow, active: boolean): void {
     const group = list.createDiv({ cls: "escrita-outline-chapter" });
     if (active) group.addClass("is-active");
+    const stripe = group.createSpan({ cls: "escrita-outline-stripe" });
+    this.paintStripe(group, stripe, row);
     const line = group.createDiv({ cls: "escrita-outline-line" });
 
     const num = line.createDiv({ cls: "escrita-outline-num", text: row.label });
     buttonize(num, t("outline.menu.open"), (e) => { void this.openFile(row.file, undefined, e.ctrlKey || e.metaKey); });
     setTooltip(num, Platform.isMobile ? t("outline.menu.open") : t("outline.numberTip"));
-    num.draggable = !Platform.isMobile;
+    num.draggable = !Platform.isMobile && !this.reorderBlocked();
     num.addEventListener("dragstart", (e) => {
+      if (this.reorderBlocked()) { e.preventDefault(); return; }
       this.dragFile = row.file;
       e.dataTransfer?.setData("text/plain", row.file.basename);
       if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
@@ -735,10 +850,48 @@ export class OutlineView extends ItemView {
     const meta = line.createDiv({ cls: "escrita-outline-meta" });
     this.renderMeta(meta, row);
     this.moreButton(line, () => this.chapterMenu(row.file));
+    const bar = group.createDiv({ cls: "escrita-outline-pbar-box" });
+    this.renderBar(bar, row);
     const summary = this.makeField(group, "escrita-outline-summary", row.summary, t("outline.summaryPlaceholder"), { field: "summary", row });
 
     const beats: RowEls["beats"] = row.beats.map((b, i) => this.renderBeat(group, row, b, i));
-    this.rowEls.push({ row, group, title, summary, meta, beats });
+    this.rowEls.push({ row, group, title, summary, meta, stripe, bar, beats });
+  }
+
+  /** Q43: the stripe's colour follows the toggle: the stage's (or status') colour, or the POV's. */
+  private stripeOf(row: ChapterRow): { color: string | null; label: string } {
+    if (this.colorBy === "pov") {
+      const pov = row.data?.pov;
+      if (!pov) return { color: null, label: "" };
+      const c = Object.prototype.hasOwnProperty.call(this.colors, pov.key) ? this.colors[pov.key] : null;
+      return { color: c ? povCss(c) : null, label: pov.label };
+    }
+    const { stages, otherStatusColors } = this.plugin.settings;
+    return { color: row.status ? statusColor(row.status, stages, otherStatusColors) ?? null : null, label: row.status };
+  }
+
+  private paintStripe(group: HTMLElement, stripe: HTMLElement, row: ChapterRow): void {
+    const { color, label } = this.stripeOf(row);
+    if (color) group.setCssProps({ "--escrita-stripe": color });
+    else group.style.removeProperty("--escrita-stripe");
+    group.toggleClass("has-stripe", color !== null);
+    if (color && label) {
+      stripe.setAttr("role", "img");
+      stripe.setAttr("aria-label", label);
+      setTooltip(stripe, label);
+    } else {
+      stripe.removeAttribute("role");
+      stripe.removeAttribute("aria-label");
+    }
+  }
+
+  /** Q50: the chapter's bar and its line, from the row's piece (own target, else the book's default). */
+  private renderBar(host: HTMLElement, row: ChapterRow): void {
+    host.empty();
+    const d = row.data;
+    if (!d) return;
+    const bookDefault = this.book ? readChapterDefault(this.plugin.books.frontmatter(this.book.note), this.plugin.settings) : null;
+    renderPieceBar(host, d.progress, d.count, d.piece, d.unit, d.pieceSource === "own" && bookDefault !== null);
   }
 
   private renderBeat(group: HTMLElement, row: ChapterRow, b: BeatMarker, i: number): RowEls["beats"][number] {
@@ -803,13 +956,14 @@ export class OutlineView extends ItemView {
    * Update counts and non-focused texts in place from `rows`. False (and
    * nothing changed) when the structure differs from what is shown.
    */
-  private patch(rows: ChapterRow[]): boolean {
+  private patch(all: ChapterRow[]): boolean {
+    const rows = this.shownRows(all);
     if (rows.length !== this.rowEls.length) return false;
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i], els = this.rowEls[i];
       if (!els.title || row.file !== els.row.file || row.beats.length !== els.beats.length) return false;
     }
-    this.rows = rows;
+    this.rows = all;
     const activePath = this.app.workspace.getActiveFile()?.path;
     const focused = this.contentEl.doc.activeElement;
     const sync = (el: HTMLElement, value: string, line: LineInfo) => {
@@ -818,10 +972,12 @@ export class OutlineView extends ItemView {
       if (fieldText(el) !== value) el.setText(value);
       el.dataset.original = value;
     };
-    this.rows.forEach((row, i) => {
+    rows.forEach((row, i) => {
       const els = this.rowEls[i];
       els.row = row;
       els.group.toggleClass("is-active", row.file.path === activePath);
+      if (els.stripe) this.paintStripe(els.group, els.stripe, row);
+      if (els.bar) this.renderBar(els.bar, row);
       if (els.meta) this.renderMeta(els.meta, row);
       if (els.title) sync(els.title, row.title, { field: "title", row });
       if (els.summary) sync(els.summary, row.summary, { field: "summary", row });
@@ -1199,6 +1355,7 @@ export class OutlineView extends ItemView {
     const book = this.book;
     const from = this.indexOf(file);
     if (!book || from < 0 || from === to || to < 0 || to >= this.rows.length) return;
+    if (this.reorderBlocked()) return;   // Q44: chapters are hidden, so a move could land among the wrong ones
     // Renumber what is really in the folder: drop files that are gone, keep new ones at the end.
     const live = this.plugin.books.chapters(book).map((c) => c.file);
     const liveSet = new Set(live);
@@ -1264,12 +1421,13 @@ export class OutlineView extends ItemView {
       .onClick(() => this.trigger({ type: "chapterToBeat" }, titleEl)));
 
     menu.addSeparator();
+    const blocked = this.reorderBlocked();
     if (idx > 0) {
-      menu.addItem((i) => i.setTitle(t("outline.menu.moveUp")).setIcon("arrow-up")
+      menu.addItem((i) => i.setTitle(t("outline.menu.moveUp")).setIcon("arrow-up").setDisabled(blocked)
         .onClick(() => { void this.moveChapter(file, this.indexOf(file) - 1); }));
     }
     if (idx < this.rows.length - 1) {
-      menu.addItem((i) => i.setTitle(t("outline.menu.moveDown")).setIcon("arrow-down")
+      menu.addItem((i) => i.setTitle(t("outline.menu.moveDown")).setIcon("arrow-down").setDisabled(blocked)
         .onClick(() => { void this.moveChapter(file, this.indexOf(file) + 1); }));
     }
     menu.addSeparator();
