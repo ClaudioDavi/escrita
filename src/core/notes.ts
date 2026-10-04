@@ -17,6 +17,9 @@
 //   plugin.notes.ensureFolder(path) → Promise<void>
 //       Creates each missing folder of `path`; throws FolderBlockedError when
 //       a segment is a file.
+//   plugin.notes.create(path, data, { exists }) → Promise<CreateResult>
+//       Find-or-create a note or a binary file (0.8, IMPROVEMENTS 17; filled by
+//       task 1.7). One tested policy for an existing file instead of seven.
 
 import { MarkdownView, TFile, TFolder, normalizePath, type App } from "obsidian";
 import { editorText, vaultText, type NoteText } from "./note-text";
@@ -26,6 +29,42 @@ export class FolderBlockedError extends Error {
   constructor(readonly path: string) {
     super(`${path} is a file, not a folder`);
     this.name = "FolderBlockedError";
+  }
+}
+
+/**
+ * What `create` does when something already sits at the path, or at a path that
+ * differs only in case (a case clash: on a case-insensitive disk it is the same file).
+ * - "return": keep it and return it. Text is not written.
+ * - "fail": throw NoteExistsError.
+ * - "unique": write next to it under the first free name, Obsidian's way:
+ *   "Title 1.md", "Title 2.md"…
+ * - "replace": overwrite its contents (vault.modify / modifyBinary), keeping the
+ *   file (and its links). Only for derived files (an export) or after the writer
+ *   said yes: rule 1 forbids replacing prose silently. Asking stays with the caller.
+ */
+export type ExistsPolicy = "return" | "fail" | "unique" | "replace";
+
+export interface CreateOptions {
+  exists: ExistsPolicy;
+}
+
+export interface CreateResult {
+  /** the file now at the path (or at the unique path, or the clashing file kept or replaced) */
+  file: TFile;
+  /** "created": a new file; "existing": "return" found one and left it; "replaced": "replace" overwrote one */
+  outcome: "created" | "existing" | "replaced";
+}
+
+/**
+ * Something sits at the path: under "fail", or a folder at the path under any
+ * policy but "unique". `existing` is the path found, which may differ from
+ * `path` in case.
+ */
+export class NoteExistsError extends Error {
+  constructor(readonly path: string, readonly existing: string, readonly folder: boolean) {
+    super(`${existing} already exists`);
+    this.name = "NoteExistsError";
   }
 }
 
@@ -60,6 +99,23 @@ export class NoteService {
       read: async () => { await flush(); return vault.read(file); },
       process: async (fn) => { await flush(); return vault.process(file, fn); },
     });
+  }
+
+  /**
+   * Creates `path` (normalized) with `data`: text through vault.create, bytes
+   * through vault.createBinary (modifyBinary under "replace"). A Uint8Array (what
+   * zipStore and ManuscriptWriter.write return) may be a view into a larger
+   * buffer: it is converted exactly once, here, to
+   * `data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)`;
+   * passing `u8.buffer` would write the wrong bytes. Makes the missing folders first
+   * (ensureFolder; FolderBlockedError when a segment is a file). An existing file
+   * or a case clash follows `o.exists`; so does a file that appears between the
+   * check and the create (a race: the create's failure is checked again once).
+   * Throws NoteExistsError as described there; other vault errors pass through.
+   */
+  async create(path: string, data: string | ArrayBuffer | Uint8Array, o: CreateOptions): Promise<CreateResult> {
+    void path; void data; void o;
+    throw new Error("not implemented: 0.8 task 1.7");
   }
 
   async ensureFolder(path: string): Promise<void> {

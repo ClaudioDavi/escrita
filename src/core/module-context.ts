@@ -3,7 +3,7 @@
 // two core services that already do, that calls the Plugin-only registration
 // methods; it records an undo for each and runs them on unload.
 
-import { Component, ItemView, Notice, type Command, type MarkdownPostProcessor, type MarkdownPostProcessorContext, type ViewCreator, type WorkspaceLeaf } from "obsidian";
+import { Component, ItemView, Notice, type App, type Command, type TextAreaComponent, type TextComponent, type MarkdownPostProcessor, type MarkdownPostProcessorContext, type ViewCreator, type WorkspaceLeaf } from "obsidian";
 import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
 import { t } from "../i18n";
@@ -50,6 +50,30 @@ export interface ModuleContext {
 }
 
 /**
+ * What the settings tab hands a module's `settingsSection` (IMPROVEMENTS 11; the
+ * tab is task 2.1, the sections move in 2.2). Lifted from universe/settings-ui.ts.
+ */
+export interface SettingsUi {
+  app: App;
+  /**
+   * Saves the settings now: data.json, then features.apply() and every module's
+   * settingsChanged (main.ts saveSettings). For toggles, dropdowns and buttons.
+   */
+  save(): Promise<void>;
+  /**
+   * Wires a text field to save when the writer commits it (blur or Enter: the
+   * `change` event), not at every key, so typing a folder name doesn't reload
+   * features per letter. The value is trimmed; blank becomes `fallback()`; the
+   * field then shows what was kept, `apply(v)` stores it, and the settings save.
+   */
+  saveOnCommit(c: TextComponent | TextAreaComponent, fallback: () => string, apply: (v: string) => void): void;
+  /** Draws the whole tab again (after a change that shows or hides rows). */
+  redraw(): void;
+  /** A number typed in a field: its digits, at least `min` (default 0); `fallback` when blank or not a number. */
+  num(v: string, fallback: number, min?: number): number;
+}
+
+/**
  * A switchable part of Escrita. Constructed once; the registry calls Component.load()
  * and unload() itself, in order (Q6). Subclasses implement onload/onunload, never
  * load/unload.
@@ -68,6 +92,24 @@ export abstract class FeatureModule extends Component {
 
   /** Followers that keep this feature's path-keyed data current even while it is off (Q8). Touch only plugin.data and plugin.settings. */
   dataFollowers?(): Follower[];
+
+  /**
+   * Draws this module's rows of the settings tab into `el`, heading included
+   * (IMPROVEMENTS 11). Called only while the feature is loaded, in the tab's one
+   * order list (PLAN-0.8 Q13), so an off feature's section is gone with it. Read
+   * from task 2.1 on; the sections move here in 2.2.
+   */
+  settingsSection?(el: HTMLElement, ui: SettingsUi): void;
+
+  /**
+   * What the Features page says when the writer turns this feature off and it
+   * keeps data ("12 snapshots stay in Escrita/Snapshots"), or null to say nothing.
+   * Called after the switch is saved, so the feature has already unloaded: read
+   * only what stays (plugin.data, settings, the vault), never this module's live
+   * state. Returns translated text.
+   * Replaces settings.ts `offNotice` (task 2.2).
+   */
+  offNotice?(): Promise<string | null>;
 }
 
 /** What a restored leaf of an off feature's view type shows until the layout is ready and it is detached (Q3). */

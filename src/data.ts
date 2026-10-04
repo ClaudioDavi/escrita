@@ -19,6 +19,27 @@ export interface DayRecord {
   books: Record<string, DayBook>;
 }
 
+/** The export modal's last choices for one work (PLAN-0.8 Q4); the export module (task 3.1) reads and cleans them. */
+export interface ExportChoice {
+  format: "md" | "docx";
+  /** preset id, e.g. "shunn" or "ptbr" */
+  preset: string;
+  /** export the whole book, or only this note */
+  whole: boolean;
+}
+
+/** Drop entries that aren't an ExportChoice (data saved by hand or by a later version). */
+export function cleanExportChoices(raw: unknown): Record<string, ExportChoice> {
+  const out: Record<string, ExportChoice> = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  for (const [path, v] of Object.entries(raw as Record<string, unknown>)) {
+    const c = v as Partial<ExportChoice> | null;
+    if (!c || (c.format !== "md" && c.format !== "docx") || typeof c.preset !== "string" || typeof c.whole !== "boolean") continue;
+    out[path] = { format: c.format, preset: c.preset, whole: c.whole };
+  }
+  return out;
+}
+
 /** What Escrita remembers about a note it published (see the publish module). */
 export interface PublishRecord {
   /** the status value the note had before "Publish this note"; "Unpublish" restores it */
@@ -40,4 +61,7 @@ export interface EscritaData {
   threadSeen: SeenStore;
   /** the outline's POV colours: key (note path or folded text) → palette colour; absent before 0.7 (loaded as {}) */
   povColors: Record<string, PovColor>;
+  /** the export modal's last choices, keyed by work path (book note or note); absent before 0.8 (loaded as {}).
+   *  Path-keyed: the export module keeps it current through a data follower (task 3.1) */
+  exportChoices: Record<string, ExportChoice>;
 }

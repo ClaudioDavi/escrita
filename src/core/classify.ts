@@ -46,10 +46,28 @@ export interface ClassifySettings extends PieceProperties {
   statusProperty?: string;
   /** the writer's words for each stage; defaults to DEFAULT_STAGES */
   stages?: StageMapping;
+  /**
+   * Where submission notes live (SF 12; 0.8). Optional until the setting exists:
+   * task 1.6 reads it through submissionsRoot(), so missing or "" means
+   * DEFAULT_SUBMISSIONS_FOLDER, like the snapshots folder. Until 1.6 it is not read.
+   */
+  submissionsFolder?: string;
+  /**
+   * Where export writes its files (Q3; 0.8). Optional until the setting exists:
+   * task 1.6 reads it through exportRoot(), so missing or "" means
+   * DEFAULT_EXPORT_FOLDER. Until 1.6 it is not read.
+   */
+  exportFolder?: string;
 }
 
 /** The snapshots folder when the setting is empty or unusable. */
 export const DEFAULT_SNAPSHOTS_FOLDER = "Escrita/Snapshots";
+
+/** The submissions folder when the setting is empty or missing (SF 12, settings summary). */
+export const DEFAULT_SUBMISSIONS_FOLDER = "Submissions";
+
+/** The export folder when the setting is empty or missing (PLAN-0.8 Q3). */
+export const DEFAULT_EXPORT_FOLDER = "Escrita/Exports";
 
 /**
  * Structure only, and a closed set: future knowledge (scope, universe entry,
@@ -113,6 +131,25 @@ export interface Placement<F extends Named, D extends Named> {
   snapshot: boolean;
   /** the work's stage: set only for a tracked book note or tracked note whose status is a known stage word; null for everything else */
   stage: Stage | null;
+  /**
+   * The path is the submissions folder or inside it (SF 12; submissionsRoot).
+   * Such a note is never tracked, never a work (no stage), and
+   * never gets the draft status. Checked next to `snapshot` and like it: a file
+   * there is a "note" (or a "file") with no book, even when the folder sits in a book. The rule applies whether the submissions feature is on or
+   * off: classify knows no features, and the notes stay what they are.
+   * Always false until task 1.6 implements the rule.
+   */
+  submission: boolean;
+  /**
+   * The path is the export folder or inside it (PLAN-0.8 Q3; exportRoot). An
+   * export is derived text: a `<title>.md` there must not count a whole book
+   * into the daily goal, nor become a work. So, exactly like `submission`: never
+   * tracked, never a work (no stage), never gets the draft status
+   * (new-note-status.ts skips `place.export`), a "note" (or a "file") with no
+   * book. Applies whether the export feature is on or off.
+   * Always false until task 1.6 implements the rule, next to `submission`.
+   */
+  export: boolean;
 }
 
 /** Whether `path` is `folder` itself or inside it. Slashes at the folder's edges are ignored, "" means the whole vault, case-sensitive. */
@@ -131,6 +168,31 @@ export function inFolder(path: string, folder: string): boolean {
 export function snapshotsRoot(setting: unknown): string {
   const s = str(setting).trim().replace(/\\/g, "/").replace(/\/{2,}/g, "/").replace(/^\/+|\/+$/g, "").trim();
   return s === "" ? DEFAULT_SNAPSHOTS_FOLDER : s;
+}
+
+/** The submissions folder setting as a vault path, normalized like snapshotsRoot; never "" (task 1.6). */
+export function submissionsRoot(setting: unknown): string {
+  void setting;
+  throw new Error("not implemented: 0.8 task 1.6");
+}
+
+/** The export folder setting as a vault path, normalized like snapshotsRoot; never "" (DEFAULT_EXPORT_FOLDER; task 1.6). */
+export function exportRoot(setting: unknown): string {
+  void setting;
+  throw new Error("not implemented: 0.8 task 1.6");
+}
+
+/**
+ * One fingerprint of every setting `classify` reads (IMPROVEMENTS 16): folders,
+ * chapters folder, chapter template, snapshots, submissions and export folders, status
+ * property, stages and the piece properties. Every index spec whose values
+ * depend on classify composes it into its `settingsKey`, so a new classify input
+ * is added here once and every index rebuilds on it. Stable for equal settings.
+ * Filled by task 1.6; the six specs move onto it in task 2.4.
+ */
+export function classifyKey(s: ClassifySettings): string {
+  void s;
+  throw new Error("not implemented: 0.8 task 1.6");
 }
 
 /** Whether `path` is the snapshots folder or inside it. */
@@ -292,7 +354,7 @@ function stageFor(fm: Record<string, unknown> | undefined, tracked: boolean, set
 export function classify<F extends Named, D extends Named>(
   tree: VaultTree<F, D>, settings: ClassifySettings, path: string | null,
 ): Placement<F, D> {
-  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, snapshot: false, stage: null };
+  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, snapshot: false, stage: null, submission: false, export: false };
   if (typeof path !== "string" || path === "") return none;
   if (path === "/") return { ...none, kind: "folder" };
   try {
@@ -313,14 +375,14 @@ export function classify<F extends Named, D extends Named>(
       const piece = markdown ? pieceOf(fm, settings) : null;
       // The book note comes first: a book note inside another book's folder belongs to its own book.
       const own = markdown ? bookAt(tree, path.slice(0, -3), ch) : null;
-      if (own) return { path, kind: "book-note", markdown, book: own, tracked, piece, snapshot: false, stage: stageFor(fm, tracked, settings) };
+      if (own) return { path, kind: "book-note", markdown, book: own, tracked, piece, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false };
       const book = ancestorBook(tree, path, ch);
       if (book) {
         // compare against the handle's path, never the settings string
         const kind: Kind = markdown && parentOf(path) === book.chaptersFolder.path ? "chapter" : "book-file";
-        return { path, kind, markdown, book, tracked, piece, snapshot: false, stage: null };
+        return { path, kind, markdown, book, tracked, piece, snapshot: false, stage: null, submission: false, export: false };
       }
-      return { path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null };
+      return { path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false };
     }
     if (tree.folder(path)) {
       const own = bookAt(tree, path, ch);

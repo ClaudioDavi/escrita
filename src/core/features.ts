@@ -6,6 +6,9 @@ export const FEATURE_IDS = [
   "moveBlocks", "templates", "spellcheck", "lens", "snapshots", "stageSnapshot", "publish",
   "desk", "universe", "threads",
 ] as const;   // also the load order: today's (main.ts:116-127), Q12; unload runs in reverse
+// 0.8 (PLAN-0.8 Q11): task 1.9 adds "export" and "submissions" right after "publish",
+// both in the "publishing" group, making 19. Not added in the Wave 0 contracts: the
+// registry would look for modules that don't exist yet and the 17-feature tests would break.
 export type FeatureId = typeof FEATURE_IDS[number];
 export type FeatureGroup = "writing" | "revision" | "desk" | "publishing" | "world";
 
@@ -15,6 +18,13 @@ export interface FeatureSpec {
   requires?: readonly FeatureId[];               // stageSnapshot: ["snapshots"]
   /** where the switch lives: the `features` record (default), or an existing setting (Q10) */
   switch?: "explorerCounts" | "spellcheckOnDemand" | "universeMode";
+  /**
+   * Position of the switch on the Features page within its group, ascending
+   * (IMPROVEMENTS 20). The page shows the groups in a fixed order and, inside a
+   * group, the switches by `page`; settings.ts's FEATURE_PAGE is derived from it.
+   * Optional until task 1.9 sets it on every spec.
+   */
+  page?: number;
 }
 
 export const FEATURE_SPECS: readonly FeatureSpec[] = [

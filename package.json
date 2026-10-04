@@ -9,6 +9,7 @@
     "build": "tsc -noEmit -skipLibCheck && node build-css.mjs && node esbuild.config.mjs production",
     "typecheck": "tsc -noEmit -skipLibCheck",
     "test": "vitest run",
+    "bench": "vitest bench --run --project node tests/perf",
     "test:bundle": "ESCRITA_REQUIRE_BUNDLE=1 vitest run tests/no-network.test.ts",
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },

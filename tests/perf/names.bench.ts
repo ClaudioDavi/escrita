@@ -1,10 +1,10 @@
 // G0h: cost of segment + readerMask + findNames per 1,000 words, 300 entries.
-// Run: npx vitest bench --run tests/names.bench.ts (not part of `npm test`: the
+// Run: npm run bench (or npx vitest bench --run tests/perf/names.bench.ts; not part of `npm test`: the
 // test projects only include *.test.ts).
 import { bench, describe } from "vitest";
-import { segment } from "../src/core/markdown";
-import { readerMask } from "../src/core/wordcount";
-import { compileTerms, findNames, type NameSource } from "../src/core/names";
+import { segment } from "../../src/core/markdown";
+import { readerMask } from "../../src/core/wordcount";
+import { compileTerms, findNames, type NameSource } from "../../src/core/names";
 
 let seed = 12345;
 const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
@@ -60,3 +60,12 @@ console.log(
 describe("names: segment + readerMask + findNames", () => {
   bench("2,000 words, 300 entries", () => { run(); }, { iterations: 20, warmupIterations: 5, time: 0, warmupTime: 0 });
 });
+
+// findNames alone (mask built once) on the shared synthetic chapters, 300 entries.
+import { chapter, table as fixtureTable } from "./fixtures";
+for (const words of [3000, 10000]) {
+  const mask = readerMask(segment(chapter(words)));
+  describe(`findNames, ${words} words`, () => {
+    bench("findNames", () => { findNames(mask, fixtureTable); }, { iterations: 20, warmupIterations: 5, time: 0, warmupTime: 0 });
+  });
+}

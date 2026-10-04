@@ -80,6 +80,29 @@ export interface EscritaSettings extends UniverseSettings {
   /** properties a published note should have; newline/comma list (lineList); empty disables the check */
   recommendedProperties: string;
 
+  // Export (0.8, PLAN-0.8 Q2, Q3, Q5, Q7; drawn by the export module's section, task 3.1)
+  /** vault folder for exported manuscripts; kept out of tracking (classify `export`, task 1.6) */
+  exportFolder: string;
+  /** chapter property that leaves a chapter out of an export when false (N 7) */
+  compileProperty: string;
+  /** book note properties linking to the dedication and epigraph notes (Q7) */
+  dedicationProperty: string;
+  epigraphProperty: string;
+  /** the author on the title page; an `author` property on the work overrides the name (Q2) */
+  authorName: string;
+  /** surname in the manuscript header; empty = the last word of authorName */
+  authorSurname: string;
+  /** contact block on the title page, one line per line */
+  contactLines: string;
+  /** chapter heading with {n} and {title}; empty = the preset's own (Q5) */
+  chapterHeadingFormat: string;
+
+  // Submissions (0.8, SF 12; drawn by the submissions module's section, task 3.2)
+  /** vault folder of submission notes; kept out of tracking (classify `submission`, task 1.6) */
+  submissionsFolder: string;
+  /** result words, comma or newline separated: pending, accepted, rejected, withdrawn (the first is pending) */
+  submissionResults: string;
+
   // Snapshots
   /** vault folder holding one folder of snapshots per note; always read through core/classify.snapshotsRoot */
   snapshotsFolder: string;
@@ -164,6 +187,16 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
 
   dateProperty: "date",
   recommendedProperties: "description",
+  exportFolder: "Escrita/Exports",
+  compileProperty: "compile",
+  dedicationProperty: "dedication",
+  epigraphProperty: "epigraph",
+  authorName: "",
+  authorSurname: "",
+  contactLines: "",
+  chapterHeadingFormat: "",
+  submissionsFolder: "Submissions",
+  submissionResults: "pending, accepted, rejected, withdrawn",
 
   snapshotsFolder: DEFAULT_SNAPSHOTS_FOLDER,
   snapshotBeforeFirstEdit: false,
@@ -210,6 +243,14 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   if (typeof s.draftNewNotes !== "boolean") s.draftNewNotes = DEFAULT_SETTINGS.draftNewNotes;
   for (const k of PROPERTY_KEYS) s[k] = (typeof s[k] === "string" ? s[k].trim() : "") || DEFAULT_SETTINGS[k];
   s.snapshotsFolder = snapshotsRoot(s.snapshotsFolder);
+  // 0.8 folders: trimmed here; task 1.6 routes them through classify's exportRoot / submissionsRoot
+  for (const k of ["exportFolder", "submissionsFolder"] as const) {
+    s[k] = (typeof s[k] === "string" ? s[k].trim().replace(/^\/+|\/+$/g, "") : "") || DEFAULT_SETTINGS[k];
+  }
+  s.submissionResults = (typeof s.submissionResults === "string" ? s.submissionResults.trim() : "") || DEFAULT_SETTINGS.submissionResults;
+  for (const k of ["authorName", "authorSurname", "contactLines", "chapterHeadingFormat"] as const) {
+    s[k] = typeof s[k] === "string" ? s[k].trim() : "";
+  }
   s.snapshotsKeepAuto = Number.isFinite(s.snapshotsKeepAuto) ? Math.max(1, Math.round(s.snapshotsKeepAuto)) : DEFAULT_SETTINGS.snapshotsKeepAuto;
   s.lensLanguage = s.lensLanguage === "pt-BR" || s.lensLanguage === "en" ? s.lensLanguage : "auto";
   s.lensListsNote = typeof s.lensListsNote === "string" ? listsPath(s.lensListsNote) : DEFAULT_SETTINGS.lensListsNote;
@@ -228,7 +269,8 @@ function clampInt(v: unknown, min: number, max: number, fallback: number): numbe
 }
 
 /** Frontmatter property names a piece or book is read from; normalizeSettings trims them and restores empty ones. */
-const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadlineProperty", "goalProperty", "povProperty", "chapterTargetProperty"] as const;
+const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadlineProperty", "goalProperty", "povProperty", "chapterTargetProperty",
+  "compileProperty", "dedicationProperty", "epigraphProperty"] as const;
 
 /**
  * Which features read each setting (0.7 plan Q13). A row draws while any of them is on;
@@ -251,6 +293,12 @@ export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "a
   weekdaysOff: ["goals"], datesOff: ["goals"],
   explorerFolderTotals: ["explorerCounts"], explorerShowTarget: ["explorerCounts"],
   dateProperty: ["publish"], recommendedProperties: ["publish"],
+  // 0.8: the folders are read by the classifier; the rest move to ["export"] / ["submissions"] when
+  // task 1.9 adds those ids, and to their modules' sections in 2.1 (no rows are drawn for them yet)
+  exportFolder: "always", submissionsFolder: "always",
+  compileProperty: ["publish"], dedicationProperty: ["publish"], epigraphProperty: ["publish"],
+  authorName: ["publish"], authorSurname: ["publish"], contactLines: ["publish"], chapterHeadingFormat: ["publish"],
+  submissionResults: ["publish"],
   snapshotsFolder: ["snapshots"], snapshotBeforeFirstEdit: ["snapshots"], snapshotsKeepAuto: ["snapshots"],
   ghostBeats: ["outline"],
   placeholderMarker: ["placeholders", "publish"], showExplorerDots: ["placeholders"],

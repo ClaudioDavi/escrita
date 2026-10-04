@@ -1,0 +1,55 @@
+// A book's chapters with their text and properties (IMPROVEMENTS 18). Pure port,
+// no Obsidian imports: export and, in 0.10, "Read the book" read a book through it;
+// outline/rows.ts's RowsPort extends it (task 2.5: it drops its own chapters,
+// read and frontmatter, uses ChapterRef.title for the basename, and calls
+// measure.counts without a seed when read's mtime is null). The Obsidian adapter sits
+// beside BookService in core/books.ts (task 1.8) and reads text through
+// plugin.notes, so an open editor's unsaved text is what gets exported.
+
+/** The property that keeps a chapter out of an export when false (the property name is a setting). */
+export const DEFAULT_COMPILE_PROPERTY = "compile";
+
+/** One chapter of a book, in book order. */
+export interface ChapterRef {
+  path: string;
+  /** chapterTitle(basename): "Prólogo", "A chegada" */
+  title: string;
+  /** chapterNumber(basename): the number prefix, or null for "Prólogo.md" */
+  number: number | null;
+  /** false when the chapter's compile property is false (includeChapter); everything else is in */
+  include: boolean;
+}
+
+/**
+ * The book port. `B` is the adapter's book handle (core/books.ts `Book`), so this
+ * file stays free of Obsidian types.
+ */
+export interface BookSource<B> {
+  /**
+   * Every .md file directly in the book's chapters folder, in compareChapters
+   * order. Left-out chapters (`compile: false`) are listed too, with
+   * `include: false`: export skips them, but the outline still shows them.
+   */
+  chapters(book: B): ChapterRef[];
+  /**
+   * The note's current text: the open editor's buffer when there is one, else
+   * the file. `mtime` is the file's mtime when `text` is the saved file, and
+   * null when it came from an open editor (possibly unsaved). Only a non-null
+   * `mtime` may seed the measurer's mtime cache (`measure.counts`): unsaved
+   * text paired with the disk mtime would poison it.
+   */
+  read(path: string): Promise<{ text: string; mtime: number | null }>;
+  /** the metadata cache's frontmatter; {} when there is none yet */
+  frontmatter(path: string): Record<string, unknown>;
+}
+
+/**
+ * The `compile: false` rule (N 7): a chapter is left out only when the property
+ * (looked up by exact name, then ignoring case) is the boolean false or the text
+ * "false" (trimmed, any case). Missing, true, or anything else keeps it in, so a
+ * typo never silently drops a chapter.
+ */
+export function includeChapter(frontmatter: Record<string, unknown> | null | undefined, property: string): boolean {
+  void frontmatter; void property;
+  throw new Error("not implemented: 0.8 task 1.8");
+}

@@ -174,13 +174,15 @@ export class MemoryVault implements IndexSource<MemFile> {
 
 /** Timers that only fire when the test says so. yieldNow is a macrotask, so microtasks drain. */
 export class ManualTimers implements IndexTimers {
-  now = 0;
+  /** the fake clock, in ms; advance() moves it */
+  clock = 0;
+  now(): number { return this.clock; }
   private next = 1;
   private pending = new Map<number, { at: number; cb: () => void }>();
 
   set(cb: () => void, ms: number): unknown {
     const id = this.next++;
-    this.pending.set(id, { at: this.now + ms, cb });
+    this.pending.set(id, { at: this.clock + ms, cb });
     return id;
   }
   clear(h: unknown): void { this.pending.delete(h as number); }
@@ -190,16 +192,16 @@ export class ManualTimers implements IndexTimers {
 
   /** Advances the clock, firing due callbacks in order, then lets promises settle. */
   async advance(ms: number): Promise<void> {
-    const to = this.now + ms;
+    const to = this.clock + ms;
     for (;;) {
       let best: [number, { at: number; cb: () => void }] | null = null;
       for (const e of this.pending) if (e[1].at <= to && (!best || e[1].at < best[1].at)) best = e;
       if (!best) break;
       this.pending.delete(best[0]);
-      this.now = Math.max(this.now, best[1].at);
+      this.clock = Math.max(this.clock, best[1].at);
       best[1].cb();
     }
-    this.now = to;
+    this.clock = to;
     await settle();
   }
 }

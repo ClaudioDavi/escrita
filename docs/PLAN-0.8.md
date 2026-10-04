@@ -78,7 +78,7 @@ to them as written.
 |---|---|---|
 | Q1 | Zip for DOCX: a dependency (fflate) or our own? | **Our own STORE zip in `core/zip.ts`**: CRC32 plus local and central headers, about 100 lines, no dependency, no licence banner, nothing for `no-network.test.ts` to flag. A manuscript is a few hundred KB, so no compression is fine. Gate G0a checks that Word, LibreOffice, Google Docs and Pages open it. The tests read the zip with a small reader in `tests/support/`. |
 | Q2 | Where does the author's name come from? | **Settings:** `authorName`, `authorSurname` (empty means the last word of the name, used in the Shunn header) and `contactLines` (several lines: address, email, phone). **Overrides:** an `author` property on the book note or the note. No per-market data. |
-| Q3 | Where does the file go, and what if it exists? | **An export folder setting**, default `Escrita/Exports`. The name is `<title>.md`, or `<title> (<preset>).docx`. If the file exists, ask: replace or keep both. Replacing an export loses no prose: the export is derived, and its source notes are untouched. |
+| Q3 | Where does the file go, and what if it exists? | **An export folder setting**, default `Escrita/Exports`. The name is `<title>.md`, or `<title> (<preset>).docx`. If the file exists, ask: replace or keep both. Replacing an export loses no prose: the export is derived, and its source notes are untouched. The export folder is kept out of tracking like the snapshots folder: classify's `export` field (task 1.6) means never tracked, never a work, no draft status. |
 | Q4 | One command or several? | **One command, "Export…"**, for the active note or its book. It opens one modal with: the source (this note, or the whole book when the note is in one), the chapters (all, a range, or ticked), the format (Markdown or DOCX), the preset (Shunn or pt-BR), and the readiness warnings with "Export anyway". Needs a mockup (G1). The modal remembers the last choices per work in `data.json`. |
 | Q5 | Chapter headings, and prologue and epilogue? | **There is no prologue concept today.** Rule: a chapter with a number gets "Capítulo N" or "Chapter N" (the format is a setting with `{n}` and `{title}`). A chapter without a number prefix gets its title alone, unnumbered. Numbering counts only numbered chapters. This covers "Prólogo.md" and "Epílogo.md" with no new property. |
 | Q6 | Wikilinks, embeds, code, footnotes? | A wikilink becomes its alias, or else its target's text. Embeds are dropped and listed in the warnings. Code keeps its text, unformatted. Footnotes: kept as text in 0.8 (DOCX footnotes are 0.10 material). |
@@ -213,19 +213,39 @@ Each task lists its model.
 
 **Opus judge:** the contracts against Q1–Q15 and the specs.
 
+**Wave 0 result (2026-10-04).** Done. The contracts add, beyond the list above:
+- `ExportDoc` (built by `exportDocOf`), `Author`, `ExportPart.role` and `ExportSource.count`.
+- `ManuscriptWriter<M, P = Preset>`, so the preset type travels with the model.
+- `BookSource.read` returns `{ text, mtime }`, with `mtime` null for editor text. Only a non-null `mtime` seeds the measurer.
+- `notes.create` takes `string | ArrayBuffer | Uint8Array`.
+- `Placement.export` and `exportFolder`.
+- `macrotaskYield` is written, not stubbed.
+- `IndexTimers.now?()` is optional.
+- `VaultIndex.demand()`.
+- `yieldBudget` returns a checkpoint (`BUDGET_MS = 12`).
+- A separate `unclosedHtmlComment` check id.
+
+The 0.8 settings keys are declared with English defaults and no UI: `exportFolder`, `compileProperty`, `dedicationProperty`, `epigraphProperty`, `authorName`, `authorSurname`, `contactLines`, `chapterHeadingFormat`, `submissionsFolder` and `submissionResults`. `data.exportChoices` is declared too.
+
+The judge's fixture rules are in `tests/fixtures/manuscript/README.md`:
+- The scene break is written `\#`.
+- Chapters are numbered by ordinal before the modal narrows the list.
+- Body headings sit at level 2 or deeper in a note, level 3 or deeper in a book.
+- A book has a separate title page; a conto does not.
+
 ## Wave 1: foundations (parallel, Sonnet)
 
 | Task | Owns | Done when |
 |---|---|---|
-| 1.1 Time budget, settle, demand start (21, 14 hub part) | `core/vault-index.ts`, `core/index-hub.ts` | `ManualTimers` tests for budgeted builds, `settleMs`, demand start on first query; bench shows the longest block ≤ 20 ms on 3,020 notes |
+| 1.1 Time budget, settle, demand start (21, 14 hub part) | `core/vault-index.ts`, `core/index-hub.ts`, `core/vault-indexes.ts` (the hub's timers use `macrotaskYield` and `now: () => performance.now()`) | `ManualTimers` tests for budgeted builds, `settleMs`, demand start on first query; bench shows the longest block ≤ 20 ms on 3,020 notes |
 | 1.2 Names caches (22) | `core/names.ts` | Same output on every names fixture; bench ≥ 1.3× on 10k words; bounded memory test |
-| 1.3 Manuscript model (15) | `core/manuscript.ts`, `core/wordcount.ts` (export `MARKUP` only) | Fixtures pass; parity rules from G0c applied; a conto round-trips with no marker left |
+| 1.3 Manuscript model (15) | `core/manuscript.ts`, `core/wordcount.ts` (export `MARKUP` only), `tests/support/manuscript-md.ts` (a test-only renderer from blocks to Markdown: runs as `*`/`**`, quote `> `, heading `#`×level, scene break `\#`, one blank line between blocks) | `manuscriptOf` on each body input (the conto, each included chapter, the dedication, the epigraph), rendered, matches the matching slice of `expected/*.shunn-en.md` without the title block and chapter heading lines (2.3's real writer compares whole files); parity rules from G0c applied; a conto round-trips with no marker left |
 | 1.4 Zip (Q1) | `core/zip.ts` | CRC32 vectors; the reader in `tests/support/` reads back every file |
-| 1.5 Readiness (19) | `core/readiness.ts`, `publish/checks.ts` | Publish tests unchanged and green; new `<!--` check with strings |
-| 1.6 Classifier (16) | `core/classify.ts`, `core/books.ts`, `core/new-note-status.ts` | `submission` field in every return; `classifyKey`; never tracked, never a work, no draft status; the `books.ts` fake test |
+| 1.5 Readiness (19) | `core/readiness.ts`, `publish/checks.ts`, `publish/strings.ts` (en and pt-BR for `unclosedHtmlComment`) | Publish tests unchanged and green; new `<!--` check with strings |
+| 1.6 Classifier (16) | `core/classify.ts`, `core/books.ts`, `core/new-note-status.ts` | `submission` and `export` fields in every return, `submissionsRoot` and `exportRoot` filled; `classifyKey`; never tracked, never a work, no draft status; the `books.ts` fake test |
 | 1.7 `notes.create` (17) | `core/notes.ts`, `core/note-text.ts` | Each `exists` policy, case clash, race and binary write tested on the fake vault |
 | 1.8 Book source (18) | `core/book-source.ts`, `core/books.ts` (adapter; after 1.6 on that file) | Order, `compile: false`, and reads through `plugin.notes` tested |
-| 1.9 Feature metadata (20) | `core/features.ts`, `core/feature-registry.ts` | 19 ids; `FEATURE_PAGE` derived; `switchesOf` exported once; feature-count tests updated |
+| 1.9 Feature metadata (20) | `core/features.ts`, `core/feature-registry.ts`, the feature-count tests | 19 ids; a derived `FEATURE_PAGE` exported from `core/features.ts` and `switchesOf` from `core/feature-registry.ts` (the registry's private `switches()` calls it), **without touching `settings.ts`**; 2.1 swaps the imports, deletes the local copies and the hard-coded export row (a doubled export row until 2.1 is expected); `SETTING_FEATURES` entries for the 0.8 keys move from `["publish"]` to `["export"]` / `["submissions"]` in 2.1 |
 
 **Opus judge** after the wave: the diffs against the contracts. Is any decision made in
 code that this plan didn't settle?
@@ -236,7 +256,7 @@ code that this plan didn't settle?
 |---|---|---|
 | 2.1 Settings shell (11) | `settings.ts`, `main.ts` (`saveSettings`), `tests/support/obsidian.ts` (`Setting` stub records rows) | The tab draws the core sections plus each loaded module's section from one order list; `saveOnCommit`; the import-boundary test; the hard-coded export row gone. **Opus reviews this task before 2.2 starts.** |
 | 2.2 Module sections (11) | `<module>/settings.ts` and `<module>/index.ts` for goals, publish, outline, placeholders, darlings, typing, lens, desk, snapshots, explorer, universe, threads (split across 3 agents by module) | Every `EscritaSettings` key drawn by exactly one owner or a switch; same look as today; `offNotice` moved per module |
-| 2.3 Writers (Q10) | `src/export/writers/markdown.ts`, `docx.ts`, `src/export/presets.ts` | Markdown output matches the fixtures; DOCX XML matches the Shunn and pt-BR rules in N 7 (unzipped in tests); G0a passed |
+| 2.3 Writers (Q10) | `src/export/writers/markdown.ts`, `docx.ts`, `src/export/presets.ts`, `core/export-pipeline.ts` (fills `exportDocOf`, `droppedIn`, `aboutCount`, `chapterHeadings`, `fillTemplate`) | Markdown output matches the fixtures; DOCX XML matches the Shunn and pt-BR rules in N 7 (unzipped in tests); G0a passed |
 | 2.4 Index specs on `classifyKey` (16), mentions on demand (14), dots, threads (23) | `core/works-index.ts`, `explorer/index.ts`, `placeholders/index.ts`, `universe/threads.ts`, `universe/entries.ts`, `universe/mentions-index.ts`, `universe/index.ts`, `universe/create.ts` | Six specs compose `classifyKey`; mentions demand plus `settleMs` 4 s; "counting" shown on first open; dots redraw changed paths; threads use `segmentDoc` |
 | 2.5 Callers on `notes.create` (17) and the book source (18) | `darlings/index.ts`, `desk/home-note.ts`, `lens/ui.ts`, `outline/index.ts`, `outline/view.ts` (the port only), `outline/rows.ts` | Seven create sites use one call with their old policy; `chaptersPort` gone from the view; outline tests green |
 | 2.6 Lens memos and the name fold (22, 10; if room) | `lens/measures.ts`, `lens/syllables.ts`, `core/sentences.ts`, `universe/entries.ts` (fold only, after 2.4) | Same lens results; bench shows the pass ≥ 20% faster |

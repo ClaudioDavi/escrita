@@ -5,28 +5,29 @@ import type { Stage } from "../src/core/stages";
 import type { IndexChange, IndexTimers } from "../src/core/vault-index";
 
 class FakeTimers implements IndexTimers {
-	now = 0;
+	clock = 0;
+	now(): number { return this.clock; }
 	private next = 1;
 	private pending = new Map<number, { at: number; cb: () => void }>();
 	set(cb: () => void, ms: number): unknown {
 		const id = this.next++;
-		this.pending.set(id, { at: this.now + ms, cb });
+		this.pending.set(id, { at: this.clock + ms, cb });
 		return id;
 	}
 	clear(h: unknown): void { this.pending.delete(h as number); }
 	async yieldNow(): Promise<void> {}
 	count(): number { return this.pending.size; }
 	advance(ms: number): void {
-		const end = this.now + ms;
+		const end = this.clock + ms;
 		for (;;) {
 			let best: [number, { at: number; cb: () => void }] | null = null;
 			for (const e of this.pending) if (e[1].at <= end && (!best || e[1].at < best[1].at)) best = e;
 			if (!best) break;
 			this.pending.delete(best[0]);
-			this.now = best[1].at;
+			this.clock = best[1].at;
 			best[1].cb();
 		}
-		this.now = end;
+		this.clock = end;
 	}
 }
 

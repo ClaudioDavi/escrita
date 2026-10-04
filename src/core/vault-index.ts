@@ -14,7 +14,53 @@ export interface IndexSource<F extends IndexFile> {
 export interface IndexTimers {
   set(cb: () => void, ms: number): unknown;
   clear(h: unknown): void;
+  /** gives the event loop a turn (a macrotask; the hub uses macrotaskYield from task 1.1 on, Q14) */
   yieldNow(): Promise<void>;
+  /**
+   * A monotonic clock in milliseconds, read by yieldBudget (IMPROVEMENTS 21), so
+   * ManualTimers tests stay deterministic. Optional until every IndexTimers in
+   * src/ has one (lens, snapshots and universe build their own); missing means
+   * `performance.now()`.
+   */
+  now?(): number;
+}
+
+/**
+ * One macrotask turn of the event loop (Q14): a MessageChannel message where
+ * MessageChannel exists, else `setTimeout(0)`. Unlike a nested setTimeout, it is
+ * not clamped to 4 ms. The hub's `yieldNow` in core/vault-indexes.ts uses it
+ * (task 1.1), the universe timers switch to it in 2.4, and tests/perf measures
+ * it. Lens and snapshots keep their own setTimeout yield (the fallback is fine).
+ */
+export function macrotaskYield(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    if (typeof MessageChannel === "undefined") {
+      setTimeout(resolve, 0);
+      return;
+    }
+    const ch = new MessageChannel();
+    ch.port1.onmessage = () => {
+      ch.port1.close();
+      resolve();
+    };
+    ch.port2.postMessage(null);
+  });
+}
+
+/** The time slice of a budgeted pass (Q14): 12 ms, then a yield. */
+export const BUDGET_MS = 12;
+
+/**
+ * A checkpoint for a long pass: call it after each unit of work (one file, one
+ * chapter) and await it. It resolves at once while less than `ms` has passed
+ * since the last yield, and calls `timers.yieldNow()` once the slice is spent,
+ * starting a new slice after it. The pass then holds the main thread for about
+ * `ms` at a time, whatever a unit costs. Used by VaultIndex builds and flushes,
+ * the explorer's first count pass and export of a long book. Filled by task 1.1.
+ */
+export function yieldBudget(timers: IndexTimers, ms: number = BUDGET_MS): () => Promise<void> {
+  void timers; void ms;
+  throw new Error("not implemented: 0.8 task 1.1");
 }
 
 /**
@@ -44,6 +90,20 @@ export interface IndexSpec<F extends IndexFile, V> {
   same(a: V, b: V): boolean;
   structural?: boolean;
   settingsKey?(): string;
+  /**
+   * When the first build runs (IMPROVEMENTS 14, Q15). "ready" (the default): as
+   * soon as the layout is ready (metadata mode: once the cache is resolved).
+   * "demand": only on the first `VaultIndex.demand()`; until then the index is not
+   * ready, gets no events, and a settings change or rebuild does nothing.
+   * Read from task 1.1 on; today every index starts when ready.
+   */
+  start?: "ready" | "demand";
+  /**
+   * This index's quiet time after a modify, in ms, instead of the hub's shared
+   * one (300 ms): 3-5 s for the mentions index, so typing doesn't recompute it at
+   * every save (IMPROVEMENTS 21). Read from task 1.1 on.
+   */
+  settleMs?: number;
 }
 
 export interface Follower {
@@ -107,6 +167,16 @@ export class VaultIndex<F extends IndexFile, V> {
   paths(): string[] { return [...this.map.keys()]; }
   get size(): number { return this.map.size; }
   isReady(): boolean { return this.ready; }
+
+  /**
+   * Asks a `start: "demand"` index to build (Q15: its first query, a panel tab, an
+   * entry note opening). Safe to call on every query: once started it does
+   * nothing, and so it does for a "ready" index. Until task 1.1 wires the hub,
+   * every index starts when ready, so there is nothing to start.
+   */
+  demand(): void {
+    // task 1.1: ask the hub to start this index if it waits for demand
+  }
 
   /**
    * Fires after every completed build (the first one, and each rebuild), never

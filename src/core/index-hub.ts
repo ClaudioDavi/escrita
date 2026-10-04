@@ -34,7 +34,7 @@ export interface IndexHubOptions {
   settingsMs?: number;
   /** how long a metadata build waits for `resolved` (default 5000 ms) */
   fallbackMs?: number;
-  /** passed to every index */
+  /** passed to every index; a spec's own `settleMs` wins (IndexSpec.settleMs, read from task 1.1 on) */
   settleMs?: number;
   batch?: number;
 }
@@ -80,6 +80,11 @@ export class IndexHub<F extends IndexFile = IndexFile> {
 
   // ------------------------------------------------------------ public
 
+  /**
+   * Adds an index and starts it when the layout is ready. From task 1.1 on, a
+   * `start: "demand"` spec waits for its index's `demand()` instead, and the
+   * hub's builds and flushes run on `yieldBudget`.
+   */
   add<V>(spec: IndexSpec<F, V>): VaultIndex<F, V> {
     const index = new VaultIndex<F, V>(spec, this.source, this.timers, {
       settleMs: this.opts.settleMs,
