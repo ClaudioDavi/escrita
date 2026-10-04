@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { EditorState } from "@codemirror/state";
 import { IndexHub, type HubEvents } from "../src/core/index-hub";
 import { ManualTimers, MemoryVault, settle, type MemFile } from "./support/memory-vault";
+import { NamesPort } from "../src/core/names-source";
 
 // src/i18n.ts imports obsidian, which has no runtime in vitest
 vi.mock("../src/i18n", () => ({ lang: () => "en", locale: () => "en" }));
@@ -41,6 +42,7 @@ async function setup(files: Record<string, string>, setting = "Modelos/Revisão"
   const hub = new IndexHub<MemFile>(events, vault, timers, { snapshotsRoot: () => "Escrita/Snapshots" });
   const saves = { settings: 0, data: 0 };
   const plugin: any = {
+    names: new NamesPort(),
     settings: {
       lensListsNote: setting, lensLanguage: "auto", lensEchoWindow: 40, lensLongSentence: 45, lensRulesOff: [],
       lensSkipQuotes: true, quoteStyle: "curly", paragraphStyle: "blank",

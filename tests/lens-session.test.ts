@@ -7,17 +7,19 @@ function fakeResult(version: number): LensResult {
 	return { version } as unknown as LensResult;
 }
 
-function make(settleMs = LENS_SETTLE_MS, analyzeImpl?: (t: string, v: number) => LensResult) {
+function make(settleMs = LENS_SETTLE_MS, analyzeImpl?: (t: string, v: number, path?: string) => LensResult) {
 	const timers = new ManualTimers();
 	const calls: { text: string; version: number }[] = [];
-	const analyze = (text: string, version: number) => {
+	const paths: string[] = [];
+	const analyze = (path: string, text: string, version: number) => {
 		calls.push({ text, version });
-		return analyzeImpl ? analyzeImpl(text, version) : fakeResult(version);
+		paths.push(path);
+		return analyzeImpl ? analyzeImpl(text, version, path) : fakeResult(version);
 	};
 	const session = new LensSession({ timers, settleMs, analyze });
 	const results: [string, LensResult][] = [];
 	session.onResult((p, r) => results.push([p, r]));
-	return { timers, calls, session, results };
+	return { timers, calls, paths, session, results };
 }
 
 describe("LensSession", () => {
@@ -141,7 +143,7 @@ describe("LensSession", () => {
 		session = new LensSession({
 			timers,
 			settleMs: 10,
-			analyze: (_t, v) => {
+			analyze: (_p, _t, v) => {
 				if (first) { first = false; session.changed("a.md", () => "newer"); }
 				return fakeResult(v);
 			},
@@ -220,7 +222,7 @@ describe("LensSession after an options change", () => {
 		const o = { opts: "old", fail: new Set<string>() };
 		const session = new LensSession({
 			timers, settleMs: LENS_SETTLE_MS,
-			analyze: (text, version) => {
+			analyze: (_p, text, version) => {
 				if (o.fail.has(text)) throw new Error("boom");
 				return { version, opts: o.opts, text } as unknown as LensResult;
 			},
@@ -320,7 +322,7 @@ describe("LensSession.onInvalidate", () => {
 		const order: string[] = [];
 		const session = new LensSession({
 			timers, settleMs: 10,
-			analyze: (text, version) => {
+			analyze: (_p, text, version) => {
 				if (order.includes("ready") && text === "bad") throw new Error("boom");
 				order.push("analyze " + text);
 				return { version } as unknown as LensResult;
@@ -335,5 +337,22 @@ describe("LensSession.onInvalidate", () => {
 		session.onInvalidate(() => order.push("invalidated"));
 		expect(() => session.invalidate()).toThrow("boom");
 		expect(order).toEqual(["ready", "analyze ok", "invalidated"]);
+	});
+
+	it("a different path is analyzed with its own path (per-scope names)", () => {
+		const { paths, session } = make();
+		session.toggle("a.md");
+		session.toggle("b.md");
+		session.now("a.md", "same");
+		session.now("b.md", "same");
+		expect(paths).toEqual(["a.md", "b.md"]);
+	});
+
+	it("an invalidate (a names version bump) re-runs a note that is on", () => {
+		const { paths, session } = make();
+		session.toggle("a.md");
+		session.now("a.md", "text");
+		session.invalidate();
+		expect(paths).toEqual(["a.md", "a.md"]);
 	});
 });

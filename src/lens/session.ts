@@ -33,7 +33,7 @@ export class LensSession {
 	constructor(private opts: {
 		timers: IndexTimers;
 		settleMs: number;
-		analyze: (text: string, version: number) => LensResult;
+		analyze: (path: string, text: string, version: number) => LensResult;
 	}) {}
 
 	isOn(path: string): boolean { return this.states.get(path)?.on === true; }
@@ -183,7 +183,7 @@ export class LensSession {
 			this.emit(s, result);
 			return result;
 		}
-		const result = this.opts.analyze(text, version);
+		const result = this.opts.analyze(s.path, text, version);
 		if (result.version < s.version || gen !== this.gen) return result; // stale: not kept
 		s.cached = { text, result, gen };
 		this.emit(s, result);
