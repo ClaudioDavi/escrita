@@ -7,10 +7,6 @@ import type { EscritaModule } from "../src/data";
 import { GoalsModule } from "../src/goals";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
 
-// dom-setup.ts has no setCssStyles (tests/support is frozen in wave 2); the status bar's meters need it.
-const proto = HTMLElement.prototype as unknown as { setCssStyles?: (this: HTMLElement, s: Record<string, string>) => void };
-proto.setCssStyles ??= function (this: HTMLElement, styles) { Object.assign(this.style, styles); };
-
 let plugin: FakePlugin;
 let goals: GoalsModule;
 let registry: FeatureRegistry;

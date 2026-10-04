@@ -28,13 +28,19 @@ describe("terms", () => {
       ["Benta Encerrabodes:first", "Benta:first", "Dona Benta Encerrabodes:name"].sort(),
     );
   });
-  it("never derives a bare surname, and firstName false or non-person turn it off", () => {
-    expect(compileTerms([src("a", "Mr Brown")], { lang: "en", extraTitles: [] }).terms.map((x) => x.text)).toEqual(["Mr Brown"]);
+  it("derives the name minus its titles even when one word remains (G3)", () => {
+    expect(compileTerms([src("a", "Mr Brown")], { lang: "en", extraTitles: [] }).terms.map((x) => x.text).sort()).toEqual(["Brown", "Mr Brown"]);
+    expect(pt([src("a", "Senhor Antunes")]).terms.map((x) => x.text).sort()).toEqual(["Antunes", "Senhor Antunes"]);
+    expect(pt([src("a", "Maria")]).terms.map((x) => x.text)).toEqual(["Maria"]);
+  });
+  it("derives no first name with firstName false or for a non-person", () => {
     expect(pt([src("a", "Maria José", { firstName: false })]).terms).toHaveLength(1);
     expect(pt([src("a", "Rosa dos ventos", { person: false })]).terms).toHaveLength(1);
   });
-  it("skips Irma as a title (accent folded) and nameTitles extends the table", () => {
-    expect(pt([src("a", "Irma Luísa Prado")]).terms.map((x) => x.text)).toContain("Luísa");
+  it("compares titles with accents kept (Irma is a name, Irmã a title) and nameTitles extends the table", () => {
+    expect(pt([src("a", "Irma Luísa Prado")]).terms.map((x) => x.text)).toContain("Irma");
+    expect(pt([src("a", "Irmã Luísa Prado")]).terms.map((x) => x.text)).toContain("Luísa");
+    for (const t of ["Coronel", "Capitão", "Professor", "Professora"]) expect(pt([src("a", `${t} Rui Costa`)]).terms.map((x) => x.text), t).toContain("Rui");
     expect(pt([src("a", "Comendador Rui Costa")]).terms.map((x) => x.text)).toContain("Comendador");
     expect(pt([src("a", "Comendador Rui Costa")], ["Comendador."]).terms.map((x) => x.text)).toContain("Rui");
   });
@@ -62,12 +68,32 @@ describe("findNames", () => {
       expect(findNames(`${a} e ${b}`, t2)).toHaveLength(2);
     }
   });
-  it("matches articles by number, never by gender", () => {
+  it("keeps articles exact inside a multi-word term (G3)", () => {
     const t = pt([src("t", "Teo", { aliases: ["o menino"] })]);
-    expect(findNames("Os meninos e O menino", t).map((o) => o.text)).toEqual(["Os meninos", "O menino"]);
+    expect(findNames("Os meninos e O menino e o menino", t).map((o) => o.text)).toEqual(["O menino", "o menino"]);
     expect(findNames("a menina", t)).toEqual([]);
     const r = pt([src("r", "Rosa dos ventos", { person: false })]);
-    expect(findNames("a rosa do vento", r).map((o) => o.text)).toEqual(["rosa do vento"]);
+    expect(findNames("a rosa do vento e a Rosa dos ventos", r).map((o) => o.text)).toEqual(["Rosa dos ventos"]);
+  });
+  it("needs a capital for a capitalized term, all caps included (G3)", () => {
+    const t = pt([src("r", "Rosa"), src("l", "Luz"), src("o", "Rosa dos ventos", { person: false })]);
+    expect(findNames("a blusa rosa, ROSA, Rosa e rosas; acendeu a luz", t).map((o) => o.text)).toEqual(["ROSA", "Rosa"]);
+    expect(findNames("Rosa Dos Ventos", t).map((o) => o.text)).toEqual(["Rosa Dos Ventos"]);
+    expect(findNames("## PORTO", pt([src("p", "Porto", { person: false })])).map((o) => o.text)).toEqual(["PORTO"]);
+  });
+  it("lets a lowercase term match any case", () => {
+    const t = pt([src("t", "Teo", { aliases: ["o menino"] })]);
+    expect(findNames("O menino e O MENINO", t).map((o) => o.text)).toEqual(["O menino", "O MENINO"]);
+  });
+  it("matches a hyphenated word inside a term (G3, review 2)", () => {
+    const t = pt([src("s", "Santa-Rita do Sul", { person: false })]);
+    expect(findNames("Em Santa-Rita do Sul chovia", t).map((o) => o.text)).toEqual(["Santa-Rita do Sul"]);
+    const j = pt([src("j", "Jean-Luc Picard", { firstName: false })]);
+    expect(findNames("Jean-Luc Picard riu", j).map((o) => o.text)).toEqual(["Jean-Luc Picard"]);
+  });
+  it("matches a hyphenated word inside an ignore phrase (G3, review 2)", () => {
+    const t = pt([src("f", "Flor", { ignore: ["Beija-Flor"] })]);
+    expect(findNames("A Flor viu o Beija-Flor", t).map((o) => o.text)).toEqual(["Flor"]);
   });
   it("matches a hyphenated name by its parts, and a full name by hyphen", () => {
     const t = pt([src("mj", "Maria José")]);
@@ -75,11 +101,11 @@ describe("findNames", () => {
     const whole = pt([src("mj", "Maria-José")]);
     expect(findNames("Maria-José ficou", whole).map((o) => o.text)).toEqual(["Maria-José"]);
   });
-  it("matches Maria Clara against Dona Maria Clara, and a bare Brown against nothing", () => {
+  it("matches Maria Clara against Dona Maria Clara, and a bare Brown against Mr Brown", () => {
     const t = pt([src("c", "Dona Maria Clara")]);
     expect(findNames("Maria Clara sorriu", t).map((o) => o.text)).toEqual(["Maria Clara"]);
     const en = compileTerms([src("b", "Mr Brown")], { lang: "en", extraTitles: [] });
-    expect(findNames("Brown paid", en)).toEqual([]);
+    expect(findNames("Brown paid", en).map((o) => o.text)).toEqual(["Brown"]);
     expect(findNames("Mr Brown paid", en).map((o) => o.text)).toEqual(["Mr Brown"]);
   });
   it("lets the longest match win and skips past it", () => {
@@ -97,12 +123,14 @@ describe("findNames", () => {
   });
   it("drops occurrences inside an ignore span only", () => {
     const t = pt([src("r", "Rosa", { ignore: ["rosa dos ventos"] })]);
-    expect(findNames("Rosa viu a rosa dos ventos e a rosa.", t).map((o) => o.text)).toEqual(["Rosa", "rosa"]);
-    expect(findNames("a rosa-dos-ventos", t)).toEqual([]);
+    expect(findNames("Rosa viu a Rosa dos ventos e a Rosa.", t).map((o) => o.from)).toEqual([0, 31]);
+    expect(findNames("a Rosa-dos-ventos", t)).toEqual([]);
   });
-  it("honours case-sensitive terms, inflection included", () => {
+  it("honours case-sensitive terms, inflection included, accents ignored", () => {
     const t = pt([src("p", "Porto", { person: false, caseSensitive: true })]);
     expect(findNames("Porto PORTO porto Portos", t).map((o) => o.text)).toEqual(["Porto", "Portos"]);
+    const i = pt([src("i", "Inês", { caseSensitive: true })]);
+    expect(findNames("Ines Inês INES ines", i).map((o) => o.text)).toEqual(["Ines", "Inês"]);
   });
   it("matches by folded form with no language, no stemming", () => {
     const t = compileTerms([src("m", "Inês")], { lang: null, extraTitles: [] });

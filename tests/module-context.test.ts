@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { Notice, noticeLog } from "./support/obsidian";
+import { Component, Notice, noticeLog } from "./support/obsidian";
 import type { Extension } from "@codemirror/state";
 import { FeatureRegistry } from "../src/core/feature-registry";
 import type { FeatureId } from "../src/core/features";
@@ -712,6 +712,16 @@ describe("ctx.afterUnload", () => {
     expect(n).toBe(2);
   });
 
+  it("does not run when the plugin itself unloads (unloadAll)", () => {
+    let n = 0;
+    const m = new Fake("desk", {}, (f) => { f.ctxOf().afterUnload(() => { n++; }); });
+    const r = registryOf(m);
+    r.apply();
+    r.unloadAll();
+    expect(n).toBe(0);
+    expect(r.isOn("desk")).toBe(false);
+  });
+
   it("a callback that throws does not stop the next one", () => {
     const calls: string[] = [];
     const m = new Fake("desk", {}, (f) => {
@@ -755,5 +765,22 @@ describe("an editor slot handle is tied to its load", () => {
     expect(arr).toHaveLength(0);
     m.editorSlot!.set([[{} as unknown as Extension]]);
     expect(arr).toHaveLength(1);
+  });
+});
+
+describe("the Component stub", () => {
+  it("pops its children on unload, so a second load does not unload them again", () => {
+    const order: string[] = [];
+    class Kid extends Component { constructor(private n: string) { super(); } onunload(): void { order.push(this.n); } }
+    const parent = new Component();
+    parent.addChild(new Kid("a"));
+    parent.addChild(new Kid("b"));
+    parent.load();
+    parent.unload();
+    expect(order).toEqual(["b", "a"]);
+    expect((parent as unknown as { _children: unknown[] })._children).toHaveLength(0);
+    parent.load();
+    parent.unload();
+    expect(order).toEqual(["b", "a"]);
   });
 });

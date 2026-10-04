@@ -190,7 +190,7 @@ export class FeatureRegistry {
     } catch (err) {
       console.error(`Escrita: ${e.id} failed to unload`, err);
     }
-    e.ctx.end();
+    e.ctx.end(!this.closed);   // the plugin going away skips afterUnload callbacks
   }
 
   /** A leaf restored from the saved layout can belong to a feature that is off; close it once the layout is ready. */

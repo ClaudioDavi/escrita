@@ -15,7 +15,10 @@ mariana	Mariana		character	lang=pt
 marcos	Marcos		character	lang=pt
 marco	Marco		character	lang=pt
 rosa	Rosa		character	lang=pt;ignore=rosa dos ventos
-porto	Porto		place	lang=pt;caseSensitive=true
+porto	Porto		place	lang=pt
+luz	Luz		character	lang=pt
+mar	Mar		place	lang=pt
+flor	Flor		character	lang=pt;ignore=beija-flor
 teo	Teo	o menino	character	lang=pt
 ines	Inês		character	lang=pt
 tomas	Tomás		character	lang=pt
@@ -27,8 +30,13 @@ dona-maria-clara	Dona Maria Clara		character	lang=pt;scope=clara
 dona-benta	Dona Benta Encerrabodes		character	lang=pt;scope=titles
 doutor-paulo	Doutor Paulo Mendes		character	lang=pt;scope=titles
 irma-luisa	Irma Luísa Prado		character	lang=pt;scope=titles
-senhor-antunes	Senhor Antunes Prado		character	lang=pt;scope=titles
+senhor-antunes	Senhor Antunes		character	lang=pt;scope=titles
 senhora-zelia	Senhora Zélia Prado		character	lang=pt;scope=titles
+irma-lucia	Irmã Lúcia Prado		character	lang=pt;scope=titles
+coronel-teles	Coronel Teles		character	lang=pt;scope=titles
+capitao-nunes	Capitão Nunes Rocha		character	lang=pt;scope=titles
+professor-aurelio	Professor Aurélio Dias		character	lang=pt;scope=titles
+professora-elza	Professora Elza Rocha		character	lang=pt;scope=titles
 teo-en	Teo		character	lang=en
 james-en	James		character	lang=en
 mr-brown	Mr Brown		character	lang=en

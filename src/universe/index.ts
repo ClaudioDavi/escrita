@@ -307,7 +307,7 @@ export class UniverseModule extends FeatureModule {
 
   /** "Show open threads": the standalone view when the mode is off, else the panel's Threads tab. */
   async showThreads(): Promise<void> {
-    if (this.enabled()) await activateUniverseView(this.plugin, "threads");
+    if (this.plugin.features.isOn("universe")) await activateUniverseView(this.plugin, "threads");
     else await activateThreadsView(this.plugin);
   }
 

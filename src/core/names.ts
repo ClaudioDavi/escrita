@@ -63,17 +63,6 @@ export function matchLang(setting: "auto" | "pt-BR" | "en", locale: string): Ste
   return null;
 }
 
-// Q25: inside a multi-word pt term an article or contraction keys to its number pair.
-// Genders are never merged.
-const ARTICLE_PAIRS: readonly (readonly [string, string])[] = [
-  ["o", "os"], ["a", "as"], ["do", "dos"], ["da", "das"], ["no", "nos"], ["na", "nas"], ["um", "uns"], ["uma", "umas"],
-];
-const ARTICLE_KEY = new Map<string, string>();
-for (const [one, many] of ARTICLE_PAIRS) {
-  ARTICLE_KEY.set(one, `art:${one}`);
-  ARTICLE_KEY.set(many, `art:${one}`);
-}
-
 const RANK: Record<TermOrigin, number> = { name: 0, alias: 1, first: 2 };
 
 const isUpper = (s: string): boolean => {
@@ -84,21 +73,26 @@ const isUpper = (s: string): boolean => {
 /** Q22: by the term's capital letter. */
 const profileOf = (text: string): StemProfile => (isUpper(text) ? "name" : "word");
 
-function wordKey(folded: string, lang: StemLang | null, profile: StemProfile, multi: boolean): string {
+function wordKey(folded: string, lang: StemLang | null, profile: StemProfile): string {
   if (lang === null) return folded;
-  if (multi && lang === "pt") {
-    const a = ARTICLE_KEY.get(folded);
-    if (a) return a;
-  }
   return `${profile}:${stem(folded, lang, profile)}`;
 }
+
+/** Q25: a hyphenated word is its parts (both in a term and in the text), unless a part has an apostrophe. */
+function splitHyphen(w: string): string[] {
+  const parts = w.split("-");
+  return parts.length > 1 && parts.every((p) => p.length > 0 && !/['’]/.test(p)) ? parts : [w];
+}
+
+/** Letters without accents, case kept: the comparison of a case-sensitive term (Q23). */
+const stripAccents = (s: string): string => s.normalize("NFD").replace(/\p{M}/gu, "").normalize("NFC").replace(/’/g, "'");
 
 function titleSet(lang: StemLang | null, extra: readonly string[]): Set<string> {
   const out = new Set<string>();
   const langs: StemLang[] = lang ? [lang] : ["pt", "en"];
-  for (const l of langs) for (const t of NAME_TITLES[l]) out.add(foldName(t));
+  for (const l of langs) for (const t of NAME_TITLES[l]) out.add(normalizeWord(t));
   for (const t of extra) {
-    const f = foldName(t.replace(/\.+$/, ""));
+    const f = normalizeWord(t.replace(/\.+$/, "")).trim();
     if (f) out.add(f);
   }
   return out;
@@ -116,17 +110,17 @@ export function compileTerms(
   const seenIgnore = new Set<string>();
 
   const add = (id: string, text: string, origin: TermOrigin, caseSensitive: boolean): void => {
-    const words = tokens(text.normalize("NFC")).map((t) => t.text);
-    if (words.length === 0) return;
-    if (words.length === 1) {
-      const w = words[0];
+    const raw = tokens(text.normalize("NFC")).map((t) => t.text);
+    if (raw.length === 0) return;
+    if (raw.length === 1) {
+      const w = raw[0];
       if (Array.from(w).length <= 1) return; // one letter (Q27)
       if (lang && isStopWord(normalizeWord(w), lang)) return;
     }
+    const words = raw.flatMap(splitHyphen);
     const profile = profileOf(words[0]);
-    const multi = words.length > 1;
-    const keys = words.map((w) => wordKey(foldName(w), lang, profile, multi));
-    const term: NameTerm = { id, text: words.join(" "), words, keys, profile, origin, caseSensitive };
+    const keys = words.map((w) => wordKey(foldName(w), lang, profile));
+    const term: NameTerm = { id, text: raw.join(" "), words, keys, profile, origin, caseSensitive };
     const k = `${id}\u0000${profile}\u0000${caseSensitive}\u0000${caseSensitive ? words.join(" ") : words.map(foldName).join(" ")}\u0000${keys.join(" ")}`;
     const had = byKey.get(k);
     if (!had || RANK[origin] < RANK[had.origin]) byKey.set(k, term);
@@ -138,19 +132,16 @@ export function compileTerms(
     if (src.person && src.firstName) {
       const words = tokens(src.name.normalize("NFC")).map((t) => t.text);
       let i = 0;
-      while (i < words.length && titles.has(foldName(words[i]))) i++;
+      while (i < words.length && titles.has(normalizeWord(words[i]))) i++;
       const rest = words.slice(i);
-      if (rest.length >= 2) {
-        add(src.id, rest[0], "first", src.caseSensitive);
-        if (i > 0) add(src.id, rest.join(" "), "first", src.caseSensitive);
-      }
+      if (rest.length >= 2) add(src.id, rest[0], "first", src.caseSensitive);
+      if (i > 0 && rest.length >= 1) add(src.id, rest.join(" "), "first", src.caseSensitive);
     }
     for (const phrase of src.ignore) {
-      const words = tokens(phrase.normalize("NFC")).map((t) => t.text);
+      const words = tokens(phrase.normalize("NFC")).flatMap((t) => splitHyphen(t.text));
       if (words.length === 0) continue;
       const profile = profileOf(words[0]);
-      const multi = words.length > 1;
-      const keys = words.map((w) => wordKey(foldName(w), lang, profile, multi));
+      const keys = words.map((w) => wordKey(foldName(w), lang, profile));
       const k = `${src.id}\u0000${profile}\u0000${keys.join(" ")}`;
       if (seenIgnore.has(k)) continue;
       seenIgnore.add(k);
@@ -175,7 +166,6 @@ interface Matchable { words: readonly string[]; keys: readonly string[]; profile
 interface Index {
   byFirst: Map<string, NameTerm[]>;
   ignoreByFirst: Map<string, IgnorePhrase[]>;
-  joined: Set<string>;   // folded single-word terms, to keep a hyphenated word whole when it is itself a term
 }
 
 const indexes = new WeakMap<TermTable, Index>();
@@ -183,13 +173,12 @@ const indexes = new WeakMap<TermTable, Index>();
 function indexOf(table: TermTable): Index {
   let ix = indexes.get(table);
   if (ix) return ix;
-  ix = { byFirst: new Map(), ignoreByFirst: new Map(), joined: new Set() };
+  ix = { byFirst: new Map(), ignoreByFirst: new Map() };
   for (const t of table.terms) {
     const k = t.keys[0];
     const l = ix.byFirst.get(k);
     if (l) l.push(t);
     else ix.byFirst.set(k, [t]);
-    if (t.words.length === 1) ix.joined.add(foldName(t.words[0]));
   }
   for (const g of table.ignores ?? []) {
     const k = g.keys[0];
@@ -222,8 +211,8 @@ export function findNames(mask: string, table: TermTable, from = 0, to = mask.le
   };
   for (const tk of tokens(mask, from, to)) {
     const folded = fold(tk.text);
-    const parts = tk.text.split("-");
-    if (parts.length > 1 && parts.every((p) => p.length > 0 && !/['’]/.test(p)) && !ix.joined.has(folded)) {
+    const parts = splitHyphen(tk.text);
+    if (parts.length > 1) {
       group++;
       let at = tk.from;
       for (const p of parts) {
@@ -237,42 +226,41 @@ export function findNames(mask: string, table: TermTable, from = 0, to = mask.le
 
   // Stem keys per unit and profile, computed once.
   const keyCache = new Map<string, string>();
-  const keyOf = (u: Unit, profile: StemProfile, multi: boolean): string => {
-    const id = `${profile}${multi ? "m" : "s"}:${u.folded}`;
+  const keyOf = (u: Unit, profile: StemProfile): string => {
+    const id = `${profile}:${u.folded}`;
     let k = keyCache.get(id);
     if (k === undefined) {
-      k = wordKey(u.folded, lang, profile, multi);
+      k = wordKey(u.folded, lang, profile);
       keyCache.set(id, k);
     }
     return k;
   };
   const firstKeys = (u: Unit): string[] => {
     if (lang === null) return [u.folded];
-    const out = [keyOf(u, "name", false), keyOf(u, "word", false)];
-    if (lang === "pt") {
-      const a = ARTICLE_KEY.get(u.folded);
-      if (a) out.push(a);
-    }
-    return out;
+    return [keyOf(u, "name"), keyOf(u, "word")];
   };
 
+  // Case-sensitive: the same letters in the same case, accents ignored; the end may differ (inflection).
   const caseOk = (u: Unit, raw: string): boolean => {
-    const n = Math.min(u.text.length, raw.length);
-    return u.text.slice(0, n) === raw.slice(0, n);
+    const a = stripAccents(u.text);
+    const b = stripAccents(raw);
+    const n = Math.min(a.length, b.length);
+    return a.slice(0, n) === b.slice(0, n);
   };
   /** How many units a term matches from `i`, or 0. */
   const run = (t: Matchable, i: number): number => {
     const n = t.words.length;
     if (i + n > units.length) return 0;
-    const multi = n > 1;
     for (let k = 0; k < n; k++) {
       const u = units[i + k];
       if (k > 0) {
         const p = units[i + k - 1];
         if (!(u.group !== 0 && u.group === p.group) && !GAP.test(mask.slice(p.to, u.from))) return 0;
       }
-      if (keyOf(u, t.profile, multi) !== t.keys[k]) return 0;
-      if (t.caseSensitive && !caseOk(u, t.words[k])) return 0;
+      if (keyOf(u, t.profile) !== t.keys[k]) return 0;
+      if (t.caseSensitive) {
+        if (!caseOk(u, t.words[k])) return 0;
+      } else if (t.profile === "name" && isUpper(t.words[k]) && !isUpper(u.text)) return 0; // G3: a capitalized word needs a capital
     }
     return n;
   };

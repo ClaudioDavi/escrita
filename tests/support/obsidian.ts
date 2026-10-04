@@ -23,8 +23,7 @@ export class Component {
   unload(): void {
     if (!this._loaded) return;
     this._loaded = false;
-    const kids = this._children.slice();
-    while (kids.length) kids.pop()!.unload();
+    while (this._children.length) this._children.pop()!.unload();
     const cbs = this._callbacks.slice();
     this._callbacks = [];
     while (cbs.length) cbs.pop()!();

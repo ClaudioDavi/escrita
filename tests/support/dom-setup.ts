@@ -33,5 +33,6 @@ if (typeof HTMLElement !== "undefined") {
   proto.setText = function (this: HTMLElement, text: string): void { this.textContent = text; };
   proto.empty = function (this: HTMLElement): void { this.replaceChildren(); };
   proto.setAttr = function (this: HTMLElement, k: string, v: string): void { this.setAttribute(k, v); };
+  proto.setCssStyles = function (this: HTMLElement, styles: Record<string, string>): void { Object.assign(this.style, styles); };
   proto.toggle = function (this: HTMLElement, show: boolean): void { this.style.display = show ? "" : "none"; };
 }

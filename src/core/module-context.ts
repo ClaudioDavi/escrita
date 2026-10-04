@@ -43,7 +43,8 @@ export interface ModuleContext {
    * context and after its view, code block, post-processor and editor slots are unbound.
    * For work that must see the feature as gone, such as the desk re-drawing the blocks
    * that were showing its content (they now render as plain source). Never survives the
-   * load it was registered in; register it again on each load. A throw is logged.
+   * load it was registered in; register it again on each load. Not run when the plugin itself
+   * unloads (unloadAll). A throw is logged.
    */
   afterUnload(cb: () => void): void;
 }
@@ -195,8 +196,11 @@ export class ModuleContextImpl implements ModuleContext {
     this.generation++;
   }
 
-  /** On unload: undoes everything registered since `begin()`. Safe to call twice. */
-  end(): void {
+  /**
+   * On unload: undoes everything registered since `begin()`. Safe to call twice.
+   * `runAfter` false (the plugin itself unloading) drops the afterUnload callbacks unrun.
+   */
+  end(runAfter = true): void {
     this.active = false;
     this.generation++;
     const run = this.disposers.splice(0).reverse();
@@ -205,7 +209,9 @@ export class ModuleContextImpl implements ModuleContext {
     }
     this.slots?.releaseEditors();
     for (const r of this.ribbons.values()) r.cb = null;
-    for (const cb of this.afterEnd.splice(0)) {
+    const after = this.afterEnd.splice(0);
+    if (!runAfter) return;
+    for (const cb of after) {
       try { cb(); } catch (e) { console.error("Escrita: an afterUnload callback failed", e); }
     }
   }

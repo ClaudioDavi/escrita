@@ -64,14 +64,14 @@ agents build to the recommendation unless the author says otherwise.
 | # | Question | Recommendation |
 |---|---|---|
 | Q21 | Which text does the matcher read? The spec says `proseOnly`, but "click to jump" needs offsets, and `proseOnly` collapses them (core/wordcount.ts:21-37). | **`readerMask(md)`** (core/wordcount.ts:84-99): the same words as `proseOnly`, offset for offset. Headings count, as they do for the word count. Frontmatter, comments, code and link targets don't. |
-| Q22 | Which terms use the `"name"` stem profile and which `"word"`? The spec says people and places use `"name"`, common-noun entries `"word"`; object, group and event are open. | **By the term, not the kind**: a name or alias whose first letter is uppercase uses `"name"` (*Maria / Mariazinha*, *Os Almeida*); a lowercase alias uses `"word"` (*o menino / os meninos*). This reads the spec's "common-noun entries and aliases" through what the writer typed, with no per-kind rule. |
-| Q23 | Accents. The lens keeps accents (core/stem/index.ts:15-17); the universe's search folds them (entries.ts:132). | **The matcher folds accents, before stemming** (author, G2; review H1): *Inês* and *Ines* are one key, as are *Tomás/Tomas*, *Thaís/Thais*, *Andrés/Andres* and *Mário/Mario*. A word's key is `stem(foldName(word), lang, profile)`, where `foldName` (`src/core/names.ts`, filled in 0.1b) is `normalizeWord`, then NFD, drop combining marks, NFC, trim. Folding after stemming fails: the pt stemmer drops a bare `-es`/`-as`/`-is` but not an accented one, so *Inês* gave `ines` and *Ines* gave `ine`. The same fold applies to every word the matcher compares: occurrence tokens, term words, ignore phrases, titles and the `nameTitles` setting (so *Irma* matches *Irmã*, and *Vó* and *Vô* fold together, which is harmless). Every exact comparison of names compares `foldName` forms too: `Candidate.exact`, `NamesProvider.entryFor` and the POV keys. The stemmer itself is unchanged and the lens keeps its accent-aware keys. Writers are inconsistent with accents in names, and a missed mention is worse here than a rare merge. The panel's search keeps `foldText`. |
+| Q22 | Which terms use the `"name"` stem profile and which `"word"`? The spec says people and places use `"name"`, common-noun entries `"word"`; object, group and event are open. | **By the term, not the kind**: a name or alias whose first letter is uppercase uses `"name"` (*Maria / Mariazinha*, *Os Almeida*); a lowercase alias uses `"word"` (*o menino*). This reads the spec's "common-noun entries and aliases" through what the writer typed, with no per-kind rule. **Case (author, G3, 2026-10-03)**: a `"name"` term matches only tokens whose first letter is uppercase, checked word by word for each capitalized word of the term (*Rosa dos ventos* needs a capital on *Rosa*, not on *dos*). An all-caps token counts (a `## PORTO` heading matches *Porto*). A common word at the start of a sentence still matches, an accepted cost. A `"word"` (lowercase) term matches in any case (*O menino*). The per-entry `caseSensitive` option keeps its meaning, exact case, for terms that need it (accents are ignored, case is kept). |
+| Q23 | Accents. The lens keeps accents (core/stem/index.ts:15-17); the universe's search folds them (entries.ts:132). | **The matcher folds accents, before stemming** (author, G2; review H1): *Inês* and *Ines* are one key, as are *Tomás/Tomas*, *Thaís/Thais*, *Andrés/Andres* and *Mário/Mario*. A word's key is `stem(foldName(word), lang, profile)`, where `foldName` (`src/core/names.ts`, filled in 0.1b) is `normalizeWord`, then NFD, drop combining marks, NFC, trim. Folding after stemming fails: the pt stemmer drops a bare `-es`/`-as`/`-is` but not an accented one, so *Inês* gave `ines` and *Ines* gave `ine`. The same fold applies to every word the matcher compares: occurrence tokens, term words, ignore phrases, titles and the `nameTitles` setting (**except titles, G3**: titles compare with accents kept, so *Irma*, a given name, is not the title *Irmã*). Every exact comparison of names compares `foldName` forms too: `Candidate.exact`, `NamesProvider.entryFor` and the POV keys. The stemmer itself is unchanged and the lens keeps its accent-aware keys. Writers are inconsistent with accents in names, and a missed mention is worse here than a rare merge. The panel's search keeps `foldText`. |
 | Q24 | Which language? | **The writing language** (Q14), through `matchLang(setting, locale)` in `core/names.ts`, the same mapping as `lensLang` (lens/lang.ts:10-16). With no language (a locale that is neither pt nor en), terms match by exact normalized form, with no stemming. |
-| Q25 | Multi-word names and aliases (*Dona Maria*, *Rosa dos ventos*). | **Phrase matching** through `findPhrase` (core/tokens.ts:26-40) with the term's stem on each word. Only whitespace (a line break included) and emphasis marks may sit between the words, the crutch rule (lens/rules-words.ts:202-204). At one position the longest match wins; overlaps resolve left to right. **Articles inside a multi-word term** (review H2, option a): in pt, an article or contraction inside a multi-word term matches its number variant, so *o menino* matches *os meninos* and *rosa do vento* matches *rosa dos ventos*: o/os, a/as, do/dos, da/das, no/nos, na/nas, um/uns, uma/umas each map to one key; genders are never merged (*o* never matches *a*). Only inside multi-word terms; a single-word term never matches an article (Q27). **Hyphens**: a hyphenated token (*Maria-José*) also matches as its parts, for name matching only, when both parts are letters and the joined form is not itself a term; so *Maria-José* is a mention of the entry *Maria José*, and *rosa-dos-ventos* is matched by the ignore phrase *rosa dos ventos*. |
-| Q26 | Collisions: the pt `"name"` stem gives *Marcos* and *Marco* one key (`marco`), likewise *Carlos/Carlo*, *Lucas/Luca*; two entries can share a first name. | **Each occurrence keeps its candidate entries; the query decides.** Candidates are filtered to the note's scope. Then an entry whose term has the exact surface form wins, an explicit name or alias beats a derived first name, and if more than one is left the occurrence counts for none ("prefer missing a match over a wrong one", SF 5). The stem fixtures stay frozen. |
+| Q25 | Multi-word names and aliases (*Dona Maria*, *Rosa dos ventos*). | **Phrase matching** through `findPhrase` (core/tokens.ts:26-40) with the term's stem on each word. Only whitespace (a line break included) and emphasis marks may sit between the words, the crutch rule (lens/rules-words.ts:202-204). At one position the longest match wins; overlaps resolve left to right. **Articles inside a multi-word term (author, G3)**: no article rule. Articles and contractions must match as written, each word stemmed on its own, so *o menino* matches *o menino* and *O menino*, and *os meninos* never matches *o menino*. (The H2 option a mapping, o/os, do/dos and so on, is removed.) **Hyphens**: a hyphenated word is its parts, in the text and in a term or ignore phrase alike (G3, wave 1 review 2), when no part has an apostrophe; so *Maria-José* is a mention of the entry *Maria José*, the term *Santa-Rita do Sul* and the ignore phrase *beija-flor* match their own text, and *rosa-dos-ventos* is matched by the ignore phrase *rosa dos ventos*. A term written with a hyphen also matches the same words with a space. |
+| Q26 | Collisions: the pt `"name"` stem gives *Marcos* and *Marco* one key (`marco`), likewise *Carlos/Carlo*, *Lucas/Luca*; two entries can share a first name. | **Each occurrence keeps its candidate entries; the query decides.** Candidates are filtered to the note's scope. Then an entry whose term has the exact surface form wins, an explicit name or alias beats a derived first name, and if more than one is left the occurrence counts for none ("prefer missing a match over a wrong one", SF 5). The stem fixtures stay frozen. A common word that is also a name (*Rosa*, *Luz*, *Mar*) matches only when capitalized (Q22), so *a blusa rosa* is not a mention. |
 | Q27 | Very short or common terms. | **A term of one letter, or a single stop word in the matcher language (`isStopWord`, core/stem/stopwords.ts:82), never matches.** Everything else follows the spec: case-insensitive by default, with the per-entry `ignore` list for names that are also words (*Rosa*, *Porto*). |
 | Q28 | The per-entry properties `caseSensitive`, `ignore` and `firstName`: literal keys, or settings? Rule 6 says every property name is a setting. | **Settings with those English defaults**: `caseSensitiveProperty`, `ignoreProperty`, `firstNameProperty`, in the universe settings (universe/settings.ts), shown in one collapsed "Entry properties" group. `aliases` stays Obsidian's own key (entries.ts:38-49). |
-| Q29 | First name as an alias: titles, collisions, kinds. | **Characters only. Leading titles are skipped, then the first word becomes an alias when at least one more word follows** (*Dona Benta Encerrabodes* → *Benta*). **The full name minus its leading titles is also a term** (`origin: "first"`, so it loses to an explicit name, Q26): *Dona Maria Clara* also gives *Maria Clara*. A bare surname is never derived: *Mr Brown* gives nothing, since only one word follows the title. The spec says "unless it's a title"; skipping the title and taking the next word is a reading, listed in "Deviations". **Titles are language data, built in per language** and picked by the writing language (Q14), like the lens's lexicon ("language tables picked by the language setting, not the author's values", lens/lexicon.ts:1-3) and the stop words (core/stem/stopwords.ts:82): pt *Dona, Dom, Seu, Sr., Sra., Srta., Dr., Dra., Senhor, Senhora, Doutor, Doutora, Padre, Frei, Irmã, Irmão, Tia, Tio, Vó, Vô*, en *Mr, Mrs, Ms, Miss, Dr, Sir, Lady, Lord, Aunt, Uncle*, in `src/core/name-titles.ts` (pure data). An English-only default would make *Dona Benta Encerrabodes* derive *Dona*, and every "dona" in prose would count. A setting `nameTitles` (newline-separated, dot optional, **empty by default**) extends the table, as the word lists note extends the lexicon. With no language, both tables apply. `firstName: false` turns it off. A derived first name loses to any explicit name or alias (Q26). |
+| Q29 | First name as an alias: titles, collisions, kinds. | **Characters only. Leading titles are skipped, then the first word becomes an alias when at least one more word follows** (*Dona Benta Encerrabodes* → *Benta*). **The full name minus its leading titles is also a term** (`origin: "first"`, so it loses to an explicit name, Q26), including when one word remains (author, G3): *Dona Maria Clara* also gives *Maria Clara*, *Mr Brown* gives *Brown* and *Senhor Antunes* gives *Antunes*. Without a title, a bare surname is still not derived (*Maria Souza* gives *Maria*, not *Souza*). The spec says "unless it's a title"; skipping the title and taking the next word is a reading, listed in "Deviations". **Titles compare with accents kept** (G3), so *Irma* is not *Irmã*. **Titles are language data, built in per language** and picked by the writing language (Q14), like the lens's lexicon ("language tables picked by the language setting, not the author's values", lens/lexicon.ts:1-3) and the stop words (core/stem/stopwords.ts:82): pt *Dona, Dom, Seu, Sr., Sra., Srta., Dr., Dra., Senhor, Senhora, Doutor, Doutora, Padre, Frei, Irmã, Irmão, Tia, Tio, Vó, Vô, Coronel, Capitão, Professor, Professora*, en *Mr, Mrs, Ms, Miss, Dr, Sir, Lady, Lord, Aunt, Uncle*, in `src/core/name-titles.ts` (pure data). An English-only default would make *Dona Benta Encerrabodes* derive *Dona*, and every "dona" in prose would count. A setting `nameTitles` (newline-separated, dot optional, **empty by default**) extends the table, as the word lists note extends the lexicon. With no language, both tables apply. `firstName: false` turns it off. A derived first name loses to any explicit name or alias (Q26). |
 | Q30 | Explicit links. | **A `[[Teo]]` or `[Teo](Teo.md)` in prose is one mention of the note it resolves to**, when that note is an entry; its display text is not matched again. Embeds and frontmatter links don't count. The index stores the link path; the query resolves it with `getFirstLinkpathDest`, so the index stays pure and a rename of the entry needs no rebuild. |
 | Q31 | Which notes are scanned, and how is the result grouped? | **Every Markdown note except snapshots and templates** (`isUniverseNote`, entries.ts:79-81), filtered at query time to the entry's scope (scope is never stored, Q20); `compute` returns `undefined` for a note with no occurrences and no links, so empty notes cost no memory. Filtering scope at compute time instead would go stale when a book note's `universe` changes (Q20), so the scan stays vault-wide (see "Issues not applied"). An entry's own note never counts for itself. Groups: **works** first (a book with its chapters under it, then standalone works, in the Works tab's order: `groupWorks` puts forms first, then `compareWorks`, works-list.ts:71-84), then **other notes in scope** (other entries, the universe note, loose notes), collapsed. The "other notes" group goes beyond U 1.2's "every work and chapter" and is listed in "Deviations". |
 | Q32 | "First/last mention" and "story order". | **Inside a book only, by chapter order.** Across works there is no order until the phase 2 timeline, so the section shows no first or last there. A narrowing, listed in "Deviations". |
@@ -136,11 +136,12 @@ each edit; the author confirms them in G2.
 | Q16–Q18 | U 1.1 | reading | `false` beats the universe folder and the universe note; it applies to every file of a book, not only chapters | Rewrite the "Keeping one note out" bullet. |
 | Q21 | U 1.2 | reading | The matcher reads the reader mask (offsets kept), not `proseOnly`; headings count | Rewrite "Matching". |
 | Q22 | U 1.2 | reading | `"name"` or `"word"` by the term's capital letter, not by entry kind | Rewrite "Portuguese inflection". |
+| Q22 (G3) | U 1.2 | narrowing | U 1.2 says case-insensitive by default. A capitalized term matches only capitalized tokens (all caps included); a lowercase term and `caseSensitive: true` entries are unchanged. Sentence-start common words still match | Rewrite "Matching" and the `caseSensitive` bullet. |
 | Q23 | U 1.2 | addition | Accents are folded before stemming in every word the matcher compares | One sentence in "Portuguese inflection". |
-| Q25 | U 1.2 | addition | Inside a multi-word term, pt articles and contractions match their number variants (o/os, do/dos…; genders never merged); hyphenated names also match as their parts | Add to "Matching". |
+| Q25 | U 1.2 | addition | Hyphenated words in the text, in a term and in an ignore phrase all match as their parts. (The article rule was dropped at G3: articles inside a multi-word term match as written.) | Add to "Matching". |
 | Q26–Q27 | U 1.2 | addition | Tie-break for shared keys; one-letter and stop-word terms never match | Add a "Collisions" bullet. |
 | Q28 | U 1.2 | reading | The three per-entry property names are settings | Name the settings. |
-| Q29 | U 1.2 | reading | Leading titles are skipped and the next word becomes the first name; the full name minus its titles is also a term; a bare surname is never derived; titles are built-in pt and en tables picked by the writing language, extended by `nameTitles` | Rewrite "First name as an alias". |
+| Q29 | U 1.2 | reading | Leading titles are skipped and the next word becomes the first name; the full name minus its titles is also a term, even when one word remains (*Mr Brown* gives *Brown*); titles compare with accents kept; titles are built-in pt and en tables picked by the writing language, extended by `nameTitles` | Rewrite "First name as an alias". |
 | Q31 | U 1.2 | addition | An "Other notes" group (other entries, the universe note, loose notes in scope) after the works | Add to the "Output" bullet. |
 | IMPROVEMENTS 10 | U 1.2 | reading | The matcher lives in `src/core/names.ts`, not `src/universe/match.ts`, so the lens, spellcheck and the outline share it without importing the universe | Rewrite the "Index" bullet's last sentence. |
 | Q32 | U 1.2 | narrowing | First and last mention only inside a book | Rewrite the "Output" bullet. |
@@ -276,7 +277,7 @@ gated task starts.
   1,000 words with 300 entries on desktop and on a mid-range phone; record both here.
   3.2's ceilings are derived from these figures.
   **Desktop figure (measured, `npx vitest bench --run tests/names.bench.ts`)**: about
-  1.7-1.9 ms per 1,000 words (median of 20 runs after 5 warm-ups; 300 entries compiled to
+  1.7-1.9 ms per 1,000 words (re-run after the G3 changes: 1.9-2.2 ms, inside the 25% margin, so the figure stands; median of 20 runs after 5 warm-ups; 300 entries compiled to
   1,310 terms; 2,000 words, 42 hits = 2.1%; whole run 3.4-3.8 ms, min 2.3 ms). Phone
   figure still **open** (spike plugin with `names.ts` bundled in).
   Method, as planned: measured by this run once 1.2 lands (a `vitest bench`, not committed with
@@ -344,6 +345,23 @@ accents (*Inês* and *Ines* match), now written into Q23 and the fixtures in 0.2
 **G3. Names fixture check** (before 3.2 pins the fixture snapshot). The author reads
 `tests/fixtures/names/*` (task 0.2) for any expected mention that looks wrong. It can
 run any time during waves 1–2.
+**Done 2026-10-03.** Answers, built in `src/core/names.ts` with tests and the fixtures
+edited in the same commit (the last time they change):
+1. A capitalized term matches only tokens that start with a capital (all caps count;
+   sentence-start common words still match; `caseSensitive` keeps exact case). Listed as
+   a deviation from U 1.2's case-insensitive default (Q22).
+2. No article rule: articles in a multi-word term match as written (Q25).
+3. Plurals of names still count (*as Marias* is Maria).
+4. The name minus its leading titles is a term even when one word remains (*Mr Brown*
+   gives *Brown*, *Senhor Antunes* gives *Antunes*) (Q29).
+5. Titles compare with accents kept: *Irma* is not *Irmã* (Q23, Q29).
+6. Hyphenated words inside a term or an ignore phrase match; a case-sensitive term
+   ignores accents and keeps case (wave 1 review 2 and 5).
+7. Rows added: *a blusa rosa*, *acendeu a luz*, *o mar*, *beija-flor* are `-`; the pt
+   titles gain *Coronel*, *Capitão*, *Professor*, *Professora*, each with a row.
+Changed rows: pt `PORTO` heading now Porto (the Porto entry is no longer
+case-sensitive); pt `Os meninos` now `-`; pt-titles `Luísa` became `Irma` (Irma is a given
+name); the `Senhor Antunes` entry is now one word after the title; en `Brown` now Mr Brown.
 
 ## Ownership rules
 
@@ -452,7 +470,7 @@ export interface ModuleContext {
   follow(f: Follower): void;                                     // removed on unload
   decorate(id: DecorationId, draw: Drawer): void;                // undrawn on unload
   onLayoutReady(cb: () => void): void;                           // never runs after unload
-  afterUnload(cb: () => void): void;                             // once, after onunload and after the slots are unbound; for re-rendering what the feature drew (added after the wave 1 review)
+  afterUnload(cb: () => void): void;                             // once, after onunload and after the slots are unbound; for re-rendering what the feature drew (added after the wave 1 review). Not run when the plugin itself unloads: `unloadAll` calls `end(false)` (wave 2 review)
 }
 /**
  * A switchable part of Escrita. Constructed once; the registry calls Component.load()
@@ -661,10 +679,10 @@ Senhor, Senhora, Doutor, Doutora* in `src/core/name-titles.ts` (L6).
   row for it); *Rosa* the character inside "rosa dos ventos" with that phrase in
   `ignore` (`-`), and elsewhere (Rosa); *Dona Maria Clara* with first name *Maria* and
   another entry *Maria José* (bare *Maria* is `-`, ambiguous; "Maria Clara" without
-  *Dona* → Dona Maria Clara, Q29); a case-sensitive *Porto* (lowercase *porto* `-`,
-  all-caps *PORTO* in a heading `-`, and lowercase *porto* at the start of a sentence
-  `-`); an alias "o menino" with *os meninos* (→ the entry, Q25's article rule;
-  `"word"`); a name split by a line break and by `*emphasis*`; a mention in a heading
+  *Dona* → Dona Maria Clara, Q29); *Porto* (lowercase *porto* `-`, all-caps *PORTO*
+  in a heading counts, G3); lowercase common words that are also entries (*a blusa rosa*,
+  *acendeu a luz*, *o mar*, *beija-flor*) are `-`; an alias "o menino" with *os meninos*
+  (`-`, no article rule, G3; `"word"`); a name split by a line break and by `*emphasis*`; a mention in a heading
   (counts); in a comment, a code block and frontmatter (`-`); `[[Teo|o menino]]` (one
   mention of Teo, no match for "o menino" inside it); accents folded before stemming
   (Q23): *Inês* and *Ines* → Inês, *Tomás* and *Tomas* → Tomás, *Thaís* and *Thais* →
@@ -673,9 +691,10 @@ Senhor, Senhora, Doutor, Doutora* in `src/core/name-titles.ts` (L6).
 - pt titles: *Dona Benta Encerrabodes* gives the first name *Benta* through the built-in
   pt titles, and a bare "dona" in prose is `-`; *Irmão*, *Senhor*, *Senhora*, *Doutor*
   and *Doutora* are skipped like the others (*Doutor Paulo Mendes* gives *Paulo*); *Irma*
-  without the accent is skipped as *Irmã*.
+  is a given name, not the title *Irmã*; *Coronel*, *Capitão*, *Professor* and *Professora*
+  are titles; *Senhor Antunes* gives *Antunes*.
 - en: *Teo's* and *Teos* → Teo; *James* not stemmed to *jame*; *Mr Brown* with titles
-  (a bare *Brown* is `-`: no surname is derived, Q29); a one-letter alias and a
+  (a bare *Brown* is Mr Brown, G3); a one-letter alias and a
   stop-word alias (`-`).
 - These defaults were recorded after the wave 0 review; the author reviews them at G3
   with the rest of the rows.
@@ -803,10 +822,10 @@ G0b, G0e, G0f (all cleared), effort M. **The improvement.**
   titles, the gap rule, the longest match, ignore spans, case-sensitive terms, no
   language, an empty table, the signature changing only when matching inputs change;
   accent pairs with the same key (*Inês/Ines*, *Tomás/Tomas*, *Thaís/Thais*,
-  *Andrés/Andres*, *Mário/Mario*) and `exact` true for both forms; *Irma* skipped as a
-  title; *o menino* matching *os meninos* and *a menina* not matching *o menino*;
-  *Maria-José* matching the entry *Maria José*; *Maria Clara* matching *Dona Maria
-  Clara*; a bare *Brown* matching nothing;
+  *Andrés/Andres*, *Mário/Mario*) and `exact` true for both forms; *Irma* not a title
+  (accents kept); *o menino* not matching *os meninos* or *a menina*; *Maria-José*
+  matching the entry *Maria José*, and hyphenated terms and ignore phrases matching;
+  *Maria Clara* matching *Dona Maria Clara*; a bare *Brown* matching *Mr Brown*;
   a **CI ceiling**: 300 entries against a 10,000-word note under 100 ms, and a local
   budget (`it.skipIf(!!process.env.CI)`) of 20 ms median, recorded in ARCHITECTURE.
 
@@ -1002,6 +1021,10 @@ draws plain code while off; `openWork` with the desk off ignores `leftOff`.
 
 **2.11 Universe and open threads**, depends on 1.5, effort M. Own `src/universe/*`
 (it leaves `scope.ts` and `mentions.ts` as wave 1 wrote them).
+  **As built (wave 2 review, recorded 2026-10-03):** `keptOut(path, lookup, settings)`
+  takes the settings as a third argument; the core field `plugin.threads` was added; and
+  2.7 and 2.11 each edited `src/main.ts` (constructor arguments the 0.1 stubs lacked),
+  beyond 2.5's exception. Tasks 3.1 and later cite the new signature and field.
 - Split: `UniverseModule` (switch: mode, Q10) keeps the entries index, the panel, the
   three universe commands and the menus (universe/index.ts:378-441);
   `ThreadsFeature` takes the threads index, the threads view, the thread marker

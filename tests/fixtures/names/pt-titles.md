@@ -8,7 +8,7 @@ A dona da casa saiu.
 
 Paulo leu o jornal.
 
-Luísa varreu o chão.
+Irma varreu o chão.
 
 Antunes fechou a loja.
 
@@ -17,3 +17,15 @@ Zélia abriu a loja.
 O senhor e o doutor conversaram.
 
 A irma dormiu.
+
+O Senhor Antunes disse que o Antunes voltava.
+
+Lúcia rezou.
+
+Teles montou o cavalo.
+
+Nunes assinou o papel.
+
+Aurélio corrigiu a prova.
+
+Elza abriu a aula.

@@ -35,3 +35,7 @@ Mario trabalha de dia.
 Maria-José ficou calada.
 
 O mapa da rosa-dos-ventos estava velho.
+
+A blusa rosa secou ao sol. Ele acendeu a luz e olhou o mar.
+
+O beija-flor pousou na janela.

@@ -18,10 +18,10 @@ pt-names.md	7	Marcos	marcos
 pt-names.md	9	Rosa	rosa
 pt-names.md	9	rosa dos ventos	-
 pt-names.md	11	Porto	porto
-pt-names.md	13	PORTO	-
+pt-names.md	13	PORTO	porto
 pt-names.md	15	porto	-
 pt-names.md	17	porto	-
-pt-names.md	19	Os meninos	teo
+pt-names.md	19	Os meninos	-
 pt-names.md	19	O menino	teo
 pt-names.md	21	[[Teo|o menino]]	teo
 pt-names.md	23	Teo	teo
@@ -36,6 +36,10 @@ pt-names.md	31	Andres	andres
 pt-names.md	33	Mario	mario
 pt-names.md	35	Maria-José	maria-jose
 pt-names.md	37	rosa-dos-ventos	-
+pt-names.md	39	rosa	-
+pt-names.md	39	luz	-
+pt-names.md	39	mar	-
+pt-names.md	41	beija-flor	-
 pt-structure.md	2	Maria	-
 pt-structure.md	7	Mariana	mariana
 pt-structure.md	9	Maria	-
@@ -50,9 +54,16 @@ pt-titles.md	3	Benta	dona-benta
 pt-titles.md	5	Dona Benta Encerrabodes	dona-benta
 pt-titles.md	7	dona	-
 pt-titles.md	9	Paulo	doutor-paulo
-pt-titles.md	11	Luísa	irma-luisa
+pt-titles.md	11	Irma	irma-luisa
 pt-titles.md	13	Antunes	senhor-antunes
 pt-titles.md	15	Zélia	senhora-zelia
 pt-titles.md	17	senhor	-
 pt-titles.md	17	doutor	-
 pt-titles.md	19	irma	-
+pt-titles.md	21	Senhor Antunes	senhor-antunes
+pt-titles.md	21	Antunes	senhor-antunes
+pt-titles.md	23	Lúcia	irma-lucia
+pt-titles.md	25	Teles	coronel-teles
+pt-titles.md	27	Nunes	capitao-nunes
+pt-titles.md	29	Aurélio	professor-aurelio
+pt-titles.md	31	Elza	professora-elza
