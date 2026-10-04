@@ -8,9 +8,9 @@ import { RULES } from "./lens/types";
 import { cleanWeekdays } from "./core/merge";
 import { invalidDatesOff } from "./core/daysoff";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, STAGES, hexColor, normalizeStages, stageConflicts, type Stage, type StageMapping } from "./core/stages";
-import { cleanFeatures, type FeatureId } from "./core/features";
+import { FEATURE_SPECS, cleanFeatures, wanted, type FeatureId, type FeatureGroup, type FeatureSwitches } from "./core/features";
 import { renderUniverseSettings } from "./universe/settings-ui";
-import { defaultUniverseSettings, normalizeUniverse, type UniverseSettings } from "./universe/settings";
+import { defaultUniverseSettings, normalizeUniverse, type UniverseMode, type UniverseSettings } from "./universe/settings";
 import { DEFAULT_SNAPSHOTS_FOLDER, inFolder, snapshotsFolderProblem, snapshotsRoot, type SnapshotsFolderProblem } from "./core/classify";
 
 export type ParagraphStyle = "single" | "blank";
@@ -226,6 +226,70 @@ function clampInt(v: unknown, min: number, max: number, fallback: number): numbe
 /** Frontmatter property names a piece or book is read from; normalizeSettings trims them and restores empty ones. */
 const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadlineProperty", "goalProperty", "povProperty", "chapterTargetProperty"] as const;
 
+/**
+ * Which features read each setting (0.7 plan Q13). A row draws while any of them is on;
+ * "always" rows are shared core (the classifier, the stages, the property names several
+ * features read). A section whose rows are all hidden is not drawn. The switches
+ * themselves (`features`, `explorerCounts`, `spellcheckOnDemand`, `universeMode`) and
+ * the universe section's own rows (universe/settings-ui.ts) are not listed here.
+ */
+export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "always">> = {
+  chaptersFolder: "always", chapterTemplate: "always", numberPadding: "always",
+  statusProperty: "always", summaryProperty: "always", stages: "always", otherStatusColors: "always",
+  lensLanguage: "always",
+  targetProperty: "always", limitProperty: "always", unitProperty: "always", deadlineProperty: "always",
+  goalProperty: "always", povProperty: "always", chapterTargetProperty: "always",
+  trackFolders: "always", excludeFolders: "always",
+  templatesFolder: ["templates", "universe"],
+  homeNote: ["desk"], openHomeOnStartup: ["desk"],
+  dailyGoal: ["goals"], dayEndsAt: ["goals", "darlings", "snapshots", "publish"],
+  ignoreJumpsOver: ["goals"], sprintMinutes: ["goals"], sprintTarget: ["goals"], showStatusBar: ["goals"],
+  weekdaysOff: ["goals"], datesOff: ["goals"],
+  explorerFolderTotals: ["explorerCounts"], explorerShowTarget: ["explorerCounts"],
+  dateProperty: ["publish"], recommendedProperties: ["publish"],
+  snapshotsFolder: ["snapshots"], snapshotBeforeFirstEdit: ["snapshots"], snapshotsKeepAuto: ["snapshots"],
+  ghostBeats: ["outline"],
+  placeholderMarker: ["placeholders", "publish"], showExplorerDots: ["placeholders"],
+  threadKeyword: ["threads"],
+  darlingsNote: ["darlings"], globalDarlingsNote: ["darlings"],
+  enterFlow: ["typing"], smartTypography: ["typing"], typographyScope: ["typing"], dialogueDash: ["typing"],
+  paragraphStyle: ["typing", "dialogueFocus", "moveBlocks", "lens"],
+  quoteStyle: ["typing", "dialogueFocus", "lens"],
+  lensListsNote: ["lens"], lensEchoWindow: ["lens"], lensLongSentence: ["lens"], lensRulesOff: ["lens"],
+  lensSkipQuotes: ["lens"], lensShowDialogue: ["lens"], lensShowReadability: ["lens"],
+};
+
+/** The Features page, in the order of the approved board: group, then the rows of the group. */
+export const FEATURE_PAGE: readonly { group: FeatureGroup; ids: readonly FeatureId[] }[] = [
+  { group: "writing", ids: ["goals", "outline", "placeholders", "typing", "dialogueFocus", "moveBlocks", "templates", "spellcheck", "explorerCounts"] },
+  { group: "revision", ids: ["lens", "snapshots", "darlings"] },
+  { group: "desk", ids: ["stageSnapshot", "desk"] },
+  { group: "publishing", ids: ["publish"] },
+  { group: "world", ids: ["universe", "threads"] },
+];
+
+/** The writer's switches as the registry reads them (the same record `wanted` takes). */
+export function switchesOf(s: EscritaSettings): FeatureSwitches {
+  return { features: s.features, explorerCounts: s.explorerCounts, spellcheckOnDemand: s.spellcheckOnDemand, universeMode: s.universeMode };
+}
+
+/** Does a row of this setting draw, with these features on? */
+export function rowShown(key: string, want: ReadonlySet<FeatureId>): boolean {
+  const f = SETTING_FEATURES[key];
+  if (f === undefined) return true;
+  return f === "always" || f.some((id) => want.has(id));
+}
+
+/** Writes one switch where it lives: its own setting (Q10) or `features`. A stored value is never dropped. */
+export function setFeature(s: EscritaSettings, id: FeatureId, on: boolean): void {
+  switch (FEATURE_SPECS.find((f) => f.id === id)?.switch) {
+    case "explorerCounts": s.explorerCounts = on; break;
+    case "spellcheckOnDemand": s.spellcheckOnDemand = on; break;
+    case "universeMode": s.universeMode = on ? (s.universeMode === "off" ? "perBook" : s.universeMode) : "off"; break;
+    default: s.features = { ...s.features, [id]: on };
+  }
+}
+
 /** What the color input holds while a stage has no color (not black, so black is a real choice). */
 const EMPTY_SWATCH = "#808080";
 
@@ -239,10 +303,47 @@ export class EscritaSettingTab extends PluginSettingTab {
     containerEl.empty();
     const s = this.plugin.settings;
     const save = async () => { await this.plugin.saveSettings(); };
+    const want = wanted(switchesOf(s));
+    const shown = (key: string) => rowShown(key, want);
+    /** Draws the heading when at least one of the section's rows shows (a section without rows is not drawn). */
+    const section = (title: string, keys: string[]): boolean => {
+      if (!keys.some(shown)) return false;
+      new Setting(containerEl).setName(title).setHeading();
+      return true;
+    };
     const num = (v: string, fallback: number, min = 0) => {
       const n = Number(v.replace(/[^\d]/g, ""));
       return Number.isFinite(n) && v.trim() !== "" ? Math.max(min, n) : fallback;
     };
+    const textRow = (key: "targetProperty" | "limitProperty" | "unitProperty" | "deadlineProperty" | "goalProperty" | "povProperty" | "chapterTargetProperty",
+      name: string, placeholder: string, desc?: string) => {
+      const row = new Setting(containerEl).setName(name);
+      if (desc) row.setDesc(desc);
+      row.addText((c) => c.setPlaceholder(placeholder).setValue(s[key])
+        .onChange(async (v) => { s[key] = v.trim() || DEFAULT_SETTINGS[key]; await save(); }));
+    };
+
+    this.featuresSection(containerEl, save, want);
+
+    // Names and folders several features read: always shown (Q13).
+    new Setting(containerEl).setName(t("settings.shared")).setHeading();
+    containerEl.createDiv({ cls: "setting-item-description escrita-shared-desc", text: t("settings.shared.desc") });
+    textRow("targetProperty", t("settings.targetProperty"), "target", t("settings.pieceProperties.desc"));
+    textRow("limitProperty", t("settings.limitProperty"), "limit");
+    textRow("unitProperty", t("settings.unitProperty"), "unit");
+    textRow("deadlineProperty", t("settings.deadlineProperty"), "deadline");
+    textRow("goalProperty", t("settings.goalProperty"), "goal", t("settings.goalProperty.desc"));
+    textRow("povProperty", t("settings.povProperty"), "pov", t("settings.povProperty.desc"));
+    textRow("chapterTargetProperty", t("settings.chapterTargetProperty"), "chapterTarget", t("settings.chapterTargetProperty.desc"));
+    new Setting(containerEl)
+      .setName(t("settings.trackFolders"))
+      .setDesc(t("settings.trackFolders.desc"))
+      .addTextArea((c) => c.setPlaceholder("Fiction\nNovels").setValue(s.trackFolders)
+        .onChange(async (v) => { s.trackFolders = v; await save(); }));
+    new Setting(containerEl)
+      .setName(t("settings.excludeFolders"))
+      .addTextArea((c) => c.setValue(s.excludeFolders)
+        .onChange(async (v) => { s.excludeFolders = v; await save(); }));
 
     new Setting(containerEl).setName(t("settings.books")).setHeading();
     new Setting(containerEl)
@@ -255,11 +356,13 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setDesc(t("settings.chapterTemplate.desc"))
       .addText((c) => c.setPlaceholder("Templates/Chapter.md").setValue(s.chapterTemplate)
         .onChange(async (v) => { s.chapterTemplate = v.trim(); await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.templatesFolder"))
-      .setDesc(t("settings.templatesFolder.desc"))
-      .addText((c) => c.setPlaceholder("Templates").setValue(s.templatesFolder)
-        .onChange(async (v) => { s.templatesFolder = v.trim(); await save(); }));
+    if (shown("templatesFolder")) {
+      new Setting(containerEl)
+        .setName(t("settings.templatesFolder"))
+        .setDesc(t("settings.templatesFolder.desc"))
+        .addText((c) => c.setPlaceholder("Templates").setValue(s.templatesFolder)
+          .onChange(async (v) => { s.templatesFolder = v.trim(); await save(); }));
+    }
     new Setting(containerEl)
       .setName(t("settings.numberPadding"))
       .setDesc(t("settings.numberPadding.desc"))
@@ -275,186 +378,268 @@ export class EscritaSettingTab extends PluginSettingTab {
       .addText((c) => c.setPlaceholder("summary").setValue(s.summaryProperty)
         .onChange(async (v) => { s.summaryProperty = v.trim() || "summary"; await save(); }));
 
-    this.stagesSettings(containerEl, save);
-    this.lensSettings(containerEl, save);
-    renderUniverseSettings(this.plugin, containerEl, save, () => this.display());
+    if (section(t("settings.goals"), ["dailyGoal", "dayEndsAt", "ignoreJumpsOver", "sprintMinutes", "showStatusBar", "weekdaysOff", "datesOff"])) {
+      if (shown("dailyGoal")) {
+        new Setting(containerEl)
+          .setName(t("settings.dailyGoal"))
+          .addText((c) => c.setValue(String(s.dailyGoal))
+            .onChange(async (v) => { s.dailyGoal = num(v, s.dailyGoal); await save(); }));
+      }
+      new Setting(containerEl)
+        .setName(t("settings.dayEndsAt"))
+        .setDesc(t("settings.dayEndsAt.desc"))
+        .addDropdown((d) => {
+          for (let h = 0; h <= 6; h++) d.addOption(String(h), `${String(h).padStart(2, "0")}:00`);
+          d.setValue(String(s.dayEndsAt)).onChange(async (v) => { s.dayEndsAt = Number(v); await save(); });
+        });
+      if (shown("ignoreJumpsOver")) {
+        new Setting(containerEl)
+          .setName(t("settings.ignoreJumpsOver"))
+          .setDesc(t("settings.ignoreJumpsOver.desc"))
+          .addText((c) => c.setValue(String(s.ignoreJumpsOver))
+            .onChange(async (v) => { s.ignoreJumpsOver = num(v, s.ignoreJumpsOver, 50); await save(); }));
+        new Setting(containerEl)
+          .setName(t("settings.sprintMinutes"))
+          .setDesc(t("settings.sprintMinutes.desc"))
+          .addText((c) => c.setValue(String(s.sprintMinutes))
+            .onChange(async (v) => { s.sprintMinutes = Math.min(240, num(v, s.sprintMinutes, 1)); await save(); }))
+          .addText((c) => c.setValue(String(s.sprintTarget))
+            .onChange(async (v) => { s.sprintTarget = num(v, s.sprintTarget, 0); await save(); }));
+        new Setting(containerEl)
+          .setName(t("settings.showStatusBar"))
+          .addToggle((c) => c.setValue(s.showStatusBar)
+            .onChange(async (v) => { s.showStatusBar = v; await save(); }));
+        this.weekdaysSetting(containerEl, save);
+        const datesOff = new Setting(containerEl)
+          .setName(t("settings.datesOff"))
+          .setDesc(t("settings.datesOff.desc"));
+        const datesHint = datesOff.descEl.createDiv({ cls: "escrita-setting-warning" });
+        const showDatesHint = () => {
+          const bad = invalidDatesOff(s.datesOff);
+          datesHint.setText(bad.length ? t("settings.datesOff.invalid", { dates: bad.join(", ") }) : "");
+          datesHint.toggle(bad.length > 0);
+        };
+        showDatesHint();
+        datesOff.addTextArea((c) => c.setPlaceholder("2026-12-25\n2027-01-01").setValue(s.datesOff)
+          .onChange(async (v) => { s.datesOff = v; showDatesHint(); await save(); }));
+      }
+    }
 
-    new Setting(containerEl).setName(t("settings.goals")).setHeading();
+    if (section(t("settings.publishing"), ["dateProperty", "recommendedProperties"])) {
+      new Setting(containerEl)
+        .setName(t("settings.dateProperty"))
+        .setDesc(t("settings.dateProperty.desc"))
+        .addText((c) => c.setPlaceholder("date").setValue(s.dateProperty)
+          .onChange(async (v) => { s.dateProperty = v.trim() || DEFAULT_SETTINGS.dateProperty; await save(); }));
+      new Setting(containerEl)
+        .setName(t("settings.recommendedProperties"))
+        .setDesc(t("settings.recommendedProperties.desc"))
+        .addTextArea((c) => c.setPlaceholder("description").setValue(s.recommendedProperties)
+          .onChange(async (v) => { s.recommendedProperties = v; await save(); }));
+    }
+
+    if (shown("ghostBeats")) {
+      new Setting(containerEl).setName(t("settings.outline")).setHeading();
+      new Setting(containerEl)
+        .setName(t("settings.ghostBeats"))
+        .setDesc(t("settings.ghostBeats.desc"))
+        .addToggle((c) => c.setValue(s.ghostBeats)
+          .onChange(async (v) => { s.ghostBeats = v; await save(); }));
+    }
+
+    if (section(t("settings.placeholders"), ["placeholderMarker", "showExplorerDots"])) {
+      new Setting(containerEl)
+        .setName(t("settings.placeholderMarker"))
+        .setDesc(t("settings.placeholderMarker.desc"))
+        .addText((c) => c.setValue(s.placeholderMarker)
+          .onChange(async (v) => { s.placeholderMarker = v.replace(/[^\p{L}\p{N}_-]/gu, "") || "XXX"; await save(); }));
+      if (shown("showExplorerDots")) {
+        new Setting(containerEl)
+          .setName(t("settings.showExplorerDots"))
+          .addToggle((c) => c.setValue(s.showExplorerDots)
+            .onChange(async (v) => { s.showExplorerDots = v; await save(); }));
+      }
+    }
+
+    if (shown("darlingsNote")) {
+      new Setting(containerEl).setName(t("settings.darlings")).setHeading();
+      new Setting(containerEl)
+        .setName(t("settings.darlingsNote"))
+        .setDesc(t("settings.darlingsNote.desc"))
+        .addText((c) => c.setValue(s.darlingsNote)
+          .onChange(async (v) => { s.darlingsNote = v.trim() || "Darlings.md"; await save(); }));
+      new Setting(containerEl)
+        .setName(t("settings.globalDarlingsNote"))
+        .addText((c) => c.setValue(s.globalDarlingsNote)
+          .onChange(async (v) => { s.globalDarlingsNote = v.trim() || "Darlings.md"; await save(); }));
+    }
+
+    this.editorSettings(containerEl, save, section, shown);
+    if (shown("lensEchoWindow")) this.lensSettings(containerEl, save);
+
+    this.stagesSettings(containerEl, save);
+    if (shown("homeNote")) this.homeSettings(containerEl, save);
+    if (shown("snapshotsFolder")) this.snapshotsSettings(containerEl, save, num);
+    renderUniverseSettings(this.plugin, containerEl, save, () => this.display());
+  }
+
+  /**
+   * The Features page (board 21): the writing language, then one row per feature in its
+   * group, each with a switch and one line on what it does. The universe's row is the mode
+   * dropdown. The stage snapshot is disabled while snapshots is off, its stored value kept.
+   */
+  private featuresSection(containerEl: HTMLElement, save: () => Promise<void>, want: ReadonlySet<FeatureId>): void {
+    const s = this.plugin.settings;
+    const apply = async () => { await save(); this.display(); };
+    new Setting(containerEl).setName(t("settings.features")).setHeading();
+    containerEl.createDiv({ cls: "setting-item-description escrita-features-desc", text: t("settings.features.desc") });
+
     new Setting(containerEl)
-      .setName(t("settings.dailyGoal"))
-      .addText((c) => c.setValue(String(s.dailyGoal))
-        .onChange(async (v) => { s.dailyGoal = num(v, s.dailyGoal); await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.dayEndsAt"))
-      .setDesc(t("settings.dayEndsAt.desc"))
+      .setName(t("settings.language"))
+      .setDesc(t("settings.language.desc"))
       .addDropdown((d) => {
-        for (let h = 0; h <= 6; h++) d.addOption(String(h), `${String(h).padStart(2, "0")}:00`);
-        d.setValue(String(s.dayEndsAt)).onChange(async (v) => { s.dayEndsAt = Number(v); await save(); });
+        d.addOption("auto", t("settings.language.auto"));
+        d.addOption("pt-BR", t("settings.language.pt"));
+        d.addOption("en", t("settings.language.en"));
+        d.setValue(s.lensLanguage).onChange(async (v) => {
+          s.lensLanguage = v === "pt-BR" || v === "en" ? v : "auto";
+          await apply(); // the gerund rule is named for the language
+        });
+        d.selectEl.setAttr("aria-label", t("settings.language"));
       });
-    new Setting(containerEl)
-      .setName(t("settings.trackFolders"))
-      .setDesc(t("settings.trackFolders.desc"))
-      .addTextArea((c) => c.setPlaceholder("Fiction\nNovels").setValue(s.trackFolders)
-        .onChange(async (v) => { s.trackFolders = v; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.excludeFolders"))
-      .addTextArea((c) => c.setValue(s.excludeFolders)
-        .onChange(async (v) => { s.excludeFolders = v; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.ignoreJumpsOver"))
-      .setDesc(t("settings.ignoreJumpsOver.desc"))
-      .addText((c) => c.setValue(String(s.ignoreJumpsOver))
-        .onChange(async (v) => { s.ignoreJumpsOver = num(v, s.ignoreJumpsOver, 50); await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.sprintMinutes"))
-      .setDesc(t("settings.sprintMinutes.desc"))
-      .addText((c) => c.setValue(String(s.sprintMinutes))
-        .onChange(async (v) => { s.sprintMinutes = Math.min(240, num(v, s.sprintMinutes, 1)); await save(); }))
-      .addText((c) => c.setValue(String(s.sprintTarget))
-        .onChange(async (v) => { s.sprintTarget = num(v, s.sprintTarget, 0); await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.showStatusBar"))
-      .addToggle((c) => c.setValue(s.showStatusBar)
-        .onChange(async (v) => { s.showStatusBar = v; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.explorerCounts"))
-      .setDesc(t("settings.explorerCounts.desc"))
-      .addToggle((c) => c.setValue(s.explorerCounts)
-        .onChange(async (v) => { s.explorerCounts = v; await save(); }));
+
+    for (const { group, ids } of FEATURE_PAGE) {
+      containerEl.createDiv({ cls: "escrita-feature-group", text: t(`settings.features.group.${group}`), attr: { role: "heading", "aria-level": "3" } });
+      if (group === "desk") {
+        const row = new Setting(containerEl).setName(t("settings.features.stages"));
+        row.setDesc(t("settings.features.stages.desc"));
+        row.settingEl.addClass("escrita-feature-row");
+        row.nameEl.createSpan({ cls: "escrita-tag", text: t("settings.features.alwaysOn") });
+      }
+      for (const id of ids) {
+        const spec = FEATURE_SPECS.find((f) => f.id === id)!;
+        const row = new Setting(containerEl).setName(t(`settings.features.${id}`));
+        row.settingEl.addClass("escrita-feature-row");
+        row.setDesc(t(`settings.features.${id}.desc`));
+
+        if (id === "universe") {
+          row.addDropdown((d) => {
+            d.addOption("universe", t("universe.settings.mode.universe"));
+            d.addOption("perBook", t("universe.settings.mode.perBook"));
+            d.addOption("off", t("universe.settings.mode.off"));
+            d.setValue(s.universeMode).onChange(async (v) => { s.universeMode = v as UniverseMode; await apply(); });
+            d.selectEl.setAttr("aria-label", t(`settings.features.${id}`));
+          });
+          continue;
+        }
+
+        const needs = spec.requires?.find((r) => !want.has(r));
+        const on = want.has(id);
+        row.settingEl.toggleClass("escrita-feature-off", !on);
+        if (spec.requires) row.settingEl.addClass("escrita-feature-child");
+        if (spec.requires) {
+          row.nameEl.createSpan({
+            cls: needs ? "escrita-tag escrita-tag-warn" : "escrita-tag",
+            text: t(needs ? `settings.features.needs.${needs}` : `settings.features.uses.${spec.requires[0]}`),
+          });
+        }
+        // The switch shows the writer's own choice, so turning the requirement back on restores it.
+        const shownOn = needs ? false : on;
+        addSwitch(row, t(`settings.features.${id}`), shownOn, needs !== undefined, async (v) => {
+          setFeature(s, id, v);
+          await apply();
+        });
+        if (id === "snapshots" && !on && s.features.stageSnapshot !== false) {
+          row.descEl.createDiv({ text: t("settings.features.snapshots.off") });
+        }
+        if (needs) {
+          const hint = row.descEl.createDiv({ text: `${t(`settings.features.needs.${needs}.desc`)} ` });
+          hint.createEl("button", { cls: "escrita-link", text: t(`settings.features.turnOn.${needs}`) })
+            .addEventListener("click", () => { setFeature(s, needs, true); void apply(); });
+        }
+
+        if (id === "explorerCounts" && on) this.explorerRows(containerEl, save);
+      }
+      if (group === "publishing") {
+        const row = new Setting(containerEl).setName(t("settings.features.export")).setDesc(t("settings.features.export.desc"));
+        row.settingEl.addClasses(["escrita-feature-row", "escrita-feature-off"]);
+        row.nameEl.createSpan({ cls: "escrita-tag", text: t("settings.features.export.tag") });
+        addSwitch(row, t("settings.features.export"), false, true, async () => {});
+      }
+    }
+  }
+
+  /** The explorer's own rows, right under its switch (Q13). */
+  private explorerRows(containerEl: HTMLElement, save: () => Promise<void>): void {
+    const s = this.plugin.settings;
     new Setting(containerEl)
       .setName(t("settings.explorerFolderTotals"))
       .setDesc(t("settings.explorerFolderTotals.desc"))
       .addToggle((c) => c.setValue(s.explorerFolderTotals)
-        .onChange(async (v) => { s.explorerFolderTotals = v; await save(); }));
+        .onChange(async (v) => { s.explorerFolderTotals = v; await save(); }))
+      .settingEl.addClass("escrita-feature-child");
     new Setting(containerEl)
       .setName(t("settings.explorerShowTarget"))
       .setDesc(t("settings.explorerShowTarget.desc"))
       .addToggle((c) => c.setValue(s.explorerShowTarget)
-        .onChange(async (v) => { s.explorerShowTarget = v; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.targetProperty"))
-      .setDesc(t("settings.pieceProperties.desc"))
-      .addText((c) => c.setPlaceholder("target").setValue(s.targetProperty)
-        .onChange(async (v) => { s.targetProperty = v.trim() || DEFAULT_SETTINGS.targetProperty; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.limitProperty"))
-      .addText((c) => c.setPlaceholder("limit").setValue(s.limitProperty)
-        .onChange(async (v) => { s.limitProperty = v.trim() || DEFAULT_SETTINGS.limitProperty; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.unitProperty"))
-      .addText((c) => c.setPlaceholder("unit").setValue(s.unitProperty)
-        .onChange(async (v) => { s.unitProperty = v.trim() || DEFAULT_SETTINGS.unitProperty; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.deadlineProperty"))
-      .addText((c) => c.setPlaceholder("deadline").setValue(s.deadlineProperty)
-        .onChange(async (v) => { s.deadlineProperty = v.trim() || DEFAULT_SETTINGS.deadlineProperty; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.goalProperty"))
-      .setDesc(t("settings.goalProperty.desc"))
-      .addText((c) => c.setPlaceholder("goal").setValue(s.goalProperty)
-        .onChange(async (v) => { s.goalProperty = v.trim() || DEFAULT_SETTINGS.goalProperty; await save(); }));
-    this.weekdaysSetting(containerEl, save);
-    const datesOff = new Setting(containerEl)
-      .setName(t("settings.datesOff"))
-      .setDesc(t("settings.datesOff.desc"));
-    const datesHint = datesOff.descEl.createDiv({ cls: "escrita-setting-warning" });
-    const showDatesHint = () => {
-      const bad = invalidDatesOff(s.datesOff);
-      datesHint.setText(bad.length ? t("settings.datesOff.invalid", { dates: bad.join(", ") }) : "");
-      datesHint.toggle(bad.length > 0);
-    };
-    showDatesHint();
-    datesOff.addTextArea((c) => c.setPlaceholder("2026-12-25\n2027-01-01").setValue(s.datesOff)
-      .onChange(async (v) => { s.datesOff = v; showDatesHint(); await save(); }));
+        .onChange(async (v) => { s.explorerShowTarget = v; await save(); }))
+      .settingEl.addClass("escrita-feature-child");
+  }
 
-    new Setting(containerEl).setName(t("settings.publishing")).setHeading();
-    new Setting(containerEl)
-      .setName(t("settings.dateProperty"))
-      .setDesc(t("settings.dateProperty.desc"))
-      .addText((c) => c.setPlaceholder("date").setValue(s.dateProperty)
-        .onChange(async (v) => { s.dateProperty = v.trim() || DEFAULT_SETTINGS.dateProperty; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.recommendedProperties"))
-      .setDesc(t("settings.recommendedProperties.desc"))
-      .addTextArea((c) => c.setPlaceholder("description").setValue(s.recommendedProperties)
-        .onChange(async (v) => { s.recommendedProperties = v; await save(); }));
-
-    this.snapshotsSettings(containerEl, save, num);
-
-    new Setting(containerEl).setName(t("settings.outline")).setHeading();
-    new Setting(containerEl)
-      .setName(t("settings.ghostBeats"))
-      .setDesc(t("settings.ghostBeats.desc"))
-      .addToggle((c) => c.setValue(s.ghostBeats)
-        .onChange(async (v) => { s.ghostBeats = v; await save(); }));
-
-    new Setting(containerEl).setName(t("settings.placeholders")).setHeading();
-    new Setting(containerEl)
-      .setName(t("settings.placeholderMarker"))
-      .setDesc(t("settings.placeholderMarker.desc"))
-      .addText((c) => c.setValue(s.placeholderMarker)
-        .onChange(async (v) => { s.placeholderMarker = v.replace(/[^\p{L}\p{N}_-]/gu, "") || "XXX"; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.showExplorerDots"))
-      .addToggle((c) => c.setValue(s.showExplorerDots)
-        .onChange(async (v) => { s.showExplorerDots = v; await save(); }));
-
-    new Setting(containerEl).setName(t("settings.darlings")).setHeading();
-    new Setting(containerEl)
-      .setName(t("settings.darlingsNote"))
-      .setDesc(t("settings.darlingsNote.desc"))
-      .addText((c) => c.setValue(s.darlingsNote)
-        .onChange(async (v) => { s.darlingsNote = v.trim() || "Darlings.md"; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.globalDarlingsNote"))
-      .addText((c) => c.setValue(s.globalDarlingsNote)
-        .onChange(async (v) => { s.globalDarlingsNote = v.trim() || "Darlings.md"; await save(); }));
-
-    new Setting(containerEl).setName(t("settings.editor")).setHeading();
-    new Setting(containerEl)
-      .setName(t("settings.enterFlow"))
-      .setDesc(t("settings.enterFlow.desc"))
-      .addToggle((c) => c.setValue(s.enterFlow)
-        .onChange(async (v) => { s.enterFlow = v; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.paragraphStyle"))
-      .setDesc(t("settings.paragraphStyle.desc"))
-      .addDropdown((d) => d
-        .addOption("blank", t("settings.paragraphStyle.blank"))
-        .addOption("single", t("settings.paragraphStyle.single"))
-        .setValue(s.paragraphStyle)
-        .onChange(async (v) => { s.paragraphStyle = v as ParagraphStyle; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.smartTypography"))
-      .setDesc(t("settings.smartTypography.desc"))
-      .addToggle((c) => c.setValue(s.smartTypography)
-        .onChange(async (v) => { s.smartTypography = v; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.typographyScope"))
-      .addDropdown((d) => d
-        .addOption("books", t("settings.scope.books"))
-        .addOption("all", t("settings.scope.all"))
-        .setValue(s.typographyScope)
-        .onChange(async (v) => { s.typographyScope = v as Scope; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.quoteStyle"))
-      .addDropdown((d) => d
-        .addOption("curly", "“…” ‘…’")
-        .addOption("guillemets", "«…» ‹…›")
-        .addOption("german", "„…“ ‚…‘")
-        .addOption("off", t("settings.quoteStyle.off"))
-        .setValue(s.quoteStyle)
-        .onChange(async (v) => { s.quoteStyle = v as QuoteStyle; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.dialogueDash"))
-      .setDesc(t("settings.dialogueDash.desc"))
-      .addToggle((c) => c.setValue(s.dialogueDash)
-        .onChange(async (v) => { s.dialogueDash = v; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.spellcheckOnDemand"))
-      .setDesc(t("settings.spellcheckOnDemand.desc"))
-      .addToggle((c) => c.setValue(s.spellcheckOnDemand)
-        .onChange(async (v) => { s.spellcheckOnDemand = v; await save(); }));
+  /** The Editor section: each row shows while a feature that reads it is on. */
+  private editorSettings(containerEl: HTMLElement, save: () => Promise<void>,
+    section: (title: string, keys: string[]) => boolean, shown: (key: string) => boolean): void {
+    const s = this.plugin.settings;
+    if (!section(t("settings.editor"), ["enterFlow", "paragraphStyle", "smartTypography", "typographyScope", "quoteStyle", "dialogueDash"])) return;
+    if (shown("enterFlow")) {
+      new Setting(containerEl)
+        .setName(t("settings.enterFlow"))
+        .setDesc(t("settings.enterFlow.desc"))
+        .addToggle((c) => c.setValue(s.enterFlow)
+          .onChange(async (v) => { s.enterFlow = v; await save(); }));
+    }
+    if (shown("paragraphStyle")) {
+      new Setting(containerEl)
+        .setName(t("settings.paragraphStyle"))
+        .setDesc(t("settings.paragraphStyle.desc"))
+        .addDropdown((d) => d
+          .addOption("blank", t("settings.paragraphStyle.blank"))
+          .addOption("single", t("settings.paragraphStyle.single"))
+          .setValue(s.paragraphStyle)
+          .onChange(async (v) => { s.paragraphStyle = v as ParagraphStyle; await save(); }));
+    }
+    if (shown("smartTypography")) {
+      new Setting(containerEl)
+        .setName(t("settings.smartTypography"))
+        .setDesc(t("settings.smartTypography.desc"))
+        .addToggle((c) => c.setValue(s.smartTypography)
+          .onChange(async (v) => { s.smartTypography = v; await save(); }));
+      new Setting(containerEl)
+        .setName(t("settings.typographyScope"))
+        .addDropdown((d) => d
+          .addOption("books", t("settings.scope.books"))
+          .addOption("all", t("settings.scope.all"))
+          .setValue(s.typographyScope)
+          .onChange(async (v) => { s.typographyScope = v as Scope; await save(); }));
+    }
+    if (shown("quoteStyle")) {
+      new Setting(containerEl)
+        .setName(t("settings.quoteStyle"))
+        .addDropdown((d) => d
+          .addOption("curly", "“…” ‘…’")
+          .addOption("guillemets", "«…» ‹…›")
+          .addOption("german", "„…“ ‚…‘")
+          .addOption("off", t("settings.quoteStyle.off"))
+          .setValue(s.quoteStyle)
+          .onChange(async (v) => { s.quoteStyle = v as QuoteStyle; await save(); }));
+    }
+    if (shown("dialogueDash")) {
+      new Setting(containerEl)
+        .setName(t("settings.dialogueDash"))
+        .setDesc(t("settings.dialogueDash.desc"))
+        .addToggle((c) => c.setValue(s.dialogueDash)
+          .onChange(async (v) => { s.dialogueDash = v; await save(); }));
+    }
   }
 
   /**
@@ -466,21 +651,6 @@ export class EscritaSettingTab extends PluginSettingTab {
     const s = this.plugin.settings;
     new Setting(containerEl).setName(t("settings.lens")).setHeading();
     containerEl.createDiv({ cls: "setting-item-description escrita-lens-desc", text: t("settings.lens.desc") });
-
-    const languageRow = new Setting(containerEl)
-      .setName(t("settings.lens.language"))
-      .setDesc(t("settings.lens.language.desc"))
-      .addDropdown((d) => {
-        d.addOption("auto", t("settings.lens.language.auto"));
-        d.addOption("pt-BR", t("settings.lens.language.pt"));
-        d.addOption("en", t("settings.lens.language.en"));
-        d.setValue(s.lensLanguage).onChange(async (v) => {
-          s.lensLanguage = v === "pt-BR" || v === "en" ? v : "auto";
-          await save();
-          this.display(); // the gerund rule is named for the language
-        });
-      });
-    languageRow.settingEl.addClass("escrita-lens-stack");
 
     const listsRow = new Setting(containerEl)
       .setName(t("settings.lens.lists"))
@@ -654,7 +824,11 @@ export class EscritaSettingTab extends PluginSettingTab {
       c.inputEl.addClass("escrita-mono");
       c.inputEl.setAttr("aria-label", t("settings.otherStatusColors"));
     });
+  }
 
+  /** The home note rows, shown while the desk is on. */
+  private homeSettings(containerEl: HTMLElement, save: () => Promise<void>): void {
+    const s = this.plugin.settings;
     new Setting(containerEl).setName(t("settings.homeNoteHeading")).setHeading();
     new Setting(containerEl)
       .setName(t("settings.homeNote"))
@@ -731,6 +905,17 @@ export class EscritaSettingTab extends PluginSettingTab {
       });
     }
   }
+}
+
+/** A switch: a button with role "switch", 48x32 (44 on a phone), drawn like the approved board. */
+function addSwitch(row: Setting, label: string, on: boolean, disabled: boolean, onToggle: (on: boolean) => void | Promise<void>): HTMLButtonElement {
+  const btn = row.controlEl.createEl("button", { cls: "escrita-switch", attr: { type: "button", role: "switch", "aria-checked": String(on), "aria-label": label } });
+  btn.toggleClass("is-on", on);
+  btn.disabled = disabled;
+  btn.createSpan({ cls: "escrita-switch-track" }).createSpan({ cls: "escrita-switch-knob" });
+  // The listener lives and dies with the element (the tab redraws after every change).
+  btn.addEventListener("click", () => { void onToggle(!on); });
+  return btn;
 }
 
 /** "A and B" / "A, B and C" in the writer's language. */
