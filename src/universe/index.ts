@@ -17,7 +17,7 @@
 // The stateless helpers (scopeOf, closeThread, answerLink, worksIn, createUniverseNote…)
 // stay callable while this module is unloaded.
 
-import { TFile, normalizePath } from "obsidian";
+import { Keymap, TFile, normalizePath } from "obsidian";
 import type EscritaPlugin from "../main";
 import { FeatureModule } from "../core/module-context";
 import { locale, t } from "../i18n";
@@ -25,11 +25,19 @@ import { closeThreadPlan, reopenThreadPlan, type ThreadMarker } from "../core/ma
 import type { VaultIndex } from "../core/vault-index";
 import { entriesIn, entriesSpec, type Entry, type ScopedEntry } from "./entries";
 import { entryPath, entryText } from "./new-entry";
+import { appearsInExtension, type AppearsInAnswer, type AppearsInSource } from "./appears-in-widget";
+import { baseName } from "./appears-in-model";
+import { defaultLabels, openMention, type AppearsInLabels } from "./appears-in";
+import { MentionCtxFactory } from "./mention-ctx";
+import { MentionsIndex } from "./mentions-index";
+import { NameMarks, SPELLCHECK_MARKS_WORK } from "./name-marks";
 import { UniverseNamesProvider } from "./names-provider";
+import { registerAppearsStrings } from "./strings-appears";
 import { keptOut, linkText, scopeFor, universeNotePath, universeRootOf, type Scope, type ScopeLookup } from "./scope";
 import type { EntryKind, UniverseMode } from "./settings";
 import { inScope, type ThreadRef } from "./threads";
 import { formFor, type WorkInfo } from "./works-list";
+import type { NoteMentions } from "./mentions";
 import { addUniverseEditorMenuItems, createEntryFromSelection, inSource } from "./create";
 import { addMigrateFileMenuItem, migrateActiveBook } from "./migrate";
 import { UNIVERSE_VIEW, UniverseView, activateThreadsView, activateUniverseView } from "./view";
@@ -58,16 +66,35 @@ export class CreateEntryError extends Error {
   }
 }
 
+/** quiet time before the panel and the note's section redraw after the mentions change (finding 4) */
+const MENTIONS_EMIT_MS = 1000;
+const SCOPE_MS = 300;
+const WORKS_MS = 500;
+
 const NONE: Scope = { kind: "none", root: "", note: null };
 
 export class UniverseModule extends FeatureModule {
   readonly id = "universe" as const;
-  readonly slots = { views: [UNIVERSE_VIEW] };
+  /** two editor slots: the name marks, then the "Appears in" section. No post-processor: Reading view waits on G0d. */
+  readonly slots = { views: [UNIVERSE_VIEW], editors: 2 };
   private entriesIdx: VaultIndex<TFile, Entry> | null = null;
   private namesProvider: UniverseNamesProvider | null = null;
+  private mentions: MentionsIndex<TFile> | null = null;
+  private ctxFactory: MentionCtxFactory | null = null;
+  private marks: NameMarks | null = null;
+  private source: AppearsInSource | null = null;
   private listeners = new Set<() => void>();
+  /** quiet-time timers by name (scope, works, mentions); all cleared on unload */
+  private later_ = new Map<string, number>();
+  /** the last `universe` property value seen per note, to tell a real scope change from an ordinary save */
+  private universeSeen = new Map<string, string>();
+  private mentionsShown = false;
+  private lastUnderline = false;
 
-  constructor(private plugin: EscritaPlugin) { super(); }
+  constructor(private plugin: EscritaPlugin) {
+    super();
+    registerAppearsStrings();
+  }
 
   /** Loaded while the mode is not off (the registry decides); the stateless helpers below work either way. */
   onload(): void {
@@ -79,20 +106,101 @@ export class UniverseModule extends FeatureModule {
     this.entriesIdx = entries;
 
     // the names port: provided while loaded, withdrawn on unload (Q36)
+    const timers = {
+      set: (cb: () => void, ms: number): unknown => window.setTimeout(cb, ms),
+      clear: (h: unknown): void => window.clearTimeout(h as number),
+    };
     const names = new UniverseNamesProvider({
       entries: () => [...entries.entries()].map(([, e]) => e),
       scopeOf: (path) => this.scopeOf(path),
       language: () => p.settings.lensLanguage,
       locale: () => locale(),
       nameTitles: () => p.settings.nameTitles,
+      timers,
     });
     this.namesProvider = names;
     this.register(p.names.provide(names));
-    // scope depends on other notes' properties, so a metadata change can move a note between tables
-    this.registerEvent(p.app.metadataCache.on("changed", () => names.refresh()));
+    this.register(() => names.dispose());
+
+    const factory = new MentionCtxFactory({
+      scopeOf: (path) => this.scopeOf(path),
+      resolve: (link, from) => p.app.metadataCache.getFirstLinkpathDest(link, from)?.path ?? null,
+      place: (path) => {
+        const pl = p.books.classify(path);
+        if (!pl.book) return null;
+        return pl.kind === "chapter" || pl.kind === "book-note" ? { kind: pl.kind, book: pl.book.note.path } : null;
+      },
+      chapters: (book) => {
+        const b = p.books.classify(book).book;
+        return b ? p.books.chapters(b).map((c) => c.file.path) : [];
+      },
+      isWork: (path) => {
+        const e = p.works.get(path);
+        return !!e && (e.role === "book" || e.role === "note") && e.stage !== null && !entries.get(path);
+      },
+      worksIn: (scope) => this.worksIn(scope),
+    });
+    this.ctxFactory = factory;
+
+    const mentions = new MentionsIndex<TFile>({
+      add: (spec) => this.ctx.index<TFile, NoteMentions>(spec),
+      rebuild: (name) => p.index.rebuild(name),
+      table: () => names.globalTable(),
+      settings: () => p.settings,
+      resolve: (link, from) => p.app.metadataCache.getFirstLinkpathDest(link, from)?.path ?? null,
+      timers: { ...timers, yieldNow: () => new Promise<void>((r) => window.setTimeout(r, 0)) },
+    });
+    this.mentions = mentions;
+    this.mentionsShown = false;
+    this.register(() => mentions.dispose());
+    this.register(names.onChange(() => mentions.tableChanged()));
+    // counts follow edits, but the panel redraws a second after they settle (finding 4); the first build shows at once
+    this.register(mentions.onChange(() => {
+      if (!this.mentionsShown && mentions.isReady()) {
+        this.mentionsShown = true;
+        this.emit();
+      } else {
+        this.later("mentions", MENTIONS_EMIT_MS, () => this.emit());
+      }
+    }));
+
+    // scope depends on a note's `universe` property, a book's structure and the settings: only those move it
+    this.registerEvent(p.app.metadataCache.on("changed", (f, _data, cache) => this.metadataChanged(f, cache?.frontmatter)));
+    const structure = (): void => this.scopeMoved();
+    this.registerEvent(p.app.vault.on("create", structure));
+    this.registerEvent(p.app.vault.on("delete", structure));
+    this.registerEvent(p.app.vault.on("rename", structure));
+    this.register(p.works.onChange(() => this.later("works", WORKS_MS, () => {
+      factory.reset();
+      mentions.answersChanged();
+      this.emit();
+    })));
 
     this.register(entries.onChange(() => { names.refresh(); this.emit(); }));
-    this.register(entries.onReady(() => { names.refresh(); this.emit(); }));
+    // the first build of the mentions index waits for the entries and a first term table (3.2)
+    this.register(entries.onReady(() => { names.refresh(); mentions.start(); this.emit(); }));
+
+    this.source = {
+      appearsIn: (path) => this.appearsInAnswer(path),
+      labels: () => this.labels(),
+    };
+
+    this.lastUnderline = p.settings.underlineNames;
+    const marks = new NameMarks({
+      names: p.names,
+      underline: () => p.settings.underlineNames,
+      spellcheckWorks: () => SPELLCHECK_MARKS_WORK,
+      open: (path, evt) => this.openEntry(path, evt),
+    });
+    this.marks = marks;
+    this.register(() => marks.dispose());
+    this.ctx.editor([marks.extension]);
+    this.ctx.editor([appearsInExtension({
+      appearsIn: (path) => this.appearsInAnswer(path),
+      labels: () => this.labels(),
+      open: (entry, path, range, evt) => { void openMention(p, entry, path, range, evt, false); },
+      onChange: (cb) => this.onChange(cb),
+    })]);
 
     this.ctx.view(UNIVERSE_VIEW, (leaf) => new UniverseView(leaf, p));
     this.registerCommands();
@@ -101,13 +209,27 @@ export class UniverseModule extends FeatureModule {
   }
 
   onunload(): void {
-    this.entriesIdx = null;   // the context disposes the index
+    for (const h of this.later_.values()) window.clearTimeout(h);
+    this.later_.clear();
+    this.universeSeen.clear();
+    this.entriesIdx = null;   // the context disposes the indexes and empties the editor slots
     this.namesProvider = null;
+    this.mentions = null;
+    this.ctxFactory = null;
+    this.marks = null;
+    this.source = null;
     this.emit();
   }
 
   settingsChanged(): void {
     this.namesProvider?.refresh();
+    this.ctxFactory?.reset();
+    this.mentions?.scopeChanged();
+    const underline = this.plugin.settings.underlineNames;
+    if (underline !== this.lastUnderline) {
+      this.lastUnderline = underline;
+      this.marks?.refresh();
+    }
     this.emit();
   }
 
@@ -170,6 +292,12 @@ export class UniverseModule extends FeatureModule {
     const list = [...found.values()];
     return list.sort((a, b) => Number(b.isDefault) - Number(a.isDefault) || a.name.localeCompare(b.name));
   }
+
+  /**
+   * What the panel and the entry note's section read: the answer for an entry ("counting" while
+   * the indexes build, null for a note that is not an entry here) and the labels. Null while unloaded.
+   */
+  appearsInSource(): AppearsInSource | null { return this.source; }
 
   /** The names provider while loaded (the mentions index reads `globalTable()` and the entries' readiness from here). */
   names(): UniverseNamesProvider | null { return this.namesProvider; }
@@ -333,6 +461,66 @@ export class UniverseModule extends FeatureModule {
   }
 
   // ------------------------------------------------------------------ wiring
+
+  private appearsInAnswer(path: string): AppearsInAnswer {
+    const m = this.mentions;
+    const f = this.ctxFactory;
+    if (!m || !f || !this.entriesIdx?.get(path) || this.scopeOf(path).kind === "none") return null;
+    if (!m.isReady() || !this.entriesIdx.isReady()) return "counting";
+    return m.appearsIn(path, f.ctx(path));
+  }
+
+  /** A work's name and form (the form word follows the name, board AppearsIn); other notes by file name. */
+  private labels(): AppearsInLabels {
+    const p = this.plugin;
+    const title = (path: string): string => p.works.get(path)?.title ?? baseName(path);
+    return {
+      work: (work) => {
+        const file = p.app.vault.getAbstractFileByPath(work);
+        const fm = file instanceof TFile ? p.books.frontmatter(file) : {};
+        const form = formFor(work, fm[p.settings.formProperty], p.settings);
+        return { name: title(work), form: form ? t(`universe.appears.form.${form}`) : null };
+      },
+      note: (path) => (p.works.get(path) ? title(path) : defaultLabels.note(path)),
+    };
+  }
+
+  /** Ctrl/Cmd-click on an underlined name: its entry opens in a tab, the way a link does. */
+  private openEntry(path: string, evt: MouseEvent): void {
+    const f = this.plugin.app.vault.getAbstractFileByPath(path);
+    if (!(f instanceof TFile)) return;
+    void this.plugin.app.workspace.getLeaf(Keymap.isModEvent(evt) ? "tab" : false).openFile(f);
+  }
+
+  /** A save only moves scope when the `universe` property changed (finding 1). */
+  private metadataChanged(file: TFile, frontmatter: Record<string, unknown> | undefined): void {
+    const fm = frontmatter ?? this.plugin.app.metadataCache.getFileCache(file)?.frontmatter;
+    const now = JSON.stringify(fm?.[this.plugin.settings.universeProperty] ?? null);
+    const before = this.universeSeen.get(file.path) ?? "null";
+    if (now === before) return;
+    if (now === "null") this.universeSeen.delete(file.path);
+    else this.universeSeen.set(file.path, now);
+    this.scopeMoved();
+  }
+
+  /** A `universe` property, a note created, deleted or renamed: scope may have moved. Settles for 300 ms. */
+  private scopeMoved(): void {
+    this.namesProvider?.refreshSoon();
+    this.later("scope", SCOPE_MS, () => {
+      this.ctxFactory?.reset();
+      this.mentions?.scopeChanged();
+      this.emit();
+    });
+  }
+
+  private later(name: string, ms: number, fn: () => void): void {
+    const prev = this.later_.get(name);
+    if (prev !== undefined) window.clearTimeout(prev);
+    this.later_.set(name, window.setTimeout(() => {
+      this.later_.delete(name);
+      fn();
+    }, ms));
+  }
 
   private lookup(): ScopeLookup {
     const { metadataCache, vault } = this.plugin.app;

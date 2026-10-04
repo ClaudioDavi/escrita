@@ -5,7 +5,7 @@
 
 import { segment } from "../core/markdown";
 import { findNames, type TermTable } from "../core/names";
-import type { IndexFile, IndexSpec, IndexTimers, VaultIndex } from "../core/vault-index";
+import type { IndexChange, IndexFile, IndexSpec, IndexTimers, VaultIndex } from "../core/vault-index";
 import { isUniverseNote, type EntriesSettings } from "./entries";
 import {
   appearsIn as appearsInOf,
@@ -49,8 +49,12 @@ export class MentionsIndex<F extends IndexFile> {
   private timer: unknown = null;
   private listeners = new Set<() => void>();
   private stops: (() => void)[] = [];
-  private notesByEntry: Map<string, string[]> | null = null;
-  private notesByLink: Map<string, string[]> | null = null;
+  /** entry path -> the notes with a candidate for it; kept current note by note */
+  private notesByEntry: Map<string, Set<string>> | null = null;
+  /** entry path -> the notes that link to it; cleared only by scopeChanged() and a build */
+  private notesByLink: Map<string, Set<string>> | null = null;
+  /** note -> what its links resolved to when notesByLink was built (so an edit can take them out) */
+  private linkTargets = new Map<string, string[]>();
   private answers = new Map<string, AppearsIn>();
 
   constructor(private deps: MentionsDeps<F>) {}
@@ -66,8 +70,8 @@ export class MentionsIndex<F extends IndexFile> {
     const index = this.deps.add(this.spec());
     this.index = index;
     this.stops.push(
-      index.onChange(() => this.changed()),
-      index.onReady(() => this.changed()),
+      index.onChange((c) => this.changed(c)),
+      index.onReady(() => this.changed(null)),
     );
   }
 
@@ -99,9 +103,19 @@ export class MentionsIndex<F extends IndexFile> {
     }, TABLE_REBUILD_MS);
   }
 
-  /** Metadata or structure changed (a link target, a book note's `universe`): the memos go. */
+  /**
+   * Scope or structure changed (a note created, deleted or renamed, a `universe` property): the
+   * grouped answers and the resolved links go. An ordinary edit never calls this; the index's
+   * own changes update the lookup maps for the changed note only.
+   */
   scopeChanged(): void {
     this.notesByLink = null;
+    this.linkTargets.clear();
+    this.answers.clear();
+  }
+
+  /** Something outside the index that the answers read changed (the works' order or stages): only the answers go. */
+  answersChanged(): void {
     this.answers.clear();
   }
 
@@ -137,6 +151,7 @@ export class MentionsIndex<F extends IndexFile> {
     this.listeners.clear();
     this.notesByEntry = null;
     this.notesByLink = null;
+    this.linkTargets.clear();
     this.answers.clear();
   }
 
@@ -157,18 +172,69 @@ export class MentionsIndex<F extends IndexFile> {
     };
   }
 
-  private changed(): void {
-    this.notesByEntry = null;
-    this.notesByLink = null;
-    this.answers.clear();
+  /** `changes` null: a build finished, nothing is known about which notes moved. */
+  private changed(changes: readonly IndexChange<NoteMentions>[] | null): void {
+    if (!changes || changes.some((c) => c.cause === "build")) {
+      this.notesByEntry = null;
+      this.notesByLink = null;
+      this.linkTargets.clear();
+      this.answers.clear();
+    } else {
+      for (const c of changes) {
+        this.detach(c.cause === "rename" && c.from !== undefined ? c.from : c.path, c.before);
+        if (c.after) this.attach(c.path, c.after);
+      }
+    }
     for (const cb of [...this.listeners]) cb();
   }
 
+  private detach(path: string, before: NoteMentions | undefined): void {
+    if (this.notesByEntry && before) {
+      for (const id of idsOf(before)) {
+        this.notesByEntry.get(id)?.delete(path);
+        this.answers.delete(id);
+      }
+    }
+    if (this.notesByLink) {
+      for (const to of this.linkTargets.get(path) ?? []) {
+        this.notesByLink.get(to)?.delete(path);
+        this.answers.delete(to);
+      }
+    }
+    this.linkTargets.delete(path);
+  }
+
+  private attach(path: string, after: NoteMentions): void {
+    if (this.notesByEntry) {
+      for (const id of idsOf(after)) {
+        add(this.notesByEntry, id, path);
+        this.answers.delete(id);
+      }
+    }
+    if (this.notesByLink) {
+      const targets = this.resolved(path, after);
+      this.linkTargets.set(path, targets);
+      for (const to of targets) {
+        add(this.notesByLink, to, path);
+        this.answers.delete(to);
+      }
+    }
+  }
+
+  private resolved(path: string, nm: NoteMentions): string[] {
+    const seen = new Set<string>();
+    for (const l of nm.links) {
+      const to = this.deps.resolve(l.linkpath, path);
+      if (to) seen.add(to);
+    }
+    return [...seen];
+  }
+
   /**
-   * The inverted lists, built once per index change: which notes have a candidate for an
-   * entry (not filtered by scope, so a scope change leaves it valid), and which notes link
-   * to it (resolved once per metadata or structure change). A query then reads only the
-   * notes that mention the entry, not every occurrence of every note.
+   * The inverted lists, built once and then kept current note by note: which notes have a
+   * candidate for an entry (not filtered by scope, so a scope change leaves it valid), and
+   * which notes link to it (resolved once per scope or structure change). A query then reads
+   * only the notes that mention the entry, not every occurrence of every note.
    */
   private candidateNotes(entry: string): Set<string> {
     const out = new Set<string>(this.byEntry().get(entry));
@@ -176,36 +242,35 @@ export class MentionsIndex<F extends IndexFile> {
     return out;
   }
 
-  private byEntry(): Map<string, string[]> {
+  private byEntry(): Map<string, Set<string>> {
     if (this.notesByEntry) return this.notesByEntry;
-    const m = new Map<string, string[]>();
-    for (const [path, nm] of this.index?.entries() ?? []) {
-      const seen = new Set<string>();
-      for (const o of nm.occurrences) for (const c of o.candidates) seen.add(c.id);
-      for (const id of seen) {
-        const list = m.get(id);
-        if (list) list.push(path);
-        else m.set(id, [path]);
-      }
-    }
+    const m = new Map<string, Set<string>>();
+    for (const [path, nm] of this.index?.entries() ?? []) for (const id of idsOf(nm)) add(m, id, path);
     return (this.notesByEntry = m);
   }
 
-  private byLink(): Map<string, string[]> {
+  private byLink(): Map<string, Set<string>> {
     if (this.notesByLink) return this.notesByLink;
-    const m = new Map<string, string[]>();
+    const m = new Map<string, Set<string>>();
+    this.linkTargets.clear();
     for (const [path, nm] of this.index?.entries() ?? []) {
-      const seen = new Set<string>();
-      for (const l of nm.links) {
-        const to = this.deps.resolve(l.linkpath, path);
-        if (to) seen.add(to);
-      }
-      for (const to of seen) {
-        const list = m.get(to);
-        if (list) list.push(path);
-        else m.set(to, [path]);
-      }
+      const targets = this.resolved(path, nm);
+      if (targets.length === 0) continue;
+      this.linkTargets.set(path, targets);
+      for (const to of targets) add(m, to, path);
     }
     return (this.notesByLink = m);
   }
+}
+
+function idsOf(nm: NoteMentions): Set<string> {
+  const ids = new Set<string>();
+  for (const o of nm.occurrences) for (const c of o.candidates) ids.add(c.id);
+  return ids;
+}
+
+function add(m: Map<string, Set<string>>, key: string, path: string): void {
+  const set = m.get(key);
+  if (set) set.add(path);
+  else m.set(key, new Set([path]));
 }

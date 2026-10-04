@@ -22,6 +22,8 @@ export interface FakeIndexHandle {
   /** what get(path) answers; tests set it */
   values: Map<string, unknown>;
   get(path: string): unknown;
+  entries(): Iterable<[string, unknown]>;
+  isReady(): boolean;
   onChange(cb: (changes: readonly unknown[]) => void): () => void;
   onReady(cb: () => void): () => void;
   /** tests call these to simulate the index */
@@ -135,6 +137,8 @@ export class FakePlugin extends Component {
         disposed: false, spec, values: new Map(),
         dispose() { this.disposed = true; changeCbs.clear(); readyCbs.clear(); },
         get(path) { return this.values.get(path); },
+        entries() { return this.values.entries(); },
+        isReady() { return ready; },
         onChange(cb) { changeCbs.add(cb); return () => { changeCbs.delete(cb); }; },
         onReady(cb) {
           if (ready) { cb(); return () => {}; }

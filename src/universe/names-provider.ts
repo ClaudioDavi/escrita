@@ -3,14 +3,17 @@
 // table over every entry for the mentions index.
 //
 // Scope is read live (Q20), so the provider keeps no scope of its own: `refresh()` is
-// called when entries, settings or the notes' properties may have changed, rebuilds
-// what was asked for, and bumps `version()` only when a table's signature changed. A
-// thread edit never reaches it.
+// called when entries, settings or the notes' properties may have changed. It groups the
+// entries by scope once, compares a cheap signature of each group's sources, and compiles
+// only a table whose sources changed. A table nobody asked for since the last refresh is
+// dropped (its signature stays, so a change is still noticed) and an unchanged table keeps
+// its object, so name marks and the lens can compare by version. A thread edit never
+// reaches it.
 
 import { compileTerms, EMPTY_TABLE, foldName, matchLang, type NameSource, type TermTable } from "../core/names";
 import type { NamesProvider } from "../core/names-source";
 import type { Entry } from "./entries";
-import { sameScope, type Scope } from "./scope";
+import type { Scope } from "./scope";
 
 export interface NamesProviderDeps {
   entries(): Iterable<Entry>;
@@ -22,7 +25,17 @@ export interface NamesProviderDeps {
   locale(): string;
   /** the `nameTitles` setting, one title per line */
   nameTitles(): string;
+  /** quiet time for `refreshSoon` (the metadata cache fires on every save); without it `refreshSoon` refreshes at once */
+  timers?: { set(cb: () => void, ms: number): unknown; clear(h: unknown): void };
 }
+
+/** Quiet time before a metadata change refreshes the tables (finding 1). */
+export const REFRESH_SOON_MS = 300;
+
+type Opts = { lang: ReturnType<typeof matchLang>; extraTitles: string[] };
+
+/** A cheap stand-in for compiling: equal when the sources and options are. */
+const sigOf = (sources: readonly NameSource[], o: Opts): string => JSON.stringify([o.lang, o.extraTitles, sources]);
 
 const scopeKey = (s: Scope): string => `${s.kind}\u0000${s.root}`;
 
@@ -36,13 +49,18 @@ export function sourceOf(e: Entry): NameSource {
 export class UniverseNamesProvider implements NamesProvider {
   private bump = 0;
   private listeners = new Set<() => void>();
-  private global: TermTable | null = null;
-  /** scope key -> its scope and table, filled on demand and kept current by refresh() */
-  private scopes = new Map<string, { scope: Scope; table: TermTable }>();
+  private global: { sig: string; table: TermTable } | null = null;
+  /** scope key -> its entries, signature and (while asked for) table; kept current by refresh() */
+  private scopes = new Map<string, ScopeRec>();
+  /** entries grouped by scope, valid until the next refresh() */
+  private groups: Map<string, Entry[]> | null = null;
+  private timer: unknown = null;
+  /** how many times a table was compiled (tests read it) */
+  compiled = 0;
 
   constructor(private deps: NamesProviderDeps) {}
 
-  private options(): { lang: ReturnType<typeof matchLang>; extraTitles: string[] } {
+  private options(): Opts {
     const d = this.deps;
     return {
       lang: matchLang(d.language(), d.locale()),
@@ -50,32 +68,53 @@ export class UniverseNamesProvider implements NamesProvider {
     };
   }
 
-  private buildGlobal(): TermTable {
-    return compileTerms([...this.deps.entries()].map(sourceOf), this.options());
+  private compile(sources: NameSource[], o: Opts): TermTable {
+    this.compiled++;
+    return compileTerms(sources, o);
   }
 
-  private buildScope(scope: Scope): TermTable {
-    if (scope.kind === "none") return EMPTY_TABLE;
-    const sources: NameSource[] = [];
-    for (const e of this.deps.entries()) if (sameScope(this.deps.scopeOf(e.path), scope)) sources.push(sourceOf(e));
-    return compileTerms(sources, this.options());
+  private partition(): Map<string, Entry[]> {
+    if (this.groups) return this.groups;
+    const by = new Map<string, Entry[]>();
+    for (const e of this.deps.entries()) {
+      const s = this.deps.scopeOf(e.path);
+      if (s.kind === "none") continue;
+      const k = scopeKey(s);
+      const list = by.get(k);
+      if (list) list.push(e);
+      else by.set(k, [e]);
+    }
+    return (this.groups = by);
+  }
+
+  private rec(scope: Scope): ScopeRec {
+    const key = scopeKey(scope);
+    let r = this.scopes.get(key);
+    if (!r) {
+      const entries = this.partition().get(key) ?? [];
+      this.groups = null;   // scope is read live: don't trust this grouping for the next ask
+      r = { scope, entries, sig: sigOf(entries.map(sourceOf), this.options()), table: null, lookup: null, asked: false };
+      this.scopes.set(key, r);
+    }
+    return r;
   }
 
   /** One table over every entry, whatever its scope: what the mentions index matches with. */
   globalTable(): TermTable {
-    return (this.global ??= this.buildGlobal());
+    if (!this.global) {
+      const sources = [...this.deps.entries()].map(sourceOf);
+      const o = this.options();
+      this.global = { sig: sigOf(sources, o), table: this.compile(sources, o) };
+    }
+    return this.global.table;
   }
 
   tableFor(path: string): TermTable {
     const scope = this.deps.scopeOf(path);
     if (scope.kind === "none") return EMPTY_TABLE;
-    const key = scopeKey(scope);
-    let hit = this.scopes.get(key);
-    if (!hit) {
-      hit = { scope, table: this.buildScope(scope) };
-      this.scopes.set(key, hit);
-    }
-    return hit.table;
+    const r = this.rec(scope);
+    r.asked = true;
+    return (r.table ??= this.compile(r.entries.map(sourceOf), this.options()));
   }
 
   entryFor(text: string, path: string): { path: string; name: string } | null {
@@ -83,13 +122,8 @@ export class UniverseNamesProvider implements NamesProvider {
     if (scope.kind === "none") return null;
     const want = foldName(text);
     if (want === "") return null;
-    let alias: Entry | null = null;
-    for (const e of this.deps.entries()) {
-      if (!sameScope(this.deps.scopeOf(e.path), scope)) continue;
-      if (foldName(e.name) === want) return { path: e.path, name: e.name };
-      if (!alias && e.aliases.some((a) => foldName(a) === want)) alias = e;
-    }
-    return alias ? { path: alias.path, name: alias.name } : null;
+    const r = this.rec(scope);
+    return (r.lookup ??= lookupOf(r.entries)).get(want) ?? null;
   }
 
   version(): number {
@@ -101,25 +135,100 @@ export class UniverseNamesProvider implements NamesProvider {
     return () => { this.listeners.delete(cb); };
   }
 
+  /** `refresh()` after a quiet time: for the metadata cache, which fires on every save. */
+  refreshSoon(): void {
+    const timers = this.deps.timers;
+    if (!timers) { this.refresh(); return; }
+    if (this.timer !== null) timers.clear(this.timer);
+    this.timer = timers.set(() => { this.timer = null; this.refresh(); }, REFRESH_SOON_MS);
+  }
+
+  dispose(): void {
+    if (this.timer !== null) this.deps.timers?.clear(this.timer);
+    this.timer = null;
+    this.listeners.clear();
+  }
+
   /**
-   * Rebuilds the global table and every scope table asked for so far; bumps the version and
-   * calls the listeners only when one of their signatures changed.
+   * Re-reads the entries. Compiles a table only when its sources' signature changed, keeps
+   * the old object when the compiled signature is the same, drops the tables nobody asked for
+   * since the last refresh, and bumps the version (calling the listeners) only when a
+   * table's signature changed.
    */
   refresh(): void {
+    if (this.timer !== null) {
+      this.deps.timers?.clear(this.timer);
+      this.timer = null;
+    }
+    this.groups = null;
+    const o = this.options();
     let changed = false;
     if (this.global) {
-      const next = this.buildGlobal();
-      if (next.signature !== this.global.signature) changed = true;
-      this.global = next;
+      const sources = [...this.deps.entries()].map(sourceOf);
+      const sig = sigOf(sources, o);
+      if (sig !== this.global.sig) {
+        const next = this.compile(sources, o);
+        if (next.signature !== this.global.table.signature) {
+          this.global.table = next;
+          changed = true;
+        }
+        this.global.sig = sig;
+      }
     }
-    for (const [key, hit] of [...this.scopes]) {
-      // an entry moving between scopes changes the tables of both; a scope nobody asks for again is dropped
-      const next = this.buildScope(hit.scope);
-      if (next.signature !== hit.table.signature) changed = true;
-      this.scopes.set(key, { scope: hit.scope, table: next });
+    if (this.scopes.size > 0) {
+      const groups = this.partition();
+      for (const [key, r] of this.scopes) {
+        const entries = groups.get(key) ?? [];
+        const sources = entries.map(sourceOf);
+        const sig = sigOf(sources, o);
+        if (sig !== r.sig) {
+          r.entries = entries;
+          r.lookup = null;
+          r.sig = sig;
+          if (r.table) {
+            const next = this.compile(sources, o);
+            if (next.signature !== r.table.signature) {
+              r.table = next;
+              changed = true;
+            }
+          } else {
+            changed = true;   // nobody holds a table, but a pass keyed on the version may
+          }
+        }
+        if (!r.asked) r.table = null;
+        r.asked = false;
+      }
     }
+    this.groups = null;
     if (!changed) return;
     this.bump++;
     for (const cb of [...this.listeners]) cb();
   }
+}
+
+interface ScopeRec {
+  scope: Scope;
+  entries: Entry[];
+  sig: string;
+  /** null until asked for, and after a refresh nobody asked in */
+  table: TermTable | null;
+  /** foldName of a name or alias to its entry, built on the first entryFor */
+  lookup: Map<string, { path: string; name: string }> | null;
+  asked: boolean;
+}
+
+/** A name beats an alias; among equals the first entry wins (the order a linear scan would find). */
+function lookupOf(entries: readonly Entry[]): Map<string, { path: string; name: string }> {
+  const out = new Map<string, { path: string; name: string }>();
+  for (const e of entries) {
+    const k = foldName(e.name);
+    if (k !== "" && !out.has(k)) out.set(k, { path: e.path, name: e.name });
+  }
+  for (const e of entries) {
+    for (const a of e.aliases) {
+      const k = foldName(a);
+      if (k !== "" && !out.has(k)) out.set(k, { path: e.path, name: e.name });
+    }
+  }
+  return out;
 }

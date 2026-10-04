@@ -2,7 +2,7 @@
 // paragraphs an edit touched, re-matching only those, and the visible slice. No CodeMirror
 // and no Obsidian imports: the ViewPlugin in name-marks.ts feeds it.
 
-import { capitalizedTerms, type Occurrence, type TermTable } from "../core/names";
+import { capitalizedTerms, findNames, pickEntry, type Occurrence, type TermTable } from "../core/names";
 
 export interface Range { from: number; to: number }
 
@@ -129,4 +129,24 @@ export function rematch(
   const added: Range[] = [];
   for (const p of ps) added.push(...marksOf(find(p.from, p.to)));
   return [...kept, ...added].sort((a, b) => a.from - b.from || a.to - b.to);
+}
+
+/** The mark that holds `pos` (edges: from is in, to is out), or null. */
+export function markAt(marks: readonly Range[], pos: number): Range | null {
+  for (const m of marks) {
+    if (m.from > pos) break;
+    if (pos < m.to) return m;
+  }
+  return null;
+}
+
+/**
+ * The entry a marked name stands for: the text of one mark, matched alone against the note's
+ * table (any candidate counts, the scope is the table's). Null when nothing matches or the name
+ * is ambiguous between entries (Q26), so a Ctrl/Cmd-click opens only what is certain.
+ */
+export function entryAt(text: string, table: TermTable): string | null {
+  const found = findNames(text, table);
+  const whole = found.find((o) => o.from === 0 && o.to === text.length) ?? found[0];
+  return whole ? pickEntry(whole, () => true) : null;
 }

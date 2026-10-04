@@ -250,6 +250,69 @@ describe("MentionsIndex queries", () => {
   });
 });
 
+describe("MentionsIndex lookup maps follow an edit for the changed note only (finding 4)", () => {
+  const wk = (p: string) => ({ work: p.split("/")[0]!, chapter: null });
+
+  async function built(extra: Record<string, string> = {}) {
+    const resolves = { n: 0 };
+    const files: Record<string, string> = { "Contos/a.md": "Teo e [[Teo]].", "Contos/b.md": "Ana sozinha.", ...extra };
+    for (let i = 0; i < 20; i++) files[`Contos/l${i}.md`] = `Ver [[Ana]] ${i}.`;
+    const s = setup(files, [A, B], { resolve: (l) => { resolves.n++; return l === "Teo" ? A.id : l === "Ana" ? B.id : null; } });
+    s.mentions.start();
+    await settle();
+    const c = (id: string) => ctx(id, { workOf: wk, resolve: (l) => (l === "Teo" ? A.id : l === "Ana" ? B.id : null) });
+    return { s, resolves, c };
+  }
+
+  it("an edit resolves the changed note's links only, not the vault's", async () => {
+    const { s, resolves, c } = await built();
+    s.mentions.appearsIn(B.id, c(B.id));                    // builds the maps: every note's links resolved once
+    const built1 = resolves.n;
+    expect(built1).toBeGreaterThanOrEqual(20);
+    s.vault.modify("Contos/b.md", "Ana e [[Ana]] sozinha.");
+    await s.timers.advance(300);
+    expect(s.mentions.appearsIn(B.id, c(B.id)).total).toBe(22);   // 20 links, and b's name and link
+    expect(resolves.n - built1).toBeLessThanOrEqual(2);
+  });
+
+  it("an answer for an entry the edit did not touch is the same object", async () => {
+    const { s, c } = await built();
+    const forA = s.mentions.appearsIn(A.id, c(A.id));
+    const forB = s.mentions.appearsIn(B.id, c(B.id));
+    s.vault.modify("Contos/b.md", "Ana e Ana.");
+    await s.timers.advance(300);
+    expect(s.mentions.appearsIn(A.id, c(A.id))).toBe(forA);
+    expect(s.mentions.appearsIn(B.id, c(B.id))).not.toBe(forB);
+  });
+
+  it("a note that stops mentioning an entry leaves its list", async () => {
+    const { s, c } = await built();
+    expect(s.mentions.appearsIn(A.id, c(A.id)).total).toBe(2);
+    s.vault.modify("Contos/a.md", "Nada.");
+    await s.timers.advance(300);
+    expect(s.mentions.appearsIn(A.id, c(A.id)).total).toBe(0);
+    s.vault.modify("Contos/a.md", "Teo voltou.");
+    await s.timers.advance(300);
+    expect(s.mentions.appearsIn(A.id, c(A.id)).total).toBe(1);
+  });
+
+  it("a rename moves the note in the maps, and scopeChanged is what re-resolves every link", async () => {
+    const { s, resolves, c } = await built();
+    s.mentions.appearsIn(A.id, c(A.id));
+    s.vault.rename("Contos/a.md", "Contos/z.md");
+    await s.timers.advance(400);
+    const r = s.mentions.appearsIn(A.id, c(A.id));
+    expect(r.other.length + r.works.flatMap((w) => w.notes).length).toBe(1);
+    expect(r.works.flatMap((w) => w.notes.map((n) => n.path))).toEqual(["Contos/z.md"]);
+    const before = resolves.n;
+    s.mentions.appearsIn(A.id, c(A.id));
+    expect(resolves.n).toBe(before);                         // cached
+    s.mentions.scopeChanged();
+    s.mentions.appearsIn(B.id, c(B.id));
+    expect(resolves.n - before).toBeGreaterThanOrEqual(20);
+  });
+});
+
 // CI ceilings from G0h. Desktop: segment + readerMask + findNames cost 1.9-2.2 ms per 1,000
 // words with 300 entries (docs/PLAN-0.7.md, G0h). The phone figure is still open, so these
 // are derived from the desktop figure alone. Model: 2.2 ms per 1,000 words x the vault's

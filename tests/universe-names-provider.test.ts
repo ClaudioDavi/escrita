@@ -4,6 +4,7 @@ import type { Entry } from "../src/universe/entries";
 import type { Scope } from "../src/universe/scope";
 import { NamesPort } from "../src/core/names-source";
 import { findNames, EMPTY_TABLE } from "../src/core/names";
+import { ManualTimers } from "./support/memory-vault";
 
 const U: Scope = { kind: "universe", root: "Universo", note: "Universo.md" };
 const V: Scope = { kind: "universe", root: "Outro", note: "Outro.md" };
@@ -14,7 +15,7 @@ const entry = (path: string, kind: Entry["kind"] = "character", aliases: string[
   path, name: path.slice(path.lastIndexOf("/") + 1).replace(/\.md$/, ""), aliases, kind, caseSensitive: false, ignore: [], firstName: true, ...over,
 });
 
-function setup() {
+function setup(timers?: ManualTimers) {
   const st = {
     entries: [entry("Universo/Inês Moura.md", "character", ["Inesinha"]), entry("Universo/Farol.md", "place"), entry("Outro/Zé.md")] as Entry[],
     scopes: { "Universo/A.md": U, "Universo/Inês Moura.md": U, "Universo/Farol.md": U, "Outro/Zé.md": V, "Livro/c1.md": B, "x.md": NONE } as Record<string, Scope>,
@@ -26,6 +27,7 @@ function setup() {
     language: () => "pt-BR",
     locale: () => "pt-BR",
     nameTitles: () => st.titles,
+    timers,
   });
   let notified = 0;
   p.onChange(() => notified++);
@@ -124,5 +126,100 @@ describe("the port", () => {
     expect(port.tableFor("Universo/A.md")).toBe(EMPTY_TABLE);
     expect(port.entryFor("Farol", "Universo/A.md")).toBeNull();
     expect(port.version()).toBeGreaterThan(v);
+  });
+});
+
+describe("UniverseNamesProvider refresh cost (finding 1, 2, 3)", () => {
+  it("a no-op refresh keeps the same table objects and compiles nothing", () => {
+    const { p, notified } = setup();
+    const a = p.tableFor("Universo/A.md");
+    const g = p.globalTable();
+    const compiled = p.compiled;
+    p.refresh();
+    expect(p.tableFor("Universo/A.md")).toBe(a);
+    expect(p.globalTable()).toBe(g);
+    expect(p.compiled).toBe(compiled);
+    expect(notified()).toBe(0);
+  });
+
+  it("an edit to one scope recompiles that scope and not the other", () => {
+    const { st, p } = setup();
+    const outro = p.tableFor("Outro/Zé.md");
+    p.tableFor("Universo/A.md");
+    p.refresh();                                   // both were asked for since the provider was built
+    p.tableFor("Outro/Zé.md");
+    p.tableFor("Universo/A.md");
+    const compiled = p.compiled;
+    st.entries[0] = entry("Universo/Inês Moura.md", "character", ["Inesinha", "Nena"]);
+    p.refresh();
+    expect(p.compiled).toBe(compiled + 1);
+    expect(p.tableFor("Outro/Zé.md")).toBe(outro);
+  });
+
+  it("a table nobody asked for since the last refresh is dropped, and its change is still noticed", () => {
+    const { st, p } = setup();
+    const first = p.tableFor("Universo/A.md");
+    p.refresh();                                   // asked since build: kept
+    expect(p.tableFor("Universo/A.md")).toBe(first);
+    p.refresh();                                   // not asked in between: dropped
+    p.refresh();
+    const compiled = p.compiled;
+    const v = p.version();
+    st.entries[0] = entry("Universo/Inês Moura.md", "character", ["Inesinha", "Nena"]);
+    p.refresh();
+    expect(p.compiled).toBe(compiled);             // nothing compiled for a table nobody holds
+    expect(p.version()).toBe(v + 1);               // but a pass keyed on the version still re-runs
+    const again = p.tableFor("Universo/A.md");
+    expect(again).not.toBe(first);
+    expect(again.terms.some((x) => x.text === "Nena")).toBe(true);
+  });
+
+  it("a change that leaves the compiled signature alone keeps the object and the version", () => {
+    const { st, p } = setup();
+    const t = p.tableFor("Universo/A.md");
+    const v = p.version();
+    st.entries[1] = entry("Universo/Farol.md", "place", [], {});
+    st.entries.push(entry("Fora/Nada.md"));          // an entry in no scope: not in any table
+    p.refresh();
+    expect(p.tableFor("Universo/A.md")).toBe(t);
+    expect(p.version()).toBe(v);
+  });
+
+  it("refreshSoon waits 300 ms of quiet and refreshes once", async () => {
+    const timers = new ManualTimers();
+    const { st, p, notified } = setup(timers);
+    p.tableFor("Universo/A.md");
+    st.entries[0] = entry("Universo/Inês Moura.md", "character", ["Inesinha", "Nena"]);
+    p.refreshSoon();
+    await timers.advance(200);
+    p.refreshSoon();
+    await timers.advance(200);
+    expect(notified()).toBe(0);
+    await timers.advance(100);
+    expect(notified()).toBe(1);
+    expect(timers.count).toBe(0);
+  });
+
+  it("dispose clears the pending refresh", async () => {
+    const timers = new ManualTimers();
+    const { p } = setup(timers);
+    p.refreshSoon();
+    expect(timers.count).toBe(1);
+    p.dispose();
+    expect(timers.count).toBe(0);
+  });
+
+  it("entryFor reads a per-scope map: 300 entries, 1,000 lookups, no per-call scan", () => {
+    const entries = Array.from({ length: 300 }, (_, i) => entry(`Universo/Pessoa ${i}.md`, "character", [`Apelido ${i}`]));
+    let scopeCalls = 0;
+    const p = new UniverseNamesProvider({
+      entries: () => entries,
+      scopeOf: (path) => { scopeCalls++; return path.startsWith("Universo/") ? U : NONE; },
+      language: () => "pt-BR", locale: () => "pt-BR", nameTitles: () => "",
+    });
+    p.entryFor("Pessoa 1", "Universo/A.md");
+    const warm = scopeCalls;
+    for (let i = 0; i < 1000; i++) expect(p.entryFor(`apelido ${i % 300}`, "Universo/A.md")?.name).toBe(`Pessoa ${i % 300}`);
+    expect(scopeCalls - warm).toBe(1000);            // one scopeOf for the asking note, none per entry
   });
 });

@@ -121,3 +121,27 @@ describe("outline lifecycle", () => {
     expect(JSON.stringify(plugin.data)).toBe(before);
   });
 });
+
+describe("the outline view's subscriptions (finding 18)", () => {
+  it("the features.onChange subscription goes with the view", async () => {
+    reg.apply();
+    const subs = { on: 0, off: 0 };
+    const orig = reg.onChange.bind(reg);
+    reg.onChange = (cb) => {
+      subs.on++;
+      const stop = orig(cb);
+      return () => { subs.off++; stop(); };
+    };
+    (plugin as unknown as Record<string, unknown>).placeholders = { onChange: () => () => {}, countFor: () => 0 };
+    const leaf = {} as never;
+    const view = plugin.views.get(OUTLINE_VIEW)!(leaf) as unknown as { app: unknown; load(): void; unload(): void; onOpen(): Promise<void> };
+    view.app = plugin.app;
+    view.load();
+    // onOpen subscribes first and then draws; the drawing needs a vault the fake doesn't have
+    await view.onOpen().catch(() => {});
+    expect(subs.on).toBe(1);
+    expect(subs.off).toBe(0);
+    view.unload();
+    expect(subs.off).toBe(1);
+  });
+});

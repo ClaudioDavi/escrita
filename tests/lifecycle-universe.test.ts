@@ -7,6 +7,8 @@ import { UniverseModule } from "../src/universe";
 import { ThreadsFeature } from "../src/universe/threads-feature";
 import { THREADS_VIEW, UNIVERSE_VIEW } from "../src/universe/view";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
+import { EMPTY_TABLE } from "../src/core/names";
+import { vi } from "vitest";
 
 let plugin: FakePlugin;
 let universe: UniverseModule;
@@ -22,7 +24,7 @@ beforeEach(() => {
     classify: () => ({ kind: "note", book: null, tracked: true }),
     frontmatter: () => ({}),
   };
-  plugin.works = { list: () => [] };
+  plugin.works = { list: () => [], get: () => undefined, onChange: () => () => {} };
   const p = plugin as unknown as Record<string, unknown>;
   universe = new UniverseModule(plugin.asPlugin);
   threads = new ThreadsFeature(plugin.asPlugin);
@@ -35,6 +37,7 @@ beforeEach(() => {
 });
 
 const names = () => [...plugin.commands.keys()].sort();
+const THREADS_SLOT = 2;   // the universe declares two editor slots before it
 const UNIVERSE_COMMANDS = ["escrita:create-entry", "escrita:move-book-entries", "escrita:open-universe"];
 const THREAD_COMMANDS = ["escrita:close-thread", "escrita:plant-thread", "escrita:show-threads"];
 
@@ -46,7 +49,7 @@ describe("universe and threads load and unload", () => {
     expect(plugin.app.workspace.liveListeners("editor-menu")).toBe(2);
     expect(plugin.app.workspace.liveListeners("file-menu")).toBe(1);
     expect([...plugin.views.keys()].sort()).toEqual([THREADS_VIEW, UNIVERSE_VIEW].sort());
-    expect(plugin.extensions).toHaveLength(1);   // the threads marker slot, registered once
+    expect(plugin.extensions).toHaveLength(3);   // the universe's two (name marks, appears in) and the threads marker slot, registered once
   });
 
   it("the universe mode off unloads the universe and leaves threads running", () => {
@@ -74,7 +77,7 @@ describe("universe and threads load and unload", () => {
     expect(plugin.app.workspace.detached).toContain(THREADS_VIEW);
     expect(plugin.indexAdded.filter((h) => !h.disposed)).toHaveLength(1);
     expect(plugin.app.workspace.liveListeners("editor-menu")).toBe(1);
-    const slot = plugin.extensions[0] as unknown[];
+    const slot = plugin.extensions[THREADS_SLOT] as unknown[];
     expect(slot).toHaveLength(0);
     expect(threads.threads({ kind: "none", root: "", note: null })).toEqual([]);
     expect(threads.isReady()).toBe(true);   // nothing to wait for while off
@@ -88,13 +91,15 @@ describe("universe and threads load and unload", () => {
     expect(plugin.commands.size).toBe(0);
     expect(plugin.liveListeners()).toBe(0);
     expect(plugin.indexAdded.every((h) => h.disposed)).toBe(true);
-    expect((plugin.extensions[0] as unknown[]).length).toBe(0);
+    expect(plugin.extensions.every((x) => (x as unknown[]).length === 0)).toBe(true);
     plugin.settings.universeMode = "perBook";
     plugin.settings.features = { ...plugin.settings.features, threads: true };
     registry.apply();
     expect(names()).toEqual([...UNIVERSE_COMMANDS, ...THREAD_COMMANDS].sort());
-    expect(plugin.liveListeners()).toBe(4); // editor-menu, file-menu, the threads feature, and the names provider's metadata listener (3.1)
-    expect((plugin.extensions[0] as unknown[]).length).toBe(1);
+    expect(plugin.liveListeners()).toBe(7); // editor-menu, file-menu, the threads feature, the universe's metadata listener and its create, delete and rename listeners (5.1)
+    expect((plugin.extensions[THREADS_SLOT] as unknown[]).length).toBe(1);
+    expect((plugin.extensions[0] as unknown[]).length).toBe(1);   // name marks
+    expect((plugin.extensions[1] as unknown[]).length).toBe(1);   // appears in
   });
 
   it("the first-seen data stays when threads is off and still follows renames and deletes", () => {
@@ -142,6 +147,110 @@ describe("universe and threads load and unload", () => {
     expect(universe.entries({ kind: "universe", root: "U", note: "U.md" })).toEqual([]);
     expect(universe.entry("x.md")).toBeUndefined();
     expect(universe.universes()).toEqual([]);
+  });
+});
+
+const U = { kind: "universe", root: "Universo", note: "Universo.md" } as const;
+
+describe("the names provider, the mentions index and the editor UI go with the universe (5.1)", () => {
+  const entriesIdx = () => plugin.indexAdded.find((h) => h.spec.name !== "universe-mentions" && !h.disposed && h.spec.name.includes("entries")) ?? plugin.indexAdded[0]!;
+  const entry = { path: "Universo/Mariana.md", name: "Mariana", aliases: [], kind: "character", caseSensitive: false, ignore: [], firstName: true };
+
+  it("unload withdraws the provider and bumps the version, so a pass keyed on it re-runs", () => {
+    registry.apply();
+    entriesIdx().values.set(entry.path, entry);
+    vi.spyOn(universe, "scopeOf").mockReturnValue(U);
+    expect(plugin.names.tableFor("Universo/A.md").terms.length).toBeGreaterThan(0);
+    const v = plugin.names.version();
+    let told = 0;
+    plugin.names.onChange(() => told++);
+    plugin.settings.universeMode = "off";
+    registry.apply();
+    expect(plugin.names.tableFor("Universo/A.md")).toBe(EMPTY_TABLE);
+    expect(plugin.names.version()).toBeGreaterThan(v);
+    expect(told).toBeGreaterThan(0);
+    expect(universe.names()).toBeNull();
+    expect(universe.appearsInSource()).toBeNull();
+  });
+
+  it("the mentions index waits for the entries index, then is added; unload disposes it", () => {
+    registry.apply();
+    expect(plugin.indexAdded.map((h) => h.spec.name)).not.toContain("universe-mentions");
+    entriesIdx().becomeReady();
+    const mentions = plugin.indexAdded.find((h) => h.spec.name === "universe-mentions");
+    expect(mentions).toBeDefined();
+    plugin.settings.universeMode = "off";
+    registry.apply();
+    expect(mentions!.disposed).toBe(true);
+  });
+
+  it("the appears-in source answers counting until both indexes are ready, and null for a note that is no entry", () => {
+    registry.apply();
+    entriesIdx().values.set(entry.path, entry);
+    vi.spyOn(universe, "scopeOf").mockReturnValue(U);
+    const src = universe.appearsInSource()!;
+    expect(src.appearsIn("Contos/a.md")).toBeNull();
+    expect(src.appearsIn(entry.path)).toBe("counting");
+    entriesIdx().becomeReady();
+    const mentions = plugin.indexAdded.find((h) => h.spec.name === "universe-mentions")!;
+    mentions.becomeReady();
+    expect(src.appearsIn(entry.path)).not.toBe("counting");
+  });
+
+  it("registers the two editor slots on load and empties them on unload", () => {
+    registry.apply();
+    expect((plugin.extensions[0] as unknown[]).length).toBe(1);
+    expect((plugin.extensions[1] as unknown[]).length).toBe(1);
+    plugin.settings.universeMode = "off";
+    registry.apply();
+    expect((plugin.extensions[0] as unknown[]).length).toBe(0);
+    expect((plugin.extensions[1] as unknown[]).length).toBe(0);
+  });
+
+  it("a plain save fires no refresh; a changed universe property does, after a quiet time", () => {
+    vi.useFakeTimers();
+    try {
+      registry.apply();
+      entriesIdx().values.set(entry.path, entry);
+      vi.spyOn(universe, "scopeOf").mockReturnValue(U);
+      plugin.names.tableFor("Universo/A.md");
+      const provider = universe.names()!;
+      const refresh = vi.spyOn(provider, "refreshSoon");
+      const f = file("Contos/a.md");
+      plugin.app.metadataCache.trigger("changed", f, "", { frontmatter: { title: "x" } });
+      expect(refresh).not.toHaveBeenCalled();
+      plugin.app.metadataCache.trigger("changed", f, "", { frontmatter: { universe: "[[Universo]]" } });
+      expect(refresh).toHaveBeenCalledTimes(1);
+      plugin.app.metadataCache.trigger("changed", f, "", { frontmatter: { universe: "[[Universo]]", title: "y" } });
+      expect(refresh).toHaveBeenCalledTimes(1);          // the property did not move
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
+      plugin.settings.universeMode = "off";
+      registry.apply();
+      expect(vi.getTimerCount()).toBe(0);                // every quiet-time timer went with the module
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("the mentions' changes reach the panel's listeners after a second, the first ready at once", () => {
+    vi.useFakeTimers();
+    try {
+      registry.apply();
+      entriesIdx().becomeReady();
+      const mentions = plugin.indexAdded.find((h) => h.spec.name === "universe-mentions")!;
+      let n = 0;
+      universe.onChange(() => n++);
+      mentions.becomeReady();
+      const first = n;
+      mentions.emitChange([]);
+      expect(n).toBe(first);
+      vi.advanceTimersByTime(999);
+      expect(n).toBe(first);
+      vi.advanceTimersByTime(1);
+      expect(n).toBe(first + 1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

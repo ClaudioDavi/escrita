@@ -80,8 +80,7 @@ abstract class PanelBase extends ItemView {
   }
 
   protected ctx(scope: Scope): PanelCtx {
-    // 5.1 adds `appearsInSource()` to the universe module; until then no count shows (4.2)
-    const source = (this.plugin.universe as { appearsInSource?: () => AppearsInSource | null }).appearsInSource?.() ?? null;
+    const source: AppearsInSource | null = this.plugin.universe.appearsInSource();
     return {
       counts: source ? (path) => { const a = source.appearsIn(path); return a && a !== "counting" ? a.workCount : null; } : undefined,
       appearsIn: source ? (path) => { const a = source.appearsIn(path); return a === "counting" ? null : a; } : undefined,
