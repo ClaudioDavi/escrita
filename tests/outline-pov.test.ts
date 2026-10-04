@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  POV_PALETTE, assignColors, canReorder, cleanPovColors, filterActive, povValue, renamePovKey,
+  POV_PALETTE, assignColors, canReorder, cleanPovColors, filterActive, hiddenByFilter, povValue, renamePovKey,
   rowMatches, statusTally, type PovColor, type RowFilter,
 } from "../src/outline/pov";
 import type { ChapterRow } from "../src/outline/rows";
@@ -148,6 +148,17 @@ describe("canReorder", () => {
     expect(canReorder(filter(["draft"]))).toBe(false);
     expect(canReorder(filter([], ["maria"]))).toBe(false);
     expect(canReorder(filter(["draft"], ["maria"]))).toBe(false);
+  });
+});
+
+describe("hiddenByFilter", () => {
+  it("is true only for a chapter the filter hides", () => {
+    const draft = row("rascunho", "draft", "maria");
+    expect(hiddenByFilter(draft, filter())).toBe(false);
+    expect(hiddenByFilter(draft, filter(["draft"]))).toBe(false);
+    expect(hiddenByFilter(draft, filter(["revision"]))).toBe(true);
+    expect(hiddenByFilter(draft, filter([], ["joao"]))).toBe(true);
+    expect(hiddenByFilter(undefined, filter(["revision"]))).toBe(false);
   });
 });
 

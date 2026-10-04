@@ -19,7 +19,7 @@ import { confirmAction } from "./modals";
 import { errorMessage } from "./errors";
 import { loadRows, type ChapterRow as LoadedRow, type RowsPort } from "./rows";
 import {
-  canReorder, filterActive, povValue, rowMatches, type PovColor, type RowFilter,
+  canReorder, filterActive, hiddenByFilter, povValue, rowMatches, type PovColor, type RowFilter,
 } from "./pov";
 import {
   headerModel, povCss, pruneFilter, renderChips, renderColorToggle, showPovMenu, summaryText,
@@ -739,6 +739,13 @@ export class OutlineView extends ItemView {
     pruneFilter(this.model(rows), this.filter);
   }
 
+  /** Rule 1: a beat never goes into a chapter the filter hides; says so and returns true. */
+  private hiddenAbove(row: ChapterRow): boolean {
+    if (!hiddenByFilter(row.data, this.rowFilter)) return false;
+    new Notice(t("outline.blocked.hiddenAbove"));
+    return true;
+  }
+
   /** Q44: drag and moving chapters are off while a filter hides some of them (rule 1). */
   reorderBlocked(): boolean {
     return !canReorder(this.rowFilter);
@@ -1246,6 +1253,7 @@ export class OutlineView extends ItemView {
         if (at < 0) { new Notice(t("outline.beatChanged")); break; }
         const target = this.rows[at - 1];
         if (!target) return;
+        if (this.hiddenAbove(target)) return;
         const value = fieldText(el).trim();
         el.dataset.done = "1";
         if (line.before && this.draftBefore === line.before) this.draftBefore = null;
@@ -1318,6 +1326,7 @@ export class OutlineView extends ItemView {
         if (idx < 0) return;
         const prev = this.rows[idx - 1];
         if (!prev || prev.file === row.file) return;
+        if (this.hiddenAbove(prev)) return;
         const summaryEl = this.rowEls.find((r) => r.row.file === row.file)?.summary;
         const beatText = chapterAsBeatText(fieldText(el), summaryEl ? fieldText(summaryEl) : row.summary, untitled);
         el.dataset.done = "1";
@@ -1436,7 +1445,7 @@ export class OutlineView extends ItemView {
     menu.addItem((i) => i.setTitle(t("outline.menu.addBeat")).setIcon("list-plus")
       .onClick(() => { void this.addBeat(file); }));
     menu.addItem((i) => i.setTitle(t("outline.menu.toBeat")).setIcon("indent")
-      .setDisabled(idx === 0 || row.words > 0 || !row.bodyBlank)
+      .setDisabled(idx === 0 || row.words > 0 || !row.bodyBlank || hiddenByFilter(this.rows[idx - 1]?.data, this.rowFilter))
       .onClick(() => this.trigger({ type: "chapterToBeat" }, titleEl)));
 
     menu.addSeparator();

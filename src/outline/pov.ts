@@ -123,3 +123,12 @@ export function filterActive(f: RowFilter): boolean {
 export function canReorder(f: RowFilter): boolean {
   return !filterActive(f);
 }
+
+/**
+ * Rule 1: Tab on an empty chapter (or a new line) writes a beat into the chapter above
+ * in the book. While a filter hides that chapter, the beat would land where the writer
+ * can't see it, so the move is refused. `row` undefined (no chapter above) is not hidden.
+ */
+export function hiddenByFilter(row: ChapterRow | undefined, f: RowFilter): boolean {
+  return !!row && filterActive(f) && !rowMatches(row, f);
+}
