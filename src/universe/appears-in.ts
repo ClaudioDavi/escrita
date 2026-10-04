@@ -5,7 +5,7 @@
 import { Keymap, MarkdownView, Notice, TFile, setIcon } from "obsidian";
 import type EscritaPlugin from "../main";
 import { fmt, t } from "../i18n";
-import { baseName, firstLastLine, mentionStillThere, mentionsLabel, summaryLine } from "./appears-in-model";
+import { baseName, compactWorks, firstLastLine, mentionStillThere, mentionsLabel, summaryLine } from "./appears-in-model";
 import type { AppearsIn, MentionRow, WorkMentions } from "./mentions";
 
 /** How rows are named. 5.1 wires the real one from `plugin.works`; the default reads file names. */
@@ -29,6 +29,8 @@ export const defaultLabels: AppearsInLabels = {
 export const appearsInOpen = {
   note: false,
   other: false,
+  /** the phone's "more" row was opened: every work, still without chapters */
+  more: false,
   panel: new Set<string>(),
 };
 
@@ -41,11 +43,19 @@ export interface ListOptions {
   open(path: string, range: MentionRange, evt: MouseEvent | KeyboardEvent): void;
   /** "Other notes" was toggled; the caller redraws */
   toggleOther(): void;
+  /** the phone layout (board AppearsInStates k): works only, no chapters, a "more" row. Only with variant "note". */
+  compact?: boolean;
+  /** the compact layout's "more" row was clicked; the caller redraws */
+  toggleMore?(): void;
 }
 
 /** The rows under the header (or under the entry's row, in the panel). */
 export function renderAppearsInList(parent: HTMLElement, ai: AppearsIn, o: ListOptions): void {
   const note = o.variant === "note";
+  if (note && o.compact) {
+    renderCompactList(parent, ai, o);
+    return;
+  }
   for (const w of ai.works) {
     const { name, form } = o.labels.work(w.work);
     const book = w.firstChapter !== undefined || w.notes.length > 1;
@@ -78,6 +88,23 @@ export function renderAppearsInList(parent: HTMLElement, ai: AppearsIn, o: ListO
   head.addEventListener("click", () => o.toggleOther());
   if (!open) return;
   for (const n of ai.other) row(parent, o, { cls: "is-chapter", text: o.labels.note(n.path), count: fmt(n.count), target: n });
+}
+
+/** The phone's list: a few works with their counts, no chapters, then "more N" (board AppearsInStates k). */
+function renderCompactList(parent: HTMLElement, ai: AppearsIn, o: ListOptions): void {
+  const { shown, hidden } = compactWorks(ai, appearsInOpen.more);
+  for (const w of shown) {
+    const first = w.notes[0];
+    if (!first) continue;
+    const { name, form } = o.labels.work(w.work);
+    row(parent, o, { cls: "is-work", text: name, form, count: mentionsLabel(w.count), target: first });
+  }
+  if (hidden === 0) return;
+  const more = parent.createEl("button", { cls: "escrita-ai-btn escrita-ai-row is-more" });
+  more.setAttribute("type", "button");
+  setIcon(more.createSpan({ cls: "escrita-ai-chevron" }), "chevron-right");
+  more.createSpan({ cls: "escrita-ai-name", text: t("universe.appears.more", { n: fmt(hidden) }) });
+  more.addEventListener("click", () => o.toggleMore?.());
 }
 
 /** A chapter of a book shows its file name ("03 O porão"); the book's own note shows the label. */

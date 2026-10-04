@@ -5,14 +5,14 @@
 // changes text (rule 2).
 
 import { StateEffect, type EditorState, type Extension } from "@codemirror/state";
-import { Decoration, ViewPlugin, type DecorationSet, type EditorView, type ViewUpdate } from "@codemirror/view";
-import { Platform, editorInfoField } from "obsidian";
+import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
+import { Keymap, Platform, editorInfoField } from "obsidian";
 import { findNames, type TermTable } from "../core/names";
 import { segmentDoc } from "../core/markdown";
 import type { NamesProvider } from "../core/names-source";
 import { readerMask } from "../core/wordcount";
 import {
-  hasMarks, mapDirty, mapMarks, markableTable, marksOf, rematch, visibleMarks,
+  entryAt, hasMarks, mapDirty, mapMarks, markAt, markableTable, marksOf, rematch, visibleMarks,
   type Range,
 } from "./name-marks-model";
 
@@ -24,7 +24,12 @@ export interface NameMarksDeps {
   spellcheckWorks?: () => boolean;
   /** The note's path, or null. Default: the editor's file. */
   pathOf?: (state: EditorState) => string | null;
+  /** Ctrl/Cmd-click on a marked name opens its entry (board AppearsInStates g). Without it the click does nothing special. */
+  open?: (entryPath: string, evt: MouseEvent) => void;
 }
+
+/** Gate G0c: whether `spellcheck="false"` on a span removes the squiggle. True until a device says otherwise; flip it here. */
+export const SPELLCHECK_MARKS_WORK = true;
 
 export const DEBOUNCE_MS = 400;
 export const DEBOUNCE_MOBILE_MS = 800;
@@ -62,7 +67,7 @@ export class NameMarks {
       private marks: Range[] = [];
       private dirty: Range[] = [];
       private path: string | null = null;
-      private table: TermTable | null = null;
+      private tableSig: string | null = null;
       private version = -1;
       private full = true;
       private timer: number | null = null;
@@ -95,6 +100,9 @@ export class NameMarks {
         if (redraw) this.decorations = this.build();
       }
 
+      /** The mark under a document position, as its range. */
+      markAt(pos: number): { from: number; to: number } | null { return markAt(this.marks, pos); }
+
       destroy(): void {
         self.views.delete(this.view);
         if (this.timer !== null) window.clearTimeout(this.timer);
@@ -121,21 +129,21 @@ export class NameMarks {
           this.marks = [];
           this.dirty = [];
           this.path = path;
-          this.table = table;
+          this.tableSig = table?.signature ?? null;
           this.version = version;
           this.full = false;
           return;
         }
         const mask = readerMask(segmentDoc(state.doc));
         const find = (from: number, to: number) => findNames(mask, table, from, to);
-        if (this.full || path !== this.path || version !== this.version || table !== this.table) {
+        if (this.full || path !== this.path || version !== this.version || table.signature !== this.tableSig) {
           this.marks = marksOf(find(0, mask.length));
         } else if (this.dirty.length > 0) {
           this.marks = rematch(this.marks, mask, this.dirty, find);
         }
         this.dirty = [];
         this.path = path;
-        this.table = table;
+        this.tableSig = table.signature;
         this.version = version;
         this.full = false;
       }
@@ -148,7 +156,26 @@ export class NameMarks {
       }
     }, { decorations: (v) => v.decorations });
 
-    this.extension = [plugin];
+    const click = EditorView.domEventHandlers({
+      mousedown(evt, view) {
+        if (!self.deps.open || !Keymap.isModEvent(evt)) return false;
+        const target = evt.target;
+        if (!(target instanceof HTMLElement)) return false;
+        const el = target.closest(".escrita-name-mark");
+        if (!el) return false;
+        const inst = view.plugin(plugin);
+        const path = pathOf(view.state);
+        if (!inst || path === null) return false;
+        const mark = inst.markAt(view.posAtDOM(el, 0));
+        if (!mark) return false;
+        const entry = entryAt(view.state.sliceDoc(mark.from, mark.to), self.deps.names.tableFor(path));
+        if (!entry) return false;
+        evt.preventDefault();
+        self.deps.open(entry, evt);
+        return true;
+      },
+    });
+    this.extension = [plugin, click];
     // A change of names (an entry added, renamed, the language) means a full pass.
     this.off = deps.names.onChange(() => this.refresh(true));
   }
@@ -158,7 +185,9 @@ export class NameMarks {
     for (const v of [...this.views]) v.dispatch({ effects: refreshEffect.of({ full }) });
   }
 
+  /** Stops listening for name changes. The per-editor timers go with each ViewPlugin's destroy, when the slot empties. */
   dispose(): void {
     this.off();
+    this.views.clear();
   }
 }

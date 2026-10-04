@@ -71,6 +71,27 @@ describe("lens lifecycle", () => {
     expect(v.getDisplayText()).toBe("Escrita");
   });
 
+  it("drops its names listener on unload, and a names change after that wakes nothing (finding 18)", () => {
+    const names = plugin.names;
+    const orig = names.onChange.bind(names);
+    const subs = { on: 0, off: 0 };
+    names.onChange = (cb: () => void) => {
+      subs.on++;
+      const stop = orig(cb);
+      return () => { subs.off++; stop(); };
+    };
+    reg.apply();
+    expect(subs.on).toBe(1);
+    expect(subs.off).toBe(0);
+    turn(false);
+    expect(subs.off).toBe(1);
+    // a provider coming or going now calls nothing of the lens's
+    const lensInvalidate = vi.spyOn(lens as unknown as { invalidate(): void }, "invalidate");
+    const withdraw = names.provide({ tableFor: () => ({ terms: [], lang: null, signature: "" }), entryFor: () => null, version: () => 0, onChange: () => () => {} });
+    withdraw();
+    expect(lensInvalidate).not.toHaveBeenCalled();
+  });
+
   it("clears a pending pass timer on unload", () => {
     reg.apply();
     const session = (lens as unknown as { session: { toggle(p: string): boolean; changed(p: string, t: () => string): number } }).session;

@@ -6,7 +6,7 @@ import { segment } from "../core/markdown";
 import { findNames, type TermTable } from "../core/names";
 import { readerMask } from "../core/wordcount";
 import { fmt, plural, t } from "../i18n";
-import type { AppearsIn } from "./mentions";
+import type { AppearsIn, MentionRow, WorkMentions } from "./mentions";
 
 export function worksLabel(n: number): string {
   return plural("universe.view.count.works", n);
@@ -85,4 +85,34 @@ export function mentionStillThere(
   if (/^\[\[[^\]\n]*\]\]$/.test(slice) || /^\[[^\]\n]*\]\([^)\n]*\)$/.test(slice)) return true;
   const found = findNames(readerMask(segment(text)), table, from, to);
   return found.some((o) => o.from === from && o.to === to && o.candidates.some((c) => c.id === entry));
+}
+
+/** How many works the phone's compact section lists before the "more" row (board AppearsInStates k). */
+export const PHONE_WORKS_SHOWN = 2;
+
+/** The compact layout's works: the first few, or all once "more" was opened; `hidden` is what the row counts. */
+export function compactWorks(ai: AppearsIn, expanded: boolean, limit = PHONE_WORKS_SHOWN): { shown: WorkMentions[]; hidden: number } {
+  if (expanded || ai.works.length <= limit) return { shown: ai.works, hidden: 0 };
+  return { shown: ai.works.slice(0, limit), hidden: ai.works.length - limit };
+}
+
+const sameRow = (a: MentionRow, b: MentionRow): boolean =>
+  a.path === b.path && a.count === b.count && a.first.from === b.first.from && a.first.to === b.first.to;
+
+/**
+ * Whether two answers draw the same section: the same counts, rows and ranges (a click uses
+ * the row's range, so a moved range must redraw). Compared by value, never by identity, so the
+ * widget keeps its DOM while the cache hands out a fresh object (finding 17).
+ */
+export function sameAppearsIn(a: AppearsIn | "counting", b: AppearsIn | "counting"): boolean {
+  if (a === "counting" || b === "counting") return a === b;
+  if (a === b) return true;
+  if (a.total !== b.total || a.workCount !== b.workCount || a.works.length !== b.works.length || a.other.length !== b.other.length) return false;
+  for (let i = 0; i < a.works.length; i++) {
+    const x = a.works[i]!;
+    const y = b.works[i]!;
+    if (x.work !== y.work || x.count !== y.count || x.firstChapter !== y.firstChapter || x.lastChapter !== y.lastChapter) return false;
+    if (x.notes.length !== y.notes.length || !x.notes.every((n, k) => sameRow(n, y.notes[k]!))) return false;
+  }
+  return a.other.every((n, k) => sameRow(n, b.other[k]!));
 }

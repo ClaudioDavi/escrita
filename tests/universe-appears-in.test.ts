@@ -3,7 +3,7 @@ import { registerStrings } from "../src/i18n";
 import { compileTerms, type NameSource } from "../src/core/names";
 import { universeViewStrings } from "../src/universe/view-strings";
 import {
-  baseName, chapterParts, chapterRef, countLabel, countTip, firstLastLine, mentionStillThere, summaryLine,
+  baseName, chapterParts, chapterRef, compactWorks, countLabel, countTip, firstLastLine, mentionStillThere, sameAppearsIn, summaryLine,
 } from "../src/universe/appears-in-model";
 import type { AppearsIn } from "../src/universe/mentions";
 
@@ -79,5 +79,41 @@ describe("mentionStillThere", () => {
     const edited = "Ontem a `Mariana` voltou.";
     const r = { from: edited.indexOf("Mariana"), to: edited.indexOf("Mariana") + 7 };
     expect(mentionStillThere(edited, r, table, "Mariana.md")).toBe(false);
+  });
+});
+
+const row = (path: string, count = 1, from = 0) => ({ path, count, first: { from, to: from + 3 } });
+const work = (name: string, n = 1): AppearsIn["works"][number] => ({ work: name, count: n, notes: [row(name, n)] });
+const full = (works: AppearsIn["works"], other: AppearsIn["other"] = []): AppearsIn => ({
+  works, other, total: works.reduce((a, w) => a + w.count, 0) + other.length, workCount: works.length,
+});
+
+describe("sameAppearsIn compares by value (finding 17)", () => {
+  it("two separately built, equal answers are the same section", () => {
+    expect(sameAppearsIn(full([work("A.md", 2), work("B.md")]), full([work("A.md", 2), work("B.md")]))).toBe(true);
+  });
+  it("a count, a row, a range or the other notes make it different", () => {
+    const base = full([work("A.md", 2)], [row("x.md")]);
+    expect(sameAppearsIn(base, full([work("A.md", 3)], [row("x.md")]))).toBe(false);
+    expect(sameAppearsIn(base, full([work("A.md", 2), work("B.md")], [row("x.md")]))).toBe(false);
+    expect(sameAppearsIn(base, full([work("A.md", 2)], []))).toBe(false);
+    expect(sameAppearsIn(base, full([{ ...work("A.md", 2), notes: [row("A.md", 2, 9)] }], [row("x.md")]))).toBe(false);   // a click selects that range
+  });
+  it("counting is only equal to counting", () => {
+    expect(sameAppearsIn("counting", "counting")).toBe(true);
+    expect(sameAppearsIn("counting", full([]))).toBe(false);
+  });
+});
+
+describe("the phone's compact works (board AppearsInStates k)", () => {
+  const four = full([work("A.md"), work("B.md"), work("C.md"), work("D.md")]);
+  it("shows two works and counts the rest for the more row", () => {
+    const c = compactWorks(four, false);
+    expect(c.shown.map((w) => w.work)).toEqual(["A.md", "B.md"]);
+    expect(c.hidden).toBe(2);
+  });
+  it("shows everything once opened, or when there is nothing to hide", () => {
+    expect(compactWorks(four, true)).toEqual({ shown: four.works, hidden: 0 });
+    expect(compactWorks(full([work("A.md"), work("B.md")]), false).hidden).toBe(0);
   });
 });
