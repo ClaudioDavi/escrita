@@ -1,0 +1,13 @@
+/* Name marks (0.7 plan 4.4). The mark itself draws nothing: it carries spellcheck="false" so
+   an entry's name is not squiggled. The underline is the optional visible class. */
+.escrita-name-underline {
+	text-decoration-line: underline;
+	text-decoration-style: solid;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 4px;
+	text-decoration-color: color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+}
+/* With dialogue focus the name dims with the narration; the underline stays, fainter. */
+.escrita-name-underline:has(.escrita-dialogue-dim) {
+	text-decoration-color: color-mix(in srgb, var(--interactive-accent) 30%, transparent);
+}
