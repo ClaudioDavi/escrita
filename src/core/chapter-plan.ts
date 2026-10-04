@@ -2,7 +2,7 @@
 // Everything works on basenames (file names without ".md").
 
 import { numberedName, type RenamePlan } from "./book";
-import { hasFrontmatter, renderTemplate, yamlKey, type TemplateVars } from "./template";
+import { hasFrontmatter, renderTemplate, splitTemplate, yamlKey, type TemplateVars } from "./template";
 
 // The template pieces moved to core/template.ts; re-exported for existing importers.
 export { hasFrontmatter, renderTemplate, templateVars, type TemplateVars } from "./template";
@@ -143,15 +143,32 @@ export function buildChapterContent(
   vars: TemplateVars,
   summaryProperty: string,
   body?: string,
+  status?: { property: string; word: string },
 ): string {
   let content = template ? renderTemplate(template, vars) : "";
   if (!hasFrontmatter(content)) {
     const eol = content.includes("\r\n") ? "\r\n" : "\n";
     content = `---${eol}${yamlKey(summaryProperty || "summary")}: ""${eol}---${eol}` + content;
   }
+  if (status) content = withProperty(content, status.property, status.word);
   if (body) {
     const eol = content.includes("\r\n") ? "\r\n" : "\n";
     content += (content.endsWith("\n") ? "" : eol) + body;
   }
   return content;
+}
+
+/**
+ * `text` (which starts with frontmatter) with `key: value` as its first property,
+ * unless a property of that key is already there (keys compare without case):
+ * a template's own value wins.
+ */
+export function withProperty(text: string, key: string, value: string): string {
+  const k = key.trim();
+  if (!k || !hasFrontmatter(text)) return text;
+  if (splitTemplate(text).properties.some((p) => p.key.toLowerCase() === k.toLowerCase())) return text;
+  const eol = text.includes("\r\n") ? "\r\n" : "\n";
+  const v = /^[\p{L}][\p{L}\p{N}_-]*$/u.test(value) ? value : JSON.stringify(value);
+  const firstEnd = text.indexOf("\n") + 1;
+  return text.slice(0, firstEnd) + `${yamlKey(k)}: ${v}${eol}` + text.slice(firstEnd);
 }

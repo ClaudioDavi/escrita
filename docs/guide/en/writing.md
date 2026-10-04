@@ -99,3 +99,7 @@ property is a setting (**Chapter target property**).
 | Drag doesn't work | A filter is on | Click **Clear** |
 | A chapter has no bar | No target of its own and no `chapterTarget` on the book | Add one of them |
 | The bar uses the wrong unit | The chapter's `unit` or the book's `unit` says so | Change or remove the property |
+
+## New notes start as draft
+
+A new book or chapter, and a note you create in a tracked folder (from Obsidian's *New note* or from a template), gets your first draft word as its `status`, unless it already has one. Escrita waits a moment after the note is created, so a template's own status wins. Templates, universe entries and Escrita's own notes (home, word lists, universe note) are left alone. Only the properties change. Turn it off in Settings → Stages, "New notes start as draft".

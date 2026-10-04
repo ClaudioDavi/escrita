@@ -306,7 +306,7 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 - Word counts in the explorer, spellcheck on demand and the universe mode moved to the Features page as switches.
 - The piece property names and the track folders moved to a section called "Properties and folders".
 - Drag and renumbering in the outline pause while it is filtered, and Tab no longer turns a chapter (or a new line) into a beat of a chapter the filter hides.
-- "Create a book" starts the book in the draft stage, with your first draft status word. In "Appears in", a book counts as a work even before its note has a status.
+- New books and chapters, and notes you create in a tracked folder, start in the draft stage: they get your first draft status word unless they (or their template) already have a status. Templates, universe entries and Escrita's own notes are left alone. Turn it off in Settings → Stages, "New notes start as draft". In "Appears in", a book counts as a work even before its note has a status.
 - A feature turned off keeps its ribbon icon until you restart Obsidian (a click says the feature is off), and on a phone a command pinned to the mobile toolbar keeps a dead button until you restart.
 - Internal: modules now load and unload at runtime, and the outline reads each chapter through one row loader.
 

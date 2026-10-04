@@ -102,3 +102,7 @@ configuração (**Propriedade da meta dos capítulos**).
 | Arrastar não funciona | Há um filtro ligado | Clique em **Limpar** |
 | Um capítulo não tem barra | Sem meta própria e sem `chapterTarget` no livro | Acrescente um dos dois |
 | A barra usa a unidade errada | O `unit` do capítulo ou do livro diz isso | Mude ou remova a propriedade |
+
+## Notas novas começam como rascunho
+
+Um livro ou capítulo novo, e uma nota que você cria numa pasta contada (pelo *Nova nota* do Obsidian ou a partir de um modelo), recebe a sua primeira palavra de rascunho como `status`, a menos que já tenha um. O Escrita espera um instante depois que a nota é criada, para que o status do modelo valha. Modelos, entradas do universo e as notas do próprio Escrita (nota inicial, listas de palavras, nota do universo) ficam como estão. Só as propriedades mudam. Para desligar: Configurações → Estágios, "Notas novas começam como rascunho".

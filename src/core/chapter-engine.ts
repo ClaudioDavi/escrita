@@ -24,6 +24,8 @@ export interface CreateOptions {
   /** file-safe fallback title */
   untitled: string;
   now?: Date;
+  /** a status to add when the template has none (the writer's draft word) */
+  status?: { property: string; word: string };
 }
 
 /** Runs async jobs one at a time, in call order. A failed job doesn't block the next. */
@@ -51,7 +53,7 @@ export async function createChapter<F>(
   if (after.has(plan.name.toLowerCase())) throw new ChapterError("exists", plan.name);
 
   for (const s of steps) await fs.rename(s.from, s.to);
-  const content = buildChapterContent(await fs.template(), templateVars(safe, opts.now ?? new Date()), opts.summaryProperty, body);
+  const content = buildChapterContent(await fs.template(), templateVars(safe, opts.now ?? new Date()), opts.summaryProperty, body, opts.status);
   return fs.create(plan.name, content);
 }
 

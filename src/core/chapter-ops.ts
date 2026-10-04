@@ -5,6 +5,13 @@ import { safeFileName } from "./book";
 import { t } from "../i18n";
 import { ChapterError, retitledName } from "./chapter-plan";
 import { SerialQueue, createChapter, renumberChapters, type ChapterFs } from "./chapter-engine";
+import { writtenWord } from "./stages";
+import type { EscritaSettings } from "../settings";
+
+/** The status a new chapter gets when its template has none, or none when the writer turned it off. */
+function draftStatus(s: EscritaSettings): { property: string; word: string } | undefined {
+  return s.draftNewNotes ? { property: s.statusProperty, word: writtenWord(s.stages, "draft") } : undefined;
+}
 
 /**
  * File operations on a book's chapters. Every chapter create/move goes through
@@ -30,6 +37,7 @@ export class ChapterOps {
       const s = this.plugin.settings;
       return createChapter(this.fs(book), at, title, {
         pad: s.numberPadding, summaryProperty: s.summaryProperty, untitled: t("common.untitled"),
+        status: draftStatus(s),
       }, body);
     });
   }
@@ -47,6 +55,7 @@ export class ChapterOps {
       const s = this.plugin.settings;
       return createChapter(this.fs(book), chapter.index, title, {
         pad: s.numberPadding, summaryProperty: s.summaryProperty, untitled: t("common.untitled"),
+        status: draftStatus(s),
       }, body);
     });
   }

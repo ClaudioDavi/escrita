@@ -1,4 +1,4 @@
-import { Plugin, debounce, setTooltip } from "obsidian";
+import { Plugin, TFile, debounce, setTooltip } from "obsidian";
 import { DEFAULT_SETTINGS, EscritaSettingTab, normalizeSettings, type EscritaSettings } from "./settings";
 import type { EscritaData, PublishRecord } from "./data";
 import { mergeDefaults } from "./core/merge";
@@ -10,6 +10,9 @@ import { BookService } from "./core/books";
 import { Measurer } from "./core/measurer";
 import { ExplorerDecorations } from "./core/explorer-decorations";
 import { ChapterOps } from "./core/chapter-ops";
+import { needsDraftStatus } from "./core/new-note-status";
+import { writtenWord } from "./core/stages";
+
 import { NoteService } from "./core/notes";
 import { GoalsModule } from "./goals";
 import { goalsStrings } from "./goals/strings";
@@ -49,6 +52,9 @@ import { universeStrings } from "./universe/strings";
 import { universeViewStrings } from "./universe/view-strings";
 import { universeCreateStrings } from "./universe/create-strings";
 import { universeMigrateStrings } from "./universe/migrate-strings";
+
+/** How long after a note is created before its status is checked: templates land first. */
+const DRAFT_DELAY_MS = 1500;
 
 /** The reusable vault index (0.4 task 3.x fills it in). */
 export interface VaultIndexes {
@@ -152,6 +158,44 @@ export default class EscritaPlugin extends Plugin {
     this.features.apply();
 
     this.addSettingTab(new EscritaSettingTab(this.app, this));
+
+    // A note the writer creates in a tracked folder starts in the draft stage. Only after
+    // the layout is ready (the vault fires "create" for every file while it loads), and a
+    // moment later, so a template has landed first and its own status wins.
+    this.app.workspace.onLayoutReady(() => {
+      this.registerEvent(this.app.vault.on("create", (f) => {
+        if (!(f instanceof TFile) || f.extension !== "md" || !this.settings.draftNewNotes) return;
+        const id = window.setTimeout(() => { this.draftTimers.delete(id); void this.draftIfNew(f); }, DRAFT_DELAY_MS);
+        this.draftTimers.add(id);
+      }));
+    });
+    this.register(() => { for (const id of this.draftTimers) window.clearTimeout(id); this.draftTimers.clear(); });
+  }
+
+  private draftTimers = new Set<number>();
+
+  /** Write the draft word into a just-created note's status, unless it has one (or shouldn't have one). */
+  private async draftIfNew(file: TFile): Promise<void> {
+    const s = this.settings;
+    if (!s.draftNewNotes || this.app.vault.getAbstractFileByPath(file.path) !== file) return;
+    const prop = s.statusProperty;
+    const o = {
+      statusProperty: prop,
+      typeProperty: s.typeProperty,
+      templateFolders: [s.templatesFolder],
+      ownNotes: [s.homeNote, s.lensListsNote, s.universeNote, s.chapterTemplate],
+    };
+    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+    if (!needsDraftStatus(this.books.classify(file), fm, o)) return;
+    const word = writtenWord(s.stages, "draft");
+    try {
+      // checked again inside: the file may have gained a status since the cache was read
+      await this.app.fileManager.processFrontMatter(file, (front: Record<string, unknown>) => {
+        if (needsDraftStatus(this.books.classify(file), front, o)) front[prop] = word;
+      });
+    } catch {
+      // a note that can't take properties (broken frontmatter) is left as it is
+    }
   }
 
   onunload(): void {

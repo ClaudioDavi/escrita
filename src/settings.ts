@@ -7,7 +7,7 @@ import { lensLang } from "./lens/lang";
 import { RULES } from "./lens/types";
 import { cleanWeekdays } from "./core/merge";
 import { invalidDatesOff } from "./core/daysoff";
-import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, STAGES, hexColor, normalizeStages, stageConflicts, type Stage, type StageMapping } from "./core/stages";
+import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, STAGES, hexColor, normalizeStages, stageConflicts, writtenWord, type Stage, type StageMapping } from "./core/stages";
 import { FEATURE_SPECS, cleanFeatures, wanted, type FeatureId, type FeatureGroup, type FeatureSwitches } from "./core/features";
 import { renderUniverseSettings } from "./universe/settings-ui";
 import { defaultUniverseSettings, normalizeUniverse, type UniverseMode, type UniverseSettings } from "./universe/settings";
@@ -29,6 +29,8 @@ export interface EscritaSettings extends UniverseSettings {
   stages: StageMapping;
   /** "value = #hex" lines for chapter-only statuses and colors the picker can't show */
   otherStatusColors: string;
+  /** new chapters and notes created in track folders get the draft word as their status */
+  draftNewNotes: boolean;
   /** path of the home note; empty = none */
   homeNote: string;
   openHomeOnStartup: boolean;
@@ -133,6 +135,7 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   statusProperty: "status",
   stages: DEFAULT_STAGES,
   otherStatusColors: "",
+  draftNewNotes: true,
   homeNote: "",
   openHomeOnStartup: false,
   summaryProperty: "summary",
@@ -204,6 +207,7 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   s.statusProperty = (typeof s.statusProperty === "string" ? s.statusProperty.trim() : "") || DEFAULT_STATUS_PROPERTY;
   s.homeNote = typeof s.homeNote === "string" ? s.homeNote.trim() : DEFAULT_SETTINGS.homeNote;
   if (typeof s.otherStatusColors !== "string") s.otherStatusColors = DEFAULT_SETTINGS.otherStatusColors;
+  if (typeof s.draftNewNotes !== "boolean") s.draftNewNotes = DEFAULT_SETTINGS.draftNewNotes;
   for (const k of PROPERTY_KEYS) s[k] = (typeof s[k] === "string" ? s[k].trim() : "") || DEFAULT_SETTINGS[k];
   s.snapshotsFolder = snapshotsRoot(s.snapshotsFolder);
   s.snapshotsKeepAuto = Number.isFinite(s.snapshotsKeepAuto) ? Math.max(1, Math.round(s.snapshotsKeepAuto)) : DEFAULT_SETTINGS.snapshotsKeepAuto;
@@ -235,7 +239,7 @@ const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadl
  */
 export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "always">> = {
   chaptersFolder: "always", chapterTemplate: "always", numberPadding: "always",
-  statusProperty: "always", summaryProperty: "always", stages: "always", otherStatusColors: "always",
+  statusProperty: "always", summaryProperty: "always", stages: "always", otherStatusColors: "always", draftNewNotes: "always",
   lensLanguage: "always",
   targetProperty: "always", limitProperty: "always", unitProperty: "always", deadlineProperty: "always",
   goalProperty: "always", povProperty: "always", chapterTargetProperty: "always",
@@ -862,6 +866,12 @@ export class EscritaSettingTab extends PluginSettingTab {
       c.inputEl.addClass("escrita-mono");
       c.inputEl.setAttr("aria-label", t("settings.otherStatusColors"));
     });
+
+    new Setting(containerEl)
+      .setName(t("settings.draftNewNotes"))
+      .setDesc(t("settings.draftNewNotes.desc", { word: writtenWord(s.stages, "draft") }))
+      .addToggle((c) => c.setValue(s.draftNewNotes)
+        .onChange(async (v) => { s.draftNewNotes = v; await save(); }));
   }
 
   /** The home note rows, shown while the desk is on. */
