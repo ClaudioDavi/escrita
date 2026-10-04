@@ -1,12 +1,14 @@
 // The Entries tab (board 15): search, one group per entry type, the entry menu.
 
-import { Menu, Notice, TFile, setIcon } from "obsidian";
+import { Menu, Notice, TFile, setIcon, setTooltip } from "obsidian";
 import type { EntryKind } from "./settings";
 import { t } from "../i18n";
 import { groupByKind, searchEntries, type Entry } from "./entries";
 import { linkInsertPoint, splitHighlight } from "./panel-model";
 import { createEntryFromSelection } from "./create";
 import { FOCUS_ATTR, openNote, type PanelCtx } from "./view-parts";
+import { appearsInOpen, defaultLabels, openMention, renderAppearsInList } from "./appears-in";
+import { countLabel, countTip, worksLabel } from "./appears-in-model";
 
 /**
  * The group heading: the last segment of the type's folder, which is the writer's own
@@ -93,13 +95,45 @@ function drawEntry(list: HTMLElement, ctx: PanelCtx, e: Entry, isActive: boolean
   const row = list.createDiv({ cls: isActive ? "escrita-universe-entry is-active" : "escrita-universe-entry" });
   row.setAttribute("role", "button");
   row.tabIndex = 0;
-  highlighted(row.createSpan({ cls: "escrita-universe-entry-name" }), e.name, ctx.query);
-  if (e.aliases.length > 0) highlighted(row.createSpan({ cls: "escrita-universe-entry-alias" }), e.aliases.join(", "), ctx.query);
+  const text = row.createDiv({ cls: "escrita-universe-entry-text" });
+  highlighted(text.createSpan({ cls: "escrita-universe-entry-name" }), e.name, ctx.query);
+  if (e.aliases.length > 0) highlighted(text.createSpan({ cls: "escrita-universe-entry-alias" }), e.aliases.join(", "), ctx.query);
   row.addEventListener("click", (evt) => { void openNote(ctx.plugin, e.path, evt); });
   row.addEventListener("keydown", (evt) => {
+    if (evt.target !== row) return;   // the count button handles its own keys
     if (evt.key === "Enter" || evt.key === " ") { evt.preventDefault(); void openNote(ctx.plugin, e.path, evt); }
   });
   row.addEventListener("contextmenu", (evt) => { evt.preventDefault(); entryMenu(ctx, e).showAtMouseEvent(evt); });
+  drawCount(list, row, ctx, e);
+}
+
+/** The count beside the name (board 23a): a button that opens the list under the row. Nothing at zero or while unknown. */
+function drawCount(list: HTMLElement, row: HTMLElement, ctx: PanelCtx, e: Entry): void {
+  const ai = ctx.appearsIn?.(e.path) ?? null;
+  const label = ai ? countLabel(ai) : null;
+  if (!ai || label === null) return;
+  const works = ctx.counts?.(e.path) ?? ai.workCount;
+  const open = appearsInOpen.panel.has(e.path);
+  row.toggleClass("is-expanded", open);
+  const btn = row.createEl("button", { cls: open ? "escrita-ai-btn escrita-ai-count is-open" : "escrita-ai-btn escrita-ai-count" });
+  btn.setAttribute("type", "button");
+  btn.setAttribute("aria-expanded", String(open));
+  btn.setText(works === ai.workCount ? label : worksLabel(works));
+  setTooltip(btn, countTip(ai), { placement: "top" });
+  btn.addEventListener("click", (evt) => {
+    evt.stopPropagation();
+    if (open) appearsInOpen.panel.delete(e.path);
+    else appearsInOpen.panel.add(e.path);
+    ctx.refresh();
+  });
+  if (!open) return;
+  const box = list.createDiv({ cls: "escrita-ai-panel" });
+  renderAppearsInList(box, ai, {
+    variant: "panel",
+    labels: ctx.appearsLabels ?? defaultLabels,
+    open: (path, range, evt) => { void openMention(ctx.plugin, e.path, path, range, evt, true); },
+    toggleOther: () => { appearsInOpen.other = !appearsInOpen.other; ctx.refresh(); },
+  });
 }
 
 function entryMenu(ctx: PanelCtx, e: Entry): Menu {

@@ -1,0 +1,165 @@
+/* "Appears in" (boards 23 and 24): the count in the Entries tab, the list under an entry's
+   row, and the section at the end of an entry note. */
+
+/* the entry row gains a count on the right; long names wrap before it */
+.escrita-universe-entry {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--size-4-2);
+}
+.escrita-universe-entry-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.escrita-universe-entry.is-expanded {
+  background: var(--background-modifier-hover);
+}
+
+/* plain buttons: Obsidian's `button:not(.clickable-icon)` would paint them raised */
+button.escrita-ai-btn {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+button.escrita-ai-btn:hover,
+button.escrita-ai-btn:focus-visible {
+  background: var(--background-modifier-hover);
+  box-shadow: none;
+}
+button.escrita-ai-count {
+  flex: 0 0 auto;
+  min-height: 32px;
+  margin-right: calc(var(--size-4-2) * -1);
+  padding: 0 var(--size-4-2);
+  border-radius: var(--radius-s);
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  white-space: nowrap;
+}
+button.escrita-ai-count.is-open {
+  color: var(--text-accent);
+}
+
+/* the list (shared by the panel and the note) */
+.escrita-ai-panel {
+  display: flex;
+  flex-direction: column;
+  padding: var(--size-4-1) 0 var(--size-4-2) var(--size-4-6);
+  background: var(--background-secondary-alt);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.escrita-ai-row {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  min-height: 32px;
+  padding: 0 var(--size-4-4) 0 0;
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-small);
+  text-align: left;
+  cursor: pointer;
+}
+button.escrita-ai-row {
+  width: 100%;
+  color: var(--text-muted);
+}
+.escrita-ai-row.is-chapter {
+  padding-left: var(--size-4-4);
+  color: var(--text-muted);
+}
+.escrita-ai-row:hover .escrita-ai-name {
+  color: var(--text-accent);
+}
+.escrita-ai-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.escrita-ai-n {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.escrita-ai-form {
+  flex: 0 0 auto;
+  padding: 0 6px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+.escrita-ai-chevron {
+  display: inline-flex;
+  color: var(--text-faint);
+}
+.escrita-ai-chevron svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* the entry note's section: after the last line of the note */
+.escrita-ai-wrap {
+  margin: var(--size-4-8) 0 var(--size-4-4);
+}
+.escrita-ai-section {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--size-4-1);
+  border-top: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-small);
+}
+.escrita-ai-head {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  min-height: 36px;
+  padding: 0;
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+  text-align: left;
+}
+.escrita-ai-head.is-static {
+  cursor: default;
+}
+.escrita-ai-summary {
+  color: var(--text-muted);
+  font-weight: var(--font-normal);
+}
+.escrita-ai-section .escrita-ai-row {
+  padding-right: 0;
+  color: var(--text-normal);
+}
+.escrita-ai-section .escrita-ai-row.is-chapter {
+  padding-left: var(--size-4-4);
+  color: var(--text-muted);
+}
+.escrita-ai-section .escrita-ai-n {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+.escrita-ai-section .is-chapter .escrita-ai-n {
+  font-size: var(--font-ui-smaller);
+}
+.escrita-ai-firstlast {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  padding-left: var(--size-4-4);
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
+/* phone: 44px targets, and the section takes the whole width */
+.is-mobile .escrita-ai-row,
+.is-mobile .escrita-ai-head,
+.is-mobile button.escrita-ai-count {
+  min-height: 44px;
+}

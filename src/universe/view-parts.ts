@@ -5,6 +5,8 @@ import { Keymap, Notice, TFile, type Editor } from "obsidian";
 import type EscritaPlugin from "../main";
 import { t } from "../i18n";
 import type { Scope } from "./scope";
+import type { AppearsIn } from "./mentions";
+import type { AppearsInLabels } from "./appears-in";
 
 /** The thread whose close form is open: its key (path and offset), the typed answer, and whether the input still needs focus. */
 export interface ClosingForm {
@@ -28,6 +30,12 @@ export interface PanelCtx {
   openClose(key: string | null): void;
   /** re-render the whole panel now */
   refresh(): void;
+  /** works an entry appears in; null while unknown (index building) or not wired. Beside the name in the Entries tab (4.2). */
+  counts?: (path: string) => number | null;
+  /** the mentions of an entry, grouped; null while unknown. Opened from the count under the entry's row. */
+  appearsIn?: (path: string) => AppearsIn | null;
+  /** how the list names works and chapters */
+  appearsLabels?: AppearsInLabels;
   /** the editor of the last markdown note the writer had open, with its path */
   lastEditor(): { editor: Editor; path: string } | null;
 }

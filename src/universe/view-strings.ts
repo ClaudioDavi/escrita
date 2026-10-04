@@ -98,6 +98,16 @@ export const universeViewStrings: Strings = {
     "universe.view.form.poem": "Poems",
     "universe.view.form.fragment": "Fragments",
     "universe.view.noWords": "—",
+
+    "universe.appears.title": "Appears in",
+    "universe.appears.mentions.one": "{n} mention",
+    "universe.appears.mentions.other": "{n} mentions",
+    "universe.appears.tip": "{mentions} in {works}",
+    "universe.appears.counting": "counting…",
+    "universe.appears.none": "no works yet",
+    "universe.appears.other": "Other notes",
+    "universe.appears.first": "first in ch. {ref}",
+    "universe.appears.last": "last in ch. {ref}",
   },
   "pt-BR": {
     "universe.view.title": "Universo",
@@ -195,5 +205,15 @@ export const universeViewStrings: Strings = {
     "universe.view.form.poem": "Poemas",
     "universe.view.form.fragment": "Fragmentos",
     "universe.view.noWords": "—",
+
+    "universe.appears.title": "Aparece em",
+    "universe.appears.mentions.one": "{n} menção",
+    "universe.appears.mentions.other": "{n} menções",
+    "universe.appears.tip": "{mentions} em {works}",
+    "universe.appears.counting": "contando…",
+    "universe.appears.none": "nenhuma obra ainda",
+    "universe.appears.other": "Outras notas",
+    "universe.appears.first": "primeira no cap. {ref}",
+    "universe.appears.last": "última no cap. {ref}",
   },
 };

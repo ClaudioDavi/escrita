@@ -16,6 +16,7 @@ import { universeNotePath, universeRootOf, type Scope } from "./scope";
 import type { UniverseInfo } from "./index";
 import { FOCUS_ATTR, button, messageBlock, type ClosingForm, type PanelCtx } from "./view-parts";
 import { renderEntries } from "./view-entries";
+import type { AppearsInSource } from "./appears-in-widget";
 import { renderThreads, workResolver } from "./view-threads";
 import { countMissing, renderWorks, totalWords, wordsLabel } from "./view-works";
 
@@ -79,7 +80,12 @@ abstract class PanelBase extends ItemView {
   }
 
   protected ctx(scope: Scope): PanelCtx {
+    // 5.1 adds `appearsInSource()` to the universe module; until then no count shows (4.2)
+    const source = (this.plugin.universe as { appearsInSource?: () => AppearsInSource | null }).appearsInSource?.() ?? null;
     return {
+      counts: source ? (path) => { const a = source.appearsIn(path); return a && a !== "counting" ? a.workCount : null; } : undefined,
+      appearsIn: source ? (path) => { const a = source.appearsIn(path); return a === "counting" ? null : a; } : undefined,
+      appearsLabels: source?.labels(),
       plugin: this.plugin,
       scope,
       query: this.query,
@@ -234,8 +240,10 @@ export class UniverseView extends PanelBase {
       return;
     }
 
+    const threadsOn = this.plugin.features.isOn("threads");
     let tab = this.state.tab;
     if (tab === "works" && perBook) tab = "entries";
+    if (tab === "threads" && !threadsOn) tab = "entries";
     const sub = head.createSpan({ cls: "escrita-universe-sub" });
     if (tab === "threads") {
       sub.setText(this.state.showClosed && closedThreads > 0
@@ -261,7 +269,7 @@ export class UniverseView extends PanelBase {
       b.addEventListener("click", () => this.showTab(id));
     };
     add("entries", 0);
-    add("threads", openThreads);
+    if (threadsOn) add("threads", openThreads);
     if (!perBook) add("works", works.length);
 
     const body = el.createDiv({ cls: "escrita-universe-body" });
