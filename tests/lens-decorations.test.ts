@@ -19,7 +19,7 @@ describe("LensMarks adoption", () => {
   it("does not adopt a cached result computed on older text of the same length", () => {
     const session = new LensSession({
       timers: new ManualTimers(), settleMs: 400,
-      analyze: (text, version) => resultFor(text, version),
+      analyze: (_p, text, version) => resultFor(text, version),
     });
     session.toggle(PATH);
     session.now(PATH, "abc old text");
@@ -41,7 +41,7 @@ describe("LensMarks after an options change", () => {
     const o = { flagged: ["Mariana"] as string[] };
     const session = new LensSession({
       timers, settleMs: 400,
-      analyze: (text, version) => ({
+      analyze: (_p, text, version) => ({
         version,
         pass: { mask: text },
         matches: o.flagged.map((w) => {
@@ -109,7 +109,7 @@ describe("LensMarks after an options change", () => {
 
 describe("LensMarks refresh on invalidate", () => {
   it("asks every editor to re-read after an options change", () => {
-    const session = new LensSession({ timers: new ManualTimers(), settleMs: 400, analyze: (t, v) => resultFor(t, v) });
+    const session = new LensSession({ timers: new ManualTimers(), settleMs: 400, analyze: (_p, t, v) => resultFor(t, v) });
     const marks = new LensMarks(() => PATH, session, (p) => session.result(p));
     let calls = 0;
     (marks as unknown as { views: Set<unknown> }).views.add({ dispatch: () => { calls++; } });

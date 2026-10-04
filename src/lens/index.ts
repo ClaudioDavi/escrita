@@ -15,6 +15,7 @@ import type { VaultIndex } from "../core/vault-index";
 import { analyze, measuresFor, type AnalyzeOptions } from "./analyze";
 import { addDismissal, dismissalOf, mergeDismissals } from "./dismiss";
 import { lensLang } from "./lang";
+import { namesFor } from "./names";
 import { listsPath, parseLists, sameLists } from "./lists";
 import { LENS_SETTLE_MOBILE_MS, LENS_SETTLE_MS, LensSession } from "./session";
 import { shownResult } from "./shown";
@@ -78,13 +79,18 @@ export class LensModule extends FeatureModule {
         yieldNow: () => new Promise<void>((r) => window.setTimeout(r, 0)),
       },
       settleMs: isMobile() ? LENS_SETTLE_MOBILE_MS : LENS_SETTLE_MS,
-      analyze: (text, version) => {
-        const r = analyze(segment(text), this.options(), version);
+      analyze: (path, text, version) => {
+        const r = analyze(segment(text), this.options(path), version);
         this.texts.set(r.pass, text);
         return r;
       },
     });
     this.lastPassKey = this.passKey();
+    // a names change (universe edit, mode switch, provider in or out) starts a new generation
+    this.register(p.names.onChange(() => {
+      this.lastPassKey = this.passKey();
+      this.invalidate();
+    }));
 
     // the word lists note: re-parsed on edit, rebuilt when the setting changes
     const idx = ctx.index<TFile, Lists>({
@@ -147,7 +153,7 @@ export class LensModule extends FeatureModule {
     const s = this.plugin.settings;
     return JSON.stringify([
       s.lensLanguage, s.lensRulesOff, s.lensEchoWindow, s.lensLongSentence,
-      s.lensSkipQuotes, s.quoteStyle, s.paragraphStyle, listsPath(s.lensListsNote),
+      s.lensSkipQuotes, s.quoteStyle, s.paragraphStyle, listsPath(s.lensListsNote), this.plugin.names.version(),
     ]);
   }
 
@@ -209,15 +215,16 @@ export class LensModule extends FeatureModule {
     return this.plugin.app.vault.getAbstractFileByPath(path) !== null ? "ok" : "missing";
   }
 
-  private options(): AnalyzeOptions {
+  private options(path: string): AnalyzeOptions {
     const s = this.plugin.settings;
+    const lists = this.lists();
     const off = new Set(s.lensRulesOff);
     return {
       lang: this.lensLanguage(),
       rules: new Set<RuleId>(RULES.filter((r) => !off.has(r))),
       echoWindow: s.lensEchoWindow,
       longSentence: s.lensLongSentence,
-      lists: this.lists(),
+      lists: { ...lists, names: namesFor(lists.names, this.plugin.names.tableFor(path)) },
       skipQuotes: s.lensSkipQuotes,
       quoteStyle: s.quoteStyle,
       paragraphStyle: s.paragraphStyle,
@@ -239,7 +246,7 @@ export class LensModule extends FeatureModule {
     const result = on ? this.shown(path) : undefined;
     let selection: Measures | null = null;
     const range = result ? this.ui?.selectionFor(path, result) ?? null : null;
-    if (result && range) selection = measuresFor(result.pass, EMPTY_MD, this.options(), range);
+    if (result && range) selection = measuresFor(result.pass, EMPTY_MD, this.options(path), range);
     return { path, on, result, selection, ...base };
   }
 
