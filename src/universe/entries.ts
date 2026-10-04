@@ -18,9 +18,16 @@ export interface Entry {
   /** the `aliases` property, as written (strings only) */
   aliases: string[];
   kind: EntryKind;
-  /** the scope the entry belongs to, per scopeFor ("none" when it belongs to nothing) */
-  scope: Scope;
+  /** per-entry property `caseSensitive`: the name matches only with its own capitalization */
+  caseSensitive: boolean;
+  /** per-entry property `ignore`: phrases where the name must not match */
+  ignore: string[];
+  /** per-entry property `firstName`: false stops a character's first name matching on its own (default true) */
+  firstName: boolean;
 }
+
+/** An entry with the scope it belongs to, read live (never stored in the index, Q20). */
+export type ScopedEntry = Entry & { scope: Scope };
 
 const nfc = (s: string) => s.normalize("NFC").trim().toLowerCase();
 
@@ -48,6 +55,30 @@ export function aliasesOf(fm: Record<string, unknown> | undefined): string[] {
   return out;
 }
 
+/** A YAML boolean, or the string "true"/"false" (trimmed, any case); anything else is `fallback`. */
+export function boolOf(value: unknown, fallback: boolean): boolean {
+  const v = Array.isArray(value) ? value[0] : value;
+  if (typeof v === "boolean") return v;
+  if (typeof v === "string") {
+    const w = v.trim().toLowerCase();
+    if (w === "true") return true;
+    if (w === "false") return false;
+  }
+  return fallback;
+}
+
+/** The phrases of the `ignore` property: a list, or one string (comma-separated); empty ones dropped. */
+export function phrasesOf(value: unknown): string[] {
+  const items = Array.isArray(value) ? value : typeof value === "string" ? value.split(",") : [];
+  const out: string[] = [];
+  for (const i of items) {
+    if (typeof i !== "string" && typeof i !== "number") continue;
+    const p = String(i).trim();
+    if (p !== "" && !out.includes(p)) out.push(p);
+  }
+  return out;
+}
+
 export function basenameOf(path: string): string {
   return path.slice(path.lastIndexOf("/") + 1).replace(/\.md$/i, "");
 }
@@ -55,12 +86,14 @@ export function basenameOf(path: string): string {
 export function sameEntry(a: Entry, b: Entry): boolean {
   return a.path === b.path && a.name === b.name && a.kind === b.kind
     && a.aliases.length === b.aliases.length && a.aliases.every((x, i) => x === b.aliases[i])
-    && sameScope(a.scope, b.scope) && a.scope.note === b.scope.note;
+    && a.caseSensitive === b.caseSensitive && a.firstName === b.firstName
+    && a.ignore.length === b.ignore.length && a.ignore.every((x, i) => x === b.ignore[i]);
 }
 
 /** The settings the entries index (and the threads index) depend on. */
 export type EntriesSettings = Pick<UniverseSettings,
-  "universeMode" | "universeNote" | "defaultUniverseFolders" | "universeProperty" | "typeProperty" | "entryTypes"> & {
+  "universeMode" | "universeNote" | "defaultUniverseFolders" | "universeProperty" | "typeProperty" | "entryTypes"
+  | "caseSensitiveProperty" | "ignoreProperty" | "firstNameProperty"> & {
   chaptersFolder: string;
   snapshotsFolder: string;
   templatesFolder: string;
@@ -83,13 +116,13 @@ export function isUniverseNote(f: IndexFile, s: EntriesSettings): boolean {
 export interface EntriesDeps<F extends IndexFile> {
   settings(): EntriesSettings;
   frontmatter(f: F): Record<string, unknown> | undefined;
-  scope(f: F): Scope;
 }
 
 /** Changes whenever a setting that decides who is an entry changes. */
 export function entriesSettingsKey(s: EntriesSettings): string {
   return JSON.stringify([
     s.universeMode, s.universeNote, s.defaultUniverseFolders, s.universeProperty, s.typeProperty,
+    s.caseSensitiveProperty, s.ignoreProperty, s.firstNameProperty,
     ENTRY_KINDS.map((k) => [s.entryTypes[k].value, s.entryTypes[k].template]),
     s.chaptersFolder, s.snapshotsFolder, s.templatesFolder, s.chapterTemplate,
   ]);
@@ -99,15 +132,18 @@ export function entriesSpec<F extends IndexFile>(deps: EntriesDeps<F>): IndexSpe
   return {
     name: "universe-entries",
     mode: "metadata",
-    // an entry's scope depends on other notes (its book note's `universe` property)
-    structural: true,
     include: (f) => deps.settings().universeMode !== "off" && isUniverseNote(f, deps.settings()),
     compute: (f) => {
       const s = deps.settings();
       const fm = deps.frontmatter(f);
       const kind = kindOf(fm?.[s.typeProperty], s.entryTypes);
       if (kind === null) return undefined;
-      return { path: f.path, name: basenameOf(f.path), aliases: aliasesOf(fm), kind, scope: deps.scope(f) };
+      return {
+        path: f.path, name: basenameOf(f.path), aliases: aliasesOf(fm), kind,
+        caseSensitive: boolOf(fm?.[s.caseSensitiveProperty], false),
+        ignore: phrasesOf(fm?.[s.ignoreProperty]),
+        firstName: boolOf(fm?.[s.firstNameProperty], true),
+      };
     },
     same: sameEntry,
     settingsKey: () => entriesSettingsKey(deps.settings()),
@@ -115,16 +151,16 @@ export function entriesSpec<F extends IndexFile>(deps: EntriesDeps<F>): IndexSpe
 }
 
 /** The entries of a scope (same kind and root), by type order then name. A scope of kind none matches nothing. */
-export function entriesIn(all: Iterable<Entry>, scope: Scope): Entry[] {
+export function entriesIn(all: Iterable<ScopedEntry>, scope: Scope): ScopedEntry[] {
   if (scope.kind === "none") return [];
-  const out: Entry[] = [];
+  const out: ScopedEntry[] = [];
   for (const e of all) if (sameScope(e.scope, scope)) out.push(e);
   return out.sort((a, b) =>
     ENTRY_KINDS.indexOf(a.kind) - ENTRY_KINDS.indexOf(b.kind) || a.name.localeCompare(b.name));
 }
 
 /** Entries grouped by kind, in type order, empty kinds included. */
-export function groupByKind(entries: Entry[]): { kind: EntryKind; entries: Entry[] }[] {
+export function groupByKind<E extends Entry>(entries: E[]): { kind: EntryKind; entries: E[] }[] {
   return ENTRY_KINDS.map((kind) => ({ kind, entries: entries.filter((e) => e.kind === kind) }));
 }
 
@@ -134,7 +170,7 @@ export function foldText(s: string): string {
 }
 
 /** Entries whose name or an alias contains the query (folded); an empty query keeps all. */
-export function searchEntries(entries: Entry[], query: string): Entry[] {
+export function searchEntries<E extends Entry>(entries: E[], query: string): E[] {
   const q = foldText(query.trim());
   if (q === "") return entries;
   return entries.filter((e) => foldText(e.name).includes(q) || e.aliases.some((a) => foldText(a).includes(q)));

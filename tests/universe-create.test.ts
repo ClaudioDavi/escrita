@@ -4,7 +4,7 @@ import { parseThreads } from "../src/core/markers";
 import type { Entry } from "../src/universe/entries";
 
 const U = { kind: "universe" as const, root: "Universo", note: "Universo.md" };
-const e = (name: string, aliases: string[] = [], kind: Entry["kind"] = "character"): Entry => ({ path: `Universo/${name}.md`, name, aliases, kind, scope: U });
+const e = (name: string, aliases: string[] = [], kind: Entry["kind"] = "character"): Entry => ({ path: `Universo/${name}.md`, name, aliases, kind, caseSensitive: false, ignore: [], firstName: true });
 
 describe("nameFromSelection", () => {
   it("takes one trimmed line up to 60 characters", () => {

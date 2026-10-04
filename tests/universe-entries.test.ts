@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { aliasesOf, entriesIn, entriesSpec, foldText, groupByKind, isTemplatePath, kindOf, searchEntries, type Entry, type EntriesSettings } from "../src/universe/entries";
+import { aliasesOf, boolOf, entriesIn, entriesSpec, entriesSettingsKey, phrasesOf, sameEntry, type ScopedEntry, foldText, groupByKind, isTemplatePath, kindOf, searchEntries, type Entry, type EntriesSettings } from "../src/universe/entries";
 import { defaultUniverseSettings } from "../src/universe/settings";
 import { VaultIndex } from "../src/core/vault-index";
 import { MemoryVault, ManualTimers, type MemFile } from "./support/memory-vault";
@@ -46,7 +46,7 @@ describe("isTemplatePath", () => {
 });
 
 describe("queries", () => {
-  const e = (name: string, kind: Entry["kind"], scope: Scope, aliases: string[] = []): Entry => ({ path: `${scope.root}/${name}.md`, name, kind, scope, aliases });
+  const e = (name: string, kind: Entry["kind"], scope: Scope, aliases: string[] = []): ScopedEntry => ({ path: `${scope.root}/${name}.md`, name, kind, scope, aliases, caseSensitive: false, ignore: [], firstName: true });
   const all = [
     e("Teo", "character", U, ["Teodoro"]), e("O farol", "place", U), e("Ana", "character", U), e("Mãe", "character", U),
     e("Porão", "place", B),
@@ -83,7 +83,7 @@ describe("entriesSpec on a vault index", () => {
       "Escrita/Snapshots/a.md": { type: "personagem" },
     };
     let s = settings();
-    const spec = entriesSpec<MemFile>({ settings: () => s, frontmatter: (f) => fms[f.path], scope: () => U });
+    const spec = entriesSpec<MemFile>({ settings: () => s, frontmatter: (f) => fms[f.path] });
     const timers = new ManualTimers();
     const idx = new VaultIndex(spec, vault, timers);
     await idx.build();
@@ -94,5 +94,58 @@ describe("entriesSpec on a vault index", () => {
     s = settings({ universeMode: "off" });
     await idx.build();
     expect(idx.size).toBe(0);
+  });
+});
+
+const base: Entry = { path: "U/Ana.md", name: "Ana", aliases: ["Aninha"], kind: "character", caseSensitive: false, ignore: [], firstName: true };
+
+describe("sameEntry", () => {
+  it("is true for equal entries and false for each field that differs", () => {
+    expect(sameEntry(base, { ...base, ignore: [] })).toBe(true);
+    expect(sameEntry(base, { ...base, caseSensitive: true })).toBe(false);
+    expect(sameEntry(base, { ...base, firstName: false })).toBe(false);
+    expect(sameEntry(base, { ...base, ignore: ["rosa dos ventos"] })).toBe(false);
+    expect(sameEntry(base, { ...base, aliases: [] })).toBe(false);
+  });
+  it("does not know a scope: entries never store one", () => {
+    expect("scope" in base).toBe(false);
+    expect(sameEntry({ ...base, scope: U } as Entry, { ...base, scope: B } as Entry)).toBe(true);
+  });
+});
+
+describe("entry properties", () => {
+  it("boolOf reads booleans and strings, with a fallback", () => {
+    expect(boolOf(true, false)).toBe(true);
+    expect(boolOf(" False ", true)).toBe(false);
+    expect(boolOf("sim", true)).toBe(true);
+    expect(boolOf(undefined, false)).toBe(false);
+  });
+  it("phrasesOf reads lists and comma strings", () => {
+    expect(phrasesOf(["rosa dos ventos", " ", "rosa dos ventos", "x"])).toEqual(["rosa dos ventos", "x"]);
+    expect(phrasesOf("a, b")).toEqual(["a", "b"]);
+    expect(phrasesOf(undefined)).toEqual([]);
+  });
+  it("the spec reads the three properties through their setting names, and does not store scope", async () => {
+    const vault = new MemoryVault({ "Universo/A.md": "x", "Universo/B.md": "x" });
+    const fms: Record<string, Record<string, unknown>> = {
+      "Universo/A.md": { type: "personagem", cs: true, skip: ["rosa dos ventos"], first: "false" },
+      "Universo/B.md": { type: "personagem" },
+    };
+    const s = settings({ caseSensitiveProperty: "cs", ignoreProperty: "skip", firstNameProperty: "first" });
+    const idx = new VaultIndex(entriesSpec<MemFile>({ settings: () => s, frontmatter: (f) => fms[f.path] }), vault, new ManualTimers());
+    await idx.build();
+    const a = idx.get("Universo/A.md")!;
+    expect([a.caseSensitive, a.ignore, a.firstName]).toEqual([true, ["rosa dos ventos"], false]);
+    const b = idx.get("Universo/B.md")!;
+    expect([b.caseSensitive, b.ignore, b.firstName]).toEqual([false, [], true]);
+    expect("scope" in a).toBe(false);
+  });
+  it("the spec is not structural, and its settings key includes the property names", () => {
+    const spec = entriesSpec<MemFile>({ settings: () => settings(), frontmatter: () => undefined });
+    expect(spec.structural).toBeFalsy();
+    const k = entriesSettingsKey(settings());
+    for (const o of [{ caseSensitiveProperty: "x" }, { ignoreProperty: "x" }, { firstNameProperty: "x" }]) {
+      expect(entriesSettingsKey(settings(o))).not.toBe(k);
+    }
   });
 });
