@@ -51,7 +51,7 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 0.4.0 | The writing desk: stages, stage snapshot, home block (11) · Move a paragraph or scene (8) | S–M + S | Shipped |
 | 0.5.0 | Revision lens, pt-BR and English rules, with dialogue share and readability (5) · stemmers | M–L | Shipped |
 | 0.6.0 | Insert from a template (9) | S | Shipped |
-| 0.7 | Feature switches (10, the Features page) | M | Planned |
+| 0.7.0 | Feature switches (10, the Features page) | M | Shipped |
 | 0.8 | Submissions (12), with export (novel roadmap, 7) | S | Planned |
 | 1.0 | Set up a writing vault and presets (10) | S | Planned |
 
@@ -553,7 +553,7 @@ chapter's properties, and undoes in one step.
 
 ---
 
-## 10. Set up a writing vault (v1.0; feature switches in v0.7)
+## 10. Set up a writing vault (v1.0; feature switches shipped in 0.7.0)
 
 **Why.** Escrita has many settings, and a new user meets them before writing a word.
 Tris gives his readers a ready-made vault; Escrita can build one.

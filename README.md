@@ -292,7 +292,7 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
-### 0.7.0 (in progress)
+### 0.7.0
 
 - **Features page**: a switch for each of 17 features, in five groups, at the top of the settings. An off feature is not loaded, its settings hide and its data stays. See [Features and settings](docs/guide/en/features-and-settings.md).
 - **Keep a note out of the universe**: `universe: false` on a note, or on a book note for the whole book. See [The world](docs/guide/en/the-world.md#keeping-one-note-out-universe-false).
@@ -305,7 +305,7 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 - **Writing language** moved out of Revision to the Features page, with the same key.
 - Word counts in the explorer, spellcheck on demand and the universe mode moved to the Features page as switches.
 - The piece property names and the track folders moved to a section called "Properties and folders".
-- Drag and renumbering in the outline pause while it is filtered.
+- Drag and renumbering in the outline pause while it is filtered, and Tab no longer turns a chapter (or a new line) into a beat of a chapter the filter hides.
 - A feature turned off keeps its ribbon icon until you restart Obsidian (a click says the feature is off), and on a phone a command pinned to the mobile toolbar keeps a dead button until you restart.
 - Internal: modules now load and unload at runtime, and the outline reads each chapter through one row loader.
 

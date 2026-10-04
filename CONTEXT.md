@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (0.6.0 at the time of writing; 0.7 is built and waits for its release steps). The author's
+Current version: see `manifest.json` (0.7.0 at the time of writing). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down
@@ -153,15 +153,15 @@ and what upkeep it asks of the writer.
 - **0.6 (shipped), universe foundations**: universe modes and container, create entry from
   selection, open threads, insert from a template (U 1.1, U 1.3, U 1.5, SF 9).
   Improvement: the outline's beat writes through the note text port (IMPROVEMENTS 3).
-- **0.7 (built; the release steps are left), characters across works**: the Features page
+- **0.7 (shipped), characters across works**: the Features page
   (17 switches, SF 10) on modules that load and unload at runtime (IMPROVEMENTS 6), `universe:
   false`, "Appears in" (the names matcher, the mentions index), names in spellcheck and the
   lens, POV and status in the outline, per-chapter targets (U 1.1, U 1.2, U 1.4, N 1, N 2).
   Improvements: IMPROVEMENTS 6 and chapter rows (IMPROVEMENTS 7). First version with the
   user guide in `docs/guide/` (English and pt-BR; The world, Features and settings, Writing).
 - **0.8 (next), submitting work**: Markdown and DOCX export (Shunn and pt-BR presets) for a
-  note and a book, submissions, the companion-plugin guide (N 7, SF 12, N 6). Plan it in
-  ROADMAP.md before editing the topic roadmaps.
+  note and a book, submissions, the companion-plugin guide (N 7, SF 12, N 6).
+  Improvement: each module owns its settings section (IMPROVEMENTS 11).
 - **0.9**: universe phase 2 (timeline, facts over time, continuity, canon), with "Unlinked
   mentions" and "Names without an entry" (moved there from 0.7).
 - **0.10**: EPUB, book-wide publish check, "Read the book".

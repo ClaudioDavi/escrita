@@ -30,75 +30,8 @@ interface lives. Test through the interface.
   lines) has the same shape.
 - **Change.** A chapter document module (rows, beats, checked edits, tested); the view
   keeps rendering and input.
-
-### 6. Modules that load and unload at runtime
-
-**Strength:** strong · **Pairs with:** feature switches (SF 10, 0.7) · **Planned for
-0.7** (docs/PLAN-0.7.md, task 1.1 and wave 2)
-
-- **Problem.** Every module is built and loaded at startup (`src/main.ts:116-131`), and
-  its commands, views, menus, editor extensions and index specs are registered on the
-  plugin (109 such calls across 13 module files), so they live until the plugin
-  unloads. A module can't be switched off without a restart, and a feature the writer
-  never uses still costs startup time and index work. The index hub can't remove one
-  spec (`core/index-hub.ts:83-98`; only `unload()` disposes, `:130-142`). The universe
-  (0.6) already needs commands and a view that come and go with its mode, and solves it
-  locally with `checkCallback` and `syncMode` (`universe/index.ts:370-431`).
-- **What Obsidian allows.** A child `Component` can only `registerEvent`,
-  `registerDomEvent`, `registerInterval` and `register(cb)`. `registerView`,
-  `registerEditorExtension`, `registerMarkdownCodeBlockProcessor` and `addCommand`
-  are Plugin-only and have no undo, except `removeCommand`, which needs Obsidian 1.7.2
-  (`minAppVersion` is 1.6.6), and ribbon and status bar elements, which can be
-  `.remove()`d. So "`removeChild` undoes all of it" holds only for events.
-- **Change.** Each module is constructed once and loaded and unloaded as a
-  `Component` whose `load()`/`unload()` the registry calls itself, in order (not as a
-  child of the plugin, whose unload order isn't ours to set). A `ModuleContext` per module is the one place that touches the
-  Plugin-only calls and records a disposer for each:
-  - commands through `addCommand` / `removeCommand` (raise `minAppVersion` to 1.7.2),
-    or `checkCallback` gating if `removeCommand` misbehaves;
-  - a **view slot**: each view type registered once; an off feature's leaves are
-    detached and its factory builds an empty placeholder;
-  - an **extension slot**: one mutable array per feature, registered once, refilled
-    or emptied, then one `workspace.updateOptions()` per change (the trick
-    `editor/index.ts:73`, `outline/index.ts:78` and `placeholders/index.ts:96` each
-    copy today);
-  - a **code block slot** for the desk's `escrita-works`, drawing plain code when off;
-  - ribbon and status bar elements removed; index specs through a handle that removes
-    them from the hub (`IndexHub.remove`), like `decorations.add` already returns an
-    undraw (`core/explorer-decorations.ts:117`).
-
-  A registry in `main.ts` knows each feature's switch and hard dependencies, loads the
-  enabled ones in order, unloads in reverse, and applies on `saveSettings`. Followers
-  of path-keyed data stay registered while a feature is off, so its data keeps
-  following renames. The universe's mode-dependent registration moves onto it.
-- **Runtime dependencies the registry must handle** (soft: checked at call time):
-
-  | Caller | Callee | Where |
-  |---|---|---|
-  | Publish | snapshots | `publish/index.ts:141` (`beforePublish`) |
-  | Outline view | placeholders | `outline/view.ts:185` (`onChange` returns a no-op when the index is null, `placeholders/index.ts:60-62`) |
-  | Settings tab | lens | `settings.ts:489` (`createLists`) |
-
-- **Wins.** Feature switches become a settings change, not a refactor; startup skips
-  disabled modules; an unload test per module ("nothing left registered") catches leaks,
-  which the community review checks.
-
-### 7. Chapter rows: one loader for the outline view and the board
-
-**Strength:** strong · **Pairs with:** N 1, N 2, candidate 5 (its first slice),
-candidate 6 · **Planned for 0.7** (docs/PLAN-0.7.md, tasks 1.3 and 2.2)
-
-- **Problem.** The outline view builds a chapter row field by field from frontmatter,
-  the measurer and the text (`outline/view.ts:276-298`). The canvas board rebuilds part
-  of it (`outline/index.ts:152-167`), and the note mode builds a third shape
-  (`outline/view.ts:251-273`). The outline also parses placeholders itself
-  (`outline/view.ts:292`) although the placeholders index knows the count
-  (`placeholders/index.ts:35`). POV (N 1) and the per-chapter target (N 2) both add
-  fields here, inside an untested 1,334-line DOM class.
-- **Change.** A pure `outline/rows.ts` takes a port (chapters, text, frontmatter,
-  counts, placeholder count, book default, POV resolver) and returns `ChapterRow[]`.
-  The view and the board both call it; vitest tests it.
-- **Wins.** New row fields land once and are tested; one cross-module parse goes.
+- **Done in 0.7.0:** the rows slice (`outline/rows.ts`, candidate 7). The beats, the
+  checked edits and the action switch are still in the view.
 
 ### 8. One rule for a note's effective piece, including a chapter's book default
 
@@ -132,6 +65,9 @@ classifier fake (loose ends) · **Minimum planned for 0.7** (PLAN-0.7.md, task 3
   scope without the universe module.
 - **Wins.** No stale scope; outside modules get scope without depending on the
   universe.
+- **Minimum shipped in 0.7.0:** `Entry` no longer stores `scope` and `sameEntry` no
+  longer compares it; scope is read live through `scopeOf`. The fuller change (scope on
+  the classifier result) is still open.
 
 ### 10. A names seam: one name matcher in core, and a names port
 
@@ -150,10 +86,14 @@ classifier fake (loose ends) · **Minimum planned for 0.7** (PLAN-0.7.md, task 3
   and it is empty otherwise. No module imports the universe for names.
 - **Wins.** One matcher, tested once in Portuguese and English; switching the universe
   off is safe by construction.
+- **Minimum shipped in 0.7.0:** `core/names.ts` and the `plugin.names` port; "Appears
+  in", the name marks, the lens and the outline's POV read names through it. The lens's
+  own `nameVariants` still keeps its accent rules.
 
 ### 11. Each module owns its settings section
 
-**Strength:** medium · **Pairs with:** SF 10, candidate 6
+**Strength:** medium · **Pairs with:** SF 10, export and submissions (0.8) · **Planned
+for 0.8**
 
 - **Problem.** `settings.ts` (739 lines) is one `display()` (`:226-713`) with a heading
   per module, importing module internals (the lens at `:4-7`, the universe at
@@ -229,6 +169,8 @@ None at the moment.
 
 | Version | Improvement |
 |---|---|
+| 0.7.0 | Modules that load and unload at runtime (candidate 6): a `FeatureModule` per feature, a `ModuleContext` that records an undo for every registration (commands with `removeCommand`, so `minAppVersion` 1.7.2; view, editor, code block and post-processor slots registered once; index specs removed through `IndexHub.remove`), a registry that loads in order and unloads in reverse, data followers that run while a feature is off, and a lifecycle test per module on an `obsidian` stub |
+| 0.7.0 | Chapter rows (candidate 7): `outline/rows.ts` loads every chapter row through one port, for the outline view and the canvas board, tested with vitest; the outline reads the placeholder count from the placeholders index |
 | 0.6.0 | Note text port finished (candidate 3): the outline's beat re-checks and writes go through `plugin.notes` as `guardedEdit` plans, and its emptiness checks read through the port. Thread closing and template insert share `replaceIfExact`, `guardedEdit` and `matchLineEndings`. Still direct: the editor's template insert and "Plant a thread" write to the editor that triggered them |
 | 0.5.1 | Lens marks stale after a lists change: the session treats options as a generation (`invalidate` clears every cache first, one failing pass no longer stops the others), the marks field drops a list from an older generation, and a failed refresh retries instead of dropping the editor |
 | 0.2.1 | Markdown segmenter (`core/markdown`): one scan for prose, frontmatter, code and comments |

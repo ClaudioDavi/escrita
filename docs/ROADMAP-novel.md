@@ -22,15 +22,15 @@ mobile-safe manuscript tool with first-class Portuguese.
 
 | # | Feature | Tier | Effort |
 |---|---|---|---|
-| 1 | POV and status in the outline (v0.7) | Quick win | S |
-| 2 | Per-chapter targets (v0.7) | Quick win | S |
+| 1 | POV and status in the outline (shipped in 0.7.0) | Quick win | S |
+| 2 | Per-chapter targets (shipped in 0.7.0) | Quick win | S |
 | 3 | ~~Dialogue focus~~ (moved to short fiction, feature 7, v0.3) | — | — |
 | 4 | Book-wide publish check and serial dashboard (v0.10) | Quick win | S |
 | 5 | Longform importer (after 1.0) | Quick win | S–M |
 | 6 | Companion-plugin guide (v0.8) | Quick win | S |
 | 7 | Book compile: Markdown and DOCX (v0.8), EPUB (v0.10) | Big bet | L |
 | 8 | "Read the book" view (v0.10) | Big bet | M |
-| 9 | ~~Codex-lite~~ (replaced by the universe's "appears in", v0.7) | — | — |
+| 9 | ~~Codex-lite~~ (replaced by the universe's "appears in", shipped in 0.7.0) | — | — |
 | 10 | Book-wide snapshots and revision reports (after 1.0) | Big bet | M |
 
 Effort: S a few days, M one to two weeks, L several weeks.
@@ -42,7 +42,7 @@ planned in [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md), feature 6 (v0.3
 with contos and essays. Snapshots of a single chapter come with feature 4 (v0.3); feature 10
 below extends them to the whole book.
 
-## 1. POV and status in the outline (v0.7)
+## 1. POV and status in the outline (v0.7, shipped in 0.7.0)
 
 The design already shows status dots; "color by POV" was left out of v0.1.
 
@@ -56,7 +56,7 @@ The design already shows status dots; "color by POV" was left out of v0.1.
 - Reordering (drag) and renumbering are off while a filter is on, so a partial list never
   renumbers a book (rule 1). The header says "Showing 2 of 5 · Clear".
 
-## 2. Per-chapter targets (v0.7)
+## 2. Per-chapter targets (v0.7, shipped in 0.7.0)
 
 Reuse the `target` / `limit` / `unit` properties from the short-fiction roadmap on
 chapters. The outline shows a small bar per chapter when a target exists. A property on

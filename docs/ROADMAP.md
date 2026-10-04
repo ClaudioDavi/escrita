@@ -38,26 +38,30 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 | 0.5.0 | Revision: revision lens with six rules, dialogue share, Portuguese readability and "Ignore here" (SF 5) · Portuguese and English stemmers in `core/stem/` · Improvement: the 0.2.1 editor loose ends (and the outline's scene-break check) |
 | 0.5.1 | Fix: lens marks stale after the word lists note changes · Add to crutch words, names or ignored words from the editor menu (SF 5; mockups waived by the author) |
 | 0.6.0 | Universe foundations: universe modes, entries, the universe panel (Entries, Threads, Works), migration (U 1.1) · Create entry from selection (U 1.3) · Open threads (U 1.5) · Insert from a template (SF 9) · Forms, with an essay form and form by folder · Improvement: the outline's beat writes through the note text port (candidate 3, finished) |
+| 0.7.0 | Characters across works: "Appears in" (U 1.2) · Names into spellcheck and the revision lens (U 1.4) · Keep a note out of the universe, `universe: false` (U 1.1) · POV and status in the outline (N 1) · Per-chapter targets (N 2) · Feature switches, the Features page (SF 10) · User guide in `docs/guide/` (English and pt-BR) · Minimum Obsidian 1.7.2 · Improvements: modules that load and unload at runtime (candidate 6), chapter rows (candidate 7) |
 
-## Next: 0.7, characters across works
+## Next: 0.8, submitting work
 
-Characters and places start to work across stories: the universe learns where each entry
-appears, names stop being flagged, and the outline shows point of view. Every feature can
-also be switched off, which needs modules that load and unload at runtime.
+A conto leaves the vault: export turns a note or a book into a manuscript an editor or a
+contest accepts, and submissions track where it went and what came back. Serves the
+"ready" and "published" stages. Upkeep: one property per submission the writer adds
+when they send a work out; export reads what the note already has.
 
 | Feature | Ref | Effort | Note |
 |---|---|---|---|
-| "Appears in" | U 1.2 | M | The matcher (names and aliases, Portuguese inflection through `core/stem/`), an index kept current on edits, the count in the panel's Entries tab and an "Appears in" section in each entry note. |
-| Names into spellcheck and the revision lens | U 1.4 | S | Entry names and aliases stop being flagged; the name-variant rule reads them. |
-| POV and status in the outline | N 1 | S | POV can link to a character entry. |
-| Per-chapter targets | N 2 | S | The bar in the outline and a book default. |
-| Keep a note out of the universe | U 1.1 | XS | `universe: false` on a note (or a book note, for its chapters) makes it standalone even inside a folder in the universe. A YAML boolean, so no word to translate and no new setting. Small follow-up from 0.6 testing. |
-| Feature switches | SF 10 | M | A Features page: every feature has a switch, and an off feature isn't loaded. Data stays. Mockups first. Presets and the setup command stay in 1.0. |
-| User guide for 0.7 | Docs | S | Creates `docs/guide/` (English and pt-BR), moves the universe guide there, and writes the pages for this version's features: Features and settings, "appears in", POV and per-chapter targets. See "Documentation". |
+| Export stages 1–2: Markdown manuscript and DOCX | N 7 | M–L | Shunn and pt-BR presets, for a single note and for a book. No network; the file is written into the vault. |
+| Submissions | SF 12 | S | Where a work was sent, when, and the answer; ships with export, since export is how a work gets sent. |
+| Companion-plugin guide | N 6 | S | A guide page ("Other plugins") and a settings note; re-check each plugin's maintenance and running next to StoryLine. |
+| User guide for 0.8 | Docs | S | "Publishing" (the publish check, export, submissions) and "Other plugins", in English and pt-BR. |
 
-**Improvement:** modules that load and unload at runtime (IMPROVEMENTS.md, candidate 6).
-The feature switches stand on it, and the universe's mode-dependent commands and view
-move onto it.
+**Improvement:** each module owns its settings section (IMPROVEMENTS.md, candidate 11).
+Export brings a module with its own settings (presets, fonts, the manuscript header),
+and submissions add more; with candidate 11 they live in the module, and an off
+feature's section goes with it, instead of `settings.ts` growing again.
+
+Open from 0.7, for the author on a device: gates G0c (does `spellcheck="false"` hold on
+Android and iOS?), G0d (the Reading-view "Appears in" section across re-renders), the
+G0h phone figure, and the visual check against the canvas (PLAN-0.7.md, task 5.2).
 
 ## 0.5 to 1.0
 
@@ -69,14 +73,12 @@ shipped as 0.4.0 and the lens as 0.5.0.
 
 | Version | Contents | Ref | Effort | Theme |
 |---|---|---|---|---|
-| 0.8 | Export stages 1–2: Markdown manuscript and DOCX (Shunn and pt-BR presets), for a single note and for a book · Submissions · Companion-plugin guide | N 7, SF 12, N 6 | M–L + S + S | Submitting work |
-| 0.9 | Universe phase 2: timeline, facts over time, continuity checks, canon | U 2.1–2.4 | L | A consistent world |
+| 0.9 | Universe phase 2: timeline, facts over time, continuity checks, canon · Unlinked mentions and names without an entry (moved from 0.7) | U 2.1–2.5 | L | A consistent world |
 | 0.10 | Export stage 3: EPUB 3, validated by EPUBCheck in CI · Book-wide publish check and serial dashboard · "Read the book" view | N 7, N 4, N 8 | M + S + M | Books |
 | 1.0 | Stabilization: mobile pass, the user guide complete in English and pt-BR (see "Documentation"), migrations tested on the author's vault, community plugin submission · Set up a writing vault (creates the home note and a first writing layout, with presets: Essentials, Writer, Everything, built on the 0.7 feature switches) | SF 10 | M + S | Full release |
 
-Improvements: 0.6 is planned above, and 0.7 takes IMPROVEMENTS 6 (the feature switches
-stand on it); later versions pick from IMPROVEMENTS.md when
-they're planned in detail.
+Improvements: 0.8 is planned above (IMPROVEMENTS 11, each module owns its settings
+section); later versions pick from IMPROVEMENTS.md when they're planned in detail.
 
 Notes:
 

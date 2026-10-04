@@ -53,7 +53,7 @@ Rules:
 - **Switching modes never moves or edits files.** Per book → universe offers the
   migration command (1.1) with a preview; universe → per book or off only hides
   features. Notes stay where they are.
-- **Keeping one note out (v0.7)**: `universe: false` makes a note standalone even when
+- **Keeping one note out (v0.7, shipped in 0.7.0)**: `universe: false` makes a note standalone even when
   it sits in a folder in the universe (an essay in a folder of contos). It is rule 0: it
   is checked before every other rule, so it beats the universe folder and the universe
   note too. It is a YAML boolean, so there's no word to translate and no setting; the
@@ -159,7 +159,7 @@ Romances/A Casa.md              ← a book: universe: "[[Universo]]", forma: rom
   - There is **no "appears in N works" count** yet. It arrives in 0.7 with the matcher (1.2).
   - Mode off: the panel is closed and the commands hide. Threads have their own view (1.5).
 
-### 1.2 "Appears in" across works (v0.7)
+### 1.2 "Appears in" across works (v0.7, shipped in 0.7.0)
 
 Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
 
@@ -234,7 +234,7 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
   (`fileToLinktext`), so two notes with one basename get a path.
 - **Names without an entry** moved to phase 2 (2.5, v0.9), with the details there.
 
-### 1.4 Names into spellcheck and the revision lens (v0.7)
+### 1.4 Names into spellcheck and the revision lens (v0.7, shipped in 0.7.0)
 
 - Every entry name and alias stops being flagged as a spelling error. Obsidian doesn't
   expose a dictionary API and Escrita never uses Electron, so the editor marks the names

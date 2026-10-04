@@ -1367,12 +1367,12 @@ Back up `.obsidian/plugins/escrita/data.json` first.
 
 ## Release checklist (per CONTEXT.md)
 
-- [ ] docs/ROADMAP.md: move the 0.7 row to "Shipped" (including "Keep a note out of the
+- [x] docs/ROADMAP.md: move the 0.7 row to "Shipped" (including "Keep a note out of the
       universe"), name the improvements (modules that load and unload at runtime,
       IMPROVEMENTS 6; chapter rows, IMPROVEMENTS 7), move "Unlinked mentions" and
       "Names without an entry" into the 0.9 row (Q35), and plan 0.8 before editing the
       topic roadmaps.
-- [ ] README.md:
+- [x] README.md:
   - the 0.7.0 changelog entry: the Features page, `universe: false`, "Appears in",
     names in spellcheck and the lens, POV and status in the outline, per-chapter
     targets; on its own lines, the new minimum Obsidian version (1.7.2), "Writing
@@ -1384,13 +1384,13 @@ Back up `.obsidian/plugins/escrita/data.json` first.
     titles, what is never written), POV and the chapter default;
   - the settings list and the properties list (`pov`, `chapterTarget`,
     `caseSensitive`, `ignore`, `firstName`, `universe: false`).
-- [ ] docs/IMPROVEMENTS.md: move candidates 6 and 7 to "Done" (0.7); note in
+- [x] docs/IMPROVEMENTS.md: move candidates 6 and 7 to "Done" (0.7); note in
       candidate 5 that the rows slice is done; note in candidates 9 and 10 that their
       minimum shipped in 0.7.
-- [ ] Topic roadmaps: mark U 1.2, U 1.4, N 1, N 2 and SF 10's switches shipped, and
+- [x] Topic roadmaps: mark U 1.2, U 1.4, N 1, N 2 and SF 10's switches shipped, and
       the `universe: false` bullet in "Modes"; write the deviations (5.3).
-- [ ] docs/ARCHITECTURE.md and docs/GUIDE-universe.md: the items in 5.3.
-- [ ] CONTEXT.md: the items in 5.3.
+- [x] docs/ARCHITECTURE.md and docs/GUIDE-universe.md: the items in 5.3.
+- [x] CONTEXT.md: the items in 5.3.
 - [ ] The author's vault: in `data.json` set
       `povProperty` / `chapterTargetProperty` if the author wants Portuguese names;
       update the "Plugin Escrita" section of `escrita/Como usar.md`.
