@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (0.6.0 at the time of writing). The author's
+Current version: see `manifest.json` (0.6.0 at the time of writing; 0.7 is built and waits for its release steps). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down
@@ -24,8 +24,7 @@ next months are short fiction (contos, essays), so short-fiction features come f
 | How the code is organized, module specs, conventions | `docs/ARCHITECTURE.md` |
 | Code improvements to schedule | `docs/IMPROVEMENTS.md` |
 | User-facing features, settings, commands, changelog, release steps | `README.md` |
-| How to use the universe, threads and templates (user guide) | `docs/GUIDE-universe.md` (moves to `docs/guide/` in 0.7) |
-| Plan for the user documentation | `docs/ROADMAP.md`, "Documentation" |
+| User guide, English and pt-BR (0.7: features and settings, writing, the world) | `docs/guide/en/` and `docs/guide/pt-BR/`, same file names; plan in `docs/ROADMAP.md`, "Documentation" |
 | Background research (local only, git-ignored) | `reports/Obsidian fiction writing gaps.md`, `research_notes/` |
 | Approved UI design (mockups) | design canvas https://claude.ai/artifact/DGww2xWiadXRuWqVv2jFv6 |
 
@@ -51,7 +50,7 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
 7. **Design first.** UI work gets mockups on the design canvas and approval before it
    is built.
 8. **Obsidian community guidelines** (the plugin will be submitted): no `innerHTML`,
-   no default hotkeys, `register*` for everything, `vault.process` /
+   no default hotkeys, `register*` for everything (through the module's `ModuleContext`), `vault.process` /
    `processFrontMatter` / `fileManager.renameFile` / `trashFile`, `normalizePath`, no
    Node or Electron APIs, no `console.log`. Exceptions are listed in ARCHITECTURE.md;
    don't add one without listing it there.
@@ -59,8 +58,14 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
 ## How the code is shaped
 
 - `src/main.ts` builds the services, then each module (`src/<module>/index.ts`,
-  `class <Name>Module implements EscritaModule`). Modules: goals, outline,
-  placeholders, darlings, editor, lens, publish, explorer, snapshots, desk.
+  a `FeatureModule`). Modules: goals, outline, placeholders, darlings, editor, lens,
+  publish, explorer, snapshots, desk, universe. **They are switchable features** (17
+  ids in `core/features.ts`; the editor is split into typing, dialogue focus, moving
+  blocks, templates and spellcheck): the `FeatureRegistry` loads and unloads each from the
+  writer's switches at runtime, and a module registers everything through its
+  `ModuleContext`, never straight on the plugin. A module must unload cleanly and its
+  path-keyed data must follow renames through a data follower even while it is off.
+  ARCHITECTURE.md, "Modules and feature switches".
 - **Shared services on `plugin`** (use them; never re-derive):
   - `books.classify(x)`: what a file is (chapter, book note, note…), its book,
     `tracked`, `piece`, `snapshot`, `stage`. Backed by `core/classify.ts`.
@@ -69,6 +74,10 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
     check-then-replace through `core/note-text.ts`).
   - `decorations`: the only code that draws in the file explorer.
   - `chapterOps`: create, renumber, retitle chapters.
+  - `features`: the registry; `features.isOn(id)` for a soft dependency on another feature.
+  - `names`: the names port (`core/names-source.ts`); the lens, the name marks and the
+    outline read names through it and never import the universe. The matcher is
+    `core/names.ts`.
   - `index`: the vault index hub (`core/index-hub.ts`): add a spec for a per-file
     index, or `follow` renames and deletes for path-keyed data. `works`: the live
     list of works, built on it.
@@ -104,6 +113,9 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
 - **Scene break**: a `---` line with blank lines around it.
 - **Darlings**: cut passages kept in a note, restorable to where they came from.
 - **Snapshot**: a `.txt` copy of a note under `Escrita/Snapshots`, comparable word by word.
+- **Feature** (0.7): a switchable part of Escrita (`FeatureId`); off means not loaded, data stays.
+- **Entry** (0.6): a note with the type property, in a universe. **Mention**: a place in
+  a note where an entry's name or alias appears (0.7, `core/names.ts`).
 - **Tracked**: counted by goals (inside track folders, outside exclude folders).
 - Deep/shallow module, seam, locality: as defined at the top of IMPROVEMENTS.md.
 
@@ -141,19 +153,30 @@ and what upkeep it asks of the writer.
 - **0.6 (shipped), universe foundations**: universe modes and container, create entry from
   selection, open threads, insert from a template (U 1.1, U 1.3, U 1.5, SF 9).
   Improvement: the outline's beat writes through the note text port (IMPROVEMENTS 3).
-  User guide: `docs/GUIDE-universe.md`.
-- **0.7 (next)**: characters across works, plus feature switches (turn any feature off, SF 10)
-  on modules that load and unload at runtime (IMPROVEMENTS 6).
-- **0.8–0.9**: DOCX/Markdown export with submissions (0.8, SF 12), universe phase 2.
+- **0.7 (built; the release steps are left), characters across works**: the Features page
+  (17 switches, SF 10) on modules that load and unload at runtime (IMPROVEMENTS 6), `universe:
+  false`, "Appears in" (the names matcher, the mentions index), names in spellcheck and the
+  lens, POV and status in the outline, per-chapter targets (U 1.1, U 1.2, U 1.4, N 1, N 2).
+  Improvements: IMPROVEMENTS 6 and chapter rows (IMPROVEMENTS 7). First version with the
+  user guide in `docs/guide/` (English and pt-BR; The world, Features and settings, Writing).
+- **0.8 (next), submitting work**: Markdown and DOCX export (Shunn and pt-BR presets) for a
+  note and a book, submissions, the companion-plugin guide (N 7, SF 12, N 6). Plan it in
+  ROADMAP.md before editing the topic roadmaps.
+- **0.9**: universe phase 2 (timeline, facts over time, continuity, canon), with "Unlinked
+  mentions" and "Names without an entry" (moved there from 0.7).
 - **0.10**: EPUB, book-wide publish check, "Read the book".
 - **1.0**: universe + manuscript export complete, setup with presets (Essentials,
   Writer, Everything), mobile pass, docs in both languages, community plugin submission.
 - **After 1.0**: screenwriting (`docs/ROADMAP-screenplay.md`), Fountain and PDF export first.
 
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and
-`goals/progress-modal.ts` are large and mostly untested (IMPROVEMENTS 5); path-keyed
+`goals/progress-modal.ts` are large and mostly untested (IMPROVEMENTS 5; the chapter rows
+were extracted to `outline/rows.ts` in 0.7, the first slice); path-keyed
 data follows renames in three separate places, the measurer, the explorer's tracked
 set and the snapshots store (IMPROVEMENTS 2, done in 0.4 for everything else, which
-follows through `plugin.index.follow`); two editor commands (plant a thread, insert
+follows through `plugin.index.follow`; since 0.7 those followers run even when their
+feature is off, and the snapshots one also moves files); the Reading-view "Appears in"
+section and the phone checks for name marks and the names bench (G0c, G0d, G0h) are
+still open; two editor commands (plant a thread, insert
 from a template) still write straight to the editor instead of `plugin.notes`; a few Markdown parity
 questions with Reading view are pinned in `tests/markdown-consumers.test.ts`.

@@ -51,14 +51,20 @@ The design already shows status dots; "color by POV" was left out of v0.1.
   across sessions (stored in plugin data), editable.
 - A toolbar toggle in the outline: color by status / by POV.
 - Filter by status and POV (chips in the header).
-- Header summary: "3 rascunho · 2 revisão · 4 publicado".
+- Header summary: "3 rascunho · 2 revisão · 4 publicado". It counts stages, each labelled
+  with the writer's own word for it (the first word of the stage).
+- Reordering (drag) and renumbering are off while a filter is on, so a partial list never
+  renumbers a book (rule 1). The header says "Showing 2 of 5 · Clear".
 
 ## 2. Per-chapter targets (v0.7)
 
 Reuse the `target` / `limit` / `unit` properties from the short-fiction roadmap on
-chapters. The outline shows a small bar per chapter when a target exists. A book-level
-setting "Default chapter target" (property on the book note, e.g. `chapterTarget`)
-applies when a chapter has none.
+chapters. The outline shows a small bar per chapter when a target exists. A property on
+the book note (`chapterTarget`; the name is a setting) gives each chapter a default
+target when it has none of its own. Only `target` inherits: a chapter's own `limit`,
+`deadline` and `unit` are kept, and the book note's `unit` is the default unit. The
+default shows in the outline only, so the file explorer may show no target where the
+outline shows a bar (a later improvement closes that gap).
 
 ## 3. Dialogue focus (moved)
 

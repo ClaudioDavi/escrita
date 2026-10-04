@@ -278,7 +278,7 @@ hotkey. On a phone the right drawer closes after a step from the panel, and a sh
 Notice shows the rule and position ("Gerúndios · 2 / 9"), since the counter has gone
 with the drawer. It only suggests; it never changes text, only moves the selection.
 
-**Language.** Set in the settings: Automatic (the default), Português (Brasil) or
+**Language.** Set at the top of the Features page since 0.7 (it was in the Revision section; same key, because the names matcher reads it too): Automatic (the default), Português (Brasil) or
 English. Automatic follows Obsidian's language: any `pt` locale gives pt-BR, any `en`
 locale gives English. Any other locale gives **no language**: echoes, adverbs, gerunds
 and readability are off (running English rules on Spanish prose would be confidently
@@ -582,11 +582,17 @@ IMPROVEMENTS 6. Escrita has grown into many features, and most writers
 use a few. A **Features** page at the top of the settings lists every feature, grouped by
 the stage of a work it serves, each with a switch and one line on what it does:
 
+There are **17 switches** in five groups (stages are always on; spellcheck on demand
+and the stage snapshot get their own):
+
 - Writing: goals and sprints (with the status bar), outline and ghost beats,
   placeholders, Enter flow and smart typography, dialogue focus, move a paragraph or
-  scene, insert from a template, word counts in the explorer.
+  scene, insert from a template, spellcheck on demand, word counts in the explorer.
+  The explorer counts, spellcheck on demand and the universe mode already existed as
+  settings; they are the switches, and their old controls left their sections.
 - Revision: revision lens, snapshots, darlings.
-- Tracking ("Acompanhamento" in pt-BR): stages and the home block.
+- Tracking ("Acompanhamento" in pt-BR): the stage snapshot (needs snapshots) and the
+  home block with where you left off.
 - Publishing: publish check, and export and submissions once they ship.
 - The world: the universe (its switch is the universe mode, so there's one control, not
   two) and open threads.
@@ -597,6 +603,30 @@ snapshots, darlings, thread dates), so turning it back on loses nothing. Feature
 depend on another say so next to the switch (the stage snapshot needs snapshots) and
 can't be on without it. Shared services (the classifier, the measurer, the vault index)
 are always on.
+
+**Reading of the spec in 0.7.**
+
+- *Commands.* A feature turned off removes its commands with `removeCommand`, which
+  needs Obsidian 1.7.2 (`minAppVersion`). Custom hotkeys survive in `hotkeys.json` and
+  work again when the command returns.
+- *Views.* Obsidian can't unregister a view type, so each type stays registered for the
+  plugin's life. An off feature's leaves are closed, and a leaf restored at startup shows
+  an empty placeholder until it is closed.
+- *Ribbon icons.* A feature turned off at runtime keeps its ribbon icon until the next
+  restart, and a click on it says the feature is off. Off at startup, the icon is never
+  added. A command pinned in the mobile toolbar keeps a dead button until restart too.
+- *Settings.* Settings hide row by row, by the feature that reads them. Property names
+  and folders that several features share (target, limit, unit, deadline, goal, POV,
+  chapter target, track folders, the chapters folder) live in an always-shown section,
+  "Properties and folders".
+- *Data.* Data followers keep running while a feature is off, so its path-keyed data
+  (where you left off, thread dates, POV colours, snapshots) still follows renames. The
+  one exception to "files stay put" is the snapshots rename handler, which also moves
+  the snapshot files on disk while snapshots is off.
+- *Desk.* With the desk off, the universe's Works tab opens a work at the top, ignoring
+  "where you left off".
+- *Writing language.* The setting moved out of the Revision section to the top of the
+  Features page, under the same key, because the lens and the names matcher both read it.
 
 **Presets (v1.0).** The setup command offers three starting points, and the Features page has
 the same three buttons, each showing what it will switch before it does:
@@ -776,8 +806,9 @@ renaming the conto updates the link, and the notes read well with Escrita turned
 | Snapshots | Folder | `Escrita/Snapshots` | same |
 | | Auto snapshot before first edit of the day | off | (author's choice) |
 | | Keep automatic snapshots | 20 | same |
-| Revision | Language | Automatic (from Obsidian's language) | `pt-BR` |
-| | Word lists note | (empty) | `Modelos/Revisão.md` |
+| Features (0.7) | Writing language (moved here from Revision, same key) | Automatic (from Obsidian's language) | `pt-BR` |
+| Features (0.7) | Seventeen switches in five groups | all on | (author's choice) |
+| Revision | Word lists note | (empty) | `Modelos/Revisão.md` |
 | | Echo window / long sentence length | 40 / 45 | same |
 | | Skip quotes (`>` lines) | on | same |
 | | One toggle per rule | all on | same |

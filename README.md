@@ -6,7 +6,19 @@ Escrita is inspired by [NEO](https://github.com/hughhowey/neo) by Hugh Howey (MI
 
 Your books stay plain Markdown. Everything Escrita adds to a chapter is an Obsidian comment (`%% … %%`), so it is hidden in Reading view and by most publishing tools.
 
+## User guide
+
+Step-by-step guides, in English and Brazilian Portuguese (they grow with each version):
+
+- Features and settings: [English](docs/guide/en/features-and-settings.md) · [Português](docs/guide/pt-BR/features-and-settings.md)
+- Writing (the outline, point of view, chapter targets): [English](docs/guide/en/writing.md) · [Português](docs/guide/pt-BR/writing.md)
+- The world (the universe, "Appears in", threads, templates): [English](docs/guide/en/the-world.md) · [Português](docs/guide/pt-BR/the-world.md)
+
 ## Features
+
+### Features page
+
+Turn off what you don't use. The **Features** section at the top of the settings has a switch for each of 17 features, in five groups. A feature that is off isn't loaded: no commands, panels, menu items or background work. Its data stays and comes back when you turn it on again, and its settings hide. The universe's switch is its mode (off, per book, universe). It needs Obsidian 1.7.2 or later. The ribbon icon of a feature you turn off stays until you restart Obsidian. See [Features and settings](docs/guide/en/features-and-settings.md) ([Português](docs/guide/pt-BR/features-and-settings.md)).
 
 ### Outline and ghost beats
 
@@ -17,6 +29,8 @@ Your books stay plain Markdown. Everything Escrita adds to a chapter is an Obsid
 - Outside a book, the panel shows the beats of the note you're in (a short story, an essay), with its length against its target or limit. Enter adds a beat, Backspace on an empty one removes it, and a note with no beats offers **Add the first beat**.
 - **Ghost beats**: in Live Preview, beats show inside the chapter as faint labels ("Beat b · from outline") above where the scene goes. Put the cursor on the line to see the raw text.
 - **Open outline as a board** writes a Canvas file with one card per chapter, colored by status.
+- **Point of view and status** (0.7): a `pov` property on a chapter (a link or plain text) gives each chapter a colored stripe, and **Color by** switches the stripes between status and point of view. The header counts chapters by stage in your own words ("1 rascunho · 2 revisão"), and chips filter by stage and by point of view. Drag and renumbering pause while a filter is on. See [Writing](docs/guide/en/writing.md) ([Português](docs/guide/pt-BR/writing.md)).
+- **Per-chapter targets** (0.7): a chapter's own `target` shows a thin bar under its title, and a `chapterTarget` property on the book note gives every chapter without a target a default. See [Writing](docs/guide/en/writing.md#a-target-for-every-chapter) ([Português](docs/guide/pt-BR/writing.md#uma-meta-para-cada-cap%C3%ADtulo)).
 
 ### Goals, progress and pacing
 
@@ -143,7 +157,7 @@ To close a thread, use **Close thread** (cursor on the marker), the editor menu,
 
 ### Shared universe
 
-Off by default. Turn on **Shared universe** in the settings to keep characters, places, objects, groups and events that your stories share. For a walkthrough of setting it up, with threads and templates, see [the universe guide](docs/GUIDE-universe.md).
+Off by default. Turn on **Shared universe** in the settings to keep characters, places, objects, groups and events that your stories share. For a walkthrough of setting it up, with threads and templates, see [the universe guide](docs/guide/en/the-world.md) ([Português](docs/guide/pt-BR/the-world.md)).
 
 - **Per book**: entries live inside each book, in folders named for their type (`Characters/`, `Places/`…).
 - **Universe**: entries are shared across works. A **universe note** (for example `Universe.md`) names the universe, and the folder beside it with the same name (`Universe/`) holds the entries.
@@ -159,6 +173,20 @@ The **universe panel** has three tabs:
 **Create universe entry** (command, or the editor menu with some text selected) asks for the type, then makes the note in the type's folder from its template, with `type` and `universe` set, and can turn the selected text into a link and add an alias. If an entry with that name or alias exists, it offers to open it instead.
 
 **Move this book's entries to the universe** moves a book's `Characters/`, `Places/`… notes into the universe's folders, after a preview. Links update. A name that already exists is never overwritten. Two boxes in the preview add the `type` property where a note lacks it (from the folder it came from) and the `universe` property to the book note; nothing already there is changed. Changing the mode never moves or edits notes.
+
+#### Keep a note out of the universe
+
+`universe: false` in a note's properties makes it standalone, even inside a folder you listed in the settings (an essay among your contos). It is checked before every other rule. On a book note it keeps the whole book out, unless a file links a universe itself. No setting and no word to translate: it is a plain true or false. See [The world](docs/guide/en/the-world.md#keeping-one-note-out-universe-false) ([Português](docs/guide/pt-BR/the-world.md#deixando-uma-nota-de-fora-universe-false)).
+
+#### Appears in
+
+Escrita finds where each entry is mentioned. The Entries tab shows "N works" beside an entry with mentions, and a click opens the list of works and chapters with counts and the first and last chapter. Each entry note also gets an **Appears in** section at its end (Live Preview and Source mode), drawn over the note and never written into it. A click on a work opens the note with the first mention selected.
+
+Names match by the note's name and its `aliases`, whole words only. A capitalized name needs a capital letter (*Rosa* is not *rosa*), articles must match as written, accents are ignored (*Inês* is *Ines*), and plurals and diminutives follow the writing language (*Maria* and *Mariazinha*, but not *Mariano* for *Mariana*). For a character, the first name counts too, skipping titles (*Dona Benta Encerrabodes* is also *Benta*). A link counts once. Four optional properties on an entry adjust it: `aliases`, `caseSensitive`, `ignore` (phrases that don't count, like *rosa dos ventos*) and `firstName: false`; the three that are Escrita's own have names you can change in the settings. Nothing is written to your notes and nothing leaves your device. See [The world, section 9](docs/guide/en/the-world.md#9-appears-in-where-a-character-or-place-is-mentioned) ([Português](docs/guide/pt-BR/the-world.md#9-aparece-em-onde-um-personagem-ou-lugar-%C3%A9-mencionado)).
+
+#### Names in spellcheck and the revision lens
+
+Names and aliases of entries in a note's universe are not flagged as spelling errors in Live Preview (the word is marked "don't spellcheck"; your dictionary is never changed). **Underline names in the editor** (off by default) draws a thin line under them, and Ctrl/Cmd-click opens the entry. The revision lens reads the same names, so a variant of a name is flagged and a repeated name is not an echo. See [The world, section 10](docs/guide/en/the-world.md#10-names-in-the-editor-and-the-revision-lens) ([Português](docs/guide/pt-BR/the-world.md#10-nomes-no-editor-e-na-lente-de-revis%C3%A3o)).
 
 ## How books are organized
 
@@ -193,15 +221,17 @@ A beat counts as written when prose follows it before the next beat, scene break
 - **Home note**: the note that holds your `escrita-works` block, and **Open on startup**, which opens it in the active tab when Obsidian starts (off by default; it replaces the tab Obsidian restored).
 - **Goals**: daily word goal, the hour the writing day ends, folders to track and to ignore, the size of a change that is ignored as a paste or sync, the default sprint length and word target, and whether to show the status bar.
 - **Goals** (continued): the property names for a piece's target, limit, unit and deadline, the property name for a book's goal, weekdays off and dates off. Write amounts as `15000`, or quote them when they have separators (`"15.000"`): unquoted, `15.000` is the decimal number 15.
-- **Goals** (file explorer): word counts on or off, the target next to the count, folder totals.
+- **Goals** (file explorer): the target next to the count and folder totals. (Word counts on or off is now on the Features page.)
 - **Publishing**: the date property and recommended properties (the status words are under Stages, and the status property under Books).
 - **Outline**: ghost beats on or off.
 - **Placeholders**: the marker word, and whether to mark files in the file explorer.
 - **Darlings**: the darlings note inside a book, and the note used for everything else.
-- **Editor**: Enter, Enter, Enter; paragraph style; smart typography, where it applies, quote style and dialogue dash; spellcheck on demand.
-- **Revision**: the language (Automatic, Português (Brasil) or English), the word lists note (path, with a **Create** button), the echo window (default 40 words, 10 to 200) and the long sentence length (default 45 words, 15 to 200), **Skip quotes** (lines that start with `>` are not read), one toggle for each rule, and **Show dialogue share** and **Show readability**.
+- **Editor**: Enter, Enter, Enter; paragraph style; smart typography, where it applies, quote style and dialogue dash. (Spellcheck on demand is now a switch on the Features page.)
+- **Features** (0.7): the **Writing language** (Automatic, Português (Brasil) or English; it used to be under Revision) and the 17 switches. Word counts in the explorer, spellcheck on demand and the universe mode live here now.
+- **Properties and folders** (0.7, always shown): the property names for a piece's target, limit, unit and deadline, a book's goal, a chapter's point of view (`pov`) and a book's default chapter target (`chapterTarget`), plus the track and ignore folders.
+- **Revision**: the word lists note (path, with a **Create** button), the echo window (default 40 words, 10 to 200) and the long sentence length (default 45 words, 15 to 200), **Skip quotes** (lines that start with `>` are not read), one toggle for each rule, and **Show dialogue share** and **Show readability**.
 - **Templates**: the templates folder used by **Insert from a template**. Empty turns the command off.
-- **Universe**: the mode (off, per book, universe), the universe note (with a **Create** button), the folders whose notes join the universe without the property, the universe, type and form properties, the six form words, the form of each folder ("Form by folder", as `Folder: form` lines), and for each of the five entry types its value, folder, template and name in menus (you can rename them, not add or remove any). There is no separate folder setting: entries live in the folder beside the universe note.
+- **Universe**: the universe note (with a **Create** button), the folders whose notes join the universe without the property, the universe, type and form properties, the six form words, the form of each folder ("Form by folder", as `Folder: form` lines), and for each of the five entry types its value, folder, template and name in menus (you can rename them, not add or remove any). There is no separate folder setting: entries live in the folder beside the universe note. Since 0.7 also **Underline names in the editor** (off by default), **Extra titles** (one per line, added to the built-in Portuguese and English titles) and the names of the entry properties `caseSensitive`, `ignore` and `firstName`.
 - **Threads**: the thread word (default `thread`) and the word that marks a closed thread (default `closed`; use your own language, for example `fechado`). Both work in every mode.
 - **Snapshots**: the snapshots folder (default `Escrita/Snapshots`; a folder that holds notes or sits inside a tracked folder is refused; a folder starting with a dot is hidden, but Obsidian Sync skips it; changing it doesn't move existing snapshots), the snapshot before the day's first edit, and how many automatic snapshots to keep per note.
 
@@ -232,7 +262,7 @@ Escrita sets no hotkeys. Bind the ones you use often in Settings → Hotkeys. Fo
 
 **Manually**: download `main.js`, `manifest.json` and `styles.css` from the latest [release](https://github.com/ClaudioDavi/escrita/releases), put them in `<your vault>/.obsidian/plugins/escrita/`, reload Obsidian, and enable Escrita in Settings → Community plugins.
 
-Escrita works on desktop and mobile.
+Escrita works on desktop and mobile. From 0.7 it needs Obsidian 1.7.2 or later.
 
 ## Privacy
 
@@ -262,9 +292,26 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
+### 0.7.0 (in progress)
+
+- **Features page**: a switch for each of 17 features, in five groups, at the top of the settings. An off feature is not loaded, its settings hide and its data stays. See [Features and settings](docs/guide/en/features-and-settings.md).
+- **Keep a note out of the universe**: `universe: false` on a note, or on a book note for the whole book. See [The world](docs/guide/en/the-world.md#keeping-one-note-out-universe-false).
+- **Appears in**: where each entry is mentioned, in the panel's Entries tab and in a section at the end of each entry note, with counts. See [The world](docs/guide/en/the-world.md#9-appears-in-where-a-character-or-place-is-mentioned).
+- **Names in spellcheck and the revision lens**: entry names are not flagged as typos, an optional underline shows them, and the lens reads them. See [The world](docs/guide/en/the-world.md#10-names-in-the-editor-and-the-revision-lens).
+- **POV and status in the outline**: colored stripes, a Status/POV toggle, stage and POV chips, and a summary by stage. See [Writing](docs/guide/en/writing.md).
+- **Per-chapter targets**: a bar per chapter, and `chapterTarget` on the book note as the default. See [Writing](docs/guide/en/writing.md#a-target-for-every-chapter).
+- **User guide**: `docs/guide/` in English and Brazilian Portuguese; the universe guide moved there as "The world".
+- The minimum Obsidian version is now 1.7.2.
+- **Writing language** moved out of Revision to the Features page, with the same key.
+- Word counts in the explorer, spellcheck on demand and the universe mode moved to the Features page as switches.
+- The piece property names and the track folders moved to a section called "Properties and folders".
+- Drag and renumbering in the outline pause while it is filtered.
+- A feature turned off keeps its ribbon icon until you restart Obsidian (a click says the feature is off), and on a phone a command pinned to the mobile toolbar keeps a dead button until you restart.
+- Internal: modules now load and unload at runtime, and the outline reads each chapter through one row loader.
+
 ### 0.6.0
 
-- **Shared universe** (off by default): characters, places, objects, groups and events that your stories share. Three modes: off, per book (entries inside each book) and universe (entries in the folder beside a universe note). A work joins with a `universe` property, through its book, or by sitting in one of the folders you list. Five entry types, renamable, each with its folder, template and name in menus. Changing the mode never moves or edits notes. A walkthrough is in [the universe guide](docs/GUIDE-universe.md).
+- **Shared universe** (off by default): characters, places, objects, groups and events that your stories share. Three modes: off, per book (entries inside each book) and universe (entries in the folder beside a universe note). A work joins with a `universe` property, through its book, or by sitting in one of the folders you list. Five entry types, renamable, each with its folder, template and name in menus. Changing the mode never moves or edits notes. A walkthrough is in [the universe guide](docs/guide/en/the-world.md).
 - **Universe panel**: **Entries** (grouped by type, searchable by name and alias ignoring accents, with open, insert link and show in explorer), **Threads** and **Works** (grouped by form, by stage and name, with stage dots and word counts; a click opens where you left off). An **Add to** button joins the note you're in to the universe, only when you click it. A picker appears when there is more than one universe.
 - **Create universe entry**: from a selection in the editor menu, the command or the panel. It makes the note from the type's template with `type` and `universe` set, can link the selected text (one undo) and add an alias, and offers to open an entry that already has that name or alias. It never overwrites a note.
 - **Move this book's entries to the universe**: moves a book's `Characters/`, `Places/`… notes into the universe after a preview, with links updated. Names that already exist are listed and left in place, chapters are never moved, and two boxes add a missing `type` and the book's `universe` property.

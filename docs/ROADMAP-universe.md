@@ -7,7 +7,7 @@ folder (`Romances/<Book>/Personagens/`), so contos can't share them. This roadma
 makes the **universe** the container and every work a part of it.
 
 Versions are decided in [ROADMAP.md](ROADMAP.md): 1.1, 1.3 and 1.5 in v0.6; 1.2 and 1.4 in
-v0.7; phase 2 in v0.9, which completes the universe for v1.0.
+v0.7; phase 2 (with 2.5, moved from 1.2 and 1.3) in v0.9, which completes the universe for v1.0.
 
 It is independent of [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md) and
 [ROADMAP-novel.md](ROADMAP-novel.md); where features overlap (character tracking in the
@@ -35,9 +35,10 @@ Rules:
 
 - **Off is the default for new installs.** The universe panel (view type
   `escrita-universe`) and the universe commands exist only when the mode isn't off.
-  Obsidian can't unregister a view or a command, so the view type stays registered but its
-  leaves are closed when the mode goes off, and each universe command hides itself with a
-  `checkCallback` (no re-registering needed). No property is ever added to a note while
+  The universe is a switchable feature (SF 10, 0.7): going off removes its commands and
+  closes its panel's leaves. Obsidian can't unregister a view type, so the type stays
+  registered for the plugin's life and a restored leaf shows an empty placeholder until it
+  is closed. No property is ever added to a note while
   the mode is off, and none is added without an explicit click.
 - **Features that don't need a universe work in every mode**: open threads (1.5) are
   listed over the tracked works when off (a standalone "Open threads" view, command
@@ -53,11 +54,15 @@ Rules:
   migration command (1.1) with a preview; universe → per book or off only hides
   features. Notes stay where they are.
 - **Keeping one note out (v0.7)**: `universe: false` makes a note standalone even when
-  it sits in a folder in the universe (an essay in a folder of contos). On a book note it
-  keeps the book's chapters out too, unless a chapter links a universe itself. It is
-  checked before every other rule, and it's a YAML boolean, so there's no word to
-  translate and no setting. The panel's "Add to" button doesn't show for such a note,
-  since the writer chose to keep it out.
+  it sits in a folder in the universe (an essay in a folder of contos). It is rule 0: it
+  is checked before every other rule, so it beats the universe folder and the universe
+  note too. It is a YAML boolean, so there's no word to translate and no setting; the
+  string `"false"` (trimmed, any case) counts as false as well, because the Properties
+  editor writes a string. On a book note it applies to every file of the book, not only
+  its chapters, unless a file links a universe itself (a file's own link beats the
+  book's `false`, and its own `false` beats the book's link). The book's own scope still
+  applies to such a file (per-book rules). The panel's "Add to" button doesn't show for
+  such a note, since the writer chose to keep it out.
 - **Mixed vaults**: in universe mode, a work without a `universe` property (and not in
   a folder with a default universe) is standalone. Its entries live in its own book
   folder (per-book rules) and are invisible to the universe.
@@ -158,34 +163,59 @@ Romances/A Casa.md              ← a book: universe: "[[Universo]]", forma: rom
 
 Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
 
-- **Matching**: each entry's file name and `aliases` matched as whole words in the prose
-  of every work in the universe (`core/wordcount.proseOnly` text, so comments and
-  frontmatter don't count). Case-insensitive by default; per-entry `caseSensitive`.
+- **Matching**: each entry's file name and `aliases` matched as whole words in the text
+  a reader sees: the matcher reads the reader mask (`readerMask`, offsets kept), not
+  `proseOnly`, so headings count and comments, frontmatter, link targets and code don't.
+  A **capitalized** term (*Rosa*, *Rosa dos ventos*) matches only tokens that start with a
+  capital letter, checked word by word, so *Rosa dos ventos* needs a capital on *Rosa* and
+  not on *dos*; an all-caps token counts (a `## PORTO` heading matches *Porto*); a common
+  word at the start of a sentence still matches, an accepted cost. A lowercase term (*o
+  menino*) matches in any case. Per-entry `caseSensitive` keeps exact case for terms that
+  need it (accents are ignored, case is kept). Articles and contractions inside a
+  multi-word term must match as written, each word stemmed on its own: *o menino*
+  matches *O menino*, never *os meninos*. A hyphenated word matches as its parts, in the
+  text, in a term and in an ignore phrase alike, when no part has an apostrophe
+  (*Maria-José* is a mention of *Maria José*). Only whitespace and emphasis marks may sit
+  between the words of a name.
 - **Portuguese inflection**: shipped in 0.5 as the stemmers in `core/stem/`, built with
   the revision lens (short-fiction roadmap feature 5). People and places match through
   `stem(word, lang, "name")`: plural, diminutive and augmentative (*Maria / Mariazinha*),
   and the feminine is skipped on purpose (*Mariano / Mariana* are different people).
-  Common-noun entries and aliases match through `"word"` (*menino / meninos / menina*).
-  A case-sensitive entry compares casing before the stem. English: plural and possessive
+  The profile comes from the term, not the entry kind: a name or alias that starts with a
+  capital uses `"name"`, a lowercase one uses `"word"` (*menino / meninos / menina*).
+  Accents are folded before stemming in every word the matcher compares, so *Inês* and
+  *Ines* are one key. A case-sensitive entry compares casing before the stem. English: plural and possessive
   (`Teo's`) through the English stemmer from the same module. The sentence splitter and
   title abbreviations (*Sr.*, *Dra.*) are in `core/sentences.ts`.
 - **Ignore list** per entry (`ignore` property) for names that are also common words
   (a character named "Rosa", a place called "Porto"). An ignore entry can be a phrase
-  ("Rosa dos ventos"), so the name still counts elsewhere.
+  ("Rosa dos ventos"), so the name still counts elsewhere. The three per-entry property
+  names (`caseSensitive`, `ignore`, `firstName`) are settings.
+- **Collisions**: when two entries share a key, an explicit name or alias beats a derived
+  first name; a key that is still ambiguous counts for no one (*Marcos / Marco*). One-letter
+  terms and stop-word terms never match.
 - **First name as an alias**: for a character entry with a full name, its first word
-  counts as an alias unless it's a title (*Dona*, *Seu*, *Dr.*, *Mr.*; list in
-  settings). Per-entry `firstName: false` turns it off.
+  counts as an alias. Leading titles are skipped and the next word becomes the first name
+  (*Dona Benta Encerrabodes* gives *Benta*). The full name minus its titles is also a term,
+  even when one word remains (*Mr Brown* gives *Brown*). A bare surname without a title is
+  not derived. Titles compare with accents kept (*Irma* is a name, *Irmã* a title). They
+  are built-in Portuguese and English tables picked by the writing language, extended by
+  the `nameTitles` setting (one per line, empty by default). Per-entry `firstName: false`
+  turns it off.
 - **Explicit links count too**: a `[[Teo]]` link is a mention even if the text differs.
 - **Index**: built after layout ready in small batches, kept current on modify, rename
-  and delete (the placeholders index is the pattern). Pure matcher in
-  `src/universe/match.ts`, tested on Portuguese samples.
+  and delete (the placeholders index is the pattern). The pure matcher lives in
+  `src/core/names.ts`, not `src/universe/match.ts`, so the lens, spellcheck and the outline
+  share it without importing the universe; tested on Portuguese samples.
 - **Output**:
   - In the universe panel and in each entry note (a small "Appears in" section rendered
     by the plugin in the note's view, not written into the file): every work and chapter
     mentioning it, in story order when phase 2 exists, else by work, with counts and
-    first/last mention. Click to jump.
+    first/last mention (only inside a book, where chapters have an order). An "Other
+    notes" group follows the works: other entries, the universe note and loose notes in
+    scope. Click to jump.
   - Optional subtle underline of recognized names in the editor (setting, off by default).
-  - "Unlinked mentions" list per work, so the author can add links if wanted.
+  - "Unlinked mentions" moved to phase 2 (2.5, v0.9).
 
 ### 1.3 Create entry from selection (v0.6, shipped in 0.6.0)
 
@@ -202,21 +232,23 @@ Novelcrafter's Codex idea, without AI, universe-wide and Portuguese-aware.
   and the default-folders setting; the command never adds the property by itself.
 - The universe link is written as the shortest link that is unambiguous
   (`fileToLinktext`), so two notes with one basename get a path.
-- **Names without an entry** (a tab in the universe panel, from v0.7 when the matcher
-  exists): capitalized words that recur across works, aren't at a sentence start, and
-  match no entry or alias, each with a Create button that opens this modal. A dismiss
-  list keeps ordinary words out. "Sentence start" comes from the sentence splitter and
-  title abbreviations already in `core/sentences.ts` (0.5).
+- **Names without an entry** moved to phase 2 (2.5, v0.9), with the details there.
 
 ### 1.4 Names into spellcheck and the revision lens (v0.7)
 
-- Every entry name and alias in the universe is added to the editor's spellcheck
-  dictionary so invented names stop being flagged. Obsidian doesn't expose a dictionary
-  API; use the Electron session spellchecker only on desktop behind a guard
-  (`isDesktopApp`, try/catch), and on mobile skip it. Never remove words the user added.
-- The revision lens's name-variant rule reads names from the universe instead of (or in
-  addition to) its word-list note: *Marianna* when the entry is *Mariana*. The rule has
-  taken a `names` option since 0.5, so this only feeds it entries.
+- Every entry name and alias stops being flagged as a spelling error. Obsidian doesn't
+  expose a dictionary API and Escrita never uses Electron, so the editor marks the names
+  with `spellcheck="false"` (a CodeMirror mark decoration) instead of adding them to a
+  dictionary. It applies on desktop and, per platform as the device check (G0c) finds, on
+  mobile; autocorrect on phone keyboards isn't addressed. Names are unflagged only in
+  notes in their scope, not vault-wide, and the writer's own dictionary is never touched.
+  An optional underline (a setting, off by default) shows what was recognised; Ctrl/Cmd-click
+  on a marked name opens its entry.
+- The revision lens's name-variant rule reads names from the universe in addition to its
+  word-list note: *Marianna* when the entry is *Mariana*. The rule has taken a `names`
+  option since 0.5, so this only feeds it entries. Only capitalized terms feed the lens
+  and the marks; the names also feed echoes and gerunds. The names reach other modules
+  only through the names port (`core/names-source.ts`).
 
 ### 1.5 Open threads (v0.6, shipped in 0.6.0)
 
@@ -317,6 +349,18 @@ Hooks planted in one story for future stories. They work in every mode.
 - `canon` property on works and entries: `canon`, `draft`, `apocryphal` (configurable).
 - Non-canon works don't count for continuity checks and are shown dimmed in the timeline.
 
+### 2.5 Unlinked mentions and names without an entry (moved from 1.2 and 1.3)
+
+Both need the matcher and the mentions index from 0.7 and moved here (0.7 plan, Q35).
+
+- **Unlinked mentions**: a list per work of places where an entry is mentioned without a
+  link, so the author can add links if wanted.
+- **Names without an entry** (a tab in the universe panel): capitalized words that recur
+  across works, aren't at a sentence start, and match no entry or alias, each with a Create
+  button that opens the create-entry modal. A dismiss list keeps ordinary words out.
+  "Sentence start" comes from the sentence splitter and title abbreviations in
+  `core/sentences.ts` (0.5).
+
 ---
 
 ## Not in the plugin: website integration
@@ -352,4 +396,9 @@ story-order reading pages or a public wiki on their own site, reading the vault'
 | Thread word | `thread` | `fio` or `thread` (author's choice) |
 | Thread closed word | `closed` | `fechado` |
 | Underline names in the editor (0.7) | off | (author's choice) |
+| Extra titles (`nameTitles`, 0.7): one per line, added to the built-in Portuguese and English tables | (empty) | (empty) |
+| Entry property names (0.7): case-sensitive, ignore, first name | `caseSensitive`, `ignore`, `firstName` | same |
+| Point of view property (0.7, outline) | `pov` | author's choice |
+| Chapter target property (0.7, outline) | `chapterTarget` | author's choice |
+| `universe: false` (0.7) | a property on a note, not a setting | as needed |
 | When / born / died / canon properties (0.9) | `when`, `born`, `died`, `canon` | same or Portuguese names |

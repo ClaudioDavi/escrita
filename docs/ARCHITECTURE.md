@@ -29,7 +29,9 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   "Vault index" below: `add(spec)`, `follow(follower)`, `rebuild(name?)`, `settingsChanged()`),
   `works` (`WorksReader`, `core/works-index.ts`: the live list of works, one entry per
   tracked book, note or chapter; `get`, `list`, `isReady`, `onReady`, `onChange`; built on
-  `index`), and the other modules (`goals`, `outline`,
+  `index`), `features` (`FeatureRegistry`: `isOn(id)`, `onChange(cb)`; see "Modules and
+  feature switches"), `names` (`NamesPort`, `core/names-source.ts`: the terms of a note's
+  scope, empty until the universe provides them; see "Names matcher"), and the other modules (`goals`, `outline`,
   `placeholders`, `explorer`, `darlings`, `editor`, `lens`, `snapshots`, `publish`, `desk`,
   `universe`: the one with a public API, see its spec below).
 - **Pure core** (no Obsidian imports, unit tested): `core/markdown.ts` (the one
@@ -91,8 +93,17 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   no `innerHTML`/`outerHTML`/`insertAdjacentHTML` — build DOM with `createEl`/`createDiv`/`setText`/`setIcon`;
   no default hotkeys; command names without the plugin name; `this.plugin.registerEvent`/
   `registerDomEvent`/`registerInterval`/`registerEditorExtension`/`registerView` for
-  everything so unload cleans up; never keep references to views — look them up with
-  `workspace.getLeavesOfType`; don't detach leaves in `onunload`; modify files with
+  everything so unload cleans up. A switchable module never calls those on the plugin:
+  it registers through its `ModuleContext` (`this.ctx.command`, `.view`, `.editor`,
+  `.statusBar`, `.index`, `.follow`, `.decorate`, `.onLayoutReady`, and `register*` on the
+  module itself, which is a `Component`), so turning the feature off undoes each one.
+  Only `src/core/module-context.ts`, `src/core/feature-registry.ts`, `src/main.ts`,
+  `src/core/measurer.ts` and `src/core/vault-indexes.ts` call the plugin's own
+  registration methods (a grep in the checks keeps it so); never keep references to
+  views — look them up with `workspace.getLeavesOfType`; **don't detach leaves in the
+  plugin's `onunload`** (Obsidian restores them on the next start), but **a feature the
+  writer switches off closes its own leaves**, because Obsidian can't unregister a view
+  type and would leave ghost panes (see "Modules and feature switches"); modify files with
   `vault.process` (body) and `fileManager.processFrontMatter` (properties), rename with
   `fileManager.renameFile`, delete with `fileManager.trashFile`; `normalizePath` for
   built paths; no Node or Electron APIs (`isDesktopOnly: false`); no global `app`;
@@ -382,11 +393,64 @@ and returns occurrences with candidates. Words are folded with `foldName` (accen
 removed) before they are stemmed, so *Inês* and *Ines* meet; a hyphenated word also
 matches as its parts.
 
+- **Terms and keys.** A `NameSource` is an entry (path, name, aliases, `person`,
+  `firstName`, `caseSensitive`, `ignore`). `compileTerms(sources, { lang, extraTitles })`
+  gives a `NameTerm` per name, alias and derived first name, each with its `words`, its
+  `keys`, its `origin` (`name`, `alias` or `first`, in that rank) and its `profile`. A key is
+  `stem(foldName(word), lang, profile)`, prefixed by the profile (`name:` or `word:`); with
+  no language it is the folded word.
+- **Profiles by capital letter.** The stem profile comes from the term, not the entry's
+  kind: a term whose first letter is a capital uses `"name"`, any other uses `"word"`. A
+  capitalized term matches only tokens that start with a capital (word by word, all caps
+  included); a lowercase term and `caseSensitive` entries are unchanged (a case-sensitive
+  term compares case with accents ignored). Only capitalized terms feed the lens and the
+  name marks (`capitalizedTerms`).
+- **Phrases.** A multi-word term matches through `findPhrase`: only whitespace and
+  emphasis marks between the words, no article rule (each word is stemmed on its own and
+  must match as written), the longest match wins at a position, overlaps resolve left to
+  right. A hyphenated word is its parts, in the text, in a term and in an ignore phrase,
+  unless a part has an apostrophe. One-letter and stop-word terms never match.
+- **Collisions.** Terms with the same key from different entries are candidates of one
+  occurrence; `pickEntry` keeps the candidates in the note's scope, prefers those whose folded
+  text equals the term's (`Candidate.exact`), then explicit names and aliases over a derived
+  first name, and leaves the occurrence for no one when more than one entry is still left.
+- **First names and titles.** For a character with `firstName` on, leading titles
+  (`core/name-titles.ts`, Portuguese and English tables picked by the writing language,
+  both when it is "auto" with another locale, extended by `nameTitles`) are skipped and
+  the next word is a term when another word follows. The name minus its titles is also a
+  term. Titles compare with accents kept.
+- **Ports.** `NamesPort` (`plugin.names`) holds one `NamesProvider`: `tableFor(path)` (the
+  terms of the note's scope), `entryFor(text, path)` (used by POV links), `version()` and
+  `onChange`. The universe provides it (`universe/names-provider.ts`: one table per scope,
+  compiled again only when its sources' signature changes) and withdraws it on unload.
+  The lens, the name marks and the outline read the port, never the universe.
 - **Performance budget.** `tests/names.test.ts` has a CI ceiling (300 entries against a
   10,000-word note under 100 ms) that catches quadratic code, and a local budget that is
   skipped when `CI` is set: **20 ms** (median of the fastest half of the runs, to ride out
   a loaded machine) for the same note. The two-thousand-word bench (`tests/names.bench.ts`,
-  `vitest bench`) is how the figure for a phone was estimated (0.7 plan, G0h).
+  `vitest bench`) is how the figures were measured (0.7 plan, G0h).
+- **G0h figures.** Desktop, `segment + readerMask + findNames` with 300 entries (1,310
+  terms) over a 2,000-word prose with about 2% name hits: **1.9 to 2.2 ms per 1,000 words**
+  (median of 20 runs after 5 warm-ups; whole run 3.4 to 3.8 ms). **The phone figure is still
+  open**: it needs the spike plugin on a device, and the ceilings below use the desktop
+  figure alone. The mentions index's CI ceilings come from it
+  (`tests/universe-mentions-index.test.ts`): the vault's words (1,000s) times 2.2 ms times a
+  margin of 5, which catches quadratic code without failing a loaded runner. Two cases,
+  500 notes and 5,000 notes of 2,000 words each with 300 entries, so about 2.2 s and 22 s of
+  work and ceilings of about 11 s and 110 s; each also checks that the build yields to
+  the event loop between batches (default 40 notes). The name marks' test holds a
+  20,000-word note under 100 ms (5 times the desktop figure at most).
+- **Mentions index** (`universe/mentions-index.ts`, `mentions.ts`). A content spec on the
+  vault index over the notes that can mention an entry (not snapshots, template notes or
+  the universe note itself; the mode and the template settings are part of what decides
+  it). Each note keeps its `NoteMentions`: occurrences from the reader mask (a mention
+  inside a prose link is dropped because the link already counts) and its prose links.
+  Per-entry answers (`appearsIn`) are grouped lazily and cached until the next change.
+  **Rebuild rule**: the first build waits for the entries index and the provider's first
+  table. After that a table change schedules a check 2 s later and rebuilds only when the
+  table's `signature` differs from the last build's; old values stay visible during a
+  rebuild. `scopeChanged()` (a note created, deleted or renamed, a `universe` property)
+  clears the grouped answers and the resolved links; an ordinary edit updates one note.
 
 ## Design reference
 
@@ -460,7 +524,17 @@ of `src/core/measurer.ts`.
   explorer's live count of the active note) stays lazy: short-lived callers pay for
   the characters only when they read them.
 - **Property names** come from settings: `targetProperty`, `limitProperty`,
-  `unitProperty`, `deadlineProperty` (notes and books) and `goalProperty` (books).
+  `unitProperty`, `deadlineProperty` (notes and books), `goalProperty` (books), and, since
+  0.7, `povProperty` (a chapter) and `chapterTargetProperty` (a book note).
+- **Chapter default (0.7).** `readChapterDefault(fm, props)` reads a book note's chapter
+  target (through `parseAmount`) and its unit under the configured names, or null when it
+  sets no target. `effectivePiece(own, def, ownUnit)` decides per field: the chapter's own
+  `target` wins, else the book default; the chapter's own `limit` and `deadline` are kept; the
+  unit is the chapter's, else the default's, else words (a blank unit is no unit). It also
+  says where the target came from (`own`, `book` or null). Only `target` inherits. The
+  default is read by the outline (rows and bars) only: the measurer, the explorer and the
+  goals still read a chapter's own properties, so the explorer may show no target where the
+  outline shows a bar (IMPROVEMENTS candidate 8).
 - **Publish** measures the editor's text with `measureText` (maybe unsaved), never
   the cache.
 - **Labels** go through `unitAmount(unit, n)` and `plural(key, n)` in `src/i18n.ts`
@@ -589,6 +663,93 @@ the works list use it first). `plugin.index` is the hub; a module adds a spec an
   fake timers.
 - **Adding an index** is a spec plus a test on the memory vault. Do not add a
   `vault.on("modify")` listener of your own to rebuild something the index could hold.
+
+## Modules and feature switches (`core/features.ts`, `core/feature-registry.ts`, `core/module-context.ts`, 0.7)
+
+Every feature the writer can turn off is a `FeatureModule` (a `Component`) with a
+`FeatureId`. `main.ts` builds them once, keyed by id, and hands them to the
+`FeatureRegistry`. There are 17 ids, in load order: goals, outline, placeholders,
+explorerCounts, darlings, typing, dialogueFocus, moveBlocks, templates, spellcheck, lens,
+snapshots, stageSnapshot, publish, desk, universe, threads. Stages, the classifier, the
+measurer, the vault index and the notes service are core and always on.
+
+- **The pure part** (`core/features.ts`, no Obsidian imports): `FEATURE_SPECS` (group,
+  `requires`, and where the switch lives), `switchedOn` (the writer's switch alone; a
+  missing key is on), `wanted` (switched on and every requirement on, computed to a fixed
+  point) and `planApply(loaded, want)` (what to unload, in reverse order, and load, in
+  order). Three switches are existing settings (`explorerCounts`, `spellcheckOnDemand`,
+  `universeMode`: a mode other than "off" is on); the other 14 are in `settings.features`.
+- **`FeatureModule`.** Constructed once. Subclasses implement `onload`/`onunload`, never
+  `load`/`unload`; the registry calls them. It has a `slots` field (below), an optional
+  `settingsChanged()` (fanned out to loaded modules only) and an optional
+  `dataFollowers()`.
+- **`ModuleContext`.** The one door to the plugin's registration methods. `command`,
+  `ribbon`, `statusBar`, `view`, `editor`, `codeBlock`, `postProcessor`, `index`, `follow`,
+  `decorate`, `onLayoutReady` and `afterUnload` each record an undo, and the registry runs
+  them when the feature unloads. Commands: `addCommand` rewrites the id of the object it is
+  given (`escrita:<id>`), so the context builds a fresh `Command` on each load and removes
+  with the raw id (`Plugin.removeCommand` adds the prefix itself; spike G0a). Removal drops
+  default hotkeys only; custom ones survive in `hotkeys.json`. The mobile toolbar is
+  rebuilt only when its config changes, so a pinned removed command keeps a dead button
+  until restart.
+- **Slots (Q1 to Q5).** A view type, a code block language, a Reading-view post-processor
+  and an editor extension array can each be registered on the plugin once, and a second
+  `registerView` for one type throws (G0b). A module that is off at startup never runs its
+  load and could not name its types, so each module declares `slots` (view types, code
+  block languages, `postProcessor`, how many editor slots) at construction, and
+  `registry.init()` registers each slot once, at plugin load, whether the feature is on or
+  not. `ctx.view(type, create)` and the others only bind a creator to a declared slot
+  (and throw for an undeclared one); unloading unbinds it. A view slot builds a real view
+  when bound and an empty placeholder view when not (a leaf restored from the saved layout
+  can arrive first). An off code block shows its source as plain code; an editor slot is
+  emptied and `workspace.updateOptions()` runs once after `apply()`.
+- **Leaves.** Obsidian can't unregister a view type, and unregistering would leave ghost
+  panes, so a feature switched off detaches its own leaves (`detachLeavesOfType`) before it
+  unloads, and at layout ready the registry closes leaves of types whose feature is off
+  (a layout saved with the lens panel open, restarted with the lens off). The plugin
+  unloading itself never detaches leaves.
+- **The registry.** `init()` at plugin load: registers slots and every module's data
+  followers. `apply()` runs at the end of `onload` and at the start of `saveSettings`,
+  before `settingsChanged` fans out. It is synchronous (every load is) and guarded against
+  re-entry: a call made while one runs (a follower's `saveSettings` inside the hub's
+  notify, or two keystrokes in the settings) sets a flag and the running apply goes round
+  once more, at most ten passes. Listeners (`onChange`) run after `updateOptions`, once the
+  guard is off. Load order is the id order above, which keeps the order handlers ran in
+  before 0.7; unload is the reverse. Turning a feature on mid-session never moves the
+  writer's tab or opens a view (the desk's cold-start guard is the pattern). A module that
+  throws in load is stopped and left off, with an error in the console.
+- **Ribbon.** `ctx.ribbon` returns null when the feature is off at startup (no icon). Turned
+  off at runtime, the icon stays until the next restart, because Obsidian has no public way
+  to remove it, and its click shows `features.offNotice`.
+- **Data followers (Q8).** Path-keyed data must follow renames and deletes even while the
+  owner is off, or turning it on again would find stale paths. A module lists those
+  followers in `dataFollowers()`; the registry registers them on the vault index at init,
+  so they run whether the module is on or off. They touch only `plugin.data` and
+  `plugin.settings`. The snapshots rename handler is the one that also moves files (the
+  snapshot copies on disk) while snapshots is off.
+- **Soft dependencies.** A module that can work without another asks
+  `plugin.features.isOn(id)` at the point of use and degrades: publish takes no snapshot
+  when snapshots is off; the outline shows no placeholder count when placeholders is off;
+  the desk's `open` ignores "where you left off" when the desk is off; the universe's Works
+  tab and the threads command read the threads and universe switches. A hard dependency is
+  `requires` in the spec (the stage snapshot needs snapshots) and `wanted` drops the
+  dependent. Its stored switch is kept, so the page can grey it out and restore it.
+- **Tests.** Each module has a `tests/lifecycle-<module>.test.ts` that loads it through a
+  recording `ModuleContext`, unloads it and asserts nothing is left (no command, ribbon,
+  status bar item, slot entry, index handle, follower, event or interval), and loads it
+  again to catch duplicates. vitest can't import `obsidian`, so `tests/support/obsidian.ts`
+  is a small stub (a working `Component`, no-op UI classes), aliased in `vitest.config.ts`.
+  `tests/features.test.ts` and `tests/core-features.test.ts` cover the pure part and the
+  registry; `tests/settings-features.test.ts` covers which settings rows hide.
+- **Settings.** The Features page is the first section: the writing language, then one row
+  per feature in five groups (writing, revision, the desk, publishing, the world), each with
+  a switch and a line on what it does. The universe's row is its mode dropdown. A row
+  another feature reads stays while any reader is on (`SETTING_FEATURES` in
+  `settings.ts`): the placeholder marker while publish is on, the templates folder while
+  templates or the universe is on. Property names and folders several features share live
+  in an always-shown "Properties and folders" section. Turning a feature off shows a notice
+  saying what stays (the saved snapshots and where, the word lists note, the days of
+  history, the cut passages).
 
 ## Module specs
 
@@ -720,6 +881,27 @@ the works list use it first). `plugin.index` is the hub; a module adds a spec an
   jumps to the line. A note with no beats shows "Add the first beat"
   (`insertFirstBeat`, after the frontmatter and a leading `# title`) above the usual book picker / "Create a
   book" empty state. The book outline is unchanged.
+- **Chapter rows** (`rows.ts`, pure, 0.7). `loadRows(port, book)` builds one
+  `ChapterRow` per chapter, once, for the outline view and the board: number and label, title, summary,
+  status and its stage, the POV, the piece with where its target came from
+  (`pieceSource`: `own` or `book`), the unit, words, the count in that unit, progress,
+  beats and the placeholder count (from the placeholders index when that feature is on).
+  Nothing else reads a chapter field by field. `RowSettings` names the properties it reads.
+- **POV and colours** (`pov.ts`, pure). `povValue` reads the `pov` property (a link or plain
+  text): one key per resolved note (its path), else per folded text, with the label as
+  written or the entry's name (`plugin.names.entryFor` resolves a link to an entry).
+  `POV_PALETTE` has eight colours; `assignColors` gives each new key the next free one and
+  stores it in `plugin.data.povColors` (cleaned on load, followed on rename by the outline's
+  data follower, kept on delete); `statusTally` counts stages for the summary, labelled with
+  the writer's word. `RowFilter` is a stage and POV filter.
+- **Header and bar** (`header.ts`, `bar.ts`). The header holds the Status / POV toggle, the
+  summary ("1 rascunho · 2 revisão"), the stage and POV chips (wrapping by width, with
+  "+n" and "fewer"), the "Showing 2 of 5 · Clear" line and the POV colour menu (change a
+  colour, open the entry). Both only draw; the view owns the host elements. While a filter
+  is on, drag and "Renumber chapters" are disabled so a partial list never renumbers a
+  book. A chapter with a target shows `bar.ts`'s thin bar, with the colours and rules of a
+  piece's bar in the goals tile (`pieceBar`), in the chapter's own unit; its label says
+  where the target came from. Nothing in these files writes to a note.
 - **Commands**: "Open outline", "Open outline as a board", "Create a book" (modal: title +
   parent folder → creates `<folder>/<title>.md` with `goal`/`deadline` properties, the
   book folder, the chapters folder and a first chapter), "Add a beat to this chapter",
@@ -1041,6 +1223,12 @@ scans its files).
   Notice. Commands: "Toggle revision lens", "Next revision lens match", "Previous
   revision lens match", "Create the word lists note"; no hotkeys. The two private-API
   casts it needs are listed under "Documented exceptions".
+- **Names from the port (0.7).** The session's `analyze` takes `(path, text, version)`, so
+  each note is analysed with its own names. `options(path)` sets `lists.names` to the word
+  lists note's names merged with the capitalized terms of `plugin.names.tableFor(path)`
+  (`lens/names.ts`, `mergeNames`, `namesFor`; lowercase terms are not fed). The pass key
+  includes `plugin.names.version()`, and a change calls `invalidate()`. The lens never
+  imports the universe.
 - **Boundaries.** `lens` imports `core/*` and, read-only, `editor/dialogue` and
   `editor/context`; core never imports the lens. The pure files import neither `obsidian`
   nor `i18n`: `types`, `syllables`, `readability`, `lists`, `lang`, `dismiss`, `lexicon`,
@@ -1162,7 +1350,11 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
 `onChange(cb)`. Views and dialogs never read the indexes directly.
 
 - **Scope** (`scope.ts`, `scopeFor`, pure). The question every feature asks first:
-  `{ kind: "none" | "book" | "universe", root, note }`. Universe mode tries, in order: the
+  `{ kind: "none" | "book" | "universe", root, note }`. **Rule 0 (0.7)**: `universe: false`
+  (the YAML boolean, or the string `"false"`, trimmed, any case: the Properties editor
+  writes a string) keeps the file out of the universe, in its book's scope or none. It is
+  read on the file before its book note, applies to every file of a book, and beats the
+  universe folder and the universe note. Universe mode then tries, in order: the
   file's own universe property (a chapter's wins over its book note's), the book note's
   property, being inside the universe folder, being inside a default-universe folder, being
   in a book (per-book rules), else none. The universe folder is not a setting: it is the
@@ -1177,9 +1369,10 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   `defaultUniverseFolders`. The author's own words live in `data.json`. The section in
   Settings is drawn by `settings-ui.ts`.
 - **Entries index** (`entries.ts`). A `plugin.index` spec over notes whose type property
-  holds an entry type's value, giving `{ path, name, kind, aliases, scope }`. The scope is
-  computed when queried, not stored, so a change to a book note's property can't leave a
-  stale answer. Snapshots and template notes (the type templates, the templates folder,
+  holds an entry type's value, giving `{ path, name, kind, aliases, ... }`. Since 0.7 an entry
+  stores no scope at all: it is computed when queried (`scopeOf`), so a change to a book
+  note's property can't leave a stale answer. The entry's `caseSensitive`, `ignore` and
+  `firstName` properties (names are settings) are read here and feed the names matcher. Snapshots and template notes (the type templates, the templates folder,
   the chapter template) are never entries or threads (`isUniverseNote`), and the index
   is empty while the mode is off. `entriesIn`, `groupByKind` and
   `searchEntries` (folded, accent-blind) are pure.
@@ -1190,6 +1383,25 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   in plugin data and never written into notes. Recorded on index change, moved with
   `plugin.index.follow`, dropped with a deleted note, pruned for missing files at layout
   ready, and kept when a thread disappears and returns with the same text.
+- **Mentions and "Appears in"** (0.7). The names provider (`names-provider.ts`) turns the
+  entries into one `TermTable` per scope and one over every entry, and `plugin.names`
+  exposes it (see "Names matcher"). `MentionsIndex` (`mentions-index.ts`) scans the notes
+  that may mention an entry and answers `appearsIn(entry)`: the works and chapters that
+  mention it with counts, the first and last mention (only inside a book), a group of "Other
+  notes", and a range for "click to jump" that is checked against the live text before it is
+  selected (otherwise the note opens at the top). It rebuilds as described in "Names
+  matcher". `appears-in.ts` draws the list for the Entries tab and `appears-in-widget.ts`
+  draws it as a block widget at the end of an entry note in Live Preview and Source mode,
+  from a `StateField` in an editor slot; it is never written into the file, so it is not
+  selectable, exported or counted. Reading view shows nothing yet (gate G0d is open: the
+  Markdown post-processor route is unproven). Neither file writes to a note.
+- **Name marks** (`name-marks.ts`, `name-marks-model.ts`). A CodeMirror `ViewPlugin` that
+  puts `spellcheck="false"` on every capitalized name of the note's scope, with an
+  optional underline (the "Underline names in the editor" setting, off by default) and
+  Ctrl/Cmd-click to open the entry. One full pass when the note opens or the names change,
+  then a debounced re-match of the paragraphs the edits touched, with marks mapped through
+  edits in between. Decorations only. Whether the squiggle goes away on a phone is gate
+  G0c, still open; the lens half works regardless.
 - **Works tab** (`works-list.ts`, `view-works.ts`). The universe's works from
   `plugin.works`, grouped by the form property (unknown or missing → "No form"), sorted by
   stage (published first) then name; the count comes from `plugin.measure`, filled in
@@ -1224,12 +1436,12 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   book note) and applies the plan one note at a time with `fileManager.renameFile`, adding
   properties with `processFrontMatter` only where missing. Moving into a non-default
   universe also adds the universe property to each moved note.
-- **Mode off.** Obsidian can't unregister a view or a command. The view types stay
-  registered; `syncMode` closes the panel's leaves when the mode goes off; every universe
-  command (`open-universe`, `create-entry`, `move-book-entries`) hides itself with a
-  `checkCallback` or `editorCheckCallback` that reads the mode. "Plant a thread", "Close
-  thread" and "Show open threads" work in every mode. IMPROVEMENTS 6 would replace this
-  with real load and unload.
+- **Mode off.** The universe is a switchable feature and its switch is the mode. Off
+  unloads it: its commands are removed, its panel's leaves close, its names provider
+  withdraws and the mentions index is disposed. The view types stay registered (see "Modules
+  and feature switches"). Open threads are a separate feature (`threads`, `threads-feature.ts`)
+  and keep working in every mode, including the commands "Plant a thread", "Close thread" and
+  "Show open threads", with the threads view.
 - **Commands** (no default hotkeys): Open the universe panel, Show open threads, Plant a
   thread, Create universe entry, Close thread, Move this book's entries to the universe.
   The migration also shows in a book note's file menu in universe mode.

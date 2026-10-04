@@ -105,8 +105,8 @@ as the features ship rather than all at once before 1.0. No website (rule 5): pl
 Markdown files that read well on GitHub and inside a vault.
 
 **Where.** `docs/guide/en/` and `docs/guide/pt-BR/`, the same file names in both. Images,
-if any, sit in `docs/guide/images/`. `docs/GUIDE-universe.md` moves there when the
-folder is created (0.7).
+if any, sit in `docs/guide/images/`. The universe guide moved there in 0.7, as
+`docs/guide/en/the-world.md` (and its pt-BR twin).
 
 **The guides**, one per stage of a work's life, the way the Features page groups them:
 
@@ -120,6 +120,10 @@ folder is created (0.7).
 | The world | The universe, entries, "appears in", open threads (today's universe guide) |
 | Features and settings | The Features page, what each switch turns off, presets (1.0) |
 | Other plugins | The companion-plugin guide (N 6, 0.8) |
+
+File names: `getting-started.md`, `writing.md`, `revision.md`, `tracking.md`, `publishing.md`,
+`the-world.md`, `features-and-settings.md`, `other-plugins.md`. 0.7 wrote `the-world.md`,
+`features-and-settings.md` and `writing.md` (its 0.7 parts only), in both languages.
 
 Each guide explains a task first ("revise a conto"), then the commands and settings it
 uses. Every command and setting appears in one guide.
