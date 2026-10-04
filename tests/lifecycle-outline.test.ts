@@ -56,7 +56,7 @@ describe("outline lifecycle", () => {
     expect(slotArray()).toHaveLength(0);
     expect(plugin.liveListeners()).toBe(0);
     expect(plugin.indexAdded).toHaveLength(0);
-    expect(plugin.followers.size).toBe(0);
+    expect(plugin.followers.size).toBe(1); // the always-on POV colour follower (Q8), registered at plugin load
     expect(plugin.drawn.size).toBe(0);
     expect(plugin.statusBars).toHaveLength(0);
     expect(plugin.app.workspace.detached).toContain(OUTLINE_VIEW);
