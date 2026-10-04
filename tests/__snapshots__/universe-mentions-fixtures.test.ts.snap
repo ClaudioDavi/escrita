@@ -1,0 +1,40 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`mentions index on the fixtures (en) > gives each entry the counts the expected file lists, and pins the totals 1`] = `
+{
+  "dr-alice-hart": 1,
+  "james-en": 1,
+  "mr-brown": 2,
+  "teo-en": 2,
+}
+`;
+
+exports[`mentions index on the fixtures (pt) > gives each entry the counts the expected file lists, and pins the totals 1`] = `
+{
+  "andres": 2,
+  "capitao-nunes": 1,
+  "coronel-teles": 1,
+  "dona-benta": 2,
+  "dona-maria-clara": 2,
+  "doutor-paulo": 1,
+  "ines": 2,
+  "irma-lucia": 1,
+  "irma-luisa": 1,
+  "marco": 1,
+  "marcos": 2,
+  "maria": 2,
+  "maria-jose": 4,
+  "mariana": 2,
+  "mariano": 1,
+  "mario": 1,
+  "porto": 2,
+  "professor-aurelio": 1,
+  "professora-elza": 1,
+  "rosa": 1,
+  "senhor-antunes": 3,
+  "senhora-zelia": 1,
+  "teo": 3,
+  "thais": 2,
+  "tomas": 2,
+}
+`;
