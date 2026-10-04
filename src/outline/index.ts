@@ -1,4 +1,5 @@
 import { Notice, TFile, normalizePath, type Editor } from "obsidian";
+import { newBookNote } from "./new-book";
 import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
 import type { Follower } from "../core/vault-index";
@@ -19,7 +20,6 @@ import { CreateBookModal, confirmAction } from "./modals";
 import { OUTLINE_VIEW, OutlineView, chaptersPort, str } from "./view";
 
 /** Default goal written into a new book's note. */
-const NEW_BOOK_GOAL = 80000;
 
 /**
  * The outline: a side panel with a book's chapters and beats (editable in
@@ -254,9 +254,8 @@ export class OutlineModule extends FeatureModule {
     }
     try {
       if (base) await this.ensureFolder(base);
-      // the configured property names, quoted when YAML needs it
-      const key = (k: string) => (/^[\p{L}\p{N}_-]+$/u.test(k) ? k : JSON.stringify(k));
-      const note = await app.vault.create(notePath, `---\n${key(settings.goalProperty)}: ${NEW_BOOK_GOAL}\n${key(settings.deadlineProperty)}: \n---\n`);
+      // starts in the draft stage, in the writer's own status word
+      const note = await app.vault.create(notePath, newBookNote(settings));
       await this.ensureFolder(folderPath);
       await this.ensureFolder(join(folderPath, settings.chaptersFolder));
       const book = books.classify(note).book;
