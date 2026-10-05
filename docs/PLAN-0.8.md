@@ -141,6 +141,11 @@ written here before the gated task starts).
 - **G0b** (gates 1.7): `vault.createBinary` and `modifyBinary` in a vault folder, on
   desktop and on Android and iOS. The file must show in the explorer, and a sync
   plugin must pick it up.
+  **Phone part waived 2026-10-05:** the author has no phone sync, so phone checks are
+  assumed to pass (Obsidian's documented API, no Node). A throwaway plugin for it is in
+  `~/Downloads/escrita-spike/` (not committed). Its "G0b: write a binary file" command
+  checks `createBinary` and `modifyBinary` read back the same bytes. It is optional on
+  desktop. 1.7 tests the same through the fake vault.
 - **G0c** (gates 1.3): the four Reading-view parity questions in
   `tests/markdown-consumers.test.ts`, checked in a real vault. Flip the segmenter rule
   where Reading view differs, before the manuscript builds on it.
@@ -159,6 +164,9 @@ written here before the gated task starts).
   change.
 - **G0d** (gates 1.1): the 12 ms budget and a `MessageChannel` yield on a phone, using
   the bench vault copied into a test vault. Record the longest block before and after.
+  **Waived 2026-10-05 (no phone):** 1.1 uses 12 ms, the plan's budget. The desktop
+  bench measured 125 ms → 14 ms, and phones are assumed to scale (desktop × 5). The
+  spike plugin's "G0d" commands can measure it on desktop if wanted.
 
 **G1. Design** (rule 7): mockups on the design canvas for the Export modal (Q4, with
 its warning state, the preview step of Q16 and the last-export line of Q17), the
@@ -168,8 +176,10 @@ block. The settings tab keeps its look (Q13), so it needs no mockup.
 **G2. Answers.** Cleared 2026-10-04: the author accepted the recommendations for Q1–Q15.
 Q16 and Q17 cleared 2026-10-05.
 
-Still open from 0.7, for the author on a device: G0c, G0d and the G0h phone figure of
-PLAN-0.7.md, and the visual check against the canvas (PLAN-0.7.md, task 5.2).
+Still open from 0.7, on desktop: G0d (the Reading-view "Appears in" section across
+re-renders) and the visual check against the canvas (PLAN-0.7.md, task 5.2). The phone
+checks (0.7's G0c `spellcheck="false"` on Android and iOS, and the G0h phone figure) are
+waived like 0.8's: the author has no phone to test on.
 
 ## Models
 

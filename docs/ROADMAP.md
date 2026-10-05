@@ -76,9 +76,10 @@ review; details in [PLAN-0.8.md](PLAN-0.8.md)):
 - If room: the lens memos (22) and one name fold (10).
 - Set aside after measuring: candidate 12, the shared read per flush.
 
-Open from 0.7, for the author on a device: gates G0c (does `spellcheck="false"` hold on
-Android and iOS?), G0d (the Reading-view "Appears in" section across re-renders), the
-G0h phone figure, and the visual check against the canvas (PLAN-0.7.md, task 5.2).
+Open from 0.7, on desktop: gate G0d (the Reading-view "Appears in" section across
+re-renders) and the visual check against the canvas (PLAN-0.7.md, task 5.2). The phone
+gates (G0c, G0h) are waived: the author has no phone to test on, so mobile behaviour is
+assumed from the documented API (2026-10-05).
 
 ## 0.5 to 1.0
 
