@@ -315,6 +315,35 @@ describe("math (D16)", () => {
   });
 });
 
+describe("inMath (D18)", () => {
+  const math = (t: string) => {
+    const md = segment(t);
+    return Array.from({ length: md.lineCount }, (_, l) => (md.inMath(l) ? "M" : ".")).join("");
+  };
+  it("lines after the opener, through the one holding the closer", () => {
+    expect(math("a\n$$\nx\n$$\nb")).toBe("..MM.");
+    expect(math("$$\nx\n\ny\n$$\nz")).toBe(".MMMM.");
+  });
+  it("a one-line block and an indented opener", () => {
+    expect(math("$$ x $$\ny")).toBe("..");
+    expect(math("   $$\n%% a\n$$\nz")).toBe(".MM.");
+    expect(math("    $$\n%% a\n$$\nz")).toBe("....");
+  });
+  it("$$ not at a line start is no math, so the line-start $$ later has no closer", () => {
+    expect(math("texto $$ x\n%% y\n$$")).toBe("...");
+  });
+  it("an unclosed $$ is not math", () => {
+    expect(math("$$\nx\ny")).toBe("...");
+  });
+  it("$$ in code, a comment or frontmatter opens nothing; out of range is false", () => {
+    expect(math("```\n$$\n```\nx\n$$")).toBe(".....");
+    expect(math("%% $$ %%\nx\n$$")).toBe("...");
+    expect(math("---\na: $$\n---\nx\n$$")).toBe(".....");
+    const md = segment("$$\nx\n$$");
+    expect([md.inMath(-1), md.inMath(0), md.inMath(99)]).toEqual([false, false, false]);
+  });
+});
+
 describe("not segmented", () => {
   it("indented code, fences in quotes and lists", () => {
     expect(hidden("> ```\n> x")).toEqual([]);

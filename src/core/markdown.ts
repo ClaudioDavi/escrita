@@ -31,6 +31,8 @@
 //   nothing opens inside it: %% is literal, as in Reading view. No closing "$$" →
 //   not math, the "$$" is plain prose. "$$" inside a comment, code or frontmatter,
 //   or after other text on a line, opens nothing.
+//   inMath(line) reports these ranges per line (D18): the editor reads it and keeps
+//   no math rule of its own.
 // Not segmented: 4-space indented code, fences inside quotes or lists,
 // multi-line inline code.
 
@@ -67,6 +69,10 @@ export interface Markdown {
   readonly bodyLine: number;
   /** Line 0 is `---` and nothing closes it (there is no frontmatter span). */
   readonly unclosedFrontmatter: boolean;
+  /** Line `line` starts inside a math block (D18): a line after the one that opens
+   *  `$$`, up to and including the one holding the closing `$$`. The opener line
+   *  itself is false; false out of range. Same ranges the scan treats as math. */
+  inMath(line: number): boolean;
   /** Same length as text: every char outside prose → " ", "\r" and "\n" kept. */
   masked(): string;
 }
@@ -92,8 +98,13 @@ class Segmented implements Markdown {
     private readonly kinds: Uint8Array,
     readonly bodyLine: number,
     readonly unclosedFrontmatter: boolean,
+    private readonly math: Uint8Array,
   ) {
     this.lineCount = starts.length;
+  }
+
+  inMath(line: number): boolean {
+    return line > 0 && line < this.lineCount && this.math[line] === 1;
   }
 
   spans(from?: number, to?: number): readonly Span[] {
@@ -212,6 +223,7 @@ function scan(text: string): Segmented {
     return n;
   };
 
+  const mathRanges: number[] = []; // flat [from, to) pairs of recognized math
   let i = pos;
   while (i < n) {
     if (atLineStart) {
@@ -225,7 +237,11 @@ function scan(text: string): Segmented {
       while (q < i + 3 && text.charCodeAt(q) === 32) q++;
       if (text.charCodeAt(q) === 36 && text.charCodeAt(q + 1) === 36) {
         const close = text.indexOf("$$", q + 2);
-        if (close !== -1) { i = close + 2; continue; }
+        if (close !== -1) {
+          mathRanges.push(q, close + 2);
+          i = close + 2;
+          continue;
+        }
       }
     }
     INTERESTING.lastIndex = i;
@@ -296,7 +312,13 @@ function scan(text: string): Segmented {
     while (all[s].to <= nl) s++;
     kinds[l] = KIND_INDEX[all[s].kind];
   }
-  return new Segmented(text, all, starts, kinds, bodyLine, unclosedFrontmatter);
+  // which lines start inside math: the "\n" before them lies within a math range
+  const math = new Uint8Array(lines);
+  for (let r = 0, l = 1; r < mathRanges.length; r += 2) {
+    while (l < lines && starts[l] - 1 < mathRanges[r]) l++;
+    for (; l < lines && starts[l] - 1 < mathRanges[r + 1]; l++) math[l] = 1;
+  }
+  return new Segmented(text, all, starts, kinds, bodyLine, unclosedFrontmatter, math);
 }
 
 /** Line index of a line-start offset, searching forward from `hint`. */

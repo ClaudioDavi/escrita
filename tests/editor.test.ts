@@ -50,6 +50,9 @@ describe("blockStateIn", () => {
     expect(end.math || end.comment || end.code).toBe(false);
   });
   it("ignores markers inside code", () => {
+    // D18: a $$ not at a line start is no math, an unclosed one neither
+    expect(blockStateIn(D("texto $$ x\n%% y\n$$"), 1).math).toBe(false);
+    expect(blockStateIn(D("$$\nx"), 1).math).toBe(false);
     expect(blockStateIn(D("```\n%%\n$$\n```\nx"), 4)).toEqual({ frontmatter: false, code: false, math: false, comment: false });
   });
   it("handles empty input and out of range", () => {

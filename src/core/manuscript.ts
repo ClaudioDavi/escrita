@@ -10,8 +10,9 @@
 // - placeholders (`%% XXX: … %%`, marker word from settings): dropped and reported,
 //   so the export modal can warn like the publish check does.
 // - embeds (`![[…]]`, `![](…)`): dropped and reported.
-// - an unclosed `%%` or `<!--`: Reading view hides everything after it, so the
-//   manuscript does too; the hidden text is reported once, at the opener.
+// - an unclosed `%%`, or an unclosed `<!--` at the start of a line: Reading view hides
+//   everything after it, so the manuscript does too (a mid-line `<!--` is literal text);
+//   the hidden text is reported once, at the opener.
 // Removing an inline `%%` or `<!-- -->` takes the whitespace before it, so no double
 // or trailing space is left.
 // For task 3.1: read `strictLineBreaks` only through a listed ARCHITECTURE exception,
@@ -149,11 +150,14 @@ function build(md: Markdown, o: ManuscriptOptions): Built {
     // prose
     let prose = text.slice(span.from, span.to);
     let cut = false;
-    const open = prose.indexOf("<!--");
-    if (open >= 0) {
+    // Only a `<!--` that starts its line hides the rest (D11); mid-line it is literal text.
+    for (let open = prose.indexOf("<!--"); open >= 0; open = prose.indexOf("<!--", open + 4)) {
+      const ls = md.lineStart(md.lineOf(span.from + open));
+      if (!/^ {0,3}$/.test(text.slice(ls, span.from + open))) continue;
       dropped.push({ kind: "unclosedComment", line: md.lineOf(span.from + open), text: "" });
       prose = prose.slice(0, open);
       cut = true;
+      break;
     }
     for (const re of EMBED_RES) {
       prose = prose.replace(re, (...a: unknown[]) => {

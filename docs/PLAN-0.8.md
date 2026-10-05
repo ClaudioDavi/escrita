@@ -288,6 +288,46 @@ The judge's fixture rules are in `tests/fixtures/manuscript/README.md`:
 **Opus judge** after the wave: the diffs against the contracts. Is any decision made in
 code that this plan didn't settle?
 
+**Wave 1 result (2026-10-05).** Done, committed as `a206a3a`. Typecheck, 2,593 tests,
+build and bundle check pass. Bench on 3,020 notes, longest block:
+
+| Index | Total | Longest block | Phone estimate (× 5) |
+|---|---|---|---|
+| placeholders | 59 ms | 13 ms | about 65 ms |
+| threads | 45 ms | 16 ms | about 80 ms |
+| mentions | 3.6 s (was 4.2) | 23 ms (was 125–155) | about 115 ms |
+| all three at once | 3.6 s | 26 ms | about 130 ms |
+
+Each index alone meets the 20 ms target within noise, matching G0d's 22 ms in Obsidian.
+Three indexes at once stretch the gap, because each keeps its own slice. Re-measure "all
+three" after 2.4 starts mentions on demand.
+
+`findNames`: 3k words 2.9 ms (was 4.8–5.4), 10k words 10.8 ms (was 12.1–12.9).
+
+The judge accepted the builders' decisions:
+- An optional `onDemand` and `NewNotePlace` flags.
+- Pure helpers in `note-text.ts`.
+- `notes.create` retries a race once, and only `replace` overwrites.
+- 1.9 added `settings.features.submissions` strings to `src/strings.ts`.
+
+Follow-ups from the judge:
+- **The `bookSource(app, plugin.books, plugin.notes, () => plugin.settings)` factory:**
+  2.5 and 3.1 call it, with no new plugin service.
+- **3.4 shrinks:** 1.5 already made `runChecks` read `readinessOf`, so 3.4 only checks
+  that publish behaves the same.
+- **2.1:** also rewords `settings.features.export` and `.desc` to "Export", dropping
+  "and submissions" and the "in 0.8" tag.
+- **4.2:** a changelog and guide line. Notes in the submissions folder (default
+  `Submissions`) and the export folder are never counted or treated as works; change
+  the folder in settings if you already use that name.
+- **4.3:** rule 8 prefers `vault.process` to `vault.modify` for `notes.create`'s
+  `replace` on text.
+
+Two fixes landed after the wave:
+- A `<!--` in the middle of a line no longer cuts the rest of a manuscript (only a
+  line-start one does, as in Reading view).
+- One math rule: `core/markdown` owns math lines (`inMath`), and the editor reads it.
+
 ## Wave 2: consumers (parallel, Sonnet)
 
 | Task | Owns | Done when |
@@ -308,7 +348,7 @@ code that this plan didn't settle?
 | 3.1 Export module | `src/export/index.ts`, `modal.ts`, `strings.ts`, `settings.ts` | Command for a note and its book; modal per mockup; readiness warnings; file written through `notes.create`; budgeted yields while building a long book; the preview writer (Q16, `writers/preview.ts`); last export and "Export again" (Q17), following renames; lifecycle test |
 | 3.2 Submissions module | `src/submissions/index.ts`, `modal.ts`, `logic.ts`, `strings.ts`, `settings.ts` | "Record a submission" creates a note with `work`, `market`, `sent` and `result`; the pending index; renaming the work keeps the link; notes read well with Escrita off; lifecycle test |
 | 3.3 Desk pending count | `desk/works.ts`, `desk/render.ts`, `desk/strings.ts` | "2 pendentes" next to ready while submissions is on; redraw on its change; desk tests |
-| 3.4 Publish on readiness | `publish/index.ts` | Same behaviour; reads `core/readiness` |
+| 3.4 Publish on readiness | `publish/index.ts` | Same behaviour (1.5 already moved `runChecks` onto `readinessOf`; check only, no change expected) |
 
 ## Wave 4: docs (Sonnet), then review (Opus)
 

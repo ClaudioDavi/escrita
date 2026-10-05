@@ -41,6 +41,10 @@ import { runChecks, unclosedComment } from "../src/publish/checks";
 //     as Reading view draws it. Its words still count. An unclosed $$ is plain prose;
 //     $$ inside a comment or code opens nothing
 // D17 (0.8, 1.5) an unclosed <!-- in prose is a publish/export blocker (unclosedHtmlComment)
+// D18 (0.8) one math rule: core/markdown decides math lines (Markdown.inMath); the editor's
+//     blockStateIn reads it and keeps no $$ parity of its own. No row changed: the old
+//     parity and the segmenter agreed on every row below; they differed only on a $$ that
+//     is not at a line start or has no closer (pinned in tests/markdown.test.ts, inMath)
 //
 // Columns: blocks = blockStateIn per line (F frontmatter, C code, % comment, M math);
 // enter = decideEnter on the last line after appending two blank lines ("blank" style).

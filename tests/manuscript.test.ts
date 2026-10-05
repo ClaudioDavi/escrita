@@ -115,12 +115,18 @@ describe("manuscriptOf", () => {
   });
 
   it("hides what follows an unclosed comment and reports it once", () => {
-    const r = md("a\n\nb %% nunca fecha\n\nc <!-- x");
+    const r = md("a\n\nb %% nunca fecha\n\n<!-- x");
     expect(r.blocks.map(text)).toEqual(["a", "b"]);
     expect(r.dropped).toEqual([{ kind: "unclosedComment", line: 2, text: "" }]);
-    const h = md("a\n\nb <!-- sem fim\n\nc");
+    const h = md("a\n\nb\n<!-- sem fim\n\nc");
     expect(h.blocks.map(text)).toEqual(["a", "b"]);
-    expect(h.dropped).toEqual([{ kind: "unclosedComment", line: 2, text: "" }]);
+    expect(h.dropped).toEqual([{ kind: "unclosedComment", line: 3, text: "" }]);
+  });
+
+  it("keeps a mid-line <!-- as literal text (D11)", () => {
+    const r = md("a <!-- x\n\nb");
+    expect(r.blocks.map(text)).toEqual(["a <!-- x", "b"]);
+    expect(r.dropped.some((d) => d.kind === "unclosedComment")).toBe(false);
   });
 
   it("drops the title heading only when it is first and equal", () => {

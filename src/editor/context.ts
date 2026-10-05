@@ -1,6 +1,6 @@
 // Pure Markdown context detection for the editor features (no Obsidian imports).
-// Built on core/markdown (frontmatter, fences, comments) plus a $$ math overlay:
-// enough to keep Enter, Enter, Enter and smart typography out of frontmatter,
+// Built entirely on core/markdown (frontmatter, fences, comments and math, which
+// core/markdown decides: D18): enough to keep Enter, Enter, Enter and smart typography out of frontmatter,
 // code, math and multi-line comments without depending on the editor's syntax tree.
 
 import { segment, type Markdown } from "../core/markdown";
@@ -14,32 +14,6 @@ export interface BlockState {
   math: boolean;
   /** inside a multi-line comment (%% or a closed <!-- -->) */
   comment: boolean;
-}
-
-/** Parity of `$$` at each line start, over prose text only (see mathAt). */
-const mathParity = new WeakMap<Markdown, Uint8Array>();
-
-/**
- * Whether line `at` starts inside a $$ math block. Math is an editor-local overlay,
- * not part of core/markdown: `$$` is counted in prose only (never in code,
- * comments or frontmatter), so a stray `$$` can't hide anything else.
- */
-function mathAt(md: Markdown, at: number): boolean {
-  let parity = mathParity.get(md);
-  if (!parity) {
-    parity = new Uint8Array(md.lineCount + 1);
-    const mask = md.masked();
-    for (let l = 0; l < md.lineCount; l++) {
-      let odd = 0;
-      if (l >= md.bodyLine) {
-        const line = mask.slice(md.lineStart(l), md.lineEnd(l));
-        for (let i = line.indexOf("$$"); i !== -1; i = line.indexOf("$$", i + 2)) odd ^= 1;
-      }
-      parity[l + 1] = parity[l] ^ odd;
-    }
-    mathParity.set(md, parity);
-  }
-  return parity[Math.max(0, Math.min(at, md.lineCount))] === 1;
 }
 
 /**
@@ -56,7 +30,7 @@ export function blockStateIn(md: Markdown, at: number): BlockState {
   const kind = md.startsIn(at);
   st.code = kind === "code";
   st.comment = kind === "comment";
-  st.math = mathAt(md, at);
+  st.math = md.inMath(at);
   return st;
 }
 
