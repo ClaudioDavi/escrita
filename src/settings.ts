@@ -9,7 +9,9 @@ import { switchesOf } from "./core/feature-registry";
 import { sectionOrder, type SectionSlot } from "./core/settings-order";
 import type { FeatureModule, SettingsUi } from "./core/module-context";
 import { defaultUniverseSettings, normalizeUniverse, type UniverseMode, type UniverseSettings } from "./universe/settings";
-import { DEFAULT_SNAPSHOTS_FOLDER, snapshotsRoot } from "./core/classify";
+import { DEFAULT_SNAPSHOTS_FOLDER, exportRoot, snapshotsRoot, submissionsRoot } from "./core/classify";
+import { holdsOwnNotes, pluginFolderProblem, type BookPaths } from "./core/folder-problem";
+import { addFolderField } from "./core/folder-setting";
 
 export type ParagraphStyle = "single" | "blank";
 export type Scope = "books" | "all";
@@ -351,6 +353,41 @@ export function digitsNumber(v: string, fallback: number, min = 0): number {
   return Number.isFinite(n) && v.trim() !== "" ? Math.max(min, n) : fallback;
 }
 
+/**
+ * The export and submissions folders. The classifier reads both whether or not their feature is
+ * loaded (never tracked, never a work), so they are drawn from the core, next to the track and
+ * exclude folders, with every feature on or off. `books` is every book (BookService.allBooksEverywhere),
+ * read only when a value is checked.
+ */
+export function pluginFolderRows(el: HTMLElement, ui: SettingsUi, s: EscritaSettings, books: () => readonly BookPaths[]): void {
+  // every file, not only notes: a folder of the writer's .docx files is theirs too
+  const paths = () => ui.app.vault.getFiles().map((f) => f.path);
+  addFolderField(
+    new Setting(el).setName(t("export.settings.folder")).setDesc(t("export.settings.folder.desc")), ui,
+    {
+      placeholder: DEFAULT_SETTINGS.exportFolder,
+      value: s.exportFolder,
+      problemOf: (v) => pluginFolderProblem(
+        exportRoot(v), [submissionsRoot(s.submissionsFolder), snapshotsRoot(s.snapshotsFolder)],
+        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, exportRoot(s.exportFolder), s), books(),
+      ),
+      save: (v) => { s.exportFolder = exportRoot(v); },
+    },
+  );
+  addFolderField(
+    new Setting(el).setName(t("submissions.settings.folder")).setDesc(t("submissions.settings.folder.desc")), ui,
+    {
+      placeholder: DEFAULT_SETTINGS.submissionsFolder,
+      value: s.submissionsFolder,
+      problemOf: (v) => pluginFolderProblem(
+        submissionsRoot(v), [exportRoot(s.exportFolder), snapshotsRoot(s.snapshotsFolder)],
+        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, submissionsRoot(s.submissionsFolder), s), books(),
+      ),
+      save: (v) => { s.submissionsFolder = submissionsRoot(v); },
+    },
+  );
+}
+
 export class EscritaSettingTab extends PluginSettingTab {
   /** The features loaded at the start of this draw (modules' sections draw while loaded, not just switched on). */
   private loaded: ReadonlySet<FeatureId> = new Set();
@@ -474,6 +511,7 @@ export class EscritaSettingTab extends PluginSettingTab {
         c.setValue(s.excludeFolders);
         ui.saveOnCommit(c, () => "", (v) => { s.excludeFolders = v; });
       });
+    pluginFolderRows(el, ui, s, () => this.plugin.books.allBooksEverywhere());
   }
 
   private booksSection(el: HTMLElement, ui: SettingsUi, templatesShown: boolean): void {

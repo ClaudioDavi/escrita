@@ -43,6 +43,11 @@ export interface LastExport {
   at: string;
   /** the vault path of the file it wrote */
   path: string;
+  /** the folder and the file name it wrote: a file that is no longer both has been moved or renamed (Q17) */
+  folder?: string;
+  name?: string;
+  /** the note a single export (a chapter) came from; absent for a whole book */
+  source?: string;
 }
 
 /** The export modal's last choices for one work (PLAN-0.8 Q4, Q17); the export module reads and cleans them. */
@@ -80,6 +85,9 @@ function cleanLast(raw: unknown): LastExport | undefined {
     at: c.at, path: c.path,
   };
   if (typeof c.chapterCount === "number" && Number.isFinite(c.chapterCount)) out.chapterCount = c.chapterCount;
+  if (typeof c.folder === "string") out.folder = c.folder;
+  if (typeof c.name === "string" && c.name !== "") out.name = c.name;
+  if (typeof c.source === "string" && c.source !== "") out.source = c.source;
   return out;
 }
 

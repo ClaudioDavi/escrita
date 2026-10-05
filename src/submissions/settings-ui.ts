@@ -1,33 +1,15 @@
 import { Setting } from "obsidian";
 import { fmt, plural, t } from "../i18n";
 import { DEFAULT_SETTINGS } from "../settings";
-import { exportRoot, inFolder, snapshotsRoot, submissionsRoot } from "../core/classify";
-import { holdsOwnNotes, pluginFolderProblem } from "../core/folder-problem";
-import { addFolderField } from "../core/folder-setting";
+import { inFolder, submissionsRoot } from "../core/classify";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
 import { duplicateProp, propsOf, resultValues } from "./logic";
 
-/** The Submissions section: the folder and the result values (the first one is "pending"). */
+/** The Submissions section: the result values (the first one is "pending") and the property names. The folder is drawn by the core (settings.ts, pluginFolderRows). */
 export function submissionsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
   const s = plugin.settings;
   new Setting(el).setName(t("submissions.settings.heading")).setHeading();
-  addFolderField(
-    new Setting(el).setName(t("submissions.settings.folder")).setDesc(t("submissions.settings.folder.desc")), ui,
-    {
-      placeholder: DEFAULT_SETTINGS.submissionsFolder,
-      value: s.submissionsFolder,
-      problemOf: (v) => {
-        const root = submissionsRoot(v);
-        const paths = () => ui.app.vault.getMarkdownFiles().map((f) => f.path);
-        return pluginFolderProblem(
-          root, [exportRoot(s.exportFolder), snapshotsRoot(s.snapshotsFolder)],
-          ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, submissionsRoot(s.submissionsFolder), s),
-        );
-      },
-      save: (v) => { s.submissionsFolder = submissionsRoot(v); },
-    },
-  );
   new Setting(el)
     .setName(t("submissions.settings.results"))
     .setDesc(t("submissions.settings.results.desc"))

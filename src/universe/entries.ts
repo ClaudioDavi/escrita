@@ -7,7 +7,7 @@
 // themselves, are never entries.
 
 import { foldName } from "../core/names";
-import { classifyKey, inFolder, snapshotsRoot, type ClassifySettings } from "../core/classify";
+import { classifyKey, inExports, inFolder, inSubmissions, snapshotsRoot, type ClassifySettings } from "../core/classify";
 import type { IndexFile, IndexSpec } from "../core/vault-index";
 import { sameScope, type Scope } from "./scope";
 import { ENTRY_KINDS, type EntryKind, type UniverseSettings } from "./settings";
@@ -114,9 +114,10 @@ export function isTemplatePath(path: string, s: Pick<EntriesSettings, "templates
   return templates.some((p) => p.trim() !== "" && norm(p) === path);
 }
 
-/** True for a markdown note that may hold entries or threads: not a snapshot, not a template. */
+/** True for a markdown note that may hold entries or threads: not a snapshot, export, submission or template. */
 export function isUniverseNote(f: IndexFile, s: EntriesSettings): boolean {
-  return f.extension === "md" && !inFolder(f.path, snapshotsRoot(s.snapshotsFolder)) && !isTemplatePath(f.path, s);
+  return f.extension === "md" && !inFolder(f.path, snapshotsRoot(s.snapshotsFolder))
+    && !inExports(f.path, s) && !inSubmissions(f.path, s) && !isTemplatePath(f.path, s);
 }
 
 export interface EntriesDeps<F extends IndexFile> {

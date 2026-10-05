@@ -12,13 +12,14 @@ import type { ExportHost, ExportModalOptions, ModalState } from "../src/export/m
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
 
 // The modal is replaced by one that records what it was opened with; the "file exists" dialog answers on cue.
-const modal = vi.hoisted(() => ({ opened: [] as unknown[], answer: "cancel" as "cancel" | "both" | "replace", asked: [] as unknown[][] }));
+const modal = vi.hoisted(() => ({ opened: [] as unknown[], answer: "cancel" as "cancel" | "both" | "replace", asked: [] as unknown[][], where: true, whereAsked: [] as unknown[][] }));
 vi.mock("../src/export/modal", async () => {
   const actual = await vi.importActual<typeof import("../src/export/modal")>("../src/export/modal");
   return {
     ...actual,
     ExportModal: class { constructor(_app: unknown, public o: unknown) { modal.opened.push(o); } open(): void {} },
     askExists: async (...args: unknown[]) => { modal.asked.push(args); return modal.answer; },
+    askWhere: async (...args: unknown[]) => { modal.whereAsked.push(args); return modal.where; },
   };
 });
 const { ExportModule } = await import("../src/export");
@@ -38,7 +39,7 @@ const file = (path: string, mtime = 5): TFile => {
 let plugin: FakePlugin;
 let module: InstanceType<typeof ExportModule>;
 let registry: FeatureRegistry;
-let created: { path: string; data: unknown; exists: string }[];
+let created: { path: string; data: unknown; exists: string; trashOld?: boolean }[];
 let vaultFiles: Map<string, TFile>;
 let placement: Record<string, unknown>;
 let texts: Record<string, string>;
@@ -62,6 +63,8 @@ beforeEach(() => {
   modal.opened = [];
   modal.answer = "cancel";
   modal.asked = [];
+  modal.where = true;
+  modal.whereAsked = [];
   noticeLog.length = 0;
   plugin = fakePlugin();
   plugin.data.exportChoices = {};
@@ -98,8 +101,8 @@ beforeEach(() => {
   plugin.notes = {
     text: (f: TFile) => ({ read: async () => texts[f.path] }),
     editorView: () => null,
-    create: vi.fn(async (path: string, data: unknown, o: { exists: string }) => {
-      created.push({ path, data, exists: o.exists });
+    create: vi.fn(async (path: string, data: unknown, o: { exists: string; trashOld?: boolean }) => {
+      created.push({ path, data, exists: o.exists, trashOld: o.trashOld });
       const there = vaultFiles.get(path);
       if (there && o.exists === "fail") throw new NoteExistsError(path, path, false);
       if (there && o.exists === "replace") return { file: there, outcome: "replaced" };
@@ -201,7 +204,7 @@ describe("export lifecycle", () => {
     const el = document.createElement("div");
     module.settingsSection(el, { saveOnCommit: () => {}, save: async () => {}, redraw: () => {}, num: (v: string) => Number(v) } as unknown as SettingsUi);
     expect(settingLog.map((r) => r.name)).toEqual([
-      "Export", "Export folder", "Left-out property", "Dedication property", "Epigraph property", "Author property",
+      "Export", "Left-out property", "Dedication property", "Epigraph property", "Author property",
       "Author name", "Surname for the header", "Contact lines", "Chapter heading",
     ]);
     expect(settingLog[0].heading).toBe(true);
@@ -321,7 +324,7 @@ describe("a note's export", () => {
     plugin.app.vault.files.set("Escrita/Exports/O porão (Shunn).docx", vaultFiles.get("Escrita/Exports/O porão (Shunn).docx")!);
     modal.answer = "cancel";
     expect(await write()).toBe(false);
-    expect(modal.asked[0].slice(1)).toEqual(["Escrita/Exports/O porão (Shunn).docx", 1759400000000]);
+    expect(modal.asked[0].slice(1)).toEqual(["Escrita/Exports/O porão (Shunn).docx", 1759400000000, false]);   // not classified as an export here: no Replace
     expect(created.map((c) => c.exists)).toEqual(["fail"]);
     expect(plugin.data.exportChoices[CONTO]).toBeUndefined();
     expect(noticeLog).toEqual([]);
@@ -331,10 +334,18 @@ describe("a note's export", () => {
     const there = file("Escrita/Exports/O porão (Shunn).docx");
     vaultFiles.set(there.path, there);
     plugin.app.vault.files.set(there.path, there);
+    placement[there.path] = { path: there.path, kind: "note", book: null, snapshot: false, submission: false, export: true };
     modal.answer = "replace";
     expect(await write()).toBe(true);
     expect(created.map((c) => [c.path, c.exists])).toEqual([[there.path, "fail"], [there.path, "replace"]]);
+    // not a recorded export: it may be the writer's own file, so it goes to the trash, not over
+    expect(created[1].trashOld).toBe(true);
     expect(plugin.data.exportChoices[CONTO].last!.path).toBe(there.path);
+    // now it is the recorded last export: Replace writes over it
+    created.length = 0;
+    modal.answer = "replace";
+    expect(await write()).toBe(true);
+    expect(created.map((c) => [c.exists, c.trashOld])).toEqual([["fail", undefined], ["replace", false]]);
   });
 
   it("keeps both with this export's date and time", async () => {
@@ -463,7 +474,7 @@ describe("a book's export", () => {
     const st = state({ whole: false });
     expect(await host().write(st, await host().build(st))).toBe(true);
     expect(plugin.data.exportChoices[BOOK_NOTE]).toMatchObject({ whole: false, chapters: { mode: "range", from: 2, to: 3 } });
-    expect(plugin.data.exportChoices[BOOK_NOTE].last).toMatchObject({ whole: false, chapters: { mode: "all" } });
+    expect(plugin.data.exportChoices[BOOK_NOTE].last).toMatchObject({ whole: false, chapters: { mode: "range", from: 2, to: 3 }, source: CH[3] });
   });
 
   it("yields between chapters of a long book", async () => {
@@ -496,6 +507,13 @@ describe("a book's export", () => {
   });
 });
 
+const placeOf = (path: string) => ({ folder: path.slice(0, path.lastIndexOf("/")), name: path.split("/").pop()! });
+/** an export file in the vault, classified as one */
+function inPlace(path: string): void {
+  addFile(path, "");
+  placement[path] = { path, kind: "note", book: null, snapshot: false, submission: false, export: true };
+}
+
 describe("Export again from the palette (Q17)", () => {
   const last = (over: Partial<NonNullable<ExportChoice["last"]>> = {}) => ({
     format: "docx" as const, preset: "ptbr", whole: true, chapters: { mode: "all" as const }, chapterCount: 3,
@@ -505,24 +523,28 @@ describe("Export again from the palette (Q17)", () => {
   it("writes at once with the last choices when nothing needs a confirmation", async () => {
     addBook();
     addFile(CH[1], "Chegou.\n\nFicou.");
-    addFile("Elsewhere/kept.docx", "");
-    plugin.data.exportChoices[BOOK_NOTE] = { format: "docx", preset: "ptbr", whole: true, last: last({ path: "Elsewhere/kept.docx" }) };
+    inPlace("Escrita/Exports/A Casa (pt-BR).docx");
+    plugin.data.exportChoices[BOOK_NOTE] = { format: "docx", preset: "ptbr", whole: true, last: last({ ...placeOf("Escrita/Exports/A Casa (pt-BR).docx") }) };
     active = vaultFiles.get(CH[3])!;
     run("export-again");
     await vi.waitFor(() => expect(created).toHaveLength(1));
-    expect(created[0].path).toBe("Escrita/Exports/A Casa (pt-BR).docx");
+    expect(created[0]).toMatchObject({ path: "Escrita/Exports/A Casa (pt-BR).docx", exists: "replace" });
     expect(modal.opened).toHaveLength(0);
+    expect(modal.asked).toHaveLength(0);
     expect(plugin.data.exportChoices[BOOK_NOTE].last!.at).not.toBe("2026-10-03T14:32:00.000Z");
   });
 
-  it("opens the modal and writes nothing when the last file is gone", async () => {
+  it("asks where to write, and writes nothing on Cancel, when the last file is gone", async () => {
     addBook();
     addFile(CH[1], "Chegou.\n\nFicou.");
     plugin.data.exportChoices[BOOK_NOTE] = { format: "docx", preset: "ptbr", whole: true, last: last({ path: "Elsewhere/gone.docx" }) };
     active = vaultFiles.get(CH[3])!;
+    modal.where = false;
     run("export-again");
-    await vi.waitFor(() => expect(modal.opened).toHaveLength(1));
+    await vi.waitFor(() => expect(modal.whereAsked).toHaveLength(1));
+    expect(modal.whereAsked[0][1]).toBe("Escrita/Exports/A Casa (pt-BR).docx");
     expect(created).toHaveLength(0);
+    expect(modal.opened).toHaveLength(0);
   });
 
   it("opens the modal with the last choices and the warnings when something needs a confirmation", async () => {
@@ -546,16 +568,19 @@ describe("Export again from the palette (Q17)", () => {
     expect(opts().state.selection).toEqual({ mode: "pick", paths: [] });
   });
 
-  it("repeats the whole book from the book note after a 'This chapter' export", async () => {
+  it("opens the modal, with the book's selection, instead of writing the whole book after a 'This chapter' export", async () => {
     addBook();
     addFile(CH[1], "Chegou.\n\nFicou.");
-    addFile("Elsewhere/kept.docx", "");
-    plugin.data.exportChoices[BOOK_NOTE] = { format: "docx", preset: "ptbr", whole: false, last: last({ whole: false, path: "Elsewhere/kept.docx" }) };
+    inPlace("Escrita/Exports/03 A casa (pt-BR).docx");
+    plugin.data.exportChoices[BOOK_NOTE] = {
+      format: "docx", preset: "ptbr", whole: false, chapters: { mode: "range", from: 2, to: 3 },
+      last: last({ whole: false, chapters: { mode: "all" }, source: CH[3], path: "Escrita/Exports/03 A casa (pt-BR).docx" }),
+    };
     active = vaultFiles.get(BOOK_NOTE)!;
     run("export-again");
-    await vi.waitFor(() => expect(created).toHaveLength(1));
-    expect(created[0].path).toBe("Escrita/Exports/A Casa (pt-BR).docx");
-    expect(plugin.data.exportChoices[BOOK_NOTE].last!.whole).toBe(true);
+    await vi.waitFor(() => expect(modal.opened).toHaveLength(1));
+    expect(created).toHaveLength(0);
+    expect(opts().state).toMatchObject({ whole: true, selection: { mode: "range", from: 2, to: 3 } });
   });
 
   it("opens the modal when only front matter is left after the ticked chapters are gone", async () => {
@@ -568,12 +593,12 @@ describe("Export again from the palette (Q17)", () => {
   });
 
   it("repeats a note's export", async () => {
-    addFile("Elsewhere/kept.md", "");
-    plugin.data.exportChoices[CONTO] = { format: "md", preset: "shunn", whole: false, last: last({ format: "md", preset: "shunn", whole: false, path: "Elsewhere/kept.md" }) };
+    inPlace("Escrita/Exports/O porão.md");
+    plugin.data.exportChoices[CONTO] = { format: "md", preset: "shunn", whole: false, last: last({ format: "md", preset: "shunn", whole: false, path: "Escrita/Exports/O porão.md", ...placeOf("Escrita/Exports/O porão.md") }) };
     active = vaultFiles.get(CONTO)!;
     run("export-again");
     await vi.waitFor(() => expect(created).toHaveLength(1));
-    expect(created[0].path).toBe("Escrita/Exports/O porão.md");
+    expect(created[0]).toMatchObject({ path: "Escrita/Exports/O porão.md", exists: "replace" });
     expect(typeof created[0].data).toBe("string");
   });
 
@@ -587,5 +612,159 @@ describe("Export again from the palette (Q17)", () => {
     expect(noticeLog[0]).toMatch(/^Couldn't read the text to export/);
     expect(modal.opened).toHaveLength(0);
     err.mockRestore();
+  });
+});
+
+describe("Export again: where it writes and what it repeats", () => {
+  const entry = (over: Partial<NonNullable<ExportChoice["last"]>>): NonNullable<ExportChoice["last"]> => ({
+    format: "docx", preset: "shunn", whole: false, chapters: { mode: "all" }, at: "2026-10-03T14:32:00.000Z",
+    path: "Escrita/Exports/O porão (Shunn).docx", folder: "Escrita/Exports", name: "O porão (Shunn).docx", source: CONTO, ...over,
+  });
+  const exportFile = (path: string) => {
+    addFile(path, "");
+    placement[path] = { path, kind: "note", book: null, snapshot: false, submission: false, export: true };
+  };
+
+  it("replaces the last file at once, with no question, when it sits where it was written", async () => {
+    exportFile("Escrita/Exports/O porão (Shunn).docx");
+    plugin.data.exportChoices[CONTO] = { format: "docx", preset: "shunn", whole: false, last: entry({}) };
+    active = vaultFiles.get(CONTO)!;
+    run("export-again");
+    await vi.waitFor(() => expect(created).toHaveLength(1));
+    expect(created[0]).toMatchObject({ path: "Escrita/Exports/O porão (Shunn).docx", exists: "replace" });
+    expect(modal.asked).toHaveLength(0);
+    expect(modal.whereAsked).toHaveLength(0);
+  });
+
+  it("replaces a keep-both file (the last one), not the base name", async () => {
+    const dated = "Escrita/Exports/O porão (Shunn) 2026-10-05 14h32.docx";
+    exportFile("Escrita/Exports/O porão (Shunn).docx");
+    exportFile(dated);
+    plugin.data.exportChoices[CONTO] = { format: "docx", preset: "shunn", whole: false, last: entry({ path: dated, name: "O porão (Shunn) 2026-10-05 14h32.docx" }) };
+    active = vaultFiles.get(CONTO)!;
+    run("export-again");
+    await vi.waitFor(() => expect(created).toHaveLength(1));
+    expect(created[0]).toMatchObject({ path: dated, exists: "replace" });
+    expect(modal.asked).toHaveLength(0);
+  });
+
+  it("asks where to write when the file was renamed inside the export folder, and writes nothing on Cancel", async () => {
+    exportFile("Escrita/Exports/final.docx");
+    plugin.data.exportChoices[CONTO] = { format: "docx", preset: "shunn", whole: false, last: entry({ path: "Escrita/Exports/final.docx" }) };
+    active = vaultFiles.get(CONTO)!;
+    modal.where = false;
+    run("export-again");
+    await vi.waitFor(() => expect(modal.whereAsked).toHaveLength(1));
+    expect(created).toHaveLength(0);
+    expect(vaultFiles.get("Escrita/Exports/final.docx")).toBeDefined();
+  });
+
+  it("asks where when the file moved to another folder, and writes at the usual place on Write", async () => {
+    exportFile("Elsewhere/O porão (Shunn).docx");
+    plugin.data.exportChoices[CONTO] = { format: "docx", preset: "shunn", whole: false, last: entry({ path: "Elsewhere/O porão (Shunn).docx" }) };
+    active = vaultFiles.get(CONTO)!;
+    run("export-again");
+    await vi.waitFor(() => expect(created).toHaveLength(1));
+    expect(modal.whereAsked).toHaveLength(1);
+    expect(created[0]).toMatchObject({ path: "Escrita/Exports/O porão (Shunn).docx", exists: "fail" });
+  });
+
+  it("the modal's Export again path asks too when the file is gone (the button is never dead)", async () => {
+    plugin.data.exportChoices[CONTO] = { format: "docx", preset: "shunn", whole: false, last: entry({ path: "Escrita/Exports/gone.docx" }) };
+    active = vaultFiles.get(CONTO)!;
+    run("export");
+    const s = state();
+    expect(await host().write(s, await host().build(s), true)).toBe(true);
+    expect(modal.whereAsked).toHaveLength(1);
+    expect(created).toHaveLength(1);
+  });
+
+  it("does not repeat a chapter on another chapter or from the book note: the modal opens and nothing is written", async () => {
+    addBook();
+    exportFile("Escrita/Exports/03 A casa (Shunn).docx");
+    plugin.data.exportChoices[BOOK_NOTE] = {
+      format: "docx", preset: "shunn", whole: false,
+      last: entry({ path: "Escrita/Exports/03 A casa (Shunn).docx", folder: "Escrita/Exports", name: "03 A casa (Shunn).docx", source: CH[3] }),
+    };
+    for (const from of [CH[1], BOOK_NOTE]) {
+      modal.opened = [];
+      active = vaultFiles.get(from)!;
+      run("export-again");
+      await vi.waitFor(() => expect(modal.opened).toHaveLength(1));
+    }
+    expect(created).toHaveLength(0);
+    // the modal's own button reads the same rule
+    active = vaultFiles.get(CH[1])!;
+    run("export");
+    const h = host();
+    expect(h.canRepeat!(plugin.data.exportChoices[BOOK_NOTE].last!, state({ whole: false }))).toBe(false);
+    active = vaultFiles.get(CH[3])!;
+    run("export");
+    expect(host().canRepeat!(plugin.data.exportChoices[BOOK_NOTE].last!, state({ whole: false }))).toBe(true);
+  });
+
+  it("repeats a chapter from that chapter, replacing its own file", async () => {
+    addBook();
+    exportFile("Escrita/Exports/03 A casa (Shunn).docx");
+    plugin.data.exportChoices[BOOK_NOTE] = {
+      format: "docx", preset: "shunn", whole: false,
+      last: entry({ path: "Escrita/Exports/03 A casa (Shunn).docx", name: "03 A casa (Shunn).docx", source: CH[3] }),
+    };
+    active = vaultFiles.get(CH[3])!;
+    run("export-again");
+    await vi.waitFor(() => expect(created).toHaveLength(1));
+    expect(created[0].exists).toBe("replace");
+  });
+
+  it("carries the book's selection after a chapter export, also from data saved before (last said all)", () => {
+    addBook();
+    plugin.data.exportChoices[BOOK_NOTE] = {
+      format: "docx", preset: "shunn", whole: false, chapters: { mode: "range", from: 2, to: 3 },
+      last: entry({ source: CH[3] }),
+    };
+    active = vaultFiles.get(BOOK_NOTE)!;
+    run("export");
+    expect(opts().last!.chapters).toEqual({ mode: "range", from: 2, to: 3 });
+  });
+
+  it("never replaces a note through a case-only path clash (Contos vs contos)", async () => {
+    plugin.settings.exportFolder = "contos";
+    (plugin.notes as unknown as { create: unknown }).create = vi.fn(async (path: string, data: unknown, o: { exists: string }) => {
+      created.push({ path, data, exists: o.exists });
+      const clash = [...vaultFiles.keys()].find((k) => k.toLowerCase() === path.toLowerCase());
+      if (clash && o.exists === "fail") throw new NoteExistsError(path, clash, false);
+      const f = file(clash && o.exists === "unique" ? path.replace(/\.md$/, " 1.md") : path);
+      vaultFiles.set(f.path, f);
+      return { file: f, outcome: "created" };
+    });
+    const before = texts[CONTO];
+    modal.answer = "replace";
+    active = vaultFiles.get(CONTO)!;
+    run("export");
+    const s = state({ format: "md" });
+    await host().write(s, await host().build(s));
+    expect(created.some((c) => c.exists === "replace")).toBe(false);
+    expect(modal.asked[0][3]).toBe(false);          // the dialog offered no Replace
+    expect(texts[CONTO]).toBe(before);
+  });
+});
+
+describe("the export folder follows a rename", () => {
+  it("rewrites the setting, saves it, and moves the last file's path with it", async () => {
+    const folder = Object.assign(new (await import("./support/obsidian")).TFolder(), { path: "Saídas/Antigo" });
+    plugin.app.vault.files.set("Saídas/Antigo", folder as never);
+    plugin.settings.exportFolder = "Escrita/Exports";
+    const renamed = Object.assign(new (await import("./support/obsidian")).TFolder(), { path: "Escrita/Saídas" });
+    plugin.app.vault.files.set("Escrita/Saídas", renamed as never);
+    plugin.data.exportChoices[CONTO] = { format: "docx", preset: "shunn", whole: false, last: { format: "docx", preset: "shunn", whole: false, chapters: { mode: "all" }, at: "t", path: "Escrita/Exports/a.docx" } };
+    const save = vi.spyOn(plugin, "saveSettings");
+    const [f] = [...plugin.followers];
+    f.moved?.("Escrita/Exports", "Escrita/Saídas");
+    expect(plugin.settings.exportFolder).toBe("Escrita/Saídas");
+    expect(save).toHaveBeenCalled();
+    expect(plugin.data.exportChoices[CONTO].last!.path).toBe("Escrita/Saídas/a.docx");
+    // an unrelated folder leaves the setting alone
+    f.moved?.("Other", "Other2");
+    expect(plugin.settings.exportFolder).toBe("Escrita/Saídas");
   });
 });

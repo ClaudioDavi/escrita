@@ -1,8 +1,9 @@
-import { Notice, TFile, normalizePath } from "obsidian";
+import { Notice, TFile, TFolder, normalizePath } from "obsidian";
 import type EscritaPlugin from "../main";
 import { FeatureModule, type SettingsUi } from "../core/module-context";
 import type { FeatureId } from "../core/features";
-import type { VaultIndex } from "../core/vault-index";
+import type { Follower, VaultIndex } from "../core/vault-index";
+import { isInside } from "../snapshots/paths";
 import type { PendingSource, PendingSubmission } from "../core/pending";
 import { inSubmissions, submissionsRoot } from "../core/classify";
 import { isoDay } from "../core/dates";
@@ -81,6 +82,20 @@ export class SubmissionsModule extends FeatureModule {
     this.changed();
   }
 
+  /** The submissions folder (or a folder holding it) was renamed: the setting follows, even while the feature is off. */
+  dataFollowers(): Follower[] {
+    return [{
+      moved: (oldPath, newPath) => {
+        const f = this.plugin.app.vault.getAbstractFileByPath(newPath);
+        const root = submissionsRoot(this.plugin.settings.submissionsFolder);
+        if (f instanceof TFolder && isInside(oldPath, root)) {
+          this.plugin.settings.submissionsFolder = f.path + root.slice(oldPath.length);
+          void this.plugin.saveSettings();
+        }
+      },
+    }];
+  }
+
   settingsSection(el: HTMLElement, ui: SettingsUi): void { submissionsSettingsSection(el, ui, this.plugin); }
   offNotice(): Promise<string | null> { return submissionsOffNotice(this.plugin); }
 
@@ -141,6 +156,7 @@ export class SubmissionsModule extends FeatureModule {
       markets: this.recentMarkets(),
       today: isoDay(new Date()),
       result,
+      props: propsOf(s),
       pathFor,
       linkFor,
       onRecord: async (market, sent) => {

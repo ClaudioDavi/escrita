@@ -278,15 +278,24 @@ describe("Export again in the modal (Q17)", () => {
     expect(m.close).toHaveBeenCalled();
   });
 
-  it("loads the last choices and stops, writing nothing, when the last file is gone", async () => {
+  it("writes through the host's again path even when the last file is gone: the host asks where", async () => {
     const host = fakeHost({ build: async () => build(["A/Chapters/Prólogo.md"]), fileExists: () => false });
-    const { m, el } = open({ host, last: LAST, state: { whole: true, selection: { mode: "all" }, format: "md", preset: "shunn" } });
+    const { el } = open({ host, last: LAST, state: { whole: true, selection: { mode: "all" }, format: "md", preset: "shunn" } });
+    await settle();
+    btn(el, "Export again").click();
+    await vi.advanceTimersByTimeAsync(300);
+    expect(host.written).toHaveBeenCalledTimes(1);
+    expect(host.written.mock.calls[0][2]).toBe(true);
+  });
+
+  it("does not write when the host says this is a different export (a chapter named by the last one)", async () => {
+    const host = fakeHost({ build: async () => build(["A/Chapters/Prólogo.md"]), canRepeat: () => false });
+    const { m, el } = open({ host, last: { ...LAST, whole: false, source: "A/Chapters/01 A chegada.md" } });
     await settle();
     btn(el, "Export again").click();
     await vi.advanceTimersByTimeAsync(300);
     expect(host.written).not.toHaveBeenCalled();
     expect(m.close).not.toHaveBeenCalled();
-    expect(btn(el, "Export").disabled).toBe(false);
   });
 
   it("still writes when the build yields to the event loop", async () => {

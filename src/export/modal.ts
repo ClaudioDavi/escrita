@@ -33,7 +33,12 @@ export interface ExportHost {
    * Writes the file (asking when it exists), remembers the choices and says so.
    * True when the file was written; false when the writer cancelled or it failed.
    */
-  write(state: ModalState, built: Built): Promise<boolean>;
+  write(state: ModalState, built: Built, again?: boolean): Promise<boolean>;
+  /**
+   * Whether "Export again" may write on its own for this state: the same kind of export
+   * as the last one (a chapter alone only from that chapter). Absent: always.
+   */
+  canRepeat?(last: LastExport, state: ModalState): boolean;
   /** open the note at a 0-based line (the modal has closed) */
   jump(path: string, line: number): void;
   /** open the last exported file; false when it is gone */
@@ -474,10 +479,11 @@ export class ExportModal extends Modal {
     this.built = null;
     this.builtKey = "";
     const built = await this.ensureBuilt();
-    if (built && !needsConfirm(built.warnings) && this.o.host.fileExists(last.path)) await this.doExport();
+    // the last file's whereabouts are the host's to judge: it asks where to write when it moved or is gone
+    if (built && !needsConfirm(built.warnings) && (this.o.host.canRepeat?.(last, this.state) ?? true)) await this.doExport(true);
   }
 
-  private async doExport(): Promise<void> {
+  private async doExport(again = false): Promise<void> {
     if (this.busy) return;
     const built = await this.ensureBuilt();
     if (!built || this.emptyChoice()) return;
@@ -485,7 +491,7 @@ export class ExportModal extends Modal {
     this.refresh();
     let ok = false;
     try {
-      ok = await this.o.host.write(this.state, built);
+      ok = await this.o.host.write(this.state, built, again);
     } finally {
       this.busy = false;
     }
@@ -600,14 +606,45 @@ export class ChaptersModal extends Modal {
 export type ExistsAnswer = "cancel" | "both" | "replace";
 
 /** The file is already there: cancel, keep both (a new name), or replace. Closing the dialog is a cancel. */
-export function askExists(app: App, path: string, mtime: number | null): Promise<ExistsAnswer> {
-  return new Promise((resolve) => new ExistsModal(app, path, mtime, resolve).open());
+export function askExists(app: App, path: string, mtime: number | null, canReplace = true): Promise<ExistsAnswer> {
+  return new Promise((resolve) => new ExistsModal(app, path, mtime, resolve, canReplace).open());
+}
+
+/** Export again found the last file moved or gone: ask before writing at the usual place. True to write. */
+export function askWhere(app: App, path: string): Promise<boolean> {
+  return new Promise((resolve) => new WhereModal(app, path, resolve).open());
+}
+
+class WhereModal extends Modal {
+  private answer = false;
+
+  constructor(app: App, private path: string, private done: (write: boolean) => void) {
+    super(app);
+  }
+
+  onOpen(): void {
+    this.setTitle(t("export.where.title"));
+    this.modalEl?.addClass("escrita-export-exists");
+    const body = this.contentEl.createDiv({ cls: "escrita-export-existsbody" });
+    const [before, after] = t("export.where.ask", { path: "\u0000" }).split("\u0000");
+    body.createSpan({ text: before });
+    body.createSpan({ cls: "escrita-export-mono", text: this.path });
+    body.createSpan({ text: after });
+    const buttons = this.contentEl.createDiv({ cls: "modal-button-container" });
+    buttons.createEl("button", { text: t("export.exists.cancel") }).addEventListener("click", () => this.close());
+    buttons.createEl("button", { cls: "mod-cta", text: t("export.where.write") }).addEventListener("click", () => { this.answer = true; this.close(); });
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+    this.done(this.answer);
+  }
 }
 
 class ExistsModal extends Modal {
   private answer: ExistsAnswer = "cancel";
 
-  constructor(app: App, private path: string, private mtime: number | null, private done: (a: ExistsAnswer) => void) {
+  constructor(app: App, private path: string, private mtime: number | null, private done: (a: ExistsAnswer) => void, private canReplace = true) {
     super(app);
   }
 
@@ -624,7 +661,8 @@ class ExistsModal extends Modal {
     const pick = (a: ExistsAnswer) => () => { this.answer = a; this.close(); };
     buttons.createEl("button", { text: t("export.exists.cancel") }).addEventListener("click", pick("cancel"));
     buttons.createEl("button", { text: t("export.exists.both") }).addEventListener("click", pick("both"));
-    buttons.createEl("button", { cls: "mod-cta", text: t("export.exists.replace") }).addEventListener("click", pick("replace"));
+    if (this.canReplace) buttons.createEl("button", { cls: "mod-cta", text: t("export.exists.replace") }).addEventListener("click", pick("replace"));
+    else buttons.lastElementChild?.classList.add("mod-cta");
   }
 
   onClose(): void {

@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, TFile } from "obsidian";
+import { MarkdownView, Notice, TFile, TFolder, normalizePath } from "obsidian";
 import type EscritaPlugin from "../main";
 import { FeatureModule } from "../core/module-context";
 import type { SettingsUi } from "../core/module-context";
@@ -9,13 +9,14 @@ import { chapterTitle } from "../core/book";
 import { bookSource, type Book } from "../core/books";
 import type { BookSource } from "../core/book-source";
 import { exportRoot } from "../core/classify";
+import { isInside } from "../snapshots/paths";
 import { NoteExistsError, FolderBlockedError } from "../core/notes";
 import { macrotaskYield, yieldBudget } from "../core/vault-index";
 import { lang, t } from "../i18n";
 import {
-  authorOf, choiceOfLast, dropChoices, exportFileName, inFolder, keepBothName, linkTarget, planChapters, renameChoices,
+  authorOf, canRepeat, choiceOfLast, dropChoices, exportFileName, inFolder, keepBothName, lastInPlace, linkTarget, placeOf, planChapters, renameChoices,
 } from "./logic";
-import { ExportModal, askExists, type BookOptions, type ExportHost, type ModalState } from "./modal";
+import { ExportModal, askExists, askWhere, type BookOptions, type ExportHost, type ModalState } from "./modal";
 import { presetById } from "./presets";
 import { exportSettingsSection } from "./settings-ui";
 import { buildExport, needsConfirm, type Built, type ExportPlan, type PartPlan } from "./source";
@@ -50,7 +51,16 @@ export class ExportModule extends FeatureModule {
   /** Keeps the remembered choices current through renames and deletes, even while the feature is off (Q17). */
   dataFollowers(): Follower[] {
     return [{
-      moved: (oldPath, newPath) => { if (renameChoices(this.plugin.data.exportChoices, oldPath, newPath)) this.plugin.requestSave(); },
+      moved: (oldPath, newPath) => {
+        // the export folder itself was renamed (or a folder holding it): the setting follows, like the snapshots'
+        const f = this.plugin.app.vault.getAbstractFileByPath(newPath);
+        const root = exportRoot(this.plugin.settings.exportFolder);
+        if (f instanceof TFolder && isInside(oldPath, root)) {
+          this.plugin.settings.exportFolder = f.path + root.slice(oldPath.length);
+          void this.plugin.saveSettings();
+        }
+        if (renameChoices(this.plugin.data.exportChoices, oldPath, newPath)) this.plugin.requestSave();
+      },
       deleted: (path) => { if (dropChoices(this.plugin.data.exportChoices, path)) this.plugin.requestSave(); },
     }];
   }
@@ -110,8 +120,21 @@ export class ExportModule extends FeatureModule {
     return { file, book: null, chapter: false, key: file.path };
   }
 
+  /**
+   * The last export of a work. A chapter exported alone keeps the book's own selection in
+   * the choices (older data saved "all" in the last export), so that is what it carries.
+   */
   private lastOf(target: Target): LastExport | null {
-    return this.plugin.data.exportChoices[target.key]?.last ?? null;
+    const choice = this.plugin.data.exportChoices[target.key];
+    const last = choice?.last;
+    if (!last) return null;
+    if (!last.whole && choice.chapters) return { ...last, chapters: choice.chapters };
+    return last;
+  }
+
+  /** Whether "Export again" may write on its own for this target and state (same kind of export as the last). */
+  private repeatable(target: Target, last: LastExport, state: ModalState): boolean {
+    return canRepeat(last, { whole: state.whole, inBook: target.book !== null, path: target.file.path });
   }
 
   private frontmatter(path: string): Frontmatter {
@@ -240,8 +263,10 @@ export class ExportModule extends FeatureModule {
 
   /**
    * "Export again" from the palette (Q17): the last choices, the same warnings. It writes
-   * at once when nothing needs a confirmation; otherwise the modal opens with those
-   * choices and the warnings, and "Export anyway" is its button.
+   * at once when nothing needs a confirmation and it is the same kind of export (a chapter
+   * exported alone is repeated from that chapter); otherwise the modal opens with those
+   * choices and the warnings, and "Export anyway" is its button. Where it writes is
+   * `write`'s business: over the last file when it is still in place, else it asks.
    */
   private async exportAgain(file: TFile): Promise<void> {
     const target = this.targetOf(file);
@@ -259,12 +284,11 @@ export class ExportModule extends FeatureModule {
       new Notice(t("export.readError"));
       return;
     }
-    const lastGone = !(this.plugin.app.vault.getAbstractFileByPath(last.path) instanceof TFile);
-    if (needsConfirm(built.warnings) || built.source.parts.filter((p) => p.role === "body").length === 0 || lastGone) {
+    if (needsConfirm(built.warnings) || built.source.parts.filter((p) => p.role === "body").length === 0 || !this.repeatable(target, last, state)) {
       this.open(file, true);
       return;
     }
-    await this.write(target, state, built);
+    await this.write(target, state, built, true);
   }
 
   /**
@@ -297,7 +321,8 @@ export class ExportModule extends FeatureModule {
       titleFor: (state) => this.titleFor(now(), state),
       build: (state) => this.build(now(), fresh(state)),
       pathFor: (state) => this.pathFor(this.titleFor(now(), state), state),
-      write: (state, built) => this.write(now(), fresh(state), built),
+      write: (state, built, again) => this.write(now(), fresh(state), built, again),
+      canRepeat: (last, state) => this.repeatable(now(), last, state),
       jump: (path, line) => { void this.jump(path, line); },
       openLast: (path) => this.openFile(path),
       fileExists: (path) => this.plugin.app.vault.getAbstractFileByPath(path) instanceof TFile,
@@ -314,7 +339,7 @@ export class ExportModule extends FeatureModule {
    * Writes the file through `notes.create`, never replacing without asking (board 26 d),
    * then remembers the choices and the file (Q4, Q17) and says so. True when written.
    */
-  private async write(target: Target, state: ModalState, built: Built): Promise<boolean> {
+  private async write(target: Target, state: ModalState, built: Built, again = false): Promise<boolean> {
     const p = this.plugin;
     const preset = presetById(state.preset);
     const writer = state.format === "docx" ? docxWriter : markdownWriter;
@@ -330,6 +355,19 @@ export class ExportModule extends FeatureModule {
     }
     let file: TFile;
     try {
+      // Export again over the last file: only when it is still where it was written, and it is an export
+      const last = again ? this.lastOf(target) : null;
+      const prior = last ? p.app.vault.getAbstractFileByPath(last.path) : null;
+      if (last && prior instanceof TFile && lastInPlace(last) && p.books.classify(prior.path).export) {
+        file = (await p.notes.create(last.path, data, { exists: "replace" })).file;
+        this.remember(target, state, built, file.path);
+        this.done(file);
+        return true;
+      }
+      // moved or gone: always ask where to write, even when nothing sits at the usual place
+      if (last && !(p.app.vault.getAbstractFileByPath(path) instanceof TFile)) {
+        if (!(await askWhere(p.app, path))) return false;
+      }
       try {
         file = (await p.notes.create(path, data, { exists: "fail" })).file;
       } catch (e) {
@@ -339,10 +377,15 @@ export class ExportModule extends FeatureModule {
           return false;
         }
         const there = p.app.vault.getAbstractFileByPath(e.existing);
-        const answer = await askExists(p.app, e.existing, there instanceof TFile ? there.stat.mtime : null);
+        // notes.create matches paths ignoring case, so what exists may be another file: only an
+        // export, at exactly this path, may be replaced (never a note of the writer's)
+        const canReplace = e.existing === normalizePath(path) && p.books.classify(e.existing).export;
+        const answer = await askExists(p.app, e.existing, there instanceof TFile ? there.stat.mtime : null, canReplace);
         if (answer === "cancel") return false;
-        if (answer === "replace") {
-          file = (await p.notes.create(path, data, { exists: "replace" })).file;
+        if (answer === "replace" && canReplace) {
+          // a file that is not a recorded export may be the writer's own: it goes to the trash, not over
+          const ours = Object.values(p.data.exportChoices).some((c) => c.last?.path === e.existing);
+          file = (await p.notes.create(path, data, { exists: "replace", trashOld: !ours })).file;
         } else {
           const again = inFolder(exportRoot(p.settings.exportFolder), keepBothName(title, state.format, state.preset, new Date()));
           file = (await p.notes.create(again, data, { exists: "unique" })).file;
@@ -369,9 +412,11 @@ export class ExportModule extends FeatureModule {
     const chapters: ExportSelection = book ? state.selection : previous?.chapters ?? { mode: "all" };
     const last: LastExport = {
       format: state.format, preset: state.preset, whole: book,
-      chapters: book ? state.selection : { mode: "all" },
-      at: new Date().toISOString(), path,
+      // a chapter exported alone still carries the book's selection, for "Export again" from the book
+      chapters: book ? state.selection : chapters,
+      at: new Date().toISOString(), path, ...placeOf(path),
     };
+    if (!book) last.source = target.file.path;
     if (book) last.chapterCount = built.source.parts.filter((x) => x.role === "body").length;
     data.exportChoices[target.key] = {
       format: state.format,

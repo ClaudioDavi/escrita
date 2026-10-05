@@ -188,3 +188,29 @@ describe("cleanExportChoices", () => {
     expect(cleanExportChoices([1])).toEqual({});
   });
 });
+
+import { canRepeat, lastInPlace, placeOf, renameChoices as renameChoicesAgain } from "../src/export/logic";
+
+describe("repeating an export (Q17)", () => {
+  const last = { format: "docx" as const, preset: "shunn", whole: false, chapters: { mode: "all" as const }, at: "t", path: "E/a.docx", folder: "E", name: "a.docx", source: "B/C.md" };
+  it("knows a file that moved or was renamed, and takes old data as in place", () => {
+    expect(lastInPlace(last)).toBe(true);
+    expect(lastInPlace({ ...last, path: "E/b.docx" })).toBe(false);
+    expect(lastInPlace({ ...last, path: "F/a.docx" })).toBe(false);
+    expect(lastInPlace({ ...last, folder: undefined, name: undefined, path: "Z/q.docx" })).toBe(true);
+    expect(placeOf("E/F/a.docx")).toEqual({ folder: "E/F", name: "a.docx" });
+    expect(placeOf("a.docx")).toEqual({ folder: "", name: "a.docx" });
+  });
+  it("repeats a chapter only from that chapter, a whole book from anywhere", () => {
+    expect(canRepeat(last, { whole: false, inBook: true, path: "B/C.md" })).toBe(true);
+    expect(canRepeat(last, { whole: false, inBook: true, path: "B/D.md" })).toBe(false);
+    expect(canRepeat(last, { whole: true, inBook: true, path: "B.md" })).toBe(false);
+    expect(canRepeat({ ...last, whole: true }, { whole: true, inBook: true, path: "B/D.md" })).toBe(true);
+    expect(canRepeat({ ...last, source: undefined }, { whole: false, inBook: false, path: "x.md" })).toBe(true);
+  });
+  it("the source follows a rename", () => {
+    const choices = { "B.md": { format: "docx" as const, preset: "shunn", whole: false, last: { ...last } } };
+    expect(renameChoicesAgain(choices, "B/C.md", "B/Z.md")).toBe(true);
+    expect(choices["B.md"].last.source).toBe("B/Z.md");
+  });
+});

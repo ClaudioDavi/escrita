@@ -71,4 +71,9 @@ describe("strings", () => {
     }
     expect(dupes).toEqual([]);
   });
+
+  it("the pt-BR Features switch for submissions uses the module's own name", () => {
+    expect(coreStrings["pt-BR"]["settings.features.submissions"]).toBe("Envios");
+    expect(coreStrings["pt-BR"]["settings.features.submissions"]).not.toBe("Submissões");
+  });
 });

@@ -90,6 +90,9 @@ export const exportStrings: Strings = {
     "export.exists.cancel": "Cancel",
     "export.exists.both": "Keep both",
     "export.exists.replace": "Replace",
+    "export.where.title": "Where to write",
+    "export.where.ask": "The last export is not where it was written. Write {path}?",
+    "export.where.write": "Write",
 
     "export.done": "Exported: {name}.",
     "export.done.show": "Show in the file explorer",
@@ -206,6 +209,9 @@ export const exportStrings: Strings = {
     "export.exists.cancel": "Cancelar",
     "export.exists.both": "Manter os dois",
     "export.exists.replace": "Substituir",
+    "export.where.title": "Onde gravar",
+    "export.where.ask": "A última exportação não está onde foi gravada. Gravar {path}?",
+    "export.where.write": "Gravar",
 
     "export.done": "Exportado: {name}.",
     "export.done.show": "Abrir a pasta",

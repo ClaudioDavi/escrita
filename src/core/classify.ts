@@ -420,14 +420,18 @@ export function classify<F extends Named, D extends Named>(
 
 /**
  * Every book in the vault: a non-root folder F with a file F.md and a folder
- * F/<chaptersFolder>, the same rule as classify. Sorted by title.
+ * F/<chaptersFolder>, the same rule as classify. Sorted by title. Folders inside the plugin's own
+ * folders are skipped, unless `skipPluginFolders` is false (a settings check that must see a book
+ * a folder setting already captured).
  */
-export function listBooks<F extends Named, D extends Named>(tree: VaultTree<F, D>, settings: ClassifySettings): BookOf<F, D>[] {
+export function listBooks<F extends Named, D extends Named>(
+  tree: VaultTree<F, D>, settings: ClassifySettings, skipPluginFolders = true,
+): BookOf<F, D>[] {
   const ch = chaptersRel(settings);
   const out: BookOf<F, D>[] = [];
   try {
     for (const d of tree.folders()) {
-      if (inSnapshots(d.path, settings) || inSubmissions(d.path, settings) || inExports(d.path, settings)) continue;
+      if (skipPluginFolders && (inSnapshots(d.path, settings) || inSubmissions(d.path, settings) || inExports(d.path, settings))) continue;
       const b = bookAt(tree, d.path, ch);
       if (b) out.push(b);
     }

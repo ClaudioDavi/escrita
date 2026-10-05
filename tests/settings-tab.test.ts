@@ -90,6 +90,19 @@ describe("the tab draws from the order list", () => {
     expect(headings()).toEqual(["settings.features", "settings.shared", "settings.books", "settings.stages"].map((k) => t(k)));
   });
 
+  it("the export and submissions folders draw in the shared section with both features off (the classifier reads them)", () => {
+    for (const off of [[], ["export", "submissions"], [...FEATURE_IDS]] as FeatureId[][]) {
+      resetSettingLog();
+      tabWith(off).tab.display();
+      const n = names();
+      for (const key of ["export.settings.folder", "submissions.settings.folder"]) {
+        expect(n.filter((x) => x === t(key)), `${key} with ${off.length} off`).toHaveLength(1);
+        expect(n.indexOf(t(key))).toBeGreaterThan(n.indexOf(t("settings.excludeFolders")));
+        expect(n.indexOf(t(key))).toBeLessThan(n.indexOf(t("settings.books")));
+      }
+    }
+  });
+
   it("a shared row stays while another feature reads it", () => {
     tabWith(["placeholders"]).tab.display();
     expect(names()).toContain(t("settings.placeholderMarker"));

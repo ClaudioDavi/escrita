@@ -8,7 +8,8 @@ export function folderProblemText(p: FolderProblem): string {
   switch (p.reason) {
     case "path": return t("settings.folderProblem.path");
     case "config":
-    case "tracked": return t("settings.folderProblem.outside", { folder: p.folder });
+    case "tracked":
+    case "book": return t("settings.folderProblem.outside", { folder: p.folder });
     case "overlap": return t("settings.folderProblem.overlap", { folder: p.folder });
     case "notes": return t("settings.folderProblem.notes", { folder: p.folder });
   }

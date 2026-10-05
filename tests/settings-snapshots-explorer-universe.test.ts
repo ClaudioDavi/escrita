@@ -33,7 +33,7 @@ function rig(over: Partial<EscritaSettings> = {}, on: string[] = ["universe", "t
     num: (v: string, fb: number, min = 0) => { const n = parseInt(v, 10); return Number.isNaN(n) ? fb : Math.max(min, n); },
   } as unknown as SettingsUi;
   const plugin = {
-    settings, books: { allBooks: () => [] },
+    settings, books: { allBooks: () => [], allBooksEverywhere: () => [] },
     features: { isOn: (id: string) => on.includes(id) },
   };
   return { settings, commits, save, ui, plugin: plugin as never, el: document.createElement("div") };
@@ -139,5 +139,21 @@ describe("universe and threads sections", () => {
     const form = r.commits.find((c) => c.fallback() === DEFAULT_SETTINGS.formProperty)!;
     form.apply("kind");
     expect(r.settings.formProperty).toBe("kind");
+  });
+});
+
+describe("plugin folder rows (export, submissions)", () => {
+  it("refuse a folder that holds the writer's files of any kind, not only notes", async () => {
+    const { pluginFolderRows } = await import("../src/settings");
+    const r = rig();
+    (r.ui.app.vault as unknown as { getFiles: () => { path: string }[] }).getFiles = () => [{ path: "Manuscritos/A Casa (Shunn).docx" }];
+    pluginFolderRows(r.el, r.ui, r.settings, () => []);
+    expect(r.commits).toHaveLength(2);
+    r.commits[0].apply("Manuscritos");
+    expect(r.settings.exportFolder).toBe(DEFAULT_SETTINGS.exportFolder);
+    r.commits[1].apply("Manuscritos");
+    expect(r.settings.submissionsFolder).toBe(DEFAULT_SETTINGS.submissionsFolder);
+    r.commits[0].apply("Saida");
+    expect(r.settings.exportFolder).toBe("Saida");
   });
 });

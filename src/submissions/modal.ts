@@ -1,6 +1,6 @@
 import { App, Modal } from "obsidian";
 import { t } from "../i18n";
-import { canRecord, cleanMarket, quoted, whereParts, yamlValue } from "./logic";
+import { canRecord, cleanMarket, resultLine, whereParts, workLine, type SubmissionProps } from "./logic";
 
 export interface SubmissionModalOptions {
   /** the work's title and, on the right, its stage and size ("pronto · 5.120"); "" for none */
@@ -12,6 +12,8 @@ export interface SubmissionModalOptions {
   today: string;
   /** the first value of the results list */
   result: string;
+  /** the configured property names */
+  props: SubmissionProps;
   /** the path the note would get (the "Creates" line) and the work property text */
   pathFor(market: string, sent: string): string;
   linkFor(market: string, sent: string): string;
@@ -72,7 +74,7 @@ export class SubmissionModal extends Modal {
       if (!ok) { where.toggle(false); return; }
       where.toggle(true);
       for (const part of whereParts(t("submissions.where"), {
-        path: opts.pathFor(m, sent.value), work: `work: ${quoted(opts.linkFor(m, sent.value))}`, result: `result: ${yamlValue(opts.result)}`,
+        path: opts.pathFor(m, sent.value), work: workLine(opts.props, opts.linkFor(m, sent.value)), result: resultLine(opts.props, opts.result),
       })) {
         if (part.code) where.createEl("code", { text: part.text });
         else where.appendText(part.text);

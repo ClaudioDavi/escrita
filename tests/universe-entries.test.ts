@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { aliasesOf, boolOf, entriesIn, entriesSpec, entriesSettingsKey, phrasesOf, sameEntry, type ScopedEntry, foldText, groupByKind, isTemplatePath, kindOf, searchEntries, type Entry, type EntriesSettings } from "../src/universe/entries";
+import { aliasesOf, boolOf, entriesIn, entriesSpec, entriesSettingsKey, phrasesOf, sameEntry, type ScopedEntry, foldText, groupByKind, isTemplatePath, isUniverseNote, kindOf, searchEntries, type Entry, type EntriesSettings } from "../src/universe/entries";
 import { defaultUniverseSettings } from "../src/universe/settings";
 import { VaultIndex } from "../src/core/vault-index";
 import { MemoryVault, ManualTimers, type MemFile } from "./support/memory-vault";
@@ -42,6 +42,17 @@ describe("isTemplatePath", () => {
     expect(isTemplatePath("Outros/Lugar.md", s)).toBe(true);
     expect(isTemplatePath("Chap.md", s)).toBe(true);
     expect(isTemplatePath("Universo/Lugares/Y.md", s)).toBe(false);
+  });
+});
+
+describe("isUniverseNote", () => {
+  const f = (path: string) => ({ path, extension: "md" }) as Parameters<typeof isUniverseNote>[0];
+  it("skips derived files: exports, submissions and snapshots", () => {
+    const s = settings({ exportFolder: "Escrita/Exports", submissionsFolder: "Escrita/Submissions" });
+    expect(isUniverseNote(f("Escrita/Exports/A Casa.md"), s)).toBe(false);
+    expect(isUniverseNote(f("Escrita/Submissions/Faca.md"), s)).toBe(false);
+    expect(isUniverseNote(f("Escrita/Snapshots/x.md"), s)).toBe(false);
+    expect(isUniverseNote(f("Universo/Teo.md"), s)).toBe(true);
   });
 });
 

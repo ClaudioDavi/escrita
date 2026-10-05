@@ -167,6 +167,13 @@ function mapPaths(c: ExportChoice, fn: (path: string) => string | null): boolean
       c.last.path = to;
       changed = true;
     }
+    if (c.last.source !== undefined) {
+      const src = fn(c.last.source);
+      if (src !== null && src !== c.last.source) {
+        c.last.source = src;
+        changed = true;
+      }
+    }
   }
   return changed;
 }
@@ -200,4 +207,35 @@ export function dropChoices(choices: Record<string, ExportChoice>, path: string)
     }
   }
   return changed;
+}
+
+// ------------------------------------------------------------------ repeating an export (Q17)
+
+const dirOf = (path: string): string => (path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "");
+const nameOf = (path: string): string => path.split("/").pop() ?? path;
+
+/**
+ * The last file is still where the export wrote it: same folder, same name (a keep-both
+ * name counts, it is what was written). A rename or a move, even inside the export
+ * folder, makes it "moved" and Export again asks where to write. Entries saved before
+ * the folder and name were remembered are taken as in place.
+ */
+export function lastInPlace(last: LastExport): boolean {
+  if (last.folder === undefined || last.name === undefined) return true;
+  return dirOf(last.path) === last.folder && nameOf(last.path) === last.name;
+}
+
+/** The folder and file name to remember for a file just written. */
+export function placeOf(path: string): { folder: string; name: string } {
+  return { folder: dirOf(path), name: nameOf(path) };
+}
+
+/**
+ * Whether "Export again" may write on its own for this target: it repeats the same
+ * kind of export. A chapter exported alone is repeated from that chapter only, a whole
+ * book from any file of the book; anything else needs the modal.
+ */
+export function canRepeat(last: LastExport, now: { whole: boolean; inBook: boolean; path: string }): boolean {
+  if (now.whole !== last.whole) return false;
+  return last.whole || !now.inBook || last.source === now.path;
 }

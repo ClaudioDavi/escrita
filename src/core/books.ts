@@ -63,6 +63,14 @@ export class BookService {
     return listBooks(this.tree, this.settings());
   }
 
+  /**
+   * Every book by folder shape alone, even one inside a plugin folder (export, submissions,
+   * snapshots). For settings checks, which must not let a folder setting capture a book.
+   */
+  allBooksEverywhere(): Book[] {
+    return listBooks(this.tree, this.settings(), false);
+  }
+
   /** Frontmatter of a file from the metadata cache (may be undefined right after creation). */
   frontmatter(file: TFile): Record<string, unknown> {
     return (this.app.metadataCache.getFileCache(file)?.frontmatter ?? {}) as Record<string, unknown>;

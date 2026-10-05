@@ -1,35 +1,16 @@
 import { Setting } from "obsidian";
 import { t } from "../i18n";
 import { DEFAULT_SETTINGS } from "../settings";
-import { exportRoot, snapshotsRoot, submissionsRoot } from "../core/classify";
-import { holdsOwnNotes, pluginFolderProblem } from "../core/folder-problem";
-import { addFolderField } from "../core/folder-setting";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
 
 /**
- * The Export section: the folder, the property names, the author on the title page and the
- * chapter heading. Every value has an English default in DEFAULT_SETTINGS (rule 6).
+ * The Export section: the property names, the author on the title page and the
+ * chapter heading. The folder is drawn by the core (settings.ts, pluginFolderRows). Every value has an English default in DEFAULT_SETTINGS (rule 6).
  */
 export function exportSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
   const s = plugin.settings;
   new Setting(el).setName(t("export.settings.heading")).setHeading();
-  addFolderField(
-    new Setting(el).setName(t("export.settings.folder")).setDesc(t("export.settings.folder.desc")), ui,
-    {
-      placeholder: DEFAULT_SETTINGS.exportFolder,
-      value: s.exportFolder,
-      problemOf: (v) => {
-        const root = exportRoot(v);
-        const paths = () => ui.app.vault.getMarkdownFiles().map((f) => f.path);
-        return pluginFolderProblem(
-          root, [submissionsRoot(s.submissionsFolder), snapshotsRoot(s.snapshotsFolder)],
-          ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, exportRoot(s.exportFolder), s),
-        );
-      },
-      save: (v) => { s.exportFolder = exportRoot(v); },
-    },
-  );
   const text = (key: "compileProperty" | "dedicationProperty" | "epigraphProperty" | "authorProperty", name: string): void => {
     new Setting(el)
       .setName(t(`export.settings.${name}`))

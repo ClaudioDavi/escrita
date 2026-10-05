@@ -181,10 +181,25 @@ export function safeName(s: string): string {
 }
 
 /** "2026-10-05 Cartas de Lisboa – Revista Pessoa.md" (just the name). */
+const ENCODER = new TextEncoder();
+/** Leaves room for ".md" and the " 1" suffix of a unique name inside 255 bytes. */
+const NAME_BYTES = 240;
+
 export function submissionFileName(sent: string, work: string, market: string): string {
   const w = safeName(work) || "Work";
   const m = safeName(market);
-  const base = (m ? `${sent} ${w} – ${m}` : `${sent} ${w}`).slice(0, 180).replace(/\s*–?\s*$/, "");
+  const full = (m ? `${sent} ${w} – ${m}` : `${sent} ${w}`).slice(0, 180);
+  // Cut by UTF-8 bytes per code point: file systems cap a name at 255 bytes, and a
+  // slice by UTF-16 units could split a surrogate pair.
+  let out = "";
+  let bytes = 0;
+  for (const ch of full) {
+    const b = ENCODER.encode(ch).length;
+    if (bytes + b > NAME_BYTES) break;
+    out += ch;
+    bytes += b;
+  }
+  const base = out.replace(/\s*–?\s*$/, "");
   return `${base}.md`;
 }
 
@@ -207,6 +222,14 @@ export function quoted(v: string): string {
   return `"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/[\r\n]+/g, " ")}"`;
 }
 
+/** The `work` and `result` lines as written into the note (and shown in the modal). */
+export function workLine(props: SubmissionProps, link: string): string {
+  return `${yamlKey(props.work)}: ${quoted(link)}`;
+}
+export function resultLine(props: SubmissionProps, result: string): string {
+  return `${yamlKey(props.result)}: ${yamlValue(result)}`;
+}
+
 export interface NewSubmission {
   /** the link as written into `work`: "[[Cartas de Lisboa]]" */
   link: string;
@@ -221,10 +244,10 @@ export interface NewSubmission {
 export function submissionText(s: NewSubmission, props: SubmissionProps = DEFAULT_PROPS): string {
   return [
     "---",
-    `${yamlKey(props.work)}: ${quoted(s.link)}`,
+    workLine(props, s.link),
     `${yamlKey(props.market)}: ${quoted(s.market)}`,
     `${yamlKey(props.sent)}: ${s.sent}`,
-    `${yamlKey(props.result)}: ${yamlValue(s.result)}`,
+    resultLine(props, s.result),
     `${yamlKey(props.responded)}:`,
     "---",
     "",

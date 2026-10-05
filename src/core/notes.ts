@@ -47,6 +47,11 @@ export type ExistsPolicy = "return" | "fail" | "unique" | "replace";
 
 export interface CreateOptions {
   exists: ExistsPolicy;
+  /**
+   * Under "replace": send the old file to the trash (fileManager.trashFile) and create a new one,
+   * instead of overwriting it in place. For a file the plugin may not have written (rule 1).
+   */
+  trashOld?: boolean;
 }
 
 export interface CreateResult {
@@ -132,6 +137,11 @@ export class NoteService {
       if (found !== null && target instanceof TFile && o.exists !== "unique") {
         if (o.exists === "return") return { file: target, outcome: "existing" };
         if (o.exists === "fail") throw new NoteExistsError(norm, found, false);
+        if (o.trashOld) {
+          await this.app.fileManager.trashFile(target);
+          const file = typeof payload === "string" ? await vault.create(norm, payload) : await vault.createBinary(norm, payload);
+          return { file, outcome: "replaced" };
+        }
         if (typeof payload === "string") await vault.modify(target, payload);
         else await vault.modifyBinary(target, payload);
         return { file: target, outcome: "replaced" };

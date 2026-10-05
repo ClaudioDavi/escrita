@@ -3,7 +3,9 @@ import { exportRoot, inExports, inFolder, inSnapshots, inSubmissions, snapshotsF
 /** What is wrong with a plugin folder setting (export, submissions, snapshots), if anything. */
 export type FolderProblem = SnapshotsFolderProblem
   /** it holds, or sits inside, another of the plugin's own folders */
-  | { reason: "overlap"; folder: string };
+  | { reason: "overlap"; folder: string }
+  /** it sits inside a book (or its chapters folder), or holds a book */
+  | { reason: "book"; folder: string };
 
 type FolderSettings = Pick<ClassifySettings, "exportFolder" | "submissionsFolder" | "snapshotsFolder">;
 
@@ -18,16 +20,35 @@ export function overlapProblem(root: string, others: readonly string[]): FolderP
   return null;
 }
 
+/** A book's two paths, all the book check needs. */
+export type BookPaths = { note: { path: string }; folder: { path: string } };
+
+/**
+ * The first book that `root` sits inside (its folder or chapters folder) or holds (its folder or
+ * note). Pass every book, even one inside a plugin folder (see BookService.allBooksEverywhere).
+ */
+export function bookProblem(root: string, books: readonly BookPaths[]): FolderProblem | null {
+  for (const b of books) {
+    if (inFolder(root, b.folder.path) || inFolder(b.folder.path, root) || inFolder(b.note.path, root)) {
+      return { reason: "book", folder: b.folder.path };
+    }
+  }
+  return null;
+}
+
 /**
  * Checks a plugin folder value (already normalized to `root`) before it is saved: a plain folder
  * inside the vault, not the config folder, not a track folder, not another plugin folder, and
- * not a place that already holds the writer's notes. `hasNotes(root)` answers the last one.
+ * not a place that already holds the writer's notes (`hasNotes(root)`), and not inside or around a
+ * book (`books`: all of them).
  */
 export function pluginFolderProblem(
   root: string, others: readonly string[], configDir: string, trackFolders: string, hasNotes: (root: string) => boolean,
+  books: readonly BookPaths[] = [],
 ): FolderProblem | null {
   return snapshotsFolderProblem(root, configDir, trackFolders, () => false)
     ?? overlapProblem(root, others)
+    ?? bookProblem(root, books)
     ?? (hasNotes(root) ? { reason: "notes", folder: root } : null);
 }
 

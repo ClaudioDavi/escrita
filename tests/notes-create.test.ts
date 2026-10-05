@@ -38,6 +38,23 @@ describe("notes.create: new files", () => {
   });
 });
 
+describe("notes.create: trashOld", () => {
+  it("sends the old file to the trash, then creates the new one", async () => {
+    vault.seedFile("a.docx", u8(1).buffer);
+    const trashed: string[] = [];
+    const app = {
+      vault, workspace: { getLeavesOfType: () => [] },
+      fileManager: { trashFile: async (f: TFile) => { trashed.push(f.path); vault.entries.delete(f.path); vault.bytes.delete(f.path); } },
+    } as unknown as App;
+    const r = await new NoteService(app).create("a.docx", u8(7), { exists: "replace", trashOld: true });
+    expect(trashed).toEqual(["a.docx"]);
+    expect(r.outcome).toBe("replaced");
+    expect(vault.calls).toContain("createBinary a.docx");
+    expect(vault.calls).not.toContain("modifyBinary a.docx");
+    expect(asBytes(vault.bytes.get("a.docx")!)).toEqual([7]);
+  });
+});
+
 describe("notes.create: binary", () => {
   it("writes an ArrayBuffer through createBinary", async () => {
     const buf = u8(1, 2, 3).buffer;

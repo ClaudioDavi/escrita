@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { holdsOwnNotes, overlapProblem, pluginFolderProblem } from "../src/core/folder-problem";
+import { bookProblem, holdsOwnNotes, overlapProblem, pluginFolderProblem } from "../src/core/folder-problem";
 
 const S = { exportFolder: "Escrita/Exports", submissionsFolder: "Escrita/Submissions", snapshotsFolder: "Escrita/Snapshots" };
 const none = () => false;
@@ -31,5 +31,24 @@ describe("holdsOwnNotes", () => {
     expect(holdsOwnNotes(["Escrita/Exports/a.md"], "Escrita", "Escrita/Exports", S)).toBe(false);
     expect(holdsOwnNotes(paths, "Old", "Escrita/Exports", S)).toBe(true);
     expect(holdsOwnNotes(["Contos/a.md"], "Contos", "Escrita/Exports", S)).toBe(true);
+  });
+});
+
+describe("book folders", () => {
+  const book = { note: { path: "Novels/B.md" }, folder: { path: "Novels/B" } };
+  it("refuses a book's folder, its chapters folder, and a folder holding the book", () => {
+    expect(pluginFolderProblem("Novels/B", [], ".obsidian", "", none, [book])).toEqual({ reason: "book", folder: "Novels/B" });
+    expect(pluginFolderProblem("Novels/B/Chapters", [], ".obsidian", "", none, [book])).toEqual({ reason: "book", folder: "Novels/B" });
+    expect(bookProblem("Novels", [book])).toEqual({ reason: "book", folder: "Novels/B" });
+  });
+  it("accepts a folder beside the book", () => {
+    expect(pluginFolderProblem("Novels/B2", [], ".obsidian", "", none, [book])).toBeNull();
+    expect(pluginFolderProblem("Out/Exports", [], ".obsidian", "", none, [book])).toBeNull();
+  });
+});
+
+describe("holdsOwnNotes with every file", () => {
+  it("counts a .docx the writer keeps in the folder", () => {
+    expect(holdsOwnNotes(["Manuscritos/A Casa (Shunn).docx"], "Manuscritos", "Escrita/Exports", S)).toBe(true);
   });
 });

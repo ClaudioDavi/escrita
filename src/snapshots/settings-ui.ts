@@ -2,7 +2,7 @@ import { Setting } from "obsidian";
 import { fmt, plural, t } from "../i18n";
 import { DEFAULT_SETTINGS } from "../settings";
 import { DEFAULT_SNAPSHOTS_FOLDER, exportRoot, inFolder, snapshotsFolderProblem, snapshotsRoot, submissionsRoot } from "../core/classify";
-import { overlapProblem, type FolderProblem } from "../core/folder-problem";
+import { bookProblem, overlapProblem, type FolderProblem } from "../core/folder-problem";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
 
@@ -24,6 +24,8 @@ export function snapshotsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin
     const root = snapshotsRoot(v);
     const overlap = overlapProblem(root, [exportRoot(s.exportFolder), submissionsRoot(s.submissionsFolder)]);
     if (overlap) return overlap;
+    const inBook = bookProblem(root, plugin.books.allBooksEverywhere());
+    if (inBook) return inBook;
     return snapshotsFolderProblem(v, ui.app.vault.configDir, s.trackFolders, (r) =>
       r !== s.snapshotsFolder && ui.app.vault.getMarkdownFiles().some((f) => inFolder(f.path, r)));
   };
@@ -63,7 +65,8 @@ function snapshotsProblemText(p: FolderProblem): string {
   switch (p.reason) {
     case "path": return t("settings.snapshotsFolder.path");
     case "config":
-    case "tracked": return t("settings.snapshotsFolder.invalid", { folder: p.folder });
+    case "tracked":
+    case "book": return t("settings.snapshotsFolder.invalid", { folder: p.folder });
     case "notes": return t("settings.snapshotsFolder.notes", { folder: p.folder });
     case "overlap": return t("settings.folderProblem.overlap", { folder: p.folder });
   }
