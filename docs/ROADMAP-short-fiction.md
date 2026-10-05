@@ -772,7 +772,7 @@ what came back, is a large part of short fiction. It ships with export (novel
 roadmap, 7), since export is how a work gets sent.
 
 **What it does.** One note per submission, in a folder (setting, default
-`Submissions/`), with plain properties: `work` (a link to the work, so renames are
+`Escrita/Submissions/`; the spec said `Submissions/`, changed in 0.8 because the classifier applies the folder even with the feature off, so an existing vault-root `Submissions` folder would silently lose tracking on upgrade), with plain properties: `work` (a link to the work, so renames are
 followed by Obsidian), `market` (plain text; a link to a market note works too, with
 no market features), `sent`, `result` (`pending`, `accepted`, `rejected`,
 `withdrawn`, values from settings), `responded`. The body is free: the editor's
@@ -807,7 +807,7 @@ renaming the conto updates the link, and the notes read well with Escrita turned
 | Stages | Idea / draft / revision / ready / published values (replace published and unpublished values, status colors) | `idea`, `draft`, `revision`, `ready`, `published` | `ideia`, `rascunho`, `revisao`, `pronto`, `publicado` |
 | | Other status colors (`otherStatusColors`: one `word: color` per line, for statuses that are not a stage, such as chapter ones) | (empty) | (migrated from the old status colors) |
 | | Home note / open it on startup | (empty) / off | `Início.md` (their existing note) / on |
-| Submissions (0.8) | Folder / result values | `Submissions` / `pending`, `accepted`, `rejected`, `withdrawn` | (author's choice) |
+| Submissions (0.8) | Folder / result values | `Escrita/Submissions` / `pending`, `accepted`, `rejected`, `withdrawn` | (author's choice) |
 | | Work, market, sent, result, responded properties | `work`, `market`, `sent`, `result`, `responded` | same |
 | Export (0.8) | Export folder | `Escrita/Exports` | (author's choice) |
 | | Author name / surname (empty: last word of the name) | (empty) / (empty) | (author's choice) |

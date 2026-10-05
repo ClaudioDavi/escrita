@@ -73,6 +73,12 @@ export class FileVault {
     this.calls.push(`modify ${file.path}`);
     this.text.set(file.path, content);
   }
+  async process(file: TFile, fn: (data: string) => string): Promise<string> {
+    this.calls.push(`process ${file.path}`);
+    const next = fn(this.text.get(file.path) ?? "");
+    this.text.set(file.path, next);
+    return next;
+  }
   async modifyBinary(file: TFile, content: ArrayBuffer): Promise<void> {
     this.calls.push(`modifyBinary ${file.path}`);
     this.bytes.set(file.path, content);

@@ -105,8 +105,10 @@ export function bookSource(
       const f = fileAt(path);
       if (!f) throw new Error(`not a file: ${path}`);
       const open = notes.editorView(f) !== null;
+      const before = f.stat.mtime;
       const text = await notes.text(f).read();
-      return { text, mtime: open ? null : f.stat.mtime };
+      // a save during the read may pair old text with a newer mtime: seed only when unchanged
+      return { text, mtime: open || f.stat.mtime !== before ? null : before };
     },
     frontmatter,
   };

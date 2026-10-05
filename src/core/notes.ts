@@ -39,7 +39,7 @@ export class FolderBlockedError extends Error {
  * - "fail": throw NoteExistsError.
  * - "unique": write next to it under the first free name, Obsidian's way:
  *   "Title 1.md", "Title 2.md"…
- * - "replace": overwrite its contents (vault.modify / modifyBinary), keeping the
+ * - "replace": overwrite its contents (vault.process / modifyBinary), keeping the
  *   file (and its links). Only for derived files (an export) or after the writer
  *   said yes: rule 1 forbids replacing prose silently. Asking stays with the caller.
  */
@@ -144,7 +144,7 @@ export class NoteService {
           const file = typeof payload === "string" ? await vault.create(norm, payload) : await vault.createBinary(norm, payload);
           return { file, outcome: "replaced" };
         }
-        if (typeof payload === "string") await vault.modify(target, payload);
+        if (typeof payload === "string") await vault.process(target, () => payload);
         else await vault.modifyBinary(target, payload);
         return { file: target, outcome: "replaced" };
       }

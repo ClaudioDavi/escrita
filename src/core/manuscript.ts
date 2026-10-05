@@ -108,7 +108,7 @@ const CODE_OPEN = "\u0002";
 const CODE_CLOSE = "\u0003";
 
 // Entries of the MARKUP table this module reads (pinned by tests/manuscript.test.ts).
-const EMBED_RES = [MARKUP[0].re, MARKUP[1].re];
+const EMBED_ANY = new RegExp(`${MARKUP[0].re.source}|${MARKUP[1].re.source}`, "g");
 const LINK_RES = [MARKUP[2], MARKUP[3]];
 
 const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})/;
@@ -176,17 +176,16 @@ function build(md: Markdown, o: ManuscriptOptions): Built {
       cut = true;
       break;
     }
-    for (const re of EMBED_RES) {
-      prose = prose.replace(re, (...a: unknown[]) => {
-        const m = a[0] as string;
-        const at = a[a.length - 2] as number;
-        const inner = m.startsWith("![[") ? m.slice(3, -2).split("|")[0] : /\(([^)]*)\)$/.exec(m)?.[1] ?? "";
-        const d: Dropped = { kind: "embed", line: md.lineOf(span.from + at), text: inner };
-        order.set(d, span.from + at);
-        dropped.push(d);
-        return GONE;
-      });
-    }
+    // one pass over both patterns, so every offset is into the original prose
+    prose = prose.replace(EMBED_ANY, (...a: unknown[]) => {
+      const m = a[0] as string;
+      const at = a[a.length - 2] as number;
+      const inner = m.startsWith("![[") ? m.slice(3, -2).split("|")[0] : /\(([^)]*)\)$/.exec(m)?.[1] ?? "";
+      const d: Dropped = { kind: "embed", line: md.lineOf(span.from + at), text: inner };
+      order.set(d, span.from + at);
+      dropped.push(d);
+      return GONE;
+    });
     vis += prose;
     if (cut) {
       vis += GONE;

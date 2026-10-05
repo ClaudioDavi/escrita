@@ -126,4 +126,18 @@ describe("loadRows", () => {
     const rows = await loadRows({ ...p, chapters: (b) => p.chapters(b).map((c) => ({ ...c, include: false })) }, ["a.md"]);
     expect(rows).toHaveLength(1);
   });
+
+  it("skips a chapter that vanished while rows load instead of rejecting", async () => {
+    const p = port({ "a.md": { text: "x" }, "b.md": { text: "y" } });
+    const read = p.read;
+    p.read = async (path) => { if (path === "a.md") throw new Error("not a file"); return read(path); };
+    const rows = await loadRows(p, ["a.md", "b.md"]);
+    expect(rows.map((r) => r.path)).toEqual(["b.md"]);
+  });
+  it("skips a chapter whose counts fail", async () => {
+    const p = port({ "a.md": { text: "x" }, "b.md": { text: "y" } });
+    const counts = p.counts;
+    p.counts = async (path, seed, unit) => { if (path === "b.md") throw new Error("gone"); return counts(path, seed, unit); };
+    expect((await loadRows(p, ["a.md", "b.md"])).map((r) => r.path)).toEqual(["a.md"]);
+  });
 });

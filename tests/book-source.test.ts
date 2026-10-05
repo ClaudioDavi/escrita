@@ -19,7 +19,7 @@ describe("includeChapter", () => {
   });
 });
 
-function setup(open: Set<string>) {
+function setup(open: Set<string>, onRead?: (f: TFile) => void) {
   const mk = (path: string, mtime = 0) => {
     const name = path.slice(path.lastIndexOf("/") + 1);
     return Object.assign(new TFile(), { path, name, basename: name.replace(/\.md$/, ""), extension: "md", stat: { ctime: 0, mtime, size: 0 } });
@@ -36,12 +36,12 @@ function setup(open: Set<string>) {
   };
   const notes = {
     editorView: (f: TFile) => (open.has(f.path) ? ({} as never) : null),
-    text: (f: TFile) => ({ read: async () => (open.has(f.path) ? "unsaved" : "saved") }) as never,
+    text: (f: TFile) => ({ read: async () => { onRead?.(f); return open.has(f.path) ? "unsaved" : "saved"; } }) as never,
   };
   const s = { ...DEFAULT_SETTINGS };
   const books = new BookService(app as never, () => s);
   const book = { chaptersFolder: chapters } as never;
-  return { src: bookSource(app as never, books, notes, () => s), book };
+  return { src: bookSource(app as never, books, notes, () => s), book, files };
 }
 
 describe("bookSource adapter", () => {
@@ -68,5 +68,13 @@ describe("bookSource adapter", () => {
     expect(src.frontmatter("Novels/L/Chapters/10 Dez.md")).toEqual({});
     expect(src.frontmatter("Novels/L/Chapters/02 Dois.md")).toEqual({ compile: false });
     expect(src.frontmatter("missing.md")).toEqual({});
+  });
+});
+
+describe("bookSource read races", () => {
+  it("gives no mtime when the file is saved during the read", async () => {
+    const { src, files } = setup(new Set(), (f) => { f.stat.mtime = 99; });
+    expect(await src.read("Novels/L/Chapters/10 Dez.md")).toEqual({ text: "saved", mtime: null });
+    void files;
   });
 });

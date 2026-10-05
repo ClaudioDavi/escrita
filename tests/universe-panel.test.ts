@@ -8,6 +8,10 @@ const ref = (path: string, from: number, text: string, closed = false): ThreadRe
 });
 
 describe("splitHighlight", () => {
+  it("highlights a multi-word query across spaces", () => {
+    expect(splitHighlight("Ana Maria", "ana maria")).toEqual([{ text: "Ana Maria", hit: true }]);
+    expect(splitHighlight("a Ana Mária b", "ana maria")).toEqual([{ text: "a ", hit: false }, { text: "Ana Mária", hit: true }, { text: " b", hit: false }]);
+  });
   it("marks the match ignoring case", () => {
     expect(splitHighlight("Mariana", "mar")).toEqual([{ text: "Mar", hit: true }, { text: "iana", hit: false }]);
   });

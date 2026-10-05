@@ -114,6 +114,7 @@ These are Opus decisions; agents don't reopen them.
 | N 7 | Command "Compile the book" | One "Export…" command for a note or its book | One entry point for both (N 7 already says single notes too) |
 | N 7 | "Prologue/Epilogue rule" | Unnumbered chapters get their title alone (Q5) | No new property; it reads what the writer has |
 | SF 12 | Home block "can show 2 pendentes" | Shown next to the ready count only while submissions is on | Off feature, no trace |
+| SF 12 | Default folder `Submissions/` | Default `Escrita/Submissions` | The classifier applies the folder even with the feature off; an existing vault-root `Submissions` folder would silently lose tracking on upgrade |
 | IMPROVEMENTS 14 | Every content index | Mentions only | Measured: the others are cheap |
 | Q13 (settings look) | Same look as 0.7 | Editor section: paragraph style and quote style, shared with dialogue focus, moving blocks and the lens, now come after the typing rows | One owner per row (IMPROVEMENTS 11); the author confirms in the manual settings check |
 

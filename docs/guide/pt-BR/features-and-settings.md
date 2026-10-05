@@ -105,7 +105,7 @@ versões, isso inclui mover os arquivos de versão no disco.
 
 ## Linhas de pasta e como os campos salvam
 
-A pasta das exportações (padrão `Escrita/Exports`), a pasta dos envios (padrão `Submissions`)
+A pasta das exportações (padrão `Escrita/Exports`), a pasta dos envios (padrão `Escrita/Submissions`)
 e a pasta das versões são lugares do próprio Escrita. Elas não podem conter umas às outras
 nem ficar uma dentro da outra. O campo de pasta ganha um contorno e um aviso aparece embaixo da
 descrição da configuração, e o valor salvo continua, quando o novo é:

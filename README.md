@@ -58,7 +58,7 @@ Choose weekdays off and specific dates off. A day off never breaks your streak, 
 
 ### Submissions
 
-**Record a submission** creates one note per submission in the submissions folder (default `Submissions`), with the work, the market, the date sent and the result (`pending`, `accepted`, `rejected` or `withdrawn`). The home block shows how many are pending. Submission notes are never tracked or counted. See [Publishing](docs/guide/en/publishing.md) ([Português](docs/guide/pt-BR/publishing.md)).
+**Record a submission** creates one note per submission in the submissions folder (default `Escrita/Submissions`), with the work, the market, the date sent and the result (`pending`, `accepted`, `rejected` or `withdrawn`). The home block shows how many are pending. Submission notes are never tracked or counted. See [Publishing](docs/guide/en/publishing.md) ([Português](docs/guide/pt-BR/publishing.md)).
 
 ### Sprints
 

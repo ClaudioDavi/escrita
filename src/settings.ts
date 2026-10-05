@@ -204,7 +204,7 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   authorSurname: "",
   contactLines: "",
   chapterHeadingFormat: "",
-  submissionsFolder: "Submissions",
+  submissionsFolder: "Escrita/Submissions",
   submissionResults: "pending, accepted, rejected, withdrawn",
   submissionWorkProperty: "work",
   submissionMarketProperty: "market",

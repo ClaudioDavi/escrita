@@ -188,8 +188,8 @@ const NAME_BYTES = 240;
 export function submissionFileName(sent: string, work: string, market: string): string {
   const w = safeName(work) || "Work";
   const m = safeName(market);
-  const full = (m ? `${sent} ${w} – ${m}` : `${sent} ${w}`).slice(0, 180);
-  // Cut by UTF-8 bytes per code point: file systems cap a name at 255 bytes, and a
+  const full = Array.from(m ? `${sent} ${w} – ${m}` : `${sent} ${w}`).slice(0, 180).join("");
+  // Cut by code points, then by UTF-8 bytes: file systems cap a name at 255 bytes, and a
   // slice by UTF-16 units could split a surrogate pair.
   let out = "";
   let bytes = 0;

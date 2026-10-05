@@ -330,11 +330,12 @@ export class OutlineView extends ItemView {
     const rows = await loadRows(this.plugin.outline.rowsPort(), book);
     // Q42: rows call colorsFor when they load, so a POV seen for the first time gets the next free colour
     this.colors = this.plugin.outline.colorsFor(rows.flatMap((r) => (r.pov ? [r.pov.key] : [])));
-    return rows.map((row) => {
-      const file = this.plugin.app.vault.getAbstractFileByPath(row.path) as TFile;
+    return rows.flatMap((row) => {
+      const file = this.plugin.app.vault.getAbstractFileByPath(row.path);
+      if (!(file instanceof TFile)) return [];   // renamed or deleted while loading
       const fm = this.plugin.books.frontmatter(file);
       // summary and status as written, as the panel always showed them (the row's are one line and trimmed)
-      return { ...toViewRow(row, file), summary: str(fm[s.summaryProperty]), status: str(fm[s.statusProperty]) };
+      return [{ ...toViewRow(row, file), summary: str(fm[s.summaryProperty]), status: str(fm[s.statusProperty]) }];
     });
   }
 

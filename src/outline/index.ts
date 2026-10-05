@@ -65,7 +65,11 @@ export class OutlineModule extends FeatureModule {
     const plugin = this.plugin;
     const { app, books } = plugin;
     const source = bookSource(app, books, plugin.notes, () => plugin.settings);
-    const fileAt = (path: string): TFile => app.vault.getAbstractFileByPath(path) as TFile;
+    const fileAt = (path: string): TFile => {
+      const f = app.vault.getAbstractFileByPath(path);
+      if (!(f instanceof TFile)) throw new Error(`not a file: ${path}`);
+      return f;   // loadRows skips a row whose file vanished
+    };
     return {
       ...source,
       counts: (path, seed, unit) => plugin.measure.counts(fileAt(path), seed, unit),

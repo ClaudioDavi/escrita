@@ -64,7 +64,7 @@ export interface ClassifySettings extends PieceProperties {
 export const DEFAULT_SNAPSHOTS_FOLDER = "Escrita/Snapshots";
 
 /** The submissions folder when the setting is empty or missing (SF 12, settings summary). */
-export const DEFAULT_SUBMISSIONS_FOLDER = "Submissions";
+export const DEFAULT_SUBMISSIONS_FOLDER = "Escrita/Submissions";
 
 /** The export folder when the setting is empty or missing (PLAN-0.8 Q3). */
 export const DEFAULT_EXPORT_FOLDER = "Escrita/Exports";
@@ -170,6 +170,18 @@ export function snapshotsRoot(setting: unknown): string {
 function folderRoot(setting: unknown, fallback: string): string {
   const s = str(setting).trim().replace(/\\/g, "/").replace(/\/{2,}/g, "/").replace(/^\/+|\/+$/g, "").trim();
   return s === "" ? fallback : s;
+}
+
+/**
+ * A folder setting after the folder `oldPath` was renamed or moved to `newPath`: the new
+ * setting when `current` is that folder or inside it, else null (nothing to change). Both
+ * paths are vault paths of the folder that moved; the setting is normalized first.
+ */
+export function followFolderSetting(current: string, oldPath: string, newPath: string): string | null {
+  const root = folderRoot(current, "");
+  const from = folderRoot(oldPath, "");
+  if (root === "" || from === "" || !inFolder(root, from)) return null;
+  return folderRoot(newPath, "") + root.slice(from.length);
 }
 
 /** The submissions folder setting as a vault path, normalized like snapshotsRoot; never "" (DEFAULT_SUBMISSIONS_FOLDER). */

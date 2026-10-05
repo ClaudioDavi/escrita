@@ -141,3 +141,11 @@ describe("manuscriptOf", () => {
     expect(md("a\r\n\r\nb\r\n").blocks.map(text)).toEqual(["a", "b"]);
   });
 });
+
+describe("embed positions", () => {
+  it("an image after a long wiki embed reports its own line", () => {
+    const m = md("![[a-very-long-image-name.png]]\n![](b.png)");
+    const embeds = m.dropped.filter((d) => d.kind === "embed");
+    expect(embeds.map((d) => [d.line, d.text])).toEqual([[0, "a-very-long-image-name.png"], [1, "b.png"]]);
+  });
+});

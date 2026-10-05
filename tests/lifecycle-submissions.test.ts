@@ -115,14 +115,31 @@ describe("the pending port", () => {
     expect(n).toBe(2);
   });
 
-  it("redraws when a work is renamed, but only if there are submissions", () => {
+  it("redraws when a work is renamed or deleted, but only if there are submissions", () => {
     let n = 0;
     module.pending.onChange(() => { n++; });
-    plugin.app.vault.trigger("rename", file("Contos/X.md"), "Contos/Y.md");
+    const fs = [...plugin.followers];
+    const f = { moved: (a: string, b: string) => fs.forEach((x) => x.moved?.(a, b)), deleted: (a: string) => fs.forEach((x) => x.deleted?.(a)) };
+    f.moved("Contos/X.md", "Contos/Y.md");
     expect(n).toBe(0);
     plugin.indexAdded[0].values.set("Submissions/a.md", row({}));
     (plugin.indexAdded[0] as unknown as { size: number }).size = 1;
-    plugin.app.vault.trigger("rename", file("Contos/X.md"), "Contos/Y.md");
+    f.moved("Contos/X.md", "Contos/Y.md");
+    expect(n).toBe(1);
+    f.deleted("Contos/Y.md");
+    expect(n).toBe(2);
+    f.deleted("Contos/cover.png");
+    expect(n).toBe(2);
+  });
+
+  it("a created note redraws only when it could resolve an unresolved work link", () => {
+    let n = 0;
+    module.pending.onChange(() => { n++; });
+    plugin.indexAdded[0].values.set("Submissions/a.md", row({ work: '"[[Contos/Cartas]]"', result: "pending" }));
+    (plugin.indexAdded[0] as unknown as { size: number }).size = 1;
+    plugin.app.vault.trigger("create", file("Contos/Other.md"));
+    expect(n).toBe(0);
+    plugin.app.vault.trigger("create", file("Elsewhere/cartas.md"));
     expect(n).toBe(1);
   });
 });
@@ -159,7 +176,7 @@ describe("Record a submission", () => {
     const ok = await captured.opts!.onRecord("Revista Pessoa", "2026-10-05");
     expect(ok).toBe(true);
     expect(created).toHaveLength(1);
-    expect(created[0].path).toBe("Submissions/2026-10-05 Cartas – Revista Pessoa.md");
+    expect(created[0].path).toBe("Escrita/Submissions/2026-10-05 Cartas – Revista Pessoa.md");
     expect(created[0].exists).toBe("unique");
     expect(created[0].data).toBe('---\nwork: "[[Cartas]]"\nmarket: "Revista Pessoa"\nsent: 2026-10-05\nresult: pending\nresponded:\n---\n');
     expect(noticeLog.at(-1)).toBe("Submission recorded: Cartas → Revista Pessoa.");
@@ -175,7 +192,7 @@ describe("Record a submission", () => {
     };
     await module.record(file("Livros/A Casa/Chapters/1.md"));
     expect(captured.opts!.workTitle).toBe("A Casa");
-    expect(captured.opts!.pathFor("M", "2026-10-05")).toBe("Submissions/2026-10-05 A Casa – M.md");
+    expect(captured.opts!.pathFor("M", "2026-10-05")).toBe("Escrita/Submissions/2026-10-05 A Casa – M.md");
   });
 
   it("a note with no stage, or no note at all, gets a notice and creates nothing", async () => {

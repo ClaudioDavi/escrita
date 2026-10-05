@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  classify, classifyKey, DEFAULT_EXPORT_FOLDER, DEFAULT_SUBMISSIONS_FOLDER, exportRoot, listBooks, submissionsRoot,
+  classify, classifyKey, followFolderSetting, DEFAULT_EXPORT_FOLDER, DEFAULT_SUBMISSIONS_FOLDER, exportRoot, listBooks, submissionsRoot,
   type ClassifySettings, type Named, type VaultTree,
 } from "../src/core/classify";
 
@@ -34,15 +34,15 @@ describe("submissionsRoot and exportRoot", () => {
 
 describe("classify: submissions and exports", () => {
   const t = tree([
-    "Submissions/Conto A.md", "Submissions/Sub/x.pdf", "Escrita/Exports/Conto A.md", "Escrita/Exports/Livro (Shunn).docx",
+    "Escrita/Submissions/Conto A.md", "Escrita/Submissions/Sub/x.pdf", "Escrita/Exports/Conto A.md", "Escrita/Exports/Livro (Shunn).docx",
     "Contos/Conto A.md", "Novels/Livro.md", "Novels/Livro/Chapters/01.md", "Novels/Livro/Submissions/s.md",
-  ], { "Submissions/Conto A.md": { status: "rascunho" }, "Escrita/Exports/Conto A.md": { status: "rascunho", target: 500 } });
+  ], { "Escrita/Submissions/Conto A.md": { status: "rascunho" }, "Escrita/Exports/Conto A.md": { status: "rascunho", target: 500 } });
   const c = (p: string, s: ClassifySettings = settings) => classify(t, s, p);
 
   it("a submission note is a plain note: not tracked, no piece-less work, no stage", () => {
-    expect(c("Submissions/Conto A.md")).toMatchObject({ kind: "note", markdown: true, submission: true, export: false, snapshot: false, tracked: false, stage: null, book: null, piece: null });
-    expect(c("Submissions/Sub/x.pdf")).toMatchObject({ kind: "file", submission: true, tracked: false });
-    expect(c("Submissions")).toMatchObject({ kind: "folder", submission: true });
+    expect(c("Escrita/Submissions/Conto A.md")).toMatchObject({ kind: "note", markdown: true, submission: true, export: false, snapshot: false, tracked: false, stage: null, book: null, piece: null });
+    expect(c("Escrita/Submissions/Sub/x.pdf")).toMatchObject({ kind: "file", submission: true, tracked: false });
+    expect(c("Escrita/Submissions")).toMatchObject({ kind: "folder", submission: true });
   });
 
   it("an export is never tracked, a work or a piece, even with a status and a target", () => {
@@ -67,12 +67,12 @@ describe("classify: submissions and exports", () => {
 
   it("follows the settings, and an empty setting means the default", () => {
     expect(c("Contos/Conto A.md", { ...settings, submissionsFolder: "Contos" })).toMatchObject({ submission: true, tracked: false });
-    expect(c("Submissions/Conto A.md", { ...settings, submissionsFolder: "" })).toMatchObject({ submission: true });
+    expect(c("Escrita/Submissions/Conto A.md", { ...settings, submissionsFolder: "" })).toMatchObject({ submission: true });
     expect(c("Escrita/Exports/Conto A.md", { ...settings, exportFolder: "Outro" })).toMatchObject({ export: false, tracked: true });
   });
 
   it("listBooks skips a book folder inside either folder", () => {
-    const t2 = tree(["Submissions/B.md", "Submissions/B/Chapters/1.md", "Escrita/Exports/E.md", "Escrita/Exports/E/Chapters/1.md", "Novels/L.md", "Novels/L/Chapters/1.md"]);
+    const t2 = tree(["Escrita/Submissions/B.md", "Escrita/Submissions/B/Chapters/1.md", "Escrita/Exports/E.md", "Escrita/Exports/E/Chapters/1.md", "Novels/L.md", "Novels/L/Chapters/1.md"]);
     expect(listBooks(t2, settings).map((b) => b.title)).toEqual(["L"]);
   });
 });
@@ -81,7 +81,7 @@ describe("classifyKey", () => {
   const key = (o: Partial<ClassifySettings> = {}) => classifyKey({ ...settings, ...o });
   it("is stable for equal settings, and the empty folder equals its default", () => {
     expect(key()).toBe(key());
-    expect(key({ submissionsFolder: "" })).toBe(key({ submissionsFolder: "/Submissions/" }));
+    expect(key({ submissionsFolder: "" })).toBe(key({ submissionsFolder: "/Escrita/Submissions/" }));
     expect(key({ exportFolder: undefined })).toBe(key({ exportFolder: "Escrita/Exports" }));
   });
   it("changes with every input classify reads", () => {
@@ -93,5 +93,19 @@ describe("classifyKey", () => {
       { targetProperty: "alvo" }, { limitProperty: "teto" }, { unitProperty: "un" }, { deadlineProperty: "prazo" },
     ];
     for (const ch of changes) expect(key(ch), JSON.stringify(ch)).not.toBe(base);
+  });
+});
+
+describe("followFolderSetting", () => {
+  it("rewrites the setting when the folder or a folder holding it moved", () => {
+    expect(followFolderSetting("Submissions", "Submissions", "Submissões")).toBe("Submissões");
+    expect(followFolderSetting("Work/Submissions", "Work", "Trabalho")).toBe("Trabalho/Submissions");
+    expect(followFolderSetting("/Work//Submissions/", "Work/Submissions", "Work/Subs")).toBe("Work/Subs");
+  });
+  it("leaves it alone for other folders, siblings with the same prefix and an empty setting", () => {
+    expect(followFolderSetting("Work/Submissions", "Elsewhere", "X")).toBeNull();
+    expect(followFolderSetting("Submissions-old", "Submissions", "X")).toBeNull();
+    expect(followFolderSetting("", "Submissions", "X")).toBeNull();
+    expect(followFolderSetting("Submissions", "", "X")).toBeNull();
   });
 });

@@ -108,7 +108,7 @@ describe("notes.create: exists policies", () => {
     const r = await notes.create("N/T.md", "new", { exists: "return" });
     expect(r).toEqual({ file: existing, outcome: "existing" });
     expect(vault.text.get("N/T.md")).toBe("old");
-    expect(vault.calls.some((c) => c.startsWith("modify") || c.startsWith("create "))).toBe(false);
+    expect(vault.calls.some((c) => c.startsWith("modify") || c.startsWith("process") || c.startsWith("create "))).toBe(false);
   });
   it("fail throws NoteExistsError", async () => {
     const err = await notes.create("N/T.md", "new", { exists: "fail" }).catch((e) => e);
@@ -130,12 +130,12 @@ describe("notes.create: exists policies", () => {
     const r = await notes.create("N/Free.md", "x", { exists: "unique" });
     expect(r.file.path).toBe("N/Free.md");
   });
-  it("replace overwrites through modify and keeps the same file", async () => {
+  it("replace overwrites through vault.process and keeps the same file", async () => {
     const existing = vault.getAbstractFileByPath("N/T.md");
     const r = await notes.create("N/T.md", "new", { exists: "replace" });
     expect(r).toEqual({ file: existing, outcome: "replaced" });
     expect(vault.text.get("N/T.md")).toBe("new");
-    expect(vault.calls).toContain("modify N/T.md");
+    expect(vault.calls).toContain("process N/T.md");
   });
   it("a folder at the path throws with folder: true, except under unique", async () => {
     vault.seedFolder("N/Dir.md");
@@ -175,7 +175,7 @@ describe("notes.create: case clash", () => {
     expect(trashed).toBe(0);
     expect(vault.text.get("N/Title.md")).toBe("old");
     expect(vault.getAbstractFileByPath("N/title.md")).toBeNull();
-    expect(vault.calls.some((c) => c.startsWith("modify") || c.startsWith("create N/title"))).toBe(false);
+    expect(vault.calls.some((c) => c.startsWith("modify") || c.startsWith("process") || c.startsWith("create N/title"))).toBe(false);
     await expect(notes.create("N/title.md", "new", { exists: "replace" })).rejects.toBeInstanceOf(NoteExistsError);
     expect(vault.text.get("N/Title.md")).toBe("old");
   });

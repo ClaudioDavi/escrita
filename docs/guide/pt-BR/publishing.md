@@ -243,7 +243,7 @@ estágio (um conto marcado `rascunho`, por exemplo). Uma nota sem estágio diz "
 obra: dê a ela um estágio para registrar um envio." Uma nota de envio, uma exportação, uma
 versão ou uma nota que não é Markdown diz "Abra um conto ou um livro para registrar um envio."
 
-**A nota que ele cria.** Uma nota nova na **Pasta dos envios** (`Submissions` por padrão), com
+**A nota que ele cria.** Uma nota nova na **Pasta dos envios** (`Escrita/Submissions` por padrão), com
 um nome como `2026-10-05 Cartas de Lisboa – Revista Pessoa.md`. Se o nome já existe, acrescenta
 um número. Ela só tem propriedades, e o corpo fica vazio para você:
 
@@ -308,7 +308,7 @@ As palavras de status ficam em Estágios, e a propriedade de status em Livros.
 
 | Configuração | O que faz |
 |---|---|
-| Pasta dos envios | Uma nota por envio. `Submissions`. Mudar não move as notas existentes. Fica em Propriedades e pastas e aparece mesmo com Envios desligado. |
+| Pasta dos envios | Uma nota por envio. `Escrita/Submissions`. Mudar não move as notas existentes. Fica em Propriedades e pastas e aparece mesmo com Envios desligado. |
 | Valores do resultado | Separados por vírgula. O primeiro é "pendente". |
 | Propriedade da obra | A propriedade da nota de envio que liga à obra. `work`. |
 | Propriedade do destino | Para onde foi enviada. `market`. |

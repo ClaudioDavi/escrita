@@ -8,8 +8,7 @@ import type { ExportChoice, ExportSelection, LastExport } from "../data";
 import { chapterTitle } from "../core/book";
 import { bookSource, type Book } from "../core/books";
 import type { BookSource } from "../core/book-source";
-import { exportRoot } from "../core/classify";
-import { isInside } from "../snapshots/paths";
+import { exportRoot, followFolderSetting } from "../core/classify";
 import { NoteExistsError, FolderBlockedError } from "../core/notes";
 import { macrotaskYield, yieldBudget } from "../core/vault-index";
 import { lang, t } from "../i18n";
@@ -54,9 +53,9 @@ export class ExportModule extends FeatureModule {
       moved: (oldPath, newPath) => {
         // the export folder itself was renamed (or a folder holding it): the setting follows, like the snapshots'
         const f = this.plugin.app.vault.getAbstractFileByPath(newPath);
-        const root = exportRoot(this.plugin.settings.exportFolder);
-        if (f instanceof TFolder && isInside(oldPath, root)) {
-          this.plugin.settings.exportFolder = f.path + root.slice(oldPath.length);
+        const next = f instanceof TFolder ? followFolderSetting(exportRoot(this.plugin.settings.exportFolder), oldPath, f.path) : null;
+        if (next !== null) {
+          this.plugin.settings.exportFolder = next;
           void this.plugin.saveSettings();
         }
         if (renameChoices(this.plugin.data.exportChoices, oldPath, newPath)) this.plugin.requestSave();

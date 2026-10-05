@@ -5,7 +5,7 @@
 
 import { stageOf, type StageMapping } from "../core/stages";
 import { readinessOf, unclosedComment } from "../core/readiness";
-import { countIn, measureText, pieceProgress, readPiece, type PieceProperties } from "../core/measure";
+import { countIn, pieceProgress, readPiece, type PieceProperties } from "../core/measure";
 
 export type CheckLevel = "blocker" | "warning" | "passed";
 
@@ -83,11 +83,9 @@ export function runChecks(
   const out: Check[] = [];
   // The marker checks come from core/readiness. A passed unclosedHtmlComment is
   // left out of the list (the modal lists it only when it blocks).
+  // measured on the text given (the editor's, maybe unsaved), never a cache; once, by readinessOf
   const ready = readinessOf(text, { placeholderMarker: ctx.placeholderMarker });
   out.push(...ready.checks.filter((c) => c.id !== "unclosedHtmlComment" || c.level !== "passed"));
-
-  // measured on the text given (the editor's, maybe unsaved), never a cache
-  const counts = measureText(text);
 
   if (ctx.recommendedProperties.length) {
     const missing = ctx.recommendedProperties.filter((p) => !isFilled(propertyValue(fm, p)));
@@ -101,7 +99,7 @@ export function runChecks(
 
   const piece = ctx.piece ? readPiece(fm, ctx.piece) : null;
   if (piece?.limit !== undefined) {
-    const count = countIn(counts, piece.unit);
+    const count = countIn(ready.counts, piece.unit);
     const p = pieceProgress({ count, limit: piece.limit });
     out.push({
       id: "overLimit",

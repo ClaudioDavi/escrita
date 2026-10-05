@@ -42,3 +42,14 @@ export function homeAfterMove(setting: string, oldPath: string, newPath: string)
 export function settingToSave(setting: string, action: { kind: "open" | "adopt" | "offer"; path: string }): string | null {
   return action.kind === "adopt" && !homePath(setting) ? action.path : null;
 }
+
+/** The vault path that matches `path` ignoring case (the exact spelling first), or null. Vault paths are case-insensitive for creating, so "home.md" is "Home.md". */
+export function resolveCaseless(paths: Iterable<string>, path: string): string | null {
+  const want = path.toLowerCase();
+  let loose: string | null = null;
+  for (const p of paths) {
+    if (p === path) return p;
+    if (loose === null && p.toLowerCase() === want) loose = p;
+  }
+  return loose;
+}

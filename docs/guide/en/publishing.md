@@ -236,7 +236,7 @@ outside a book, it is that note, when it is tracked and has a stage (a conto mar
 submission." A submission note, an export, a snapshot or a note that isn't Markdown says
 "Open a story or a book to record a submission."
 
-**The note it makes.** One new note in the **Submissions folder** (`Submissions` by default),
+**The note it makes.** One new note in the **Submissions folder** (`Escrita/Submissions` by default),
 named like `2026-10-05 Cartas de Lisboa – Revista Pessoa.md`. If that name is taken, a number
 is added. It has only properties, and an empty body for you:
 
@@ -302,7 +302,7 @@ The status words are under Stages, and the status property under Books.
 
 | Setting | What it does |
 |---|---|
-| Submissions folder | One note per submission. `Submissions`. Changing it doesn't move existing notes. It lives in Properties and folders and shows even when Submissions is off. |
+| Submissions folder | One note per submission. `Escrita/Submissions`. Changing it doesn't move existing notes. It lives in Properties and folders and shows even when Submissions is off. |
 | Result values | Separated by commas. The first is "pending". |
 | Work property | The property in a submission note that links to the work. `work`. |
 | Market property | Where it was sent. `market`. |

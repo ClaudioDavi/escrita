@@ -3,16 +3,15 @@ import type EscritaPlugin from "../main";
 import { FeatureModule, type SettingsUi } from "../core/module-context";
 import type { FeatureId } from "../core/features";
 import type { Follower, VaultIndex } from "../core/vault-index";
-import { isInside } from "../snapshots/paths";
 import type { PendingSource, PendingSubmission } from "../core/pending";
-import { inSubmissions, submissionsRoot } from "../core/classify";
+import { followFolderSetting, inSubmissions, submissionsRoot } from "../core/classify";
 import { isoDay } from "../core/dates";
 import { writtenWord } from "../core/stages";
 import { fmt, t } from "../i18n";
 import { SubmissionModal } from "./modal";
 import { submissionsOffNotice, submissionsSettingsSection } from "./settings-ui";
 import {
-  pendingList, pendingValue, propsKey, propsOf, recentMarkets, rowOf, sameRow, submissionPath, submissionText, workFor,
+  parseWorkLink, pendingList, pendingValue, propsKey, propsOf, recentMarkets, rowOf, sameRow, submissionPath, submissionText, workFor,
   type PlacementLike, type SubmissionRow,
 } from "./logic";
 
@@ -52,10 +51,12 @@ export class SubmissionsModule extends FeatureModule {
     });
     this.register(this.index.onChange(() => this.changed()));
     // a work renamed or moved changes what a `work` link resolves to, though no submission note changed
-    const linkMoved = (f: unknown) => { if (f instanceof TFile && f.extension === "md" && this.hasRows()) this.changed(); };
-    this.registerEvent(plugin.app.vault.on("rename", linkMoved));
-    this.registerEvent(plugin.app.vault.on("delete", linkMoved));
-    this.registerEvent(plugin.app.vault.on("create", linkMoved));
+    const linkMoved = (path: string) => { if (this.hasRows() && !/\.(?!md$)[^./]+$/i.test(path)) this.changed(); };
+    ctx.follow({ moved: (_old, path) => linkMoved(path), deleted: linkMoved });
+    // a new note can only resolve a link that named it: one with the same name as an unresolved target
+    this.registerEvent(plugin.app.vault.on("create", (f) => {
+      if (f instanceof TFile && f.extension === "md" && this.unresolvedNames().has(f.basename.toLowerCase())) this.changed();
+    }));
 
     ctx.command({
       id: "record-submission",
@@ -87,9 +88,11 @@ export class SubmissionsModule extends FeatureModule {
     return [{
       moved: (oldPath, newPath) => {
         const f = this.plugin.app.vault.getAbstractFileByPath(newPath);
-        const root = submissionsRoot(this.plugin.settings.submissionsFolder);
-        if (f instanceof TFolder && isInside(oldPath, root)) {
-          this.plugin.settings.submissionsFolder = f.path + root.slice(oldPath.length);
+        const next = f instanceof TFolder
+          ? followFolderSetting(submissionsRoot(this.plugin.settings.submissionsFolder), oldPath, f.path)
+          : null;
+        if (next !== null) {
+          this.plugin.settings.submissionsFolder = next;
           void this.plugin.saveSettings();
         }
       },
@@ -103,6 +106,20 @@ export class SubmissionsModule extends FeatureModule {
 
   private hasRows(): boolean {
     return this.index !== null && this.index.size > 0;
+  }
+
+  /** Lower-cased note names that the pending rows' unresolved work links point at. */
+  private unresolvedNames(): Set<string> {
+    const names = new Set<string>();
+    if (!this.index) return names;
+    const rows = new Map(this.index.entries());
+    for (const p of this.list()) {
+      if (p.workPath !== null) continue;
+      const link = parseWorkLink(rows.get(p.path)?.work ?? "");
+      if (!link) continue;
+      names.add(link.target.slice(link.target.lastIndexOf("/") + 1).replace(/\.md$/i, "").toLowerCase());
+    }
+    return names;
   }
 
   private changed(): void {

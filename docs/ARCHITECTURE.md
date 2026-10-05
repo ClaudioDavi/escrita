@@ -281,7 +281,7 @@ drives it with an in-memory tree. The result:
 
 - `submission` and `export` (0.8): the path is the submissions folder or the export
   folder, or inside it (`inSubmissions`, `inExports`; roots from `submissionsRoot` and
-  `exportRoot`, defaults `Submissions` and `Escrita/Exports`). Both work exactly like
+  `exportRoot`, defaults `Escrita/Submissions` and `Escrita/Exports`). Both work exactly like
   `snapshot`: never a book, a chapter or tracked, so never a work, no stage, and no draft
   status (`core/new-note-status.ts` skips both). A file there is a `note` or a `file` with
   no book, even when the folder sits in a book. The rule holds whether the feature is on
@@ -1464,7 +1464,7 @@ notes and the home block counts two. Upkeep: one command per submission; the wri
 `result` by hand when the answer comes. The notes read well with Escrita off. Roadmap: SF 12.
 
 - **A submission is a note** in the submissions folder (`submissionsFolder`, default
-  `Submissions`), named `YYYY-MM-DD <work> – <market>.md` (`submissionPath`, `safeName`).
+  `Escrita/Submissions`), named `YYYY-MM-DD <work> – <market>.md` (`submissionPath`, `safeName`).
   Frontmatter only, an empty body: `work` (a quoted wikilink to the work: a book note or a
   standalone note), `market`, `sent` (a date), `result` (the first value of the result list) and an
   empty `responded`. The property names are settings (`submissionWorkProperty`,

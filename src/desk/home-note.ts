@@ -1,7 +1,7 @@
 import { Modal, Notice, Setting, TFile, normalizePath, type App, type WorkspaceLeaf } from "obsidian";
 import type EscritaPlugin from "../main";
 import { lang, t } from "../i18n";
-import { HOME_TEMPLATE, homeAction, homePath, settingToSave } from "./home";
+import { HOME_TEMPLATE, homeAction, homePath, resolveCaseless, settingToSave } from "./home";
 
 /** Name offered for a new home note: no accent, so it is safe on every file system. */
 export function offerName(): string {
@@ -76,8 +76,11 @@ async function create(plugin: EscritaPlugin, path: string): Promise<TFile | null
 /** Open the home note. With `create`, a missing note is offered (after a confirm). */
 export async function openHome(plugin: EscritaPlugin, opts: { create: boolean }): Promise<void> {
   const { vault } = plugin.app;
-  const exists = (p: string) => vault.getAbstractFileByPath(normalizePath(p)) instanceof TFile;
-  const action = homeAction(plugin.settings.homeNote, exists, offerName());
+  // case-insensitive, like creating a note: a "Home.md" answers the setting "home.md"
+  const paths = vault.getFiles().map((f) => f.path);
+  const resolve = (p: string) => resolveCaseless(paths, normalizePath(p));
+  const found = homeAction(plugin.settings.homeNote, (p) => resolve(p) !== null, offerName());
+  const action = found.kind === "offer" ? found : { ...found, path: resolve(found.path) ?? found.path };
   if (action.kind === "offer") {
     if (!opts.create) return;
     if (!(await confirmCreate(plugin.app, action.path, !homePath(plugin.settings.homeNote)))) return;
@@ -103,14 +106,14 @@ export async function openHome(plugin: EscritaPlugin, opts: { create: boolean })
 /** On startup: open the home note only when the setting is on and the file exists. */
 export async function startupOpen(plugin: EscritaPlugin): Promise<void> {
   if (!plugin.settings.openHomeOnStartup) return;
+  const paths = plugin.app.vault.getFiles().map((f) => f.path);
   let path = homePath(plugin.settings.homeNote);
   if (!path) {
     // an empty setting adopts an existing Home.md / Inicio.md (openHome saves it)
-    const exists = (p: string) => plugin.app.vault.getAbstractFileByPath(normalizePath(p)) instanceof TFile;
-    const action = homeAction("", exists, offerName());
+    const action = homeAction("", (p) => resolveCaseless(paths, normalizePath(p)) !== null, offerName());
     if (action.kind !== "adopt") return;
     path = action.path;
   }
-  if (!(plugin.app.vault.getAbstractFileByPath(normalizePath(path)) instanceof TFile)) return;
+  if (resolveCaseless(paths, normalizePath(path)) === null) return;
   await openHome(plugin, { create: false });
 }

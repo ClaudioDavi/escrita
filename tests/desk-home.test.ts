@@ -72,3 +72,12 @@ describe("settingToSave", () => {
     expect(settingToSave("X.md", { kind: "adopt", path: "Home.md" })).toBeNull();
   });
 });
+
+import { resolveCaseless } from "../src/desk/home";
+describe("resolveCaseless", () => {
+  it("finds a case variant, preferring the exact spelling", () => {
+    expect(resolveCaseless(["Home.md", "x.md"], "home.md")).toBe("Home.md");
+    expect(resolveCaseless(["home.md", "Home.md"], "Home.md")).toBe("Home.md");
+    expect(resolveCaseless(["a.md"], "home.md")).toBeNull();
+  });
+});

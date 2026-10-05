@@ -136,3 +136,16 @@ describe("workFor", () => {
     expect(workFor({ ...base, kind: "book-file", book }, "S")).toEqual({ kind: "none" });
   });
 });
+
+const lone = (s: string): boolean => /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(s);
+
+describe("submissionFileName cuts by code points", () => {
+  it("never leaves a lone surrogate when an astral character sits at the cut", () => {
+    const work = "a".repeat(150) + "😀".repeat(40);
+    const name = submissionFileName("2026-10-05", work, "Revista");
+    expect(lone(name)).toBe(false);
+    for (let n = 120; n < 190; n++) {
+      expect(lone(submissionFileName("2026-10-05", "b".repeat(n - 11) + "😀😀", ""))).toBe(false);
+    }
+  });
+});

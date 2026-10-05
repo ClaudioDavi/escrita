@@ -12,7 +12,7 @@ import type EscritaPlugin from "../main";
 import { FeatureModule, type FeatureSlots, type SettingsUi } from "../core/module-context";
 import type { Follower } from "../core/vault-index";
 import { movedPath } from "../core/path-keys";
-import { inSnapshots, snapshotsRoot } from "../core/classify";
+import { followFolderSetting, inSnapshots, snapshotsRoot } from "../core/classify";
 import { writingDay } from "../core/dates";
 import { measureText } from "../core/measure";
 import { revertPlan, wholeText, type AnchoredChange, type Change } from "../core/note-text";
@@ -521,8 +521,9 @@ export class SnapshotsModule extends FeatureModule {
     if (!f) return;
     const root = this.root();
     // The snapshots folder itself (or a folder holding it) was renamed: follow it.
-    if (f instanceof TFolder && isInside(oldPath, root)) {
-      this.plugin.settings.snapshotsFolder = f.path + root.slice(oldPath.length);
+    const next = f instanceof TFolder ? followFolderSetting(root, oldPath, f.path) : null;
+    if (next !== null) {
+      this.plugin.settings.snapshotsFolder = next;
       void this.plugin.saveSettings();
       return;
     }

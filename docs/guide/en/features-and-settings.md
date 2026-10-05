@@ -98,7 +98,7 @@ snapshot files on disk.
 
 ## Folder rows and how fields save
 
-The export folder (default `Escrita/Exports`), the submissions folder (default `Submissions`)
+The export folder (default `Escrita/Exports`), the submissions folder (default `Escrita/Submissions`)
 and the snapshots folder are Escrita's own places. They can't hold or sit inside each other.
 A folder field is outlined and a warning shows under the setting's description, and the
 saved value stays, when the new one is:

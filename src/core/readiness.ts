@@ -9,7 +9,7 @@
 
 import { segment, type Markdown } from "./markdown";
 import { parseBeats, parsePlaceholders } from "./markers";
-import { measureText } from "./measure";
+import { measureText, type Counts } from "./measure";
 
 export type ReadinessLevel = "blocker" | "warning" | "passed";
 
@@ -45,6 +45,8 @@ export interface Readiness {
   checks: ReadinessCheck[];
   /** some check is a blocker */
   blocked: boolean;
+  /** the counts measured for the empty-body check, so callers need not measure again */
+  counts: Counts;
 }
 
 export interface ReadinessOptions {
@@ -94,10 +96,11 @@ export function readinessOf(md: string | Markdown, o: ReadinessOptions): Readine
   });
 
   // measured on the text given, never a cache
-  const words = measureText(m.text).words;
+  const counts = measureText(m.text);
+  const words = counts.words;
   checks.push({ id: "emptyBody", level: words === 0 ? "blocker" : "passed", items: [], vars: { n: words } });
 
-  return { checks, blocked: checks.some((c) => c.level === "blocker") };
+  return { checks, blocked: checks.some((c) => c.level === "blocker"), counts };
 }
 
 /**

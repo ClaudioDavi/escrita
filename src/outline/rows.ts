@@ -56,8 +56,10 @@ function oneLine(s: string): string {
 export async function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRow[]> {
   const s = port.settings();
   const def = port.chapterDefault(book);
-  return Promise.all(port.chapters(book).map(async (ch, i): Promise<ChapterRow> => {
-    const read = await port.read(ch.path);
+  const rows = await Promise.all(port.chapters(book).map(async (ch, i): Promise<ChapterRow | null> => {
+    // a chapter renamed or deleted while rows load is skipped; the next refresh draws it
+    let read: Awaited<ReturnType<typeof port.read>>;
+    try { read = await port.read(ch.path); } catch { return null; }
     const basename = ch.path.slice(ch.path.lastIndexOf("/") + 1).replace(/\.md$/, "");
     const fm = port.frontmatter(ch.path) ?? {};
     const status = readStatus(fm, s.statusProperty) ?? "";
@@ -68,7 +70,10 @@ export async function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRo
     const { piece, source } = effectivePiece(own, def, ownUnit);
     const unit: PieceUnit = piece?.unit ?? ownUnit ?? "words";
     // only saved text may seed the measurer's mtime cache: an editor's buffer may be unsaved
-    const counts = await port.counts(ch.path, read.mtime === null ? undefined : { text: read.text, mtime: read.mtime }, unit);
+    let counts: Counts;
+    try {
+      counts = await port.counts(ch.path, read.mtime === null ? undefined : { text: read.text, mtime: read.mtime }, unit);
+    } catch { return null; }
     return {
       path: ch.path,
       index: i,
@@ -89,4 +94,5 @@ export async function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRo
       bodyBlank: isBlankBody(read.text),
     };
   }));
+  return rows.flatMap((r) => (r ? [r] : []));
 }

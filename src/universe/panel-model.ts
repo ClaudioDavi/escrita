@@ -23,7 +23,7 @@ export function splitHighlight(text: string, query: string): Segment[] {
   const to: number[] = []; // folded index → end of the original character
   let i = 0;
   for (const ch of text) {
-    const f = foldName(ch);
+    const f = foldName(`x${ch}x`).slice(1, -1); // padded: foldName trims, and a space must stay a space
     for (let k = 0; k < f.length; k++) { from.push(i); to.push(i + ch.length); }
     folded += f;
     i += ch.length;

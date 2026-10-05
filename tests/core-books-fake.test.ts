@@ -47,7 +47,7 @@ const service = (v: ReturnType<typeof vault>, over: Partial<typeof DEFAULT_SETTI
 describe("BookService on a fake vault", () => {
   const v = vault([
     "Novels/Livro.md", "Novels/Livro/Chapters/01.md", "Novels/Livro/Notes.md",
-    "Contos/Conto.md", "Escrita/Exports/Livro.md", "Submissions/Conto.md",
+    "Contos/Conto.md", "Escrita/Exports/Livro.md", "Escrita/Submissions/Conto.md",
   ], { "Contos/Conto.md": { status: "draft" } });
   const s = service(v);
 
@@ -79,7 +79,7 @@ describe("BookService on a fake vault", () => {
 
   it("keeps submissions and exports out of tracking, works and books", () => {
     expect(s.classify("Escrita/Exports/Livro.md")).toMatchObject({ kind: "note", export: true, tracked: false, stage: null, book: null });
-    expect(s.classify("Submissions/Conto.md")).toMatchObject({ kind: "note", submission: true, tracked: false, stage: null });
+    expect(s.classify("Escrita/Submissions/Conto.md")).toMatchObject({ kind: "note", submission: true, tracked: false, stage: null });
     expect(s.classify("Contos/Conto.md")).toMatchObject({ submission: false, export: false });
   });
 
