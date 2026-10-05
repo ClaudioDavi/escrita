@@ -144,6 +144,19 @@ written here before the gated task starts).
 - **G0c** (gates 1.3): the four Reading-view parity questions in
   `tests/markdown-consumers.test.ts`, checked in a real vault. Flip the segmenter rule
   where Reading view differs, before the manuscript builds on it.
+  **Done. Result 2026-10-05, the author in Obsidian's Reading view:**
+  - **A** (`%%` inside a closed `<!-- -->`): shows `antes meio fim`. Matches D14.
+  - **B** (a fence inside an open `%%`): shows `depois` only. Matches D7.
+  - **D** (escaped backticks): shows ``a ` c` d``. Matches D6.
+  - **C** (`%%` inside `$$`): Obsidian draws the math block (`x`; LaTeX treats `%` as
+    its own comment), then shows `prosa fim`. A `%%` inside `$$` does **not** open an
+    Obsidian comment. **D9 is wrong.** Escrita hides the rest of the math block and
+    "prosa", and then reads `%% fim` as an open comment.
+
+  Decision (Opus): a `$$` block that starts at a line start in prose is math until
+  its closing `$$`, and a `%%` inside it is literal. Words in math still count as
+  today; math in a manuscript is task 1.3's call (kept as text). Task 1.10 makes the
+  change.
 - **G0d** (gates 1.1): the 12 ms budget and a `MessageChannel` yield on a phone, using
   the bench vault copied into a test vault. Record the longest block before and after.
 
@@ -251,6 +264,7 @@ The judge's fixture rules are in `tests/fixtures/manuscript/README.md`:
 | 1.7 `notes.create` (17) | `core/notes.ts`, `core/note-text.ts` | Each `exists` policy, case clash, race and binary write tested on the fake vault |
 | 1.8 Book source (18) | `core/book-source.ts`, `core/books.ts` (adapter; after 1.6 on that file) | Order, `compile: false`, and reads through `plugin.notes` tested |
 | 1.9 Feature metadata (20) | `core/features.ts`, `core/feature-registry.ts`, the feature-count tests | 19 ids; a derived `FEATURE_PAGE` exported from `core/features.ts` and `switchesOf` from `core/feature-registry.ts` (the registry's private `switches()` calls it), **without touching `settings.ts`**; 2.1 swaps the imports, deletes the local copies and the hard-coded export row (a doubled export row until 2.1 is expected); `SETTING_FEATURES` entries for the 0.8 keys move from `["publish"]` to `["export"]` / `["submissions"]` in 2.1 |
+| 1.10 Math blocks hide no comment (G0c, D9 reversed) | `core/markdown.ts`, `editor/context.ts` (the `$$` overlay moves into the segmenter or reads it), `tests/markdown-consumers.test.ts`, `tests/markdown.test.ts` | A line-start `$$` block in prose is math until it closes, and `%%` inside it is literal. Rows `mathWithPct` and `dollarInComment` updated, with D9's new rule in the header (a `D16` entry): `mathWithPct` finds its placeholder again and has no unclosed comment. Case C of G0c is a new row: `prosa fim` visible, `%% z %%` a comment. No other row changes, or each change is listed |
 
 **Opus judge** after the wave: the diffs against the contracts. Is any decision made in
 code that this plan didn't settle?
