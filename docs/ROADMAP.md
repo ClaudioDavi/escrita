@@ -51,8 +51,8 @@ when they send a work out; export reads what the note already has.
 |---|---|---|---|
 | Export stages 1–2: Markdown manuscript and DOCX | N 7 | M–L | Shunn and pt-BR presets, for a single note and for a book. No network; the file is written into the vault. |
 | Submissions | SF 12 | S | Where a work was sent, when, and the answer; ships with export, since export is how a work gets sent. |
-| Companion-plugin guide | N 6 | S | A guide page ("Other plugins") and a settings note; re-check each plugin's maintenance and running next to StoryLine. |
-| User guide for 0.8 | Docs | S | "Publishing" (the publish check, export, submissions) and "Other plugins", in English and pt-BR. |
+| ~~Companion-plugin guide~~ | N 6 | S | **Dropped from 0.8 (2026-10-05)**, unscheduled: only if a need shows up. Was: A guide page ("Other plugins") and a settings note; re-check each plugin's maintenance and running next to StoryLine. |
+| User guide for 0.8 | Docs | S | "Publishing" (the publish check, export, submissions), in English and pt-BR. |
 
 **Improvements** (planned 2026-10-04 after an architecture and a measured performance
 review; details in [PLAN-0.8.md](PLAN-0.8.md)):
@@ -138,7 +138,7 @@ if any, sit in `docs/guide/images/`. The universe guide moved there in 0.7, as
 | Publishing | The publish check; export and submissions (0.8); EPUB (0.10) |
 | The world | The universe, entries, "appears in", open threads (today's universe guide) |
 | Features and settings | The Features page, what each switch turns off, presets (1.0) |
-| Other plugins | The companion-plugin guide (N 6, 0.8) |
+| Other plugins | The companion-plugin guide (N 6), unscheduled since 2026-10-05: written only if a need shows up |
 
 File names: `getting-started.md`, `writing.md`, `revision.md`, `tracking.md`, `publishing.md`,
 `the-world.md`, `features-and-settings.md`, `other-plugins.md`. 0.7 wrote `the-world.md`,
@@ -166,6 +166,7 @@ and the README links to every guide.
 | Feature | Ref | Effort | Note |
 |---|---|---|---|
 | Book-wide snapshots and revision reports | N 10 | M | Builds on SF 4, SF 5 |
+| Companion-plugin guide (unscheduled) | N 6 | S | Dropped from 0.8 on 2026-10-05; written only if a need shows up (for example, a StoryLine clash reported by a writer) |
 | Longform importer | N 5 | S–M | Not wanted for 1.0 |
 | Screenwriting, phase 1: screenplay notes, Fountain parser, Fountain and PDF export | SP 1, SP 6 | M + L | Export first: a script can be drafted in plain Fountain, but can't be handed in without a correct PDF. Builds on the 0.8 export pipeline and the `form` property (0.6) |
 | Screenwriting, phase 2: screenplay layout and Tab/Enter in the editor, pages as a unit, scene outline | SP 2–4 | M + S + S | |

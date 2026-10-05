@@ -37,8 +37,8 @@ Export reads everything else from what the note already has.
 |---|---|---|
 | Export a note or a book: Markdown manuscript and DOCX, Shunn and pt-BR presets | N 7 | M–L |
 | Submissions: one note per submission, "Record a submission", pending count in the home block | SF 12 | S |
-| Companion-plugin guide: "Other plugins" guide page and settings note, StoryLine notes | N 6 | S |
-| User guide: `publishing.md` and `other-plugins.md`, English and pt-BR | Docs | S |
+| ~~Companion-plugin guide~~: dropped 2026-10-05 by the author, unscheduled (only if a need shows up) | N 6 | — |
+| User guide: `publishing.md`, English and pt-BR | Docs | S |
 
 **Improvements**
 
@@ -450,9 +450,8 @@ Decided in this wave:
 ## Wave 4: docs (Sonnet), then review (Opus)
 
 - **4.1** `docs/guide/en/publishing.md` and `pt-BR/publishing.md` cover the publish
-  check, export and submissions. `other-plugins.md` in both languages covers N 6,
-  re-checking each plugin's maintenance with the date checked, and running next to
-  StoryLine. Use Brazilian terms (`versão`, not `instantâneo`).
+  check, export and submissions. (No `other-plugins.md`: N 6 was dropped on
+  2026-10-05.) Use Brazilian terms (`versão`, not `instantâneo`).
 - **4.2** Write-backs:
   - ARCHITECTURE.md: the export module, the core pieces, the editor-writes rule (Q9)
     and the settings sections.
@@ -485,7 +484,7 @@ Decided in this wave:
 - **README.md:** changelog.
 - **Guide pages:** written in both languages (4.1).
 - **IMPROVEMENTS.md:** move 11, 14–21 and 23 (and 10 and 22 if done) to "Done".
-- **Topic roadmaps:** N 6, N 7 stages 1–2 and SF 12 marked shipped.
+- **Topic roadmaps:** N 7 stages 1–2 and SF 12 marked shipped; N 6 marked unscheduled.
 - **Plan 0.9** in ROADMAP.md.
 - **Version:** `npm version minor --no-git-tag-version`; commit as `0.8.0`, then tag and
   push.

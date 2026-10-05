@@ -27,7 +27,7 @@ mobile-safe manuscript tool with first-class Portuguese.
 | 3 | ~~Dialogue focus~~ (moved to short fiction, feature 7, v0.3) | — | — |
 | 4 | Book-wide publish check and serial dashboard (v0.10) | Quick win | S |
 | 5 | Longform importer (after 1.0) | Quick win | S–M |
-| 6 | Companion-plugin guide (v0.8) | Quick win | S |
+| 6 | Companion-plugin guide (unscheduled; dropped from 0.8) | Quick win | S |
 | 7 | Book compile: Markdown and DOCX (v0.8), EPUB (v0.10) | Big bet | L |
 | 8 | "Read the book" view (v0.10) | Big bet | M |
 | 9 | ~~Codex-lite~~ (replaced by the universe's "appears in", shipped in 0.7.0) | — | — |
@@ -95,7 +95,9 @@ Longform stores a project in the index note's frontmatter (`longform:` with `for
   (copy by default; move only on explicit choice).
 - Never delete the Longform files. Tests on real Longform frontmatter samples.
 
-## 6. Companion-plugin guide (v0.8)
+## 6. Companion-plugin guide (unscheduled)
+
+**Dropped from 0.8 on 2026-10-05** by the author: written only if a need shows up.
 
 A settings section and README page recommending healthy plugins instead of rebuilding
 them: LanguageTool (the only real pt-BR grammar checker; can point to a self-hosted

@@ -160,7 +160,7 @@ and what upkeep it asks of the writer.
   Improvements: IMPROVEMENTS 6 and chapter rows (IMPROVEMENTS 7). First version with the
   user guide in `docs/guide/` (English and pt-BR; The world, Features and settings, Writing).
 - **0.8 (next), submitting work**: Markdown and DOCX export (Shunn and pt-BR presets) for a
-  note and a book, submissions, the companion-plugin guide (N 7, SF 12, N 6).
+  note and a book, submissions (N 7, SF 12). The companion-plugin guide (N 6) was dropped.
   Improvements: each module owns its settings section (IMPROVEMENTS 11, 20), the export
   and submissions foundations (15–19), and measured performance work (14, 21–23).
   Plan in `docs/PLAN-0.8.md`.
