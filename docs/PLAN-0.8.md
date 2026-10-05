@@ -60,7 +60,7 @@ on, plus the measured performance items.
 | 10 | One name fold (if room) | Closes the candidate | S |
 
 **Cut line.** If the release runs long, these move to 0.9 in this order: 10, then 22's
-lens part, then 23. Everything else is either a foundation the features need or a
+lens part, then 23, then the preview's click to open a note (Q16). Everything else is either a foundation the features need or a
 measured win that is S.
 
 **Out of scope:** EPUB (0.10); print PDF (never: recommend Enhancing Export); market
@@ -69,7 +69,8 @@ notes; a submissions dashboard (Bases or Dataview can table the notes); candidat
 
 ## Open questions, with recommended answers
 
-**Answered 2026-10-04:** the author accepted every recommendation (Q1–Q15). Agents build
+**Answered 2026-10-04:** the author accepted every recommendation (Q1–Q15), and on
+2026-10-05 the recommendations for Q16 and Q17. Agents build
 to them as written.
 
 **Export**
@@ -84,6 +85,8 @@ to them as written.
 | Q6 | Wikilinks, embeds, code, footnotes? | A wikilink becomes its alias, or else its target's text. Embeds are dropped and listed in the warnings. Code keeps its text, unformatted. Footnotes: kept as text in 0.8 (DOCX footnotes are 0.10 material). |
 | Q7 | Front matter pages (dedication, epigraph)? | **Book only:** optional `dedication` and `epigraph` properties on the book note, each a link to a note whose prose becomes a page. The property names are settings. A single note has only the title page. |
 | Q8 | Which unit for the title page count? | `measure.note` or `measure.book`, rounded: to 100 below 10,000 words, to 500 above (the Shunn convention), "about" in both languages. Characters when the work's unit is characters. Never recount. |
+| Q16 | A preview before the file is written? *(added 2026-10-05)* | **Yes, as a reading column, not pages.** A "Preview" step in the Export modal draws the `ExportDoc` the writers get: title page, chapter headings, scene breaks, front matter pages, with the preset's font and spacing. It is a third writer behind the `ManuscriptWriter` seam (`src/export/writers/preview.ts`, DOM through `createEl`), so it can't drift from the file. No page breaks or page numbers: Escrita doesn't lay out pages, and a fake page count would mislead. Clicking a paragraph opens its note at that line, which needs a 0-based `line` on each manuscript block (like `Dropped.line` already has). If the release runs long, the click cuts first and the `line` field stays. Idea from Word-Smith's export preview. |
+| Q17 | Remember the last export? *(added 2026-10-05)* | **Yes, one click to repeat it.** Q4 already remembers the choices per work. On top of that, the modal opens with a line for the last export (format, preset, chapter count, date, the file as a link) and an **Export again** button that runs it with those choices. The readiness warnings still show and still need "Export anyway". Also a palette command, "Export again", for the active note's work (no hotkey). Stored in `data.json` by work path, so it follows renames and deletes through `plugin.index.follow`, even while export is off. If the file has moved or gone, Export again asks where to write, as Q3 does. |
 
 **Architecture**
 
@@ -145,10 +148,12 @@ written here before the gated task starts).
   the bench vault copied into a test vault. Record the longest block before and after.
 
 **G1. Design** (rule 7): mockups on the design canvas for the Export modal (Q4, with
-its warning state), the "Record a submission" modal, and the pending count in the home
+its warning state, the preview step of Q16 and the last-export line of Q17), the
+"Record a submission" modal, and the pending count in the home
 block. The settings tab keeps its look (Q13), so it needs no mockup.
 
 **G2. Answers.** Cleared 2026-10-04: the author accepted the recommendations for Q1–Q15.
+Q16 and Q17 cleared 2026-10-05.
 
 Still open from 0.7, for the author on a device: G0c, G0d and the G0h phone figure of
 PLAN-0.7.md, and the visual check against the canvas (PLAN-0.7.md, task 5.2).
@@ -267,7 +272,7 @@ code that this plan didn't settle?
 
 | Task | Owns | Done when |
 |---|---|---|
-| 3.1 Export module | `src/export/index.ts`, `modal.ts`, `strings.ts`, `settings.ts` | Command for a note and its book; modal per mockup; readiness warnings; file written through `notes.create`; budgeted yields while building a long book; lifecycle test |
+| 3.1 Export module | `src/export/index.ts`, `modal.ts`, `strings.ts`, `settings.ts` | Command for a note and its book; modal per mockup; readiness warnings; file written through `notes.create`; budgeted yields while building a long book; the preview writer (Q16, `writers/preview.ts`); last export and "Export again" (Q17), following renames; lifecycle test |
 | 3.2 Submissions module | `src/submissions/index.ts`, `modal.ts`, `logic.ts`, `strings.ts`, `settings.ts` | "Record a submission" creates a note with `work`, `market`, `sent` and `result`; the pending index; renaming the work keeps the link; notes read well with Escrita off; lifecycle test |
 | 3.3 Desk pending count | `desk/works.ts`, `desk/render.ts`, `desk/strings.ts` | "2 pendentes" next to ready while submissions is on; redraw on its change; desk tests |
 | 3.4 Publish on readiness | `publish/index.ts` | Same behaviour; reads `core/readiness` |
