@@ -104,7 +104,7 @@ These are Opus decisions; agents don't reopen them.
 
 | # | Question | Recommendation |
 |---|---|---|
-| Q14 | Time budget size? | **12 ms**, with a `MessageChannel` yield where available and `setTimeout(0)` as the fallback. Electron clamps nested timeouts to 4 ms, which costs wall time at 8 ms. |
+| Q14 | Time budget size? | **8 ms** (was 12 ms; changed 2026-10-05 after G0d on desktop), with a `MessageChannel` yield where available and `setTimeout(0)` as the fallback. Electron clamps nested timeouts to 4 ms, which costs wall time at 8 ms. |
 | Q15 | What starts the mentions index? | The first `appearsIn` or `workCount` query, opening the universe panel's Works or entry tab, or an entry note becoming active. A term-table change while not started does nothing. |
 
 ## Deviations from the specs
@@ -162,11 +162,20 @@ written here before the gated task starts).
   its closing `$$`, and a `%%` inside it is literal. Words in math still count as
   today; math in a manuscript is task 1.3's call (kept as text). Task 1.10 makes the
   change.
-- **G0d** (gates 1.1): the 12 ms budget and a `MessageChannel` yield on a phone, using
+- **G0d** (gates 1.1): the time budget and a `MessageChannel` yield on a phone, using
   the bench vault copied into a test vault. Record the longest block before and after.
-  **Waived 2026-10-05 (no phone):** 1.1 uses 12 ms, the plan's budget. The desktop
-  bench measured 125 ms → 14 ms, and phones are assumed to scale (desktop × 5). The
-  spike plugin's "G0d" commands can measure it on desktop if wanted.
+  **Desktop result 2026-10-05** (the spike plugin in Obsidian, 3,020 notes, the
+  mentions compute):
+
+  | Pass | Total | Longest block | Phone estimate (× 5) |
+  |---|---|---|---|
+  | Today | 3.7 s | 64 ms | about 320 ms |
+  | 12 ms budget | 3.3 s | 30 ms | about 150 ms |
+  | 8 ms budget | 3.4 s | 22 ms | about 110 ms |
+
+  Total time doesn't grow. **Decision (Opus): 8 ms**, the shortest block at no cost
+  (Q14 updated). The phone run is waived (no phone). G0b also passed on desktop:
+  `createBinary` and `modifyBinary` read back the same bytes.
 
 **G1. Design** (rule 7): mockups on the design canvas for the Export modal (Q4, with
 its warning state, the preview step of Q16 and the last-export line of Q17), the
@@ -250,7 +259,7 @@ Each task lists its model.
 - `macrotaskYield` is written, not stubbed.
 - `IndexTimers.now?()` is optional.
 - `VaultIndex.demand()`.
-- `yieldBudget` returns a checkpoint (`BUDGET_MS = 12`).
+- `yieldBudget` returns a checkpoint (`BUDGET_MS`, 8 ms after G0d).
 - A separate `unclosedHtmlComment` check id.
 
 The 0.8 settings keys are declared with English defaults and no UI: `exportFolder`, `compileProperty`, `dedicationProperty`, `epigraphProperty`, `authorName`, `authorSurname`, `contactLines`, `chapterHeadingFormat`, `submissionsFolder` and `submissionResults`. `data.exportChoices` is declared too.

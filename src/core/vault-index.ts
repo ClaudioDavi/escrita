@@ -47,8 +47,8 @@ export function macrotaskYield(): Promise<void> {
   });
 }
 
-/** The time slice of a budgeted pass (Q14): 12 ms, then a yield. */
-export const BUDGET_MS = 12;
+/** The time slice of a budgeted pass (Q14): 8 ms, then a yield (G0d: 64 → 22 ms longest block, same total). */
+export const BUDGET_MS = 8;
 
 /**
  * A checkpoint for a long pass: call it after each unit of work (one file, one
