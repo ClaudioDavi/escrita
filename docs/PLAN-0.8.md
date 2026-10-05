@@ -79,7 +79,7 @@ to them as written.
 |---|---|---|
 | Q1 | Zip for DOCX: a dependency (fflate) or our own? | **Our own STORE zip in `core/zip.ts`**: CRC32 plus local and central headers, about 100 lines, no dependency, no licence banner, nothing for `no-network.test.ts` to flag. A manuscript is a few hundred KB, so no compression is fine. Gate G0a checks that Word, LibreOffice, Google Docs and Pages open it. The tests read the zip with a small reader in `tests/support/`. |
 | Q2 | Where does the author's name come from? | **Settings:** `authorName`, `authorSurname` (empty means the last word of the name, used in the Shunn header) and `contactLines` (several lines: address, email, phone). **Overrides:** an `author` property on the book note or the note. No per-market data. |
-| Q3 | Where does the file go, and what if it exists? | **An export folder setting**, default `Escrita/Exports`. The name is `<title>.md`, or `<title> (<preset>).docx`. If the file exists, ask: replace or keep both. Replacing an export loses no prose: the export is derived, and its source notes are untouched. The export folder is kept out of tracking like the snapshots folder: classify's `export` field (task 1.6) means never tracked, never a work, no draft status. |
+| Q3 | Where does the file go, and what if it exists? | **An export folder setting**, default `Escrita/Exports`. The name is `<title>.md`, or `<title> (<preset>).docx`. If the file exists, ask: replace or keep both (keep both names the new file with the export's date and time, `<title> (<preset>) YYYY-MM-DD HHhMM.docx`; G1). Replacing an export loses no prose: the export is derived, and its source notes are untouched. The export folder is kept out of tracking like the snapshots folder: classify's `export` field (task 1.6) means never tracked, never a work, no draft status. |
 | Q4 | One command or several? | **One command, "Export…"**, for the active note or its book. It opens one modal with: the source (this note, or the whole book when the note is in one), the chapters (all, a range, or ticked), the format (Markdown or DOCX), the preset (Shunn or pt-BR), and the readiness warnings with "Export anyway". Needs a mockup (G1). The modal remembers the last choices per work in `data.json`. |
 | Q5 | Chapter headings, and prologue and epilogue? | **There is no prologue concept today.** Rule: a chapter with a number gets "Capítulo N" or "Chapter N" (the format is a setting with `{n}` and `{title}`). A chapter without a number prefix gets its title alone, unnumbered. Numbering counts only numbered chapters. This covers "Prólogo.md" and "Epílogo.md" with no new property. |
 | Q6 | Wikilinks, embeds, code, footnotes? | A wikilink becomes its alias, or else its target's text. Embeds are dropped and listed in the warnings. Code keeps its text, unformatted. Footnotes: kept as text in 0.8 (DOCX footnotes are 0.10 material). |
@@ -182,6 +182,29 @@ written here before the gated task starts).
 its warning state, the preview step of Q16 and the last-export line of Q17), the
 "Record a submission" modal, and the pending count in the home
 block. The settings tab keeps its look (Q13), so it needs no mockup.
+**Approved 2026-10-05**, with two changes asked by the author. The boards are on the
+canvas, in the row "0.8 · Enviar a obra":
+- 26 · Exportar: o modal
+- 27 · Exportar: prévia
+- 28 · Registrar envio, pendentes no bloco
+
+The build follows them:
+- **Last export (Q17).** It is a caption under the "Grava…" box: "Última exportação:
+  DOCX · pt-BR · 14 capítulos · 3 out, 14:32 · <file link>". "Exportar de novo" is the
+  first button in the footer, left of Cancel. Both show only after a first export.
+- **File exists (Q3).** "Manter os dois" names the new file with this export's date
+  and time: `O porão (Shunn) 2026-10-05 14h32.docx`, not `… 1.docx`.
+- **Approved as drawn:**
+  - The chapter picker shows each chapter's manuscript heading.
+  - Each warning line links to its line.
+  - The preview is a light page in both themes, with "dedicatória" and "texto" bands
+    where the file starts a new page.
+  - The submission modal offers the three most recent markets from the folder.
+  - The submission note is named `YYYY-MM-DD <work> – <market>.md`.
+  - "2 pendentes" counts submissions (a conto sent twice counts 2) and sits after
+    "pronto".
+  - A note with no stage gets a notice instead of a submission.
+  - The "Exportar de novo" command shows only after a first export.
 
 **G2. Answers.** Cleared 2026-10-04: the author accepted the recommendations for Q1–Q15.
 Q16 and Q17 cleared 2026-10-05.
