@@ -49,13 +49,13 @@ export interface ClassifySettings extends PieceProperties {
   /**
    * Where submission notes live (SF 12; 0.8). Optional until the setting exists:
    * task 1.6 reads it through submissionsRoot(), so missing or "" means
-   * DEFAULT_SUBMISSIONS_FOLDER, like the snapshots folder. Until 1.6 it is not read.
+   * DEFAULT_SUBMISSIONS_FOLDER, like the snapshots folder.
    */
   submissionsFolder?: string;
   /**
    * Where export writes its files (Q3; 0.8). Optional until the setting exists:
    * task 1.6 reads it through exportRoot(), so missing or "" means
-   * DEFAULT_EXPORT_FOLDER. Until 1.6 it is not read.
+   * DEFAULT_EXPORT_FOLDER.
    */
   exportFolder?: string;
 }
@@ -137,7 +137,6 @@ export interface Placement<F extends Named, D extends Named> {
    * never gets the draft status. Checked next to `snapshot` and like it: a file
    * there is a "note" (or a "file") with no book, even when the folder sits in a book. The rule applies whether the submissions feature is on or
    * off: classify knows no features, and the notes stay what they are.
-   * Always false until task 1.6 implements the rule.
    */
   submission: boolean;
   /**
@@ -147,7 +146,6 @@ export interface Placement<F extends Named, D extends Named> {
    * tracked, never a work (no stage), never gets the draft status
    * (new-note-status.ts skips `place.export`), a "note" (or a "file") with no
    * book. Applies whether the export feature is on or off.
-   * Always false until task 1.6 implements the rule, next to `submission`.
    */
   export: boolean;
 }
@@ -166,33 +164,49 @@ export function inFolder(path: string, folder: string): boolean {
  * classify and the snapshots module all go through it.
  */
 export function snapshotsRoot(setting: unknown): string {
+  return folderRoot(setting, DEFAULT_SNAPSHOTS_FOLDER);
+}
+
+function folderRoot(setting: unknown, fallback: string): string {
   const s = str(setting).trim().replace(/\\/g, "/").replace(/\/{2,}/g, "/").replace(/^\/+|\/+$/g, "").trim();
-  return s === "" ? DEFAULT_SNAPSHOTS_FOLDER : s;
+  return s === "" ? fallback : s;
 }
 
-/** The submissions folder setting as a vault path, normalized like snapshotsRoot; never "" (task 1.6). */
+/** The submissions folder setting as a vault path, normalized like snapshotsRoot; never "" (DEFAULT_SUBMISSIONS_FOLDER). */
 export function submissionsRoot(setting: unknown): string {
-  void setting;
-  throw new Error("not implemented: 0.8 task 1.6");
+  return folderRoot(setting, DEFAULT_SUBMISSIONS_FOLDER);
 }
 
-/** The export folder setting as a vault path, normalized like snapshotsRoot; never "" (DEFAULT_EXPORT_FOLDER; task 1.6). */
+/** The export folder setting as a vault path, normalized like snapshotsRoot; never "" (DEFAULT_EXPORT_FOLDER). */
 export function exportRoot(setting: unknown): string {
-  void setting;
-  throw new Error("not implemented: 0.8 task 1.6");
+  return folderRoot(setting, DEFAULT_EXPORT_FOLDER);
 }
 
 /**
  * One fingerprint of every setting `classify` reads (IMPROVEMENTS 16): folders,
- * chapters folder, chapter template, snapshots, submissions and export folders, status
- * property, stages and the piece properties. Every index spec whose values
- * depend on classify composes it into its `settingsKey`, so a new classify input
- * is added here once and every index rebuilds on it. Stable for equal settings.
- * Filled by task 1.6; the six specs move onto it in task 2.4.
+ * chapters folder, chapter template, snapshots, submissions and export folders (normalized,
+ * so "" and the default key alike), status property, stages and the piece
+ * properties. Every index spec whose values depend on classify composes it into
+ * its `settingsKey`, so a new classify input is added here once and every index
+ * rebuilds on it. Stable for equal settings. The six specs move onto it in task 2.4.
  */
 export function classifyKey(s: ClassifySettings): string {
-  void s;
-  throw new Error("not implemented: 0.8 task 1.6");
+  return JSON.stringify([
+    str(s.trackFolders), str(s.excludeFolders), str(s.chaptersFolder), str(s.chapterTemplate),
+    snapshotsRoot(s.snapshotsFolder), submissionsRoot(s.submissionsFolder), exportRoot(s.exportFolder),
+    str(s.statusProperty), s.stages ?? null,
+    str(s.targetProperty), str(s.limitProperty), str(s.unitProperty), str(s.deadlineProperty),
+  ]);
+}
+
+/** Whether `path` is the submissions folder or inside it. */
+export function inSubmissions(path: string, settings: Pick<ClassifySettings, "submissionsFolder">): boolean {
+  return inFolder(path, submissionsRoot(settings.submissionsFolder));
+}
+
+/** Whether `path` is the export folder or inside it. */
+export function inExports(path: string, settings: Pick<ClassifySettings, "exportFolder">): boolean {
+  return inFolder(path, exportRoot(settings.exportFolder));
 }
 
 /** Whether `path` is the snapshots folder or inside it. */
@@ -362,12 +376,19 @@ export function classify<F extends Named, D extends Named>(
     const file = tree.file(path);
     // Snapshots are never writing: checked before any book lookup, so a
     // snapshots folder placed inside a book never yields chapters or book files.
+    // Submissions and exports are kept out the same way (never writing, no book).
     const snapshot = inSnapshots(path, settings);
-    if (file && snapshot) {
-      const markdown = path.endsWith(".md");
-      return { ...none, path, kind: markdown ? "note" : "file", markdown, snapshot };
+    const submission = inSubmissions(path, settings);
+    const exported = inExports(path, settings);
+    if (snapshot || submission || exported) {
+      const flags = { snapshot, submission, export: exported };
+      if (file) {
+        const markdown = path.endsWith(".md");
+        return { ...none, ...flags, path, kind: markdown ? "note" : "file", markdown };
+      }
+      if (tree.folder(path)) return { ...none, ...flags, path, kind: "folder" };
+      return none;
     }
-    if (!file && snapshot && tree.folder(path)) return { ...none, path, kind: "folder", snapshot };
     if (file) {
       const markdown = path.endsWith(".md");
       const tracked = markdown && isTracked(path, settings);
@@ -406,7 +427,7 @@ export function listBooks<F extends Named, D extends Named>(tree: VaultTree<F, D
   const out: BookOf<F, D>[] = [];
   try {
     for (const d of tree.folders()) {
-      if (inSnapshots(d.path, settings)) continue;
+      if (inSnapshots(d.path, settings) || inSubmissions(d.path, settings) || inExports(d.path, settings)) continue;
       const b = bookAt(tree, d.path, ch);
       if (b) out.push(b);
     }

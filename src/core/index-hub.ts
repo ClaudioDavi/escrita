@@ -44,6 +44,8 @@ interface Entry<F extends IndexFile> {
   index: VaultIndex<F, unknown>;
   /** a build was started: events reach the index from then on */
   started: boolean;
+  /** a `start: "demand"` spec: its index asked to build */
+  demanded: boolean;
   key: string;
   fallback: unknown;
 }
@@ -81,20 +83,21 @@ export class IndexHub<F extends IndexFile = IndexFile> {
   // ------------------------------------------------------------ public
 
   /**
-   * Adds an index and starts it when the layout is ready. From task 1.1 on, a
-   * `start: "demand"` spec waits for its index's `demand()` instead, and the
-   * hub's builds and flushes run on `yieldBudget`.
+   * Adds an index and starts it when the layout is ready. A `start: "demand"` spec
+   * waits for its index's `demand()` instead. Builds and flushes run on `yieldBudget`.
    */
   add<V>(spec: IndexSpec<F, V>): VaultIndex<F, V> {
     const index = new VaultIndex<F, V>(spec, this.source, this.timers, {
       settleMs: this.opts.settleMs,
       batch: this.opts.batch,
       onError: this.opts.onError,
+      onDemand: () => this.demand(entry),
     });
     const entry: Entry<F> = {
       spec: spec as IndexSpec<F, unknown>,
       index: index as VaultIndex<F, unknown>,
       started: false,
+      demanded: spec.start !== "demand",
       key: spec.settingsKey?.() ?? "",
       fallback: null,
     };
@@ -169,7 +172,7 @@ export class IndexHub<F extends IndexFile = IndexFile> {
 
   /** First build of an entry: content now, metadata once the cache is there. */
   private start(e: Entry<F>): void {
-    if (e.started || this.unloaded) return;
+    if (e.started || this.unloaded || !e.demanded) return;
     if (e.spec.mode === "content" || this.resolvedSeen || this.allCached(e)) {
       this.build(e);
       return;
@@ -183,6 +186,13 @@ export class IndexHub<F extends IndexFile = IndexFile> {
     }
   }
 
+  /** A demand index asked to build: now if the layout is ready, else at layout ready. */
+  private demand(e: Entry<F>): void {
+    if (e.demanded || this.unloaded || !this.entries.includes(e)) return;
+    e.demanded = true;
+    if (this.events.layoutReady()) this.start(e);
+  }
+
   private allCached(e: Entry<F>): boolean {
     return this.source.files().every((f) => !e.spec.include(f) || this.events.hasCache(f));
   }
@@ -190,7 +200,7 @@ export class IndexHub<F extends IndexFile = IndexFile> {
   private resolved(): void {
     this.resolvedSeen = true;
     if (!this.events.layoutReady()) return;
-    for (const e of this.entries) if (!e.started) this.build(e);
+    for (const e of this.entries) if (!e.started && e.demanded) this.build(e);
   }
 
   private build(e: Entry<F>): void {

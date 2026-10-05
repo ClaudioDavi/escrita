@@ -102,10 +102,11 @@ describe("invariants", () => {
   it("a line's state depends only on the text before it (except frontmatter and <!-- look-ahead)", () => {
     for (const text of [...TABLE, ...corpus(1500, 11)]) {
       // a <!-- looks ahead for its -->: only lines up to the first one are checked
-      const html = text.indexOf("<!--");
+      // so does a line-start $$ for its closing $$ (D16)
+      const html = Math.min(...["<!--", "$$"].map((k) => { const x = text.indexOf(k); return x === -1 ? Infinity : x; }));
       const md = segment(text);
       for (let i = md.bodyLine + 1; i < md.lineCount; i++) {
-        if (html !== -1 && md.lineStart(i) > html) break;
+        if (md.lineStart(i) > html) break;
         const cut = segment(text.slice(0, md.lineStart(i)));
         if (cut.bodyLine !== md.bodyLine) continue; // the frontmatter's closer was cut off
         expect(cut.startsIn(i), JSON.stringify(text) + " line " + i).toBe(md.startsIn(i));
@@ -291,9 +292,31 @@ describe("cases moved from publish's fencedLines / blankInlineCode", () => {
   });
 });
 
+describe("math (D16)", () => {
+  it("a $$ block from a line start is prose with nothing opening inside", () => {
+    expect(hidden("$$\nx %% y %%\n$$")).toEqual([]);
+    expect(hidden("$$\nx %% y\n$$\nprosa %% z %% fim")).toEqual(["%% z %%"]);
+    expect(hidden("$$ a %% b $$ c %% d %%")).toEqual(["%% d %%"]);
+    expect(hidden("$$\n```\nx\n```\n$$")).toEqual([]);
+    expect(hidden("$$\n<!-- a $$ %% b %%")).toEqual(["%% b %%"]);
+  });
+  it("up to 3 spaces of indent open it, 4 do not", () => {
+    expect(hidden("   $$\n%% a\n$$\n")).toEqual([]);
+    expect(hidden("    $$\n%% a %%\n$$\n")).toEqual(["%% a %%"]);
+  });
+  it("an unclosed $$ is plain prose", () => {
+    expect(hidden("$$\nx %% y %%")).toEqual(["%% y %%"]);
+  });
+  it("$$ after text, in a comment, in code or in frontmatter opens nothing", () => {
+    expect(hidden("a $$ %% b %%\n$$")).toEqual(["%% b %%"]);
+    expect(hidden("%% $$ %%\n%% a %%\n$$")).toEqual(["%% $$ %%", "%% a %%"]);
+    expect(hidden("`$$`\n%% a %%\n$$")).toEqual(["`$$`", "%% a %%"]);
+    expect(hidden("```\n$$\n```\n%% a %%\n$$")).toEqual(["```\n$$\n```", "%% a %%"]);
+  });
+});
+
 describe("not segmented", () => {
-  it("$$ math, indented code, fences in quotes and lists", () => {
-    expect(hidden("$$\nx %% y %%\n$$")).toEqual(["%% y %%"]);
+  it("indented code, fences in quotes and lists", () => {
     expect(hidden("> ```\n> x")).toEqual([]);
     expect(hidden("- ```\n  x")).toEqual([]);
   });

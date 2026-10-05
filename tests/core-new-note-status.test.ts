@@ -54,3 +54,13 @@ describe("withProperty", () => {
     expect(withProperty("Just text", "status", "draft")).toBe("Just text");
   });
 });
+
+describe("needsDraftStatus: submissions and exports", () => {
+  it("skips a note in the submissions or export folder", () => {
+    const p = (x: Partial<NewNotePlace>): NewNotePlace =>
+      ({ kind: "note", markdown: true, tracked: true, snapshot: false, path: "Contos/Novo.md", ...x });
+    expect(needsDraftStatus(p({ submission: true }), {}, o)).toBe(false);
+    expect(needsDraftStatus(p({ export: true }), {}, o)).toBe(false);
+    expect(needsDraftStatus(p({ submission: false, export: false }), {}, o)).toBe(true);
+  });
+});

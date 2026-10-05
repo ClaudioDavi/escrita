@@ -1,5 +1,7 @@
 import { App, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 import type { EscritaSettings } from "../settings";
+import { includeChapter, type BookSource } from "./book-source";
+import type { NoteService } from "./notes";
 import { chapterTitle, compareChapters, chapterNumber } from "./book";
 import { classify, listBooks, lookupPath, placementPath, type BookOf, type Placement, type VaultTree } from "./classify";
 
@@ -65,4 +67,39 @@ export class BookService {
   frontmatter(file: TFile): Record<string, unknown> {
     return (this.app.metadataCache.getFileCache(file)?.frontmatter ?? {}) as Record<string, unknown>;
   }
+}
+
+/**
+ * The Obsidian adapter of core/book-source.ts. Text comes through `notes` (the open
+ * editor's buffer when there is one), so `mtime` is null then and the file's mtime
+ * otherwise.
+ */
+export function bookSource(
+  app: App,
+  books: Pick<BookService, "chapters">,
+  notes: Pick<NoteService, "text" | "editorView">,
+  settings: () => Pick<EscritaSettings, "compileProperty">,
+): BookSource<Book> {
+  const fileAt = (path: string): TFile | null => {
+    const f = app.vault.getAbstractFileByPath(path) ?? app.vault.getAbstractFileByPath(normalizePath(path));
+    return f instanceof TFile ? f : null;
+  };
+  const frontmatter = (path: string): Record<string, unknown> => {
+    const f = fileAt(path);
+    return ((f && app.metadataCache.getFileCache(f)?.frontmatter) as Record<string, unknown> | undefined) ?? {};
+  };
+  return {
+    chapters: (book) => books.chapters(book).map((c) => ({
+      path: c.file.path, title: c.title, number: c.number,
+      include: includeChapter(frontmatter(c.file.path), settings().compileProperty),
+    })),
+    async read(path) {
+      const f = fileAt(path);
+      if (!f) throw new Error(`not a file: ${path}`);
+      const open = notes.editorView(f) !== null;
+      const text = await notes.text(f).read();
+      return { text, mtime: open ? null : f.stat.mtime };
+    },
+    frontmatter,
+  };
 }

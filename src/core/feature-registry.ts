@@ -5,8 +5,16 @@
 
 import type EscritaPlugin from "../main";
 import { FEATURE_IDS, planApply, wanted, type FeatureId, type FeatureSwitches } from "./features";
+import type { EscritaSettings } from "../settings";
 import type { FeatureModule } from "./module-context";
 import { ModuleContextImpl, ModuleSlots } from "./module-context";
+
+type FeatureSettings = Pick<EscritaSettings, "features" | "explorerCounts" | "spellcheckOnDemand" | "universeMode">;
+
+/** The writer's switches as the registry reads them (the same record `wanted` takes). */
+export function switchesOf(s: FeatureSettings): FeatureSwitches {
+  return { features: s.features, explorerCounts: s.explorerCounts, spellcheckOnDemand: s.spellcheckOnDemand, universeMode: s.universeMode };
+}
 
 /** Past this many passes a feature that keeps re-triggering apply() is cut off. */
 const MAX_PASSES = 10;
@@ -107,13 +115,7 @@ export class FeatureRegistry {
   // ------------------------------------------------------------ internals
 
   private switches(): FeatureSwitches {
-    const s = this.plugin.settings;
-    return {
-      features: s.features,
-      explorerCounts: s.explorerCounts,
-      spellcheckOnDemand: s.spellcheckOnDemand,
-      universeMode: s.universeMode,
-    };
+    return switchesOf(this.plugin.settings);
   }
 
   private want(): Set<FeatureId> {

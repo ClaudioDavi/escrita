@@ -6,6 +6,10 @@ export interface NewNotePlace {
   markdown: boolean;
   tracked: boolean;
   snapshot: boolean;
+  /** in the submissions folder (never a work); optional so older callers still type */
+  submission?: boolean;
+  /** in the export folder (derived text, never a work) */
+  export?: boolean;
   path: string;
 }
 
@@ -39,7 +43,7 @@ function samePath(a: string, b: string): boolean {
 
 /** True when the note is writing in a tracked place, has no status, and isn't a template, an entry or one of Escrita's notes. */
 export function needsDraftStatus(place: NewNotePlace, fm: Record<string, unknown> | null | undefined, o: NewNoteOptions): boolean {
-  if (!place.markdown || place.snapshot || !place.tracked || !WRITING_KINDS.has(place.kind)) return false;
+  if (!place.markdown || place.snapshot || place.submission || place.export || !place.tracked || !WRITING_KINDS.has(place.kind)) return false;
   if (o.templateFolders.some((f) => under(place.path, f))) return false;
   if (o.ownNotes.some((n) => samePath(n, place.path))) return false;
   const props = fm ?? {};

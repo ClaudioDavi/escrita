@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { FEATURE_IDS, FEATURE_SPECS, wanted } from "../src/core/features";
+import { FEATURE_IDS, FEATURE_PAGE, FEATURE_SPECS, wanted } from "../src/core/features";
 import { registerStrings } from "../src/i18n";
 import { coreStrings } from "../src/strings";
-import { DEFAULT_SETTINGS, FEATURE_PAGE, SETTING_FEATURES, rowShown, setFeature, switchesOf } from "../src/settings";
+import { DEFAULT_SETTINGS, SETTING_FEATURES, rowShown, setFeature, switchesOf } from "../src/settings";
 import { defaultUniverseSettings } from "../src/universe/settings";
 
 beforeAll(() => registerStrings(coreStrings));

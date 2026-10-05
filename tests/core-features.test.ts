@@ -6,8 +6,8 @@ import { NAME_TITLES } from "../src/core/name-titles";
 import { defaultUniverseSettings, normalizeUniverse } from "../src/universe/settings";
 
 describe("feature list", () => {
-  it("has one spec per id, in id order, with 17 switches", () => {
-    expect(FEATURE_IDS).toHaveLength(17);
+  it("has one spec per id, in id order, with 19 switches", () => {
+    expect(FEATURE_IDS).toHaveLength(19);
     expect(FEATURE_SPECS.map((s) => s.id)).toEqual([...FEATURE_IDS]);
   });
 
@@ -49,7 +49,7 @@ describe("cleanFeatures", () => {
     expect(raw).toEqual({ goals: false, nope: 1 });
   });
 
-  it("keeps all 17 ids when every one is a boolean", () => {
+  it("keeps all 19 ids when every one is a boolean", () => {
     const raw = Object.fromEntries(FEATURE_IDS.map((id, i) => [id, i % 2 === 0]));
     expect(cleanFeatures(raw)).toEqual(raw);
   });

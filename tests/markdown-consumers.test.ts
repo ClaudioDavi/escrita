@@ -27,7 +27,7 @@ import { runChecks, unclosedComment } from "../src/publish/checks";
 // D6  an escaped backtick doesn't open inline code
 // D7  one left-to-right precedence: fences inside an open %% comment are literal
 // D8  %% inside inline code no longer flips the editor into "comment"
-// D9  $$ is counted in prose only; %% inside $$ opens a comment
+// D9  $$ is counted in prose only (the %%-inside-$$ half was reversed by D16)
 // D10 a closed multi-line <!-- --> is a comment block; html-only text isn't "written"
 // D11 an unclosed <!-- is literal prose, so publish can't miss a placeholder after it;
 //     counts over-count after a stray line-start <!-- (Reading view hides the rest)
@@ -36,6 +36,11 @@ import { runChecks, unclosedComment } from "../src/publish/checks";
 // D15 (0.5, 2.6) the outline's beat edits ignore a --- in code or a comment
 // D14 %% inside a closed <!-- --> is literal (first opener wins): counts and the editor
 //     read past it; publish still blocks an odd %% count inside one (parity unverified)
+// D16 (0.8, 1.10) D9 reversed by G0c case C: a $$ block opened at a line start in prose is
+//     math until its closing $$, and %% (also <!--, ` and a fence) inside it is literal,
+//     as Reading view draws it. Its words still count. An unclosed $$ is plain prose;
+//     $$ inside a comment or code opens nothing
+// D17 (0.8, 1.5) an unclosed <!-- in prose is a publish/export blocker (unclosedHtmlComment)
 //
 // Columns: blocks = blockStateIn per line (F frontmatter, C code, % comment, M math);
 // enter = decideEnter on the last line after appending two blank lines ("blank" style).
@@ -756,33 +761,53 @@ const ROWS: Row[] = [
   {
     name: "mathWithPct",
     text: "$$\n%% not\n$$\nprosa %% XXX: m %%",
-    changes: ["D3", "D9"],
+    changes: ["D3", "D9", "D16"],
     expect: {
-      words: 2,
-      chars: 9,
+      words: 2, // D16, same count for a new reason: "not" and "prosa" (was "XXX" and "m")
+      chars: 18, // D16, was 9
       selection: 2,
       bodyLine: 0,
-      blocks: ". M %M %M", // D9, was ". M M ."
+      blocks: ". M M .", // D16, was ". M %M %M" (D9)
       beats: "",
       scanBeats: "",
-      placeholders: "", // D3, was "3:19-31:m"
-      spans: "", // D3, was "19-31/27-28"
-      unclosed: 3,
-      checks: "unclosedComment@3", // D3, was "unclosedComment@3 placeholders@3"
-      enter: "normal", // D9, was "break"
+      placeholders: "3:19-31:m", // D16, was ""
+      spans: "19-31/27-28", // D16, was ""
+      unclosed: null, // D16, was 3
+      checks: "placeholders@3", // D16, was "unclosedComment@3"
+      enter: "break", // D16, was "normal"
+      trailingKeep: null,
+    },
+  },
+  {
+    name: "mathPctThenComment",
+    text: "$$\nx %% y\n$$\nprosa %% z %% fim",
+    changes: ["D16"],
+    expect: {
+      words: 4,
+      chars: 22,
+      selection: 4,
+      bodyLine: 0,
+      blocks: ". M M .",
+      beats: "",
+      scanBeats: "",
+      placeholders: "",
+      spans: "",
+      unclosed: null,
+      checks: "",
+      enter: "break",
       trailingKeep: null,
     },
   },
   {
     name: "dollarInComment",
     text: "%% $$ %%\nprosa\n\n",
-    changes: ["D9"],
+    changes: ["D9", "D16"],
     expect: {
       words: 1,
       chars: 5,
       selection: 1,
       bodyLine: 0,
-      blocks: ". . . .", // D9, was ". M M M"
+      blocks: ". . . .", // D9, was ". M M M" (unchanged by D16: $$ in a comment is no math)
       beats: "",
       scanBeats: "",
       placeholders: "",
@@ -836,7 +861,7 @@ const ROWS: Row[] = [
   {
     name: "htmlUnclosed",
     text: "a <!-- x\n%% XXX: after %%\nmore words",
-    changes: ["D11"],
+    changes: ["D11", "D17"],
     expect: {
       words: 4, // D11, was 1
       chars: 19, // D11, was 1
@@ -848,7 +873,7 @@ const ROWS: Row[] = [
       placeholders: "1:9-25:after",
       spans: "9-25/17-22",
       unclosed: null,
-      checks: "placeholders@1",
+      checks: "unclosedHtmlComment@0 placeholders@1", // 0.8 1.5: the <!-- loose end, was "placeholders@1"
       enter: "break",
       trailingKeep: null,
     },
@@ -1251,13 +1276,13 @@ const ROWS: Row[] = [
   {
     name: "fenceInMath",
     text: "$$\n```\nx\n```\n$$\np",
-    changes: ["D9", "D12"],
+    changes: ["D9", "D12", "D16"],
     expect: {
-      words: 1,
-      chars: 7,
-      selection: 1, // D12, was 2
+      words: 2, // D16, was 1: the fence inside math is literal, so "x" counts
+      chars: 17, // D16, was 7
+      selection: 2, // D12, was 2
       bodyLine: 0,
-      blocks: ". M CM CM M .", // D9, was ". M M M M ."
+      blocks: ". M M M M .", // D16, was ". M CM CM M ." (D9)
       beats: "",
       scanBeats: "",
       placeholders: "",
@@ -1310,7 +1335,7 @@ const ROWS: Row[] = [
   {
     name: "htmlUnclosedLineStart",
     text: "<!-- nota\n\n%% XXX: falta %%\nmais\n",
-    changes: ["D11", "D12"],
+    changes: ["D11", "D12", "D17"],
     expect: {
       words: 2, // D11, was 0 (Reading view hides it all: an over-count)
       chars: 14, // D11, was 0
@@ -1322,7 +1347,7 @@ const ROWS: Row[] = [
       placeholders: "2:11-27:falta",
       spans: "11-27/19-24",
       unclosed: null,
-      checks: "placeholders@2", // D11, was "placeholders@2 emptyBody"
+      checks: "unclosedHtmlComment@0 placeholders@2", // 0.8 1.5, was "placeholders@2"
       enter: "break",
       trailingKeep: null,
     },

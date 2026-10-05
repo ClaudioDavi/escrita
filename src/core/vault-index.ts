@@ -59,8 +59,13 @@ export const BUDGET_MS = 8;
  * the explorer's first count pass and export of a long book. Filled by task 1.1.
  */
 export function yieldBudget(timers: IndexTimers, ms: number = BUDGET_MS): () => Promise<void> {
-  void timers; void ms;
-  throw new Error("not implemented: 0.8 task 1.1");
+  const now = (): number => (timers.now ? timers.now() : performance.now());
+  let sliceStart = now();
+  return async () => {
+    if (now() - sliceStart < ms) return;
+    await timers.yieldNow();
+    sliceStart = now();
+  };
 }
 
 /**
@@ -123,6 +128,8 @@ export interface VaultIndexOptions {
   /** files read at once per step of a build or a flush (default 40) */
   batch?: number;
   onError?(path: string, error: unknown): void;
+  /** the hub's way to start a `start: "demand"` index; called by `demand()` */
+  onDemand?(): void;
 }
 
 export class VaultIndex<F extends IndexFile, V> {
@@ -156,7 +163,7 @@ export class VaultIndex<F extends IndexFile, V> {
     private timers: IndexTimers,
     private opts: VaultIndexOptions = {},
   ) {
-    this.settleMs = opts.settleMs ?? 300;
+    this.settleMs = spec.settleMs ?? opts.settleMs ?? 300;
     this.batchSize = Math.max(1, opts.batch ?? 40);
   }
 
@@ -171,11 +178,11 @@ export class VaultIndex<F extends IndexFile, V> {
   /**
    * Asks a `start: "demand"` index to build (Q15: its first query, a panel tab, an
    * entry note opening). Safe to call on every query: once started it does
-   * nothing, and so it does for a "ready" index. Until task 1.1 wires the hub,
-   * every index starts when ready, so there is nothing to start.
+   * nothing, and so it does for a "ready" index.
    */
   demand(): void {
-    // task 1.1: ask the hub to start this index if it waits for demand
+    if (this.disposed || this.spec.start !== "demand") return;
+    this.opts.onDemand?.();
   }
 
   /**
@@ -220,19 +227,34 @@ export class VaultIndex<F extends IndexFile, V> {
     this.fresh = fresh;
     const files = this.source.files().filter((f) => this.spec.include(f));
     const content = this.spec.mode === "content";
+    const checkpoint = yieldBudget(this.timers);
     for (let i = 0; i < files.length; i += this.batchSize) {
       if (gen !== this.generation) return;
-      await Promise.all(files.slice(i, i + this.batchSize).map(async (f) => {
+      const batch = files.slice(i, i + this.batchSize);
+      // reads stay parallel; computing is one file at a time, with a checkpoint after each
+      const texts = await Promise.all(batch.map(async (f): Promise<string | null | undefined> => {
+        if (!content) return null;
         try {
-          const text = content ? await this.source.read(f) : null;
-          if (gen !== this.generation || this.touched.has(f.path)) return;
-          const v = this.spec.compute(f, text);
-          if (v !== undefined) fresh.set(f.path, v);
+          return await this.source.read(f);
         } catch (e) {
           this.fail(f.path, e);
+          return undefined;
         }
       }));
-      await this.timers.yieldNow();
+      for (let j = 0; j < batch.length; j++) {
+        if (gen !== this.generation) return;
+        const f = batch[j];
+        const text = texts[j];
+        if (text !== undefined && !this.touched.has(f.path)) {
+          try {
+            const v = this.spec.compute(f, text);
+            if (v !== undefined) fresh.set(f.path, v);
+          } catch (e) {
+            this.fail(f.path, e);
+          }
+        }
+        await checkpoint();
+      }
     }
     if (gen !== this.generation) return;
     // Live events were mirrored into `fresh`, so touched paths are already current.
@@ -413,22 +435,30 @@ export class VaultIndex<F extends IndexFile, V> {
       this.emit(this.compute(list));
       return;
     }
+    const checkpoint = yieldBudget(this.timers);
     for (let i = 0; i < list.length; i += this.batchSize) {
       const changes: IndexChange<V>[] = [];
-      await Promise.all(list.slice(i, i + this.batchSize).map((p) => this.refresh(p, changes)));
+      const batch = list.slice(i, i + this.batchSize);
+      const reads = await Promise.all(batch.map((p) => this.read(p, changes)));
+      for (const r of reads) {
+        if (this.disposed) return;
+        if (r) this.finish(r, changes);
+        await checkpoint();
+      }
       if (this.disposed) return;
       this.emit(changes);
-      if (i + this.batchSize < list.length) await this.timers.yieldNow();
-      if (this.disposed) return;
     }
   }
 
-  /** Reads one file (content mode) and applies the result when it is still the latest read. */
-  private async refresh(path: string, out: IndexChange<V>[]): Promise<void> {
+  /**
+   * Reads one file (content mode). Returns what to compute, or null when there is
+   * nothing to do (left scope, unreadable, or a newer read took over).
+   */
+  private async read(path: string, out: IndexChange<V>[]): Promise<{ path: string; f: F; text: string; ticket: number } | null> {
     const f = this.source.file(path);
     if (!f || !this.spec.include(f)) {
       this.removeLive(path, out);
-      return;
+      return null;
     }
     const ticket = this.seq.get(path) ?? ++this.nextSeq;
     this.seq.set(path, ticket);
@@ -437,18 +467,23 @@ export class VaultIndex<F extends IndexFile, V> {
       text = await this.source.read(f);
     } catch (e) {
       this.fail(path, e);
-      return;
+      return null;
     }
-    if (this.disposed || this.seq.get(path) !== ticket) return;
-    this.seq.delete(path);
+    return { path, f, text, ticket };
+  }
+
+  /** Computes a read file and applies the result when it is still the latest read. */
+  private finish(r: { path: string; f: F; text: string; ticket: number }, out: IndexChange<V>[]): void {
+    if (this.disposed || this.seq.get(r.path) !== r.ticket) return;
+    this.seq.delete(r.path);
     let v: V | undefined;
     try {
-      v = this.spec.compute(f, text);
+      v = this.spec.compute(r.f, r.text);
     } catch (e) {
-      this.fail(path, e);
+      this.fail(r.path, e);
       return;
     }
-    this.apply(path, v, out);
+    this.apply(r.path, v, out);
   }
 
   /** Metadata mode: synchronous recompute of paths. */

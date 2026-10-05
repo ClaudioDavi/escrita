@@ -7,7 +7,7 @@ import type EscritaPlugin from "../main";
 import type { VaultIndexes } from "../main";
 import { IndexHub } from "./index-hub";
 import { snapshotsRoot } from "./classify";
-import type { Follower, IndexFile, IndexSource, IndexSpec, IndexTimers, VaultIndex } from "./vault-index";
+import { macrotaskYield, type Follower, IndexFile, IndexSource, IndexSpec, IndexTimers, VaultIndex } from "./vault-index";
 
 /** A folder has no extension; the hub only reads its path. */
 function asIndexFile(f: TAbstractFile): TFile {
@@ -30,7 +30,8 @@ export class VaultIndexesShell implements VaultIndexes {
     const timers: IndexTimers = {
       set: (cb, ms) => window.setTimeout(cb, ms),
       clear: (h) => window.clearTimeout(h as number),
-      yieldNow: () => new Promise<void>((r) => window.setTimeout(r, 0)),
+      yieldNow: macrotaskYield,
+      now: () => performance.now(),
     };
     const subs = {
       create: [] as ((f: TFile) => void)[],

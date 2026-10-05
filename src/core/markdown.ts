@@ -26,7 +26,12 @@
 //   "<!--" opens a comment up to the next "-->" if there is one; otherwise literal
 //     (so publish can't miss a placeholder after a stray one; counts over-count
 //     after a line-start one, which Reading view hides). "%%" inside it is literal.
-// Not segmented: $$ math, 4-space indented code, fences inside quotes or lists,
+//   MATH (D16): "$$" at a line start in prose (≤3 spaces of indent) opens math up to
+//   the next "$$", on that line or later. It stays prose (its words count) but
+//   nothing opens inside it: %% is literal, as in Reading view. No closing "$$" →
+//   not math, the "$$" is plain prose. "$$" inside a comment, code or frontmatter,
+//   or after other text on a line, opens nothing.
+// Not segmented: 4-space indented code, fences inside quotes or lists,
 // multi-line inline code.
 
 export type Kind = "prose" | "frontmatter" | "code" | "comment";
@@ -214,6 +219,14 @@ function scan(text: string): Segmented {
       line = lineOfStart(starts, i, line);
       const resume = tryFence(line);
       if (resume !== -1) { i = resume; continue; }
+      // a $$ block opened at a line start is math up to its closing $$: it stays
+      // prose (words count), but %%, <!--, ` and fences inside are literal
+      let q = i;
+      while (q < i + 3 && text.charCodeAt(q) === 32) q++;
+      if (text.charCodeAt(q) === 36 && text.charCodeAt(q + 1) === 36) {
+        const close = text.indexOf("$$", q + 2);
+        if (close !== -1) { i = close + 2; continue; }
+      }
     }
     INTERESTING.lastIndex = i;
     const m = INTERESTING.exec(text);

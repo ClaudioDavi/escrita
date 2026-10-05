@@ -226,3 +226,45 @@ export function matchLineEndings(text: string, doc: string): string {
   const lf = text.replace(/\r\n/g, "\n");
   return doc.includes("\r\n") ? lf.replace(/\n/g, "\r\n") : lf;
 }
+
+// ── Paths and bytes for creating files (used by core/notes.ts `create`) ──
+
+/** What `create` accepts as contents. */
+export type FileData = string | ArrayBuffer | Uint8Array;
+
+/**
+ * Bytes as a standalone ArrayBuffer. A typed array or DataView may be a window
+ * into a larger buffer (zipStore returns one), so `view.buffer` would be the
+ * wrong bytes: copy exactly the window. An ArrayBuffer passes through.
+ */
+export function toArrayBuffer(data: ArrayBuffer | ArrayBufferView): ArrayBuffer {
+  if (!ArrayBuffer.isView(data)) return data;
+  return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+}
+
+/** The path in `paths` equal to `path` ignoring case (the exact match first), or null. */
+export function findPathIgnoringCase(path: string, paths: Iterable<string>): string | null {
+  const lower = path.toLowerCase();
+  let clash: string | null = null;
+  for (const p of paths) {
+    if (p === path) return p;
+    if (clash === null && p.toLowerCase() === lower) clash = p;
+  }
+  return clash;
+}
+
+/** "Title 1.md", "Title 2.md"… the first one not taken (ignoring case). A dot in a folder name is not an extension. */
+export function uniquePath(path: string, taken: Iterable<string>): string {
+  const lowered = new Set<string>();
+  for (const p of taken) lowered.add(p.toLowerCase());
+  if (!lowered.has(path.toLowerCase())) return path;
+  const slash = path.lastIndexOf("/");
+  const dot = path.lastIndexOf(".");
+  const hasExt = dot > slash + 1;
+  const stem = hasExt ? path.slice(0, dot) : path;
+  const ext = hasExt ? path.slice(dot) : "";
+  for (let n = 1; ; n++) {
+    const candidate = `${stem} ${n}${ext}`;
+    if (!lowered.has(candidate.toLowerCase())) return candidate;
+  }
+}

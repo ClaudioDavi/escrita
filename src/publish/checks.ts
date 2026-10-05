@@ -4,14 +4,14 @@
 // variables, and the modal turns them into text with t().
 
 import { stageOf, type StageMapping } from "../core/stages";
-import { segment, type Markdown } from "../core/markdown";
-import { parseBeats, parsePlaceholders } from "../core/markers";
+import { readinessOf, unclosedComment } from "../core/readiness";
 import { countIn, measureText, pieceProgress, readPiece, type PieceProperties } from "../core/measure";
 
 export type CheckLevel = "blocker" | "warning" | "passed";
 
 export type CheckId =
   | "unclosedComment"
+  | "unclosedHtmlComment"
   | "placeholders"
   | "unwrittenBeats"
   | "emptyBody"
@@ -46,32 +46,8 @@ export const BLOCKER_FIRST: Record<CheckLevel, number> = { blocker: 0, warning: 
 
 // ------------------------------------------------------------------ comments
 
-/**
- * The 0-based line where an unclosed `%%` comment opens, or null when every
- * comment is closed. Comments are read by core/markdown: in the body, outside
- * inline and fenced code, across lines (a comment may span paragraphs).
- *
- * Also a blocker: an odd number of `%%` inside a closed `<!-- -->`. core/markdown
- * reads them as literal (the first opener wins), but whether Reading view and
- * other Markdown renderers do is unverified, and if they don't, text after the comment is hidden while
- * it still counts here. Blocking until the writer pairs them keeps publish safe
- * under either reading (docs/ARCHITECTURE.md, "Markdown segmentation").
- */
-export function unclosedComment(src: string | Markdown): number | null {
-  const md = typeof src === "string" ? segment(src) : src;
-  const spans = md.spans();
-  const last = spans[spans.length - 1];
-  if (last && last.kind === "comment" && last.form === "%%" && !last.closed) return md.lineOf(last.from);
-  for (const s of spans) {
-    if (s.kind !== "comment" || s.form !== "html") continue;
-    let odd = -1;
-    for (let at = md.text.indexOf("%%", s.from); at !== -1 && at + 2 <= s.to; at = md.text.indexOf("%%", at + 2)) {
-      odd = odd === -1 ? at : -1;
-    }
-    if (odd !== -1) return md.lineOf(odd);
-  }
-  return null;
-}
+// The marker checks live in core/readiness.ts; re-exported for existing callers.
+export { unclosedComment };
 
 // ------------------------------------------------------------------ status
 
@@ -105,36 +81,13 @@ export function runChecks(
 ): Check[] {
   const fm = frontmatter ?? {};
   const out: Check[] = [];
-  // Every check below reads the same segmentation, so markers in code,
-  // frontmatter or comments are already left out.
-  const md = segment(text);
-  const open = unclosedComment(md);
-  out.push(open === null
-    ? { id: "unclosedComment", level: "passed", items: [], vars: {} }
-    : { id: "unclosedComment", level: "blocker", line: open, items: [], vars: { line: open + 1 } });
-
-  const placeholders = parsePlaceholders(md, ctx.placeholderMarker);
-  out.push({
-    id: "placeholders",
-    level: placeholders.length ? "blocker" : "passed",
-    line: placeholders[0]?.line,
-    items: placeholders.map((p) => ({ text: p.text, line: p.line })),
-    vars: { n: placeholders.length },
-  });
-
-  const beats = parseBeats(md).filter((b) => !b.written);
-  out.push({
-    id: "unwrittenBeats",
-    level: beats.length ? "warning" : "passed",
-    line: beats[0]?.line,
-    items: beats.map((b) => ({ text: b.text, line: b.line })),
-    vars: { n: beats.length },
-  });
+  // The marker checks come from core/readiness. A passed unclosedHtmlComment is
+  // left out of the list (the modal lists it only when it blocks).
+  const ready = readinessOf(text, { placeholderMarker: ctx.placeholderMarker });
+  out.push(...ready.checks.filter((c) => c.id !== "unclosedHtmlComment" || c.level !== "passed"));
 
   // measured on the text given (the editor's, maybe unsaved), never a cache
   const counts = measureText(text);
-  const words = counts.words;
-  out.push({ id: "emptyBody", level: words === 0 ? "blocker" : "passed", items: [], vars: { n: words } });
 
   if (ctx.recommendedProperties.length) {
     const missing = ctx.recommendedProperties.filter((p) => !isFilled(propertyValue(fm, p)));

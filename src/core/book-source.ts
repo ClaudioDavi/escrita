@@ -50,6 +50,15 @@ export interface BookSource<B> {
  * typo never silently drops a chapter.
  */
 export function includeChapter(frontmatter: Record<string, unknown> | null | undefined, property: string): boolean {
-  void frontmatter; void property;
-  throw new Error("not implemented: 0.8 task 1.8");
+  const fm = frontmatter ?? {};
+  let value: unknown = undefined;
+  if (Object.prototype.hasOwnProperty.call(fm, property)) value = fm[property];
+  else {
+    const lower = property.toLowerCase();
+    const key = Object.keys(fm).find((k) => k.toLowerCase() === lower);
+    if (key !== undefined) value = fm[key];
+  }
+  if (value === false) return false;
+  if (typeof value === "string" && value.trim().toLowerCase() === "false") return false;
+  return true;
 }

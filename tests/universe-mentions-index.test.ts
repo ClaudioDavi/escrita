@@ -18,6 +18,7 @@ function settings(): EntriesSettings {
 
 class CountingTimers extends ManualTimers {
   yields = 0;
+  override now(): number { return performance.now(); }
   override yieldNow(): Promise<void> { this.yields++; return super.yieldNow(); }
 }
 
@@ -358,7 +359,7 @@ describe("MentionsIndex performance (CI ceilings from G0h)", () => {
       const took = performance.now() - t0;
       const ceiling = (notes * WORDS_PER_NOTE / 1000) * MS_PER_1000_WORDS * MARGIN;
       expect(took).toBeLessThan(ceiling);
-      expect(timers.yields).toBeGreaterThanOrEqual(Math.floor(notes / 40));    // default batch 40
+      expect(timers.yields).toBeGreaterThanOrEqual(Math.max(1, Math.floor(took / 100)));
       expect(s.mentions.get("Contos/n0.md")?.occurrences.length).toBeGreaterThan(10);
     }, 300_000);
   }

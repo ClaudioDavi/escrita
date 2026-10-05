@@ -40,7 +40,7 @@ export function proseOnly(md: string): string {
  * and links). The one table behind stripMarkup and readerMask, so they can't drift.
  * `keep` is the capture group left as text; a match with none goes entirely.
  */
-const MARKUP: readonly { re: RegExp; keep?: number }[] = [
+export const MARKUP: readonly { re: RegExp; keep?: number }[] = [
   { re: /!\[\[[^\]]*\]\]/g },                                      // embeds
   { re: /!\[[^\]]*\]\([^)]*\)/g },                                 // images
   { re: /\[\[([^\]|]*\|)?([^\]]*)\]\]/g, keep: 2 },               // wikilinks → alias or target

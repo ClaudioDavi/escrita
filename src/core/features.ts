@@ -4,11 +4,10 @@
 export const FEATURE_IDS = [
   "goals", "outline", "placeholders", "explorerCounts", "darlings", "typing", "dialogueFocus",
   "moveBlocks", "templates", "spellcheck", "lens", "snapshots", "stageSnapshot", "publish",
-  "desk", "universe", "threads",
+  "export", "submissions", "desk", "universe", "threads",
 ] as const;   // also the load order: today's (main.ts:116-127), Q12; unload runs in reverse
-// 0.8 (PLAN-0.8 Q11): task 1.9 adds "export" and "submissions" right after "publish",
-// both in the "publishing" group, making 19. Not added in the Wave 0 contracts: the
-// registry would look for modules that don't exist yet and the 17-feature tests would break.
+// 0.8 (PLAN-0.8 Q11): "export" and "submissions" follow "publish" (19 ids); their modules arrive in Wave 3,
+// until then the registry finds no module for them and loads nothing.
 export type FeatureId = typeof FEATURE_IDS[number];
 export type FeatureGroup = "writing" | "revision" | "desk" | "publishing" | "world";
 
@@ -21,30 +20,32 @@ export interface FeatureSpec {
   /**
    * Position of the switch on the Features page within its group, ascending
    * (IMPROVEMENTS 20). The page shows the groups in a fixed order and, inside a
-   * group, the switches by `page`; settings.ts's FEATURE_PAGE is derived from it.
-   * Optional until task 1.9 sets it on every spec.
+   * group, the switches by `page`; FEATURE_PAGE below is derived from it.
+   * Set on every spec (task 1.9); optional in the type only to keep the contract.
    */
   page?: number;
 }
 
 export const FEATURE_SPECS: readonly FeatureSpec[] = [
-  { id: "goals", group: "writing" },
-  { id: "outline", group: "writing" },
-  { id: "placeholders", group: "writing" },
-  { id: "explorerCounts", group: "writing", switch: "explorerCounts" },
-  { id: "darlings", group: "revision" },
-  { id: "typing", group: "writing" },
-  { id: "dialogueFocus", group: "writing" },
-  { id: "moveBlocks", group: "writing" },
-  { id: "templates", group: "writing" },
-  { id: "spellcheck", group: "writing", switch: "spellcheckOnDemand" },
-  { id: "lens", group: "revision" },
-  { id: "snapshots", group: "revision" },
-  { id: "stageSnapshot", group: "desk", requires: ["snapshots"] },
-  { id: "publish", group: "publishing" },
-  { id: "desk", group: "desk" },
-  { id: "universe", group: "world", switch: "universeMode" },
-  { id: "threads", group: "world" },
+  { id: "goals", group: "writing", page: 1 },
+  { id: "outline", group: "writing", page: 2 },
+  { id: "placeholders", group: "writing", page: 3 },
+  { id: "explorerCounts", group: "writing", switch: "explorerCounts", page: 9 },
+  { id: "darlings", group: "revision", page: 3 },
+  { id: "typing", group: "writing", page: 4 },
+  { id: "dialogueFocus", group: "writing", page: 5 },
+  { id: "moveBlocks", group: "writing", page: 6 },
+  { id: "templates", group: "writing", page: 7 },
+  { id: "spellcheck", group: "writing", switch: "spellcheckOnDemand", page: 8 },
+  { id: "lens", group: "revision", page: 1 },
+  { id: "snapshots", group: "revision", page: 2 },
+  { id: "stageSnapshot", group: "desk", requires: ["snapshots"], page: 1 },
+  { id: "publish", group: "publishing", page: 1 },
+  { id: "export", group: "publishing", page: 2 },
+  { id: "submissions", group: "publishing", page: 3 },
+  { id: "desk", group: "desk", page: 2 },
+  { id: "universe", group: "world", switch: "universeMode", page: 1 },
+  { id: "threads", group: "world", page: 2 },
 ];
 
 export interface FeatureSwitches {
@@ -102,3 +103,16 @@ export function cleanFeatures(raw: unknown): Partial<Record<FeatureId, boolean>>
   }
   return out;
 }
+
+/** The groups in the order the Features page shows them. */
+export const FEATURE_GROUPS: readonly FeatureGroup[] = ["writing", "revision", "desk", "publishing", "world"];
+
+/** The Features page: the groups in fixed order, inside each the switches by `page` (ties by load order). */
+export const FEATURE_PAGE: readonly { group: FeatureGroup; ids: readonly FeatureId[] }[] = FEATURE_GROUPS.map((group) => ({
+  group,
+  ids: FEATURE_SPECS
+    .map((spec, i) => ({ spec, i }))
+    .filter(({ spec }) => spec.group === group)
+    .sort((a, b) => (a.spec.page ?? Infinity) - (b.spec.page ?? Infinity) || a.i - b.i)
+    .map(({ spec }) => spec.id),
+}));

@@ -22,7 +22,7 @@
 //       task 1.7). One tested policy for an existing file instead of seven.
 
 import { MarkdownView, TFile, TFolder, normalizePath, type App } from "obsidian";
-import { editorText, vaultText, type NoteText } from "./note-text";
+import { editorText, findPathIgnoringCase, toArrayBuffer, uniquePath, vaultText, type FileData, type NoteText } from "./note-text";
 
 /** A path segment that should be a folder is a file. */
 export class FolderBlockedError extends Error {
@@ -113,9 +113,41 @@ export class NoteService {
    * check and the create (a race: the create's failure is checked again once).
    * Throws NoteExistsError as described there; other vault errors pass through.
    */
-  async create(path: string, data: string | ArrayBuffer | Uint8Array, o: CreateOptions): Promise<CreateResult> {
-    void path; void data; void o;
-    throw new Error("not implemented: 0.8 task 1.7");
+  async create(path: string, data: FileData, o: CreateOptions): Promise<CreateResult> {
+    const norm = normalizePath(path);
+    const { vault } = this.app;
+    const slash = norm.lastIndexOf("/");
+    if (slash > 0) await this.ensureFolder(norm.slice(0, slash));
+    // bytes are converted once, so a retry after a race writes the same buffer
+    const payload = typeof data === "string" ? data : toArrayBuffer(data);
+    const allPaths = () => vault.getAllLoadedFiles().map((f) => f.path);
+
+    for (let attempt = 0; ; attempt++) {
+      const found = findPathIgnoringCase(norm, allPaths());
+      const target = found === null ? null : vault.getAbstractFileByPath(found);
+      const isFolder = target instanceof TFolder;
+      if (found !== null && (isFolder || !(target instanceof TFile)) && o.exists !== "unique") {
+        throw new NoteExistsError(norm, found, isFolder);
+      }
+      if (found !== null && target instanceof TFile && o.exists !== "unique") {
+        if (o.exists === "return") return { file: target, outcome: "existing" };
+        if (o.exists === "fail") throw new NoteExistsError(norm, found, false);
+        if (typeof payload === "string") await vault.modify(target, payload);
+        else await vault.modifyBinary(target, payload);
+        return { file: target, outcome: "replaced" };
+      }
+      const dest = found === null ? norm : uniquePath(norm, allPaths());
+      try {
+        const file = typeof payload === "string"
+          ? await vault.create(dest, payload)
+          : await vault.createBinary(dest, payload);
+        return { file, outcome: "created" };
+      } catch (err) {
+        // a file may have appeared since the check: look again once, else it is a real error
+        if (attempt === 0 && findPathIgnoringCase(dest, allPaths()) !== null) continue;
+        throw err;
+      }
+    }
   }
 
   async ensureFolder(path: string): Promise<void> {

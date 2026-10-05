@@ -190,6 +190,45 @@ function indexOf(table: TermTable): Index {
   return ix;
 }
 
+// Module-level caches (IMPROVEMENTS 22): a word folds and stems the same way on every call.
+// Each map is cleared when it reaches CACHE_LIMIT entries, so memory stays bounded.
+const CACHE_LIMIT = 50_000;
+const foldCache = new Map<string, string>();
+const keyCaches = new Map<string, Map<string, string>>();
+
+function foldCached(w: string): string {
+  let f = foldCache.get(w);
+  if (f === undefined) {
+    if (foldCache.size >= CACHE_LIMIT) foldCache.clear();
+    f = foldName(w);
+    foldCache.set(w, f);
+  }
+  return f;
+}
+
+function keyCacheFor(lang: StemLang | null, profile: StemProfile): Map<string, string> {
+  const id = `${lang ?? "none"}:${profile}`;
+  let m = keyCaches.get(id);
+  if (!m) {
+    m = new Map();
+    keyCaches.set(id, m);
+  }
+  return m;
+}
+
+/** Sizes of the matcher's caches, for the bounded-memory test. */
+export function namesCacheStats(): { fold: number; keys: number } {
+  let keys = 0;
+  for (const m of keyCaches.values()) keys += m.size;
+  return { fold: foldCache.size, keys };
+}
+
+/** Empties the matcher's caches (tests). */
+export function clearNamesCaches(): void {
+  foldCache.clear();
+  keyCaches.clear();
+}
+
 const GAP = /^[ \t*_~=]*(?:\r?\n[ \t*_~=]*)?$/;
 
 /** Over a mask whose offsets match the document (readerMask). Ignore phrases suppress their span. */
@@ -200,15 +239,7 @@ export function findNames(mask: string, table: TermTable, from = 0, to = mask.le
 
   const units: Unit[] = [];
   let group = 0;
-  const foldCache = new Map<string, string>();
-  const fold = (w: string): string => {
-    let f = foldCache.get(w);
-    if (f === undefined) {
-      f = foldName(w);
-      foldCache.set(w, f);
-    }
-    return f;
-  };
+  const fold = foldCached;
   for (const tk of tokens(mask, from, to)) {
     const folded = fold(tk.text);
     const parts = splitHyphen(tk.text);
@@ -224,14 +255,16 @@ export function findNames(mask: string, table: TermTable, from = 0, to = mask.le
     }
   }
 
-  // Stem keys per unit and profile, computed once.
-  const keyCache = new Map<string, string>();
+  // Stem keys per word and profile, kept across calls.
+  const nameKeys = keyCacheFor(lang, "name");
+  const wordKeys = keyCacheFor(lang, "word");
   const keyOf = (u: Unit, profile: StemProfile): string => {
-    const id = `${profile}:${u.folded}`;
-    let k = keyCache.get(id);
+    const cache = profile === "name" ? nameKeys : wordKeys;
+    let k = cache.get(u.folded);
     if (k === undefined) {
+      if (cache.size >= CACHE_LIMIT) cache.clear();
       k = wordKey(u.folded, lang, profile);
-      keyCache.set(id, k);
+      cache.set(u.folded, k);
     }
     return k;
   };
