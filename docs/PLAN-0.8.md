@@ -457,6 +457,18 @@ Decided in this wave:
     and the settings sections.
   - CONTEXT.md: the services list, the feature count and the weak spots.
   - Spec deviations into N 7, SF 12 and IMPROVEMENTS.
+- **4.1 and 4.2 done (2026-10-05).** Written:
+  - `publishing.md` (English and pt-BR).
+  - `features-and-settings.md` updated.
+  - The ARCHITECTURE, CONTEXT, README, N 7, SF 12 and IMPROVEMENTS write-backs.
+
+  An Opus pass checked every claim against the code and corrected the docs. It found four
+  small code issues, all fixed:
+  - Only a line-start unclosed `<!--` is a blocker (D19); a mid-line one is literal text,
+    as in Reading view.
+  - A staged note outside the tracked folders gets its own submissions notice.
+  - The author property description is fixed.
+  - pt-BR uses "folha de rosto" throughout.
 - **4.3 Opus release review:** `/code-review high` over the branch, data safety (rule 1)
   on every write path, rule 8 on `createBinary`, and the bench numbers against Wave 1.
 

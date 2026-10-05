@@ -15,7 +15,7 @@ export type ReadinessLevel = "blocker" | "warning" | "passed";
 
 /**
  * - `unclosedComment`: a `%%` that never closes (or an odd `%%` inside a closed `<!-- -->`); blocker.
- * - `unclosedHtmlComment` (new in 0.8, the loose end): a `<!--` that never closes.
+ * - `unclosedHtmlComment` (new in 0.8, the loose end): a `<!--` that starts its line (up to 3 spaces of indent) and never closes (D19: mid-line is literal text).
  *   Reading view hides the rest of the note while the words still count; blocker.
  * - `placeholders`: placeholder markers left in the body; blocker.
  * - `unwrittenBeats`: beats with no prose after them; warning.
@@ -136,8 +136,9 @@ export function unclosedHtmlComment(src: string | Markdown): number | null {
   const md = asMarkdown(src);
   for (const s of md.spans()) {
     if (s.kind !== "prose") continue;
-    const at = md.text.indexOf("<!--", s.from);
-    if (at !== -1 && at < s.to) return md.lineOf(at);
+    for (let at = md.text.indexOf("<!--", s.from); at !== -1 && at < s.to; at = md.text.indexOf("<!--", at + 4)) {
+      if (/^ {0,3}$/.test(md.text.slice(md.lineStart(md.lineOf(at)), at))) return md.lineOf(at);
+    }
   }
   return null;
 }

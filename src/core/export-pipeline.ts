@@ -9,7 +9,7 @@
 // (after 1.0) adds a script model, its layout data and its own writers (Fountain, PDF, FDX) without changing this file.
 // Presets are plain data; the writers read them and nothing else about layout.
 //
-// Owner: the pure helpers below are stubs for task 2.3 (the writers need them).
+// The pure helpers below (exportDocOf, droppedIn, aboutCount, chapterHeadings, fillTemplate) feed every writer.
 
 import type { Markdown } from "./markdown";
 import { manuscriptOf, type Manuscript, type ManuscriptOptions } from "./manuscript";

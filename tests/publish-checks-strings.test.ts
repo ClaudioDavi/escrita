@@ -6,7 +6,7 @@ const ctx = { placeholderMarker: "XXX", recommendedProperties: ["title"] };
 const vars = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
 
 describe("publish checks and their strings", () => {
-  const text = "um\ndois <!-- aberto\n%% XXX: x %%\n%% beat: b %%\n";
+  const text = "um\n<!-- aberto\n%% XXX: x %%\n%% beat: b %%\n";
   const checks = runChecks(text, {}, ctx);
 
   it("shows the <!-- blocker with its line, first among the blockers", () => {

@@ -41,6 +41,7 @@ import { runChecks, unclosedComment } from "../src/publish/checks";
 //     as Reading view draws it. Its words still count. An unclosed $$ is plain prose;
 //     $$ inside a comment or code opens nothing
 // D17 (0.8, 1.5) an unclosed <!-- in prose is a publish/export blocker (unclosedHtmlComment)
+// D19 (0.8) only a line-start unclosed <!-- is a blocker; a mid-line one is literal text, as in Reading view
 // D18 (0.8) one math rule: core/markdown decides math lines (Markdown.inMath); the editor's
 //     blockStateIn reads it and keeps no $$ parity of its own. No row changed: the old
 //     parity and the segmenter agreed on every row below; they differed only on a $$ that
@@ -865,7 +866,7 @@ const ROWS: Row[] = [
   {
     name: "htmlUnclosed",
     text: "a <!-- x\n%% XXX: after %%\nmore words",
-    changes: ["D11", "D17"],
+    changes: ["D11", "D17", "D19"],
     expect: {
       words: 4, // D11, was 1
       chars: 19, // D11, was 1
@@ -877,7 +878,7 @@ const ROWS: Row[] = [
       placeholders: "1:9-25:after",
       spans: "9-25/17-22",
       unclosed: null,
-      checks: "unclosedHtmlComment@0 placeholders@1", // 0.8 1.5: the <!-- loose end, was "placeholders@1"
+      checks: "placeholders@1", // D19: a mid-line <!-- is literal text, no blocker
       enter: "break",
       trailingKeep: null,
     },

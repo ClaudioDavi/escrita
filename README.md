@@ -12,13 +12,14 @@ Step-by-step guides, in English and Brazilian Portuguese (they grow with each ve
 
 - Features and settings: [English](docs/guide/en/features-and-settings.md) · [Português](docs/guide/pt-BR/features-and-settings.md)
 - Writing (the outline, point of view, chapter targets): [English](docs/guide/en/writing.md) · [Português](docs/guide/pt-BR/writing.md)
+- Publishing (the publish check, export, submissions): [English](docs/guide/en/publishing.md) · [Português](docs/guide/pt-BR/publishing.md)
 - The world (the universe, "Appears in", threads, templates): [English](docs/guide/en/the-world.md) · [Português](docs/guide/pt-BR/the-world.md)
 
 ## Features
 
 ### Features page
 
-Turn off what you don't use. The **Features** section at the top of the settings has a switch for each of 17 features, in five groups. A feature that is off isn't loaded: no commands, panels, menu items or background work. Its data stays and comes back when you turn it on again, and its settings hide. The universe's switch is its mode (off, per book, universe). It needs Obsidian 1.7.2 or later. The ribbon icon of a feature you turn off stays until you restart Obsidian. See [Features and settings](docs/guide/en/features-and-settings.md) ([Português](docs/guide/pt-BR/features-and-settings.md)).
+Turn off what you don't use. The **Features** section at the top of the settings has a switch for each of 19 features, in five groups. A feature that is off isn't loaded: no commands, panels, menu items or background work. Its data stays and comes back when you turn it on again, and its settings hide. The universe's switch is its mode (off, per book, universe). It needs Obsidian 1.7.2 or later. The ribbon icon of a feature you turn off stays until you restart Obsidian. See [Features and settings](docs/guide/en/features-and-settings.md) ([Português](docs/guide/pt-BR/features-and-settings.md)).
 
 ### Outline and ghost beats
 
@@ -50,6 +51,14 @@ Choose weekdays off and specific dates off. A day off never breaks your streak, 
 ### Publish check
 
 **Publish this note** checks the active note before you publish it: an unclosed `%%` comment, placeholders left, unwritten beats, an empty body, missing recommended properties such as `description`, and a length over the piece's limit. Blockers can be overridden. Publishing sets the status property to your word for the published stage and the date property to today (or a date you choose). **Unpublish this note** puts the earlier status back. Escrita doesn't publish anywhere: it only checks the note and updates its properties, so it works whether you post to a blog, send to a magazine, or just mark a piece as done.
+
+### Export
+
+**Export…** turns the active note, or its whole book, into a manuscript file: Markdown or DOCX, in the Shunn (Letter, English) or pt-BR (A4, Portuguese labels) template. Pick the chapters, check the preview and the readiness warnings, and write the file into the export folder (default `Escrita/Exports`). **Export again** repeats your last export for the work in one click. Comments, beats, placeholders and embeds never reach the file. Export files are never tracked or counted. See [Publishing](docs/guide/en/publishing.md) ([Português](docs/guide/pt-BR/publishing.md)).
+
+### Submissions
+
+**Record a submission** creates one note per submission in the submissions folder (default `Submissions`), with the work, the market, the date sent and the result (`pending`, `accepted`, `rejected` or `withdrawn`). The home block shows how many are pending. Submission notes are never tracked or counted. See [Publishing](docs/guide/en/publishing.md) ([Português](docs/guide/pt-BR/publishing.md)).
 
 ### Sprints
 
@@ -223,12 +232,14 @@ A beat counts as written when prose follows it before the next beat, scene break
 - **Goals** (continued): the property names for a piece's target, limit, unit and deadline, the property name for a book's goal, weekdays off and dates off. Write amounts as `15000`, or quote them when they have separators (`"15.000"`): unquoted, `15.000` is the decimal number 15.
 - **Goals** (file explorer): the target next to the count and folder totals. (Word counts on or off is now on the Features page.)
 - **Publishing**: the date property and recommended properties (the status words are under Stages, and the status property under Books).
+- **Export**: your author name, the surname for the page header (empty means the last word of the name), contact lines for the title page, the chapter heading format (`{n}` and `{title}`), and the property names for leaving a chapter out (`compile`), a book's dedication and epigraph, and an author override (`author`).
+- **Submissions**: the result values (the first one means pending) and the property names.
 - **Outline**: ghost beats on or off.
 - **Placeholders**: the marker word, and whether to mark files in the file explorer.
 - **Darlings**: the darlings note inside a book, and the note used for everything else.
 - **Editor**: Enter, Enter, Enter; paragraph style; smart typography, where it applies, quote style and dialogue dash. (Spellcheck on demand is now a switch on the Features page.)
-- **Features** (0.7): the **Writing language** (Automatic, Português (Brasil) or English; it used to be under Revision) and the 17 switches. Word counts in the explorer, spellcheck on demand and the universe mode live here now.
-- **Properties and folders** (0.7, always shown): the property names for a piece's target, limit, unit and deadline, a book's goal, a chapter's point of view (`pov`) and a book's default chapter target (`chapterTarget`), plus the track and ignore folders.
+- **Features** (0.7): the **Writing language** (Automatic, Português (Brasil) or English; it used to be under Revision) and the 19 switches. Word counts in the explorer, spellcheck on demand and the universe mode live here now.
+- **Properties and folders** (0.7, always shown): the property names for a piece's target, limit, unit and deadline, a book's goal, a chapter's point of view (`pov`) and a book's default chapter target (`chapterTarget`), plus the track and ignore folders, and (0.8) the export and submissions folders, shown even when those features are off.
 - **Revision**: the word lists note (path, with a **Create** button), the echo window (default 40 words, 10 to 200) and the long sentence length (default 45 words, 15 to 200), **Skip quotes** (lines that start with `>` are not read), one toggle for each rule, and **Show dialogue share** and **Show readability**.
 - **Templates**: the templates folder used by **Insert from a template**. Empty turns the command off.
 - **Universe**: the universe note (with a **Create** button), the folders whose notes join the universe without the property, the universe, type and form properties, the six form words, the form of each folder ("Form by folder", as `Folder: form` lines), and for each of the five entry types its value, folder, template and name in menus (you can rename them, not add or remove any). There is no separate folder setting: entries live in the folder beside the universe note. Since 0.7 also **Underline names in the editor** (off by default), **Extra titles** (one per line, added to the built-in Portuguese and English titles) and the names of the entry properties `caseSensitive`, `ignore` and `firstName`.
@@ -247,7 +258,7 @@ A beat counts as written when prose follows it before the next beat, scene break
 | Home | Open the home note |
 | Revision lens | Toggle revision lens, Next revision lens match, Previous revision lens match, Create the word lists note |
 | Snapshots | Take a snapshot, Open snapshots, Compare with the last snapshot, Browse snapshots of deleted notes |
-| Publishing | Publish this note, Unpublish this note |
+| Publishing | Publish this note, Unpublish this note, Export…, Export again, Record a submission |
 | Templates | Insert from a template |
 | Threads | Plant a thread, Close thread, Show open threads |
 | Universe (when the mode isn't off) | Open the universe panel, Create universe entry, Move this book's entries to the universe |

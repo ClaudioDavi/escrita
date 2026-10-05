@@ -140,6 +140,7 @@ export class SubmissionsModule extends FeatureModule {
     const choice = file && file.extension === "md" ? this.choose(file) : ({ kind: "none" } as const);
     if (choice.kind === "none") { new Notice(t("submissions.notice.open")); return; }
     if (choice.kind === "no-stage") { new Notice(t("submissions.notice.noStage", { title: choice.title })); return; }
+    if (choice.kind === "untracked") { new Notice(t("submissions.notice.untracked", { title: choice.title })); return; }
     const work = plugin.app.vault.getAbstractFileByPath(choice.path);
     if (!(work instanceof TFile)) { new Notice(t("submissions.notice.open")); return; }
 

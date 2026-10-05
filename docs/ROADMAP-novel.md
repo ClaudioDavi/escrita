@@ -120,6 +120,33 @@ a magazine or contest needs standard manuscript format as much as a novel does. 
 single note, "choose chapters" is skipped, there are no chapter headings, and the title
 page uses the note's title and count.
 
+**Stages 1 and 2: built in 0.8 (not yet released).** What the build decided, where it
+differs from the text below (PLAN-0.8.md has the full record):
+- **One command.** "Export…" replaces "Compile the book". It works on the active note or
+  its book, and one modal picks the source, the chapters, the format and the preset. The
+  modal remembers the last choices per work.
+- **Unnumbered chapters.** There is no prologue property. A chapter with a number prefix
+  gets the heading format (`{n}`, `{title}`); one without gets its title alone,
+  unnumbered, and numbering counts only numbered chapters.
+- **Preview (Q16).** A reading column, not pages, drawn from the same model the writers
+  use, so it can't drift from the file. No page breaks or page numbers.
+- **Export again (Q17).** The modal shows the last export (format, preset, chapters, date,
+  file) with a one-click repeat, and a palette command, "Export again". Readiness warnings
+  still need "Export anyway".
+- **File names.** `<title>.md` or `<title> (<preset>).docx`, in the export folder (default
+  `Escrita/Exports`). If the file exists: cancel, replace (offered only for an export; a
+  recorded last export is written over, any other goes to the trash first) or keep both,
+  which names the new file by this export's date and time
+  (`<title> (<preset>) YYYY-MM-DD HHhMM.docx`).
+- **Author (Q2).** Settings: author name, surname (empty means the last word of the name)
+  and contact lines. An `author` property on the book or note overrides the name.
+- **Count (Q8).** The title page count is the measurer's, rounded to 100 below 10,000 and
+  to 500 above, with "about"; characters when the work's unit is characters.
+- **Front matter.** Book only: `dedication` and `epigraph` properties link to notes whose
+  prose becomes a page. A single note has only its title page.
+- **Tracking.** The export folder is kept out of tracking like the snapshots folder:
+  never tracked, never a work, no draft status.
+
 **Stage 1 — Markdown manuscript.** Command "Compile the book": choose chapters
 (all, a range, or checked), then write one Markdown file with chapter headings
 ("Capítulo 1 — Título", format configurable, with a "Prologue/Epilogue" rule for

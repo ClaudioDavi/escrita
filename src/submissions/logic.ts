@@ -257,7 +257,8 @@ export function submissionText(s: NewSubmission, props: SubmissionProps = DEFAUL
 export type WorkChoice =
   | { kind: "work"; path: string; title: string; stage: string | null }
   | { kind: "none" }
-  | { kind: "no-stage"; title: string };
+  | { kind: "no-stage"; title: string }
+  | { kind: "untracked"; title: string };
 
 /** The part of a classify() result this module reads. */
 export interface PlacementLike {
@@ -275,7 +276,7 @@ export interface PlacementLike {
 /**
  * Which work a note stands for: a chapter or a book note → its book; a tracked
  * standalone note with a stage → itself; a standalone note without a stage →
- * "no-stage" (board 28 d); anything else (no note, a submission, a snapshot) → "none".
+ * "no-stage" (board 28 d); a standalone note with a stage outside the tracked folders → "untracked"; anything else (no note, a submission, a snapshot) → "none".
  */
 export function workFor(p: PlacementLike, title: string): WorkChoice {
   if (!p.markdown || p.submission || p.export || p.snapshot) return { kind: "none" };
@@ -283,6 +284,7 @@ export function workFor(p: PlacementLike, title: string): WorkChoice {
     return { kind: "work", path: p.book.note.path, title: p.book.title, stage: p.kind === "book-note" ? p.stage : null };
   }
   if (p.kind === "note" && !p.book) {
+    if (p.stage && !p.tracked) return { kind: "untracked", title };
     return p.tracked && p.stage ? { kind: "work", path: p.path, title, stage: p.stage } : { kind: "no-stage", title };
   }
   return { kind: "none" };

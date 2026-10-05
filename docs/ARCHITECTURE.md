@@ -18,7 +18,7 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
 - **Plugin services** (on `this.plugin`): `settings` (see `src/settings.ts` —
   all settings already exist, with a settings tab), `data.history` (see `src/data.ts`),
   `requestSave()` (debounced persist), `saveSettings()`, `books` (`BookService`:
-  `classify(file | folder | path | null)` → `{ path, kind, markdown, book, tracked, piece, snapshot, stage }`,
+  `classify(file | folder | path | null)` → `{ path, kind, markdown, book, tracked, piece, snapshot, stage, submission, export }`,
   `chapters(book)`, `allBooks()`, `frontmatter(file)`; see "File classification" below),
   `measure` (`Measurer`, `core/measurer.ts`: counts per file and per book, cached
   by mtime; see "Measuring" below), `notes` (`NoteService`, `core/notes.ts`: every
@@ -32,8 +32,10 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   `index`), `features` (`FeatureRegistry`: `isOn(id)`, `onChange(cb)`; see "Modules and
   feature switches"), `names` (`NamesPort`, `core/names-source.ts`: the terms of a note's
   scope, empty until the universe provides them; see "Names matcher"), and the other modules (`goals`, `outline`,
-  `placeholders`, `explorer`, `darlings`, `editor`, `lens`, `snapshots`, `publish`, `desk`,
-  `universe`: the one with a public API, see its spec below).
+  `placeholders`, `explorer`, `darlings`, `editor`, `lens`, `snapshots`, `publish`, `export`,
+  `submissions`, `desk`, `universe`: the one with a public API, see its spec below).
+  `notes` also has `create(path, data, { exists })`, the one find-or-create for notes and
+  binary files (see "Note text").
 - **Pure core** (no Obsidian imports, unit tested): `core/markdown.ts` (the one
   Markdown segmenter, see below), `core/wordcount.ts`,
   `core/markers.ts` (beat/placeholder/scene-break syntax, and thread markers: see
@@ -74,6 +76,10 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   heading, list and quote marks blanked to spaces, offset for offset). `readerMask` and
   `stripMarkup` (behind `proseOnly` and the word count) run one pattern table, so they
   can't drift. Core never imports the lens.
+  The 0.8 core, each with its own section below: `core/manuscript.ts`,
+  `core/export-pipeline.ts`, `core/book-source.ts`, `core/readiness.ts`, `core/zip.ts`,
+  `core/pending.ts`, `core/folder-problem.ts`, `core/folder-setting.ts` and
+  `core/settings-order.ts`.
   Reuse these; don't duplicate.
 - **Never re-detect frontmatter, fences, inline code or comments**: ask
   `segment(text)` or `segmentDoc(doc)` from `core/markdown.ts` (see "Markdown
@@ -134,10 +140,22 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
     insert's "Open settings" buttons open Escrita's settings tab through `app.setting`
     (`src/universe/view.ts`, `src/editor/template-insert.ts`), as the lens does. A missing
     method means nothing happens.
+  - **The export notice's "Show in the file explorer"** (`ExportModule.reveal` in
+    `src/export/index.ts`) reuses that same guarded `revealInFolder` cast:
+    `leaf.view as unknown as { revealInFolder?: (f: TFile) => void }`, checked before
+    the call, and the leaf is revealed first. A missing method means nothing happens.
+    It is the only non-public API the export and submissions code uses. (`createBinary`,
+    `modifyBinary` and `readBinary` are public Vault API, so writing a `.docx` needs no
+    exception. `submissions/index.ts` casts a `classify` result to its own `PlacementLike`
+    type, which is a narrowing of Escrita's own type, not an Obsidian internal.)
   - **Writes into a note's text go through `plugin.notes`** (the editor when the note is
     open in source or Live Preview, else `vault.process`), never straight to
-    `vault.process` or an editor. The one deliberate gap is the two synchronous editor
-    commands listed under "Note text".
+    `vault.process`. **The editor-writes rule (0.8):** an edit at the cursor of the editor
+    that triggered it (a command or menu item on that view) may write to that editor
+    directly, in one transaction; `plugin.notes` is for a write to any other note, or to
+    a note from code that no editor triggered. "Plant a thread" and "Insert from a
+    template" are this case. After an await, such a command checks that its view still
+    shows the same note.
 - **Styling.** Classes prefixed `escrita-`, CSS in the module's `styles.css`, colors only
   from Obsidian CSS variables or the tokens in `src/styles.css` (`--escrita-accent`,
   `--escrita-ghost`, `--escrita-placeholder-bg/fg`, `--escrita-good`, `--escrita-bar-bg`).
@@ -158,9 +176,16 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   a dynamic `import(` of a non-relative path, or a Node/Electron network module. Only
   whole-line and block comments are skipped, so don't even mention those APIs in a
   trailing comment. `npm run test:bundle` (CI, after the build) requires `main.js`.
-- **Checks.** `npm run typecheck`, `npx vitest run`, `npm run build` must pass.
-  Other modules are being written at the same time, so errors outside your folder
-  may appear transiently; your files must be clean.
+- **Checks.** `npm run typecheck`, `npm test`, `npm run build` must pass, and
+  `npm run test:bundle` after a build. Other modules are being written at the same time,
+  so errors outside your folder may appear transiently; your files must be clean.
+  `npm test` runs the `node` and `dom` projects (every `tests/lifecycle-*.test.ts` and
+  `tests/module-context.test.ts` run in happy-dom), then the `timing` project on its own.
+  A test that asserts elapsed time goes in `tests/timing/`: it runs one file at a time,
+  after the main suite, because a wall-clock budget fails at random while ~130 files
+  compete for the CPU (`vitest.config.ts`). Benchmarks are `tests/perf/*.bench.ts`, run
+  with `npm run bench` (not part of `npm test`); `tests/perf/README.md` lists what each
+  file measures and the baselines.
 
 ## File conventions (users' vaults)
 
@@ -254,10 +279,27 @@ drives it with an in-memory tree. The result:
   skip it through this field, goals through `tracked`, and the placeholder index
   excludes `snapshotsRoot` like an exclude folder.
 
-The snapshots folder setting is read only through `snapshotsRoot(setting)` (trimmed,
-slashes cleaned, empty → `Escrita/Snapshots`), and checked before saving with
-`snapshotsFolderProblem`: not `..`, not the config folder, not inside (or holding) a
-track folder, not a folder that already has `.md` notes.
+- `submission` and `export` (0.8): the path is the submissions folder or the export
+  folder, or inside it (`inSubmissions`, `inExports`; roots from `submissionsRoot` and
+  `exportRoot`, defaults `Submissions` and `Escrita/Exports`). Both work exactly like
+  `snapshot`: never a book, a chapter or tracked, so never a work, no stage, and no draft
+  status (`core/new-note-status.ts` skips both). A file there is a `note` or a `file` with
+  no book, even when the folder sits in a book. The rule holds whether the feature is on
+  or off, because classify knows no features. The universe indexes skip both folders
+  (`isUniverseNote` in `universe/entries.ts`).
+
+The snapshots, submissions and export folder settings are read only through
+`snapshotsRoot(setting)`, `submissionsRoot` and `exportRoot` (trimmed, slashes cleaned,
+empty → the default). They are checked before saving through one validation, see
+"Plugin folders". `snapshotsFolderProblem` is its first step: not `..`, not the config
+folder, not inside (or holding) a track folder, not a folder that already has `.md` notes.
+
+**`classifyKey(settings)`** (0.8) is one string for every setting classify reads: the
+track, exclude, chapters and chapter template folders, the three plugin folders
+(normalized, so an empty value and the default give the same key), the status property,
+the stages and the four piece properties. Every index spec whose values depend on classify
+puts it in its `settingsKey` (works, explorer, placeholders, entries, threads, mentions),
+so a new classify input is added to the key once and every index rebuilds on it.
 
 It reads the live vault and the settings passed in every time: no cache, so
 renames and settings changes need no invalidation. Don't add one. It never throws.
@@ -271,8 +313,8 @@ Growth: new knowledge arrives as new fields on the result and new fields on
 `ClassifySettings`, never as new kinds and never as caller changes. The universe
 roadmap's `scopeFor(file, settings)` becomes a `scope` field computed in the same
 pass; the file explorer counts of v0.3 read `kind`, `book` and `tracked` per item.
-The writing desk (0.4) added `stage` and submissions (0.8) will add `submission`, both
-the same way.
+The writing desk (0.4) added `stage`, and 0.8 added `submission` and `export`, all the
+same way.
 
 - `stage`: the work's stage (`idea`, `draft`, `revision`, `ready`, `published`), set only
   for a **tracked** book note or a tracked standalone note whose status property holds a
@@ -323,23 +365,37 @@ closer matters; each rule has a test in `tests/markdown.test.ts`):
    from publish; this matches CommonMark for inline HTML only: at the start of a
    line (an HTML block) Reading view hides everything after it, so the
    counts over-count there. Accepted: publish must not miss a placeholder.
+   Since 0.8 the readiness check `unclosedHtmlComment` blocks on any `<!--` that never
+   closes, and the manuscript cuts the text after a line-start one (a mid-line `<!--` stays
+   literal), as Reading view does.
    `%%` inside a closed `<!-- -->` is literal (the first opener wins), so an odd
    one there doesn't open a comment for counts or the editor; the publish check
    still blocks on it (`unclosedComment`), because parity with Reading view is
    unverified and either reading must be safe.
 
+4. **Math** (0.8, D16 and D18). A `$$` at a line start in prose (up to 3 spaces of
+   indent) opens math up to the next `$$`, on that line or a later one. It stays prose,
+   so its words still count, but nothing opens inside it: a `%%` in a math block is
+   literal, as in Reading view (gate G0c, 2026-10-05). With no closing `$$` it is not math
+   and the `$$` is plain prose, so a stray `$$` never hides a placeholder. A `$$` inside a
+   comment, code or frontmatter, or after other text on a line, opens nothing.
+   `Markdown.inMath(line)` says whether a line starts inside a math block (the line after
+   the opener up to and including the one with the closing `$$`; false for the opener
+   line and out of range). The editor reads it (`editor/context.ts`) and keeps no math rule
+   of its own.
+
 Block spans end at the end of their closer's line; the line break after is prose.
-Not segmented: `$$` math (an editor-only overlay in `editor/context.ts`, counted over
-prose only, so a stray `$$` never hides a placeholder), 4-space indented code,
-fences inside quotes or lists, multi-line inline code.
+Not segmented: 4-space indented code, fences inside quotes or lists, multi-line inline
+code.
 `editor/context.inlineProtected` keeps its own backtick loop on purpose: it
 predicts a span that is still being typed, which is not a parse.
 
-Open questions (each is a one-place flip pinned by a row in
-`tests/markdown-consumers.test.ts`): parity with Obsidian's Reading view for a fence inside an open `%%` comment (literal here), `%%` inside a `$$`
-block (opens a comment here), escaped backticks, and `%%` inside a closed
-`<!-- -->` (literal here; check before release, since it decides whether text
-after the comment is hidden in Reading view).
+Parity with Obsidian's Reading view was checked by hand on 2026-10-05 (gate G0c), and
+each answer is pinned by a row in `tests/markdown-consumers.test.ts`: a fence inside an
+open `%%` comment is literal here and in Reading view, escaped backticks match, `%%`
+inside a closed `<!-- -->` is literal in both, and `%%` inside a `$$` block is literal in
+both (the one rule that changed, rule 4). The publish check still blocks an odd `%%` inside
+a closed `<!-- -->` (`unclosedComment`), because either reading must be safe.
 
 ## Stemmers (`core/stem/`, shipped in 0.5)
 
@@ -441,13 +497,19 @@ matches as its parts.
   the event loop between batches (default 40 notes). The name marks' test holds a
   20,000-word note under 100 ms (5 times the desktop figure at most).
 - **Mentions index** (`universe/mentions-index.ts`, `mentions.ts`). A content spec on the
-  vault index over the notes that can mention an entry (not snapshots, template notes or
-  the universe note itself; the mode and the template settings are part of what decides
+  vault index over the notes that can mention an entry (not snapshots, export or submission
+  notes, template notes or the universe note itself, all through `isUniverseNote`; the mode and the template settings are part of what decides
   it). Each note keeps its `NoteMentions`: occurrences from the reader mask (a mention
   inside a prose link is dropped because the link already counts) and its prose links.
   Per-entry answers (`appearsIn`) are grouped lazily and cached until the next change.
-  **Rebuild rule**: the first build waits for the entries index and the provider's first
-  table. After that a table change schedules a check 2 s later and rebuilds only when the
+  **On demand (0.8, Q15)**: the spec is `start: "demand"` with `settleMs` 4 s
+  (`MENTIONS_SETTLE_MS`). The universe adds it once the entries index is ready, but nothing
+  is built until `demand()`: the first `appearsIn` or `workCount` query, the panel's Works or
+  Entries tab drawing (`UniverseModule.demandMentions`), or an entry note becoming active. Until
+  it is ready the surfaces show "counting", and a table change while it hasn't started does
+  nothing (the first build reads the table as it is then). Typing in a note recomputes its
+  mentions only after 4 s of quiet. **Rebuild rule**: the first build waits for the entries
+  index and the provider's first table. After that a table change schedules a check 2 s later and rebuilds only when the
   table's `signature` differs from the last build's; old values stay visible during a
   rebuild. `scopeChanged()` (a note created, deleted or renamed, a `universe` property)
   clears the grouped answers and the resolved links; an ordinary edit updates one note.
@@ -564,6 +626,30 @@ refuse.
   instead of reverting at a shifted offset.
 - **Folders.** `plugin.notes.ensureFolder(path)` creates missing folders and throws
   `FolderBlockedError` when a segment is a file; darlings, outline and snapshots use it.
+- **Creating files.** `plugin.notes.create(path, data, { exists, trashOld? })` (0.8) is
+  the one find-or-create, for a note (text, `vault.create`) or a binary file (`string |
+  ArrayBuffer | Uint8Array`, `vault.createBinary`; `createBinary`, `modifyBinary` and
+  `readBinary` are public Vault API, so writing a `.docx` needs no exception). It
+  normalizes the path, makes the missing folders with `ensureFolder`, converts a
+  `Uint8Array` to an exact `ArrayBuffer` once (a view into a larger buffer would write the
+  wrong bytes), and looks for what is already there ignoring case. It returns
+  `{ file, outcome }`, with outcome `created`, `existing` or `replaced`. The `exists`
+  policy says what to do when something sits at the path:
+  - `return`: keep it and return it, writing nothing.
+  - `fail`: throw `NoteExistsError(path, existing, folder)`.
+  - `unique`: create next to it under the first free name (`Title 1.md`, `Title 2.md`).
+  - `replace`: overwrite the contents in place (`vault.modify` for text, `modifyBinary`
+    for bytes), keeping the file and its links. Only for a derived file (an export) or
+    after the writer said yes (rule 1); asking stays with the caller. With `trashOld`,
+    the old file goes to the trash (`fileManager.trashFile`) and a new one is created,
+    for a file the plugin may not have written.
+
+  A folder at the path throws `NoteExistsError` under every policy but `unique`. A
+  `replace` refuses when the clash differs from the path only by case (on a
+  case-insensitive disk that is another note of the writer's). A file that appears between
+  the check and the create is looked for once more. Callers: the outline (the board file
+  and the new book note), darlings, the home note, the lens' word-lists note, the universe
+  (create entry, entry templates), the export and the submissions.
 - **Plans written as text-to-text.** `guardedEdit(guard, edit)` turns "check the text,
   then return the new whole text" into a plan (the smallest `Change` between the two;
   null when the guard fails or `edit` answers null; `edit` may throw to refuse with a
@@ -574,11 +660,12 @@ refuse.
 - Users: placeholders (resolve), darlings (cut and restore), publish (read), snapshots
   (read, restore, "Use the old version"), the outline (every beat write, with
   `guardedEdit`, and the emptiness checks before trashing a chapter, which read the
-  open editor's unsaved text), and the universe (closing and reopening a thread, the
-  "Insert link" of the panel, the link in create entry). Two editor commands still
-  write straight to the editor that triggered them: "Plant a thread" (synchronous, on
-  that view) and "Insert from a template" (which re-checks after its await that the
-  view still shows the same note).
+  open editor's unsaved text), the universe (closing and reopening a thread, the
+  "Insert link" of the panel, the link in create entry), and the export (the book source
+  reads each chapter through `notes.text(file).read()`, so unsaved text counts). Two editor
+  commands write straight to the editor that triggered them, which the editor-writes rule
+  allows (see "Conventions"): "Plant a thread" (synchronous, on that view) and "Insert from
+  a template" (which re-checks after its await that the view still shows the same note).
 
 ## Thread markers (`core/markers.ts`)
 
@@ -621,7 +708,9 @@ the works list use it first). `plugin.index` is the hub; a module adds a spec an
   `include(f)`; `compute(f, text) → V | undefined` (undefined means no entry); `same(a, b)`;
   `structural` (recompute everything when a file is created, deleted or renamed, because
   who is what can change, as the works index needs for `classify`); `settingsKey()`
-  (a string that changes when a setting the spec depends on changes). An index holds
+  (a string that changes when a setting the spec depends on changes; a spec that depends
+  on what a file is puts `classifyKey(settings)` in it, see "File classification");
+  `start` (`"ready"`, the default, or `"demand"`) and `settleMs` (below). An index holds
   **values, never note text**: a spec computes what it needs from the text and returns
   only that (markers, a desk entry), so the index stays small and holds nothing to leak.
 - **Cause contract.** Each change is `{ path, from?, before?, after?, cause }`, with
@@ -644,10 +733,28 @@ the works list use it first). `plugin.index` is the hub; a module adds a spec an
   at layout ready. A `metadata` index builds when every included file has a cache, else
   at the first `resolved` event; if no `resolved` comes (the plugin was enabled
   mid-session) a 5 s fallback timer builds anyway. A build reads files in batches (40 at
-  a time) and yields between them; a newer build makes an older one stop. Live events
-  that arrive during a build are mirrored into the map being built and win over the
-  build's read.
-- **Debounce.** A modified file is recomputed after 300 ms of quiet. `settingsChanged()`
+  a time), computes one file at a time and yields on a time budget (below); a newer build
+  makes an older one stop. Live events that arrive during a build are mirrored into the map
+  being built and win over the build's read.
+- **Start on demand** (0.8, IMPROVEMENTS 14). A spec with `start: "demand"` is added but not
+  built: until the first `VaultIndex.demand()` the index is not ready, gets no events, and
+  a settings change or `rebuild` does nothing. `demand()` is safe to call on every query
+  (it does nothing once started, and for a `"ready"` index); if the layout is not ready it
+  builds at layout ready. The mentions index is the one such spec (see the universe spec):
+  startup builds only the cheap indexes (about 85 ms on 3,020 notes, against 4.2 s with
+  mentions).
+- **Time budget** (0.8, IMPROVEMENTS 21). `yieldBudget(timers, ms = BUDGET_MS)` returns a
+  checkpoint to await after each unit of work: it returns at once while less than `ms` (8)
+  has passed since the last yield, and calls `timers.yieldNow()` when the slice is spent.
+  Builds and flushes use it, so a pass holds the main thread for about 8 ms at a time
+  whatever a file costs; the export uses it between chapters. The yield is
+  `macrotaskYield()`: a `MessageChannel` message where it exists (not clamped to 4 ms
+  like a nested `setTimeout`), else `setTimeout(0)`. The time source is `IndexTimers.now?()`
+  (default `performance.now()`), so `ManualTimers` tests stay deterministic. 8 ms was
+  measured on 3,020 notes: longest block 64 ms before, 22 ms after, same total time.
+- **Debounce.** A modified file is recomputed after 300 ms of quiet, or after the spec's own
+  `settleMs` (4 s for mentions, so typing doesn't recompute it at every save; the hub
+  passes its default to each index, and the spec's value wins). `settingsChanged()
   (called by `saveSettings`) is debounced 500 ms, then rebuilds only the specs whose
   `settingsKey()` changed.
 - **Folder renames are idempotent.** Obsidian may send a folder event and then one event
@@ -664,13 +771,205 @@ the works list use it first). `plugin.index` is the hub; a module adds a spec an
 - **Adding an index** is a spec plus a test on the memory vault. Do not add a
   `vault.on("modify")` listener of your own to rebuild something the index could hold.
 
+## Manuscript model (`core/manuscript.ts`, 0.8)
+
+`manuscriptOf(md, options)` turns a note's Markdown (a `Markdown` from `segment`, or
+text) into the prose an editor receives, as a small block model that every export writer
+formats. Pure, no Obsidian imports. A writer never looks at Markdown again.
+
+- **Model.** `Manuscript { blocks, dropped }`. A `Block` is a closed set: `paragraph`,
+  `heading` (level 1 to 6), `quote` (one paragraph of a `>` quotation or a callout body;
+  the callout header line is dropped) or `sceneBreak`. Text is `Run[]` (`{ text, italic?,
+  bold? }`); a run's `"\n"` is a line break inside the block (the Markdown writer writes
+  it as a CommonMark hard break). A list item is a paragraph with its mark kept as text,
+  and inline code is a plain run. Adding a kind of block is a deliberate change to every
+  writer.
+- **Lines.** Every block `manuscriptOf` makes carries `line`: the 0-based line in the whole
+  file (frontmatter included) where it starts, for the preview's "click to open the note
+  there". It is a non-enumerable property, so `toEqual`, spreads and JSON never see it. A
+  block built by hand has none. `Dropped.line` is 0-based too.
+- **What it drops.** Frontmatter, `%%` comments and closed `<!-- -->` comments, silently
+  (a line that held only a comment, such as a beat, a placeholder or a thread, goes with
+  its blank line; removing an inline comment takes the whitespace before it). Reported in
+  `dropped`, in file order: placeholders (marker word from settings, so the modal can warn
+  like publish does), embeds (`![[…]]`, `![](…)`, with their targets), and an unclosed
+  comment. An unclosed `%%`, or an unclosed `<!--` that starts a line (up to 3 spaces of
+  indent), hides everything after it, as Reading view does, and is reported once at the
+  opener. A `<!--` in the middle of a line is literal text, because Reading view only
+  treats a line-start one as an HTML block. Links become their alias, else their text (the
+  `MARKUP` table in `core/wordcount.ts`, so the model can't drift from the counts).
+  Math is kept as text.
+- **Scene breaks** use `isSceneBreakAt` (`core/markers.ts`). One is never first or last in a
+  manuscript and never doubles, since a chapter boundary already separates.
+- **Options.** `placeholderMarker`; `strictLineBreaks` (off by default, like Obsidian's;
+  the export module doesn't read the vault setting, so it stays off); `dropTitleHeading`
+  (a first heading equal to one of these strings, trimmed and case-folded, is dropped, so
+  a note that starts with `# Its title` doesn't print it twice).
+- Tests: `tests/manuscript.test.ts`, `tests/export-manuscript-lines.test.ts`, and the
+  fixtures in `tests/fixtures/manuscript/` (its README lists the output rules).
+
+## Export pipeline (`core/export-pipeline.ts`, `core/zip.ts`, 0.8)
+
+The seam between reading a work and writing a file. Pure, no Obsidian imports.
+
+```
+ExportSource  →  ExportDoc  →  ManuscriptWriter<M, P>  →  string | Uint8Array
+(read by the     (exportDocOf,   (Markdown, DOCX and the     (written by the export module
+ export module)   manuscriptOf     preview, in src/export/     through plugin.notes.create)
+                  per part)        writers/)
+```
+
+- **`ExportSource`**: `title`, `author` (`Author { name, surname, contact[] }`), `count`
+  (`{ amount, unit }`, the measurer's size for the title page, never recounted) and
+  `parts`. An `ExportPart` has a `role` (`body`, `dedication` or `epigraph`), its formatted
+  chapter `heading` (null for a single note and front matter), the chapter's own `title`
+  and its `md`.
+- **`exportDocOf(source, options)`** turns each part into a `Manuscript`. A body part drops a
+  leading heading that repeats its formatted heading, its own title, or (for a single note)
+  the work's title. Empty parts stay: a chapter heading with no prose is still a chapter.
+  `isBookDoc(doc)` is the shared rule for "a book (a title page of its own) or a single note
+  (the title starts page 1)": there is a heading or a front matter part. `droppedIn(doc)`
+  lists what was dropped with its part.
+- **`ManuscriptWriter<M, P = Preset>`**: `id`, `ext`, and a pure `write(model, preset)`
+  returning text (written as UTF-8) or bytes. It is generic over the model `M` and its layout
+  data `P`, so screenplay export (after 1.0) brings a script model, its own presets and its
+  own writers (Fountain, PDF, FDX) without changing this file. The three 0.8 writers
+  all take `ExportDoc`: `markdownWriter` (reads only `byline`, `chapterHeading` and
+  `sceneBreak` from the preset), `docxWriter` (the layout) and `PreviewWriter` (DOM).
+- **`Preset`** is plain data, in the manuscript's language (which may differ from Obsidian's):
+  `id`, `language`, `page` (points; Letter or A4, one margin), `font`, `lineSpacing`,
+  `indent`, `sceneBreak` text, `chapterHeading` template (`{n}`, `{title}`), the running
+  `header` (`{surname}`, `{title}`, `{page}`), the `countLabel` per unit, `byline` and
+  `endMark`. The two presets are in `src/export/presets.ts`: `shunn` (US Letter, English
+  labels) and `ptbr` (A4, Portuguese labels, "Capítulo {n} — {title}", "FIM").
+- **Helpers.** `aboutCount` (the title page count: nearest 100 below 10,000, nearest 500
+  above, never below 100 for a non-empty work), `chapterHeadings` (numbering counts only
+  numbered chapters, so a "Prólogo" doesn't shift the numbers; an unnumbered chapter gets
+  its title alone; a numbered chapter with no title of its own gets "Capítulo 1" without
+  the separator) and `fillTemplate` (`{name}` slots; an unknown slot stays as written).
+- **`core/zip.ts`**: `zipStore(files, { modified? })` writes a STORE-only zip (no
+  compression, no dependency) with CRC-32 (`crc32`), local headers, central directory and end
+  record, UTF-8 names with the language flag. It is deterministic: every entry gets the
+  earliest DOS date unless `modified` is given, so the same files always give the same bytes.
+  The caller orders the entries (a DOCX wants `[Content_Types].xml` first). It throws on a
+  duplicate, empty or absolute path, or a plain-zip limit. Tests read a zip back with
+  `tests/support/zip-reader.ts`.
+
+## Book source (`core/book-source.ts`, 0.8)
+
+`BookSource<B>` is the port through which export (and, in 0.10, "Read the book") reads a
+book. `B` is the adapter's book handle, so the file stays free of Obsidian types.
+
+- `chapters(book)`: every `.md` file directly in the chapters folder, in `compareChapters`
+  order, as `ChapterRef { path, title, number, include }`. A chapter left out by `compile:
+  false` is listed with `include: false` (export skips it, the outline still shows it).
+  `includeChapter(frontmatter, property)` is the rule: the property (exact name, then
+  ignoring case) is the boolean `false` or the text `false`; anything else, a typo included,
+  keeps the chapter in.
+- `read(path)` → `{ text, mtime }`: the current text, which is the open editor's buffer when
+  there is one, so unsaved prose is what gets exported. `mtime` is the file's when the text
+  came from disk and **null for editor text**; only a non-null `mtime` may seed the measurer
+  (`measure.counts`), because unsaved text paired with the disk mtime would poison its cache.
+- `frontmatter(path)`: the metadata cache's, `{}` when there is none yet.
+
+The Obsidian adapter is `bookSource(app, books, notes, settings)` in `core/books.ts`: it reads
+through `plugin.notes` and calls `includeChapter` with `settings.compileProperty`. It is a
+factory, not a plugin service. The export module and the outline both call it
+(`outline/rows.ts`'s `RowsPort` extends `BookSource`).
+
+## Readiness (`core/readiness.ts`, 0.8)
+
+`readinessOf(md, { placeholderMarker })` runs the marker checks that decide whether a note is
+ready to leave the desk. They moved out of `publish/checks.ts` so that export can warn the
+same way while publish is off, and the book-wide check of 0.10 gets the same answer. Pure.
+It reads the text it is given (the editor's, maybe unsaved), never a cache, from one
+segmentation. A check is `{ id, level, line?, items, vars }`, untranslated; the caller's
+strings make the text.
+
+- `unclosedComment` (blocker): a `%%` that never closes, or an odd `%%` inside a closed
+  `<!-- -->` (either reading of Reading view must be safe).
+- `unclosedHtmlComment` (blocker, new in 0.8): a `<!--` in prose that never closes. Reading
+  view hides the rest of the note while the words still count.
+- `placeholders` (blocker), `unwrittenBeats` (warning), `emptyBody` (blocker, zero words).
+
+Publish runs `readinessOf` and adds its own property checks (recommended properties, over the
+limit); the export modal runs it on each part and adds the embeds the manuscript drops.
+`unclosedComment` and `unclosedHtmlComment` are also exported on their own.
+
+## Pending submissions (`core/pending.ts`, 0.8)
+
+The port between submissions and the desk. `PendingSource { list(), onChange(cb) }`, with
+`PendingSubmission { path, workPath, workTitle, market, sent }` (newest `sent` first;
+`workPath` is null when the `work` link doesn't resolve). The submissions module provides it
+as its `pending` field while loaded. The desk reads it only while
+`features.isOn("submissions")`, through `features.get<{ pending?: PendingSource }>("submissions")`
+(`desk/gather.ts`), and never imports the submissions module, so an off feature leaves no
+trace. Pure types.
+
+## Plugin folders (`core/folder-problem.ts`, `core/folder-setting.ts`, 0.8)
+
+The export, submissions and snapshots folders share one set of checks, so they can't overlap
+or capture the writer's notes.
+
+- `pluginFolderProblem(root, others, configDir, trackFolders, hasNotes, books)` returns a
+  `FolderProblem` or null. In order: the snapshot rules (not `..`, not the config folder, not
+  inside or holding a track folder), `overlap` (it holds, or sits inside, another plugin
+  folder), `book` (it sits inside a book or its chapters folder) or `holds-book` (a book's
+  folder or note is inside it), then `notes` (it already holds notes that aren't one of the
+  plugin's own: `holdsOwnNotes`, which never objects to the folder already saved). `books` is
+  `BookService.allBooksEverywhere()`, which lists books even inside a plugin folder.
+  `pluginFolders(settings)` gives the three roots.
+- `addFolderField(row, ui, { placeholder, value, problemOf, save })` draws the text field:
+  the value is saved only when it passes (on commit, through `ui.saveOnCommit`), otherwise the
+  saved value stays and a warning under the row says why (`folderProblemText`). No notices
+  while typing.
+- The export and submissions rows (`pluginFolderRows` in `settings.ts`, through
+  `addFolderField` and `pluginFolderProblem`) sit in the always-shown "Properties and folders"
+  section, so they stay with the feature off, because the folders still apply (classify skips
+  them). The snapshots row stays in the snapshots section and builds its check from the same
+  pieces (`snapshotsFolderProblem`, `overlapProblem` against the other two folders,
+  `bookProblem`). Each folder follows a rename of itself or of a folder holding it, through a
+  data follower in its module (`ExportModule`, `SubmissionsModule`, snapshots).
+
+## Settings tab (`core/settings-order.ts`, `core/module-context.ts`, 0.8, IMPROVEMENTS 11)
+
+Each module draws its own settings section; `settings.ts` draws the core ones and imports no
+module's internals (`tests/settings-imports.test.ts`: only shared core, top-level files and
+`<module>/settings.ts`).
+
+- **One order list.** `SECTION_ORDER` in `core/settings-order.ts` names the core and module
+  sections together (`features`, `shared`, `books`, `dayEnds`, `goals`, `publish`, `export`,
+  `submissions`, `outline`, `placeholders`, `darlings`, `editor`, `lens`, `stages`, `desk`,
+  `snapshots`, `universe`, `threads`), in the order the tab had before 0.8. A slot has the
+  `feature` that draws it (null for shared core) and optional `also`: other features that read
+  a row the core draws there (the placeholder marker is read by publish too). `sectionOrder(loaded)`
+  returns the slots to draw: core always, a module's slot while it is loaded, and a slot with
+  `also` while any of those is loaded (the core part only).
+- **The module's part.** `FeatureModule.settingsSection(el, ui)` draws the rows (each module
+  keeps them in `<module>/settings-ui.ts`), and `FeatureModule.offNotice()` returns what the
+  Features page says when the feature is switched off and keeps data (read after the switch is
+  saved, so only what stays). A section is gone with its module. The tab reaches a module
+  through `features.get<FeatureModule>(id)`.
+- **`SettingsUi`** is what a section gets: `app`, `save()` (saves now, then applies the switches
+  and fans out `settingsChanged`), `saveOnCommit(component, fallback, apply)` (a text field
+  saves on blur or Enter, not per key, so typing a folder name doesn't reload features per
+  letter; the value is trimmed, blank becomes the fallback, and the field shows what was kept),
+  `redraw()` and `num(v, fallback, min)`.
+- **Shared rows live in core.** A row several features read (the property names, the folders,
+  the placeholder marker, the editor's paragraph and quote style) is drawn once by the core, and
+  `SETTING_FEATURES` in `settings.ts` says which features keep it shown.
+- **Guard test.** `tests/settings-order.test.ts` finds every class with a `FeatureId` and a
+  `settingsSection` and requires a slot for it (the explorer's rows sit under its switch on the
+  Features page), so a new section that forgets its slot fails the build.
+
 ## Modules and feature switches (`core/features.ts`, `core/feature-registry.ts`, `core/module-context.ts`, 0.7)
 
 Every feature the writer can turn off is a `FeatureModule` (a `Component`) with a
 `FeatureId`. `main.ts` builds them once, keyed by id, and hands them to the
-`FeatureRegistry`. There are 17 ids, in load order: goals, outline, placeholders,
+`FeatureRegistry`. There are 19 ids, in load order: goals, outline, placeholders,
 explorerCounts, darlings, typing, dialogueFocus, moveBlocks, templates, spellcheck, lens,
-snapshots, stageSnapshot, publish, desk, universe, threads. Stages, the classifier, the
+snapshots, stageSnapshot, publish, export, submissions, desk, universe, threads (0.8 added
+`export` and `submissions`, in the publishing group after `publish`). Stages, the classifier, the
 measurer, the vault index and the notes service are core and always on.
 
 - **The pure part** (`core/features.ts`, no Obsidian imports): `FEATURE_SPECS` (group,
@@ -678,11 +977,18 @@ measurer, the vault index and the notes service are core and always on.
   missing key is on), `wanted` (switched on and every requirement on, computed to a fixed
   point) and `planApply(loaded, want)` (what to unload, in reverse order, and load, in
   order). Three switches are existing settings (`explorerCounts`, `spellcheckOnDemand`,
-  `universeMode`: a mode other than "off" is on); the other 14 are in `settings.features`.
+  `universeMode`: a mode other than "off" is on); the other 16 are in `settings.features`.
+  `FEATURE_SPECS` also gives each switch its `page` position, and `FEATURE_PAGE` (derived in
+  `core/features.ts`: the groups in fixed order, inside each the switches by `page`) is the
+  Features page's one source. `switchesOf(settings)` in `core/feature-registry.ts` reads the
+  switches from the settings.
 - **`FeatureModule`.** Constructed once. Subclasses implement `onload`/`onunload`, never
   `load`/`unload`; the registry calls them. It has a `slots` field (below), an optional
-  `settingsChanged()` (fanned out to loaded modules only) and an optional
-  `dataFollowers()`.
+  `settingsChanged()` (fanned out to loaded modules only), an optional `dataFollowers()`,
+  and, since 0.8, an optional `settingsSection(el, ui)` and `offNotice()` (see "Settings
+  tab"). `registry.get<T>(id)` returns the module while it is loaded, for a soft dependency
+  that needs more than `isOn` (the settings tab, and the desk reading the submissions'
+  `pending` port).
 - **`ModuleContext`.** The one door to the plugin's registration methods. `command`,
   `ribbon`, `statusBar`, `view`, `editor`, `codeBlock`, `postProcessor`, `index`, `follow`,
   `decorate`, `onLayoutReady` and `afterUnload` each record an undo, and the registry runs
@@ -726,11 +1032,14 @@ measurer, the vault index and the notes service are core and always on.
   followers in `dataFollowers()`; the registry registers them on the vault index at init,
   so they run whether the module is on or off. They touch only `plugin.data` and
   `plugin.settings`. The snapshots rename handler is the one that also moves files (the
-  snapshot copies on disk) while snapshots is off.
+  snapshot copies on disk) while snapshots is off. The export's follower keeps
+  `data.exportChoices` and the export folder setting current, and the submissions' follower
+  the submissions folder setting.
 - **Soft dependencies.** A module that can work without another asks
   `plugin.features.isOn(id)` at the point of use and degrades: publish takes no snapshot
   when snapshots is off; the outline shows no placeholder count when placeholders is off;
-  the desk's `open` ignores "where you left off" when the desk is off; the universe's Works
+  the desk's `open` ignores "where you left off" when the desk is off; the desk shows the pending
+  submissions count only while submissions is on; the universe's Works
   tab and the threads command read the threads and universe switches. A hard dependency is
   `requires` in the spec (the stage snapshot needs snapshots) and `wanted` drops the
   dependent. Its stored switch is kept, so the page can grey it out and restore it.
@@ -740,16 +1049,18 @@ measurer, the vault index and the notes service are core and always on.
   again to catch duplicates. vitest can't import `obsidian`, so `tests/support/obsidian.ts`
   is a small stub (a working `Component`, no-op UI classes), aliased in `vitest.config.ts`.
   `tests/features.test.ts` and `tests/core-features.test.ts` cover the pure part and the
-  registry; `tests/settings-features.test.ts` covers which settings rows hide.
+  registry; `tests/settings-features.test.ts` covers which settings rows hide, and
+  `tests/settings-order.test.ts` the section order and the "every section has a slot" guard.
 - **Settings.** The Features page is the first section: the writing language, then one row
   per feature in five groups (writing, revision, the desk, publishing, the world), each with
   a switch and a line on what it does. The universe's row is its mode dropdown. A row
   another feature reads stays while any reader is on (`SETTING_FEATURES` in
   `settings.ts`): the placeholder marker while publish is on, the templates folder while
   templates or the universe is on. Property names and folders several features share live
-  in an always-shown "Properties and folders" section. Turning a feature off shows a notice
-  saying what stays (the saved snapshots and where, the word lists note, the days of
-  history, the cut passages).
+  in an always-shown "Properties and folders" section. Turning a feature off shows the
+  module's `offNotice()` text saying what stays (the saved snapshots and where, the word
+  lists note, the days of history, the cut passages, the submission notes). Each module draws
+  its own section; see "Settings tab".
 
 ## Module specs
 
@@ -881,6 +1192,11 @@ measurer, the vault index and the notes service are core and always on.
   jumps to the line. A note with no beats shows "Add the first beat"
   (`insertFirstBeat`, after the frontmatter and a leading `# title`) above the usual book picker / "Create a
   book" empty state. The book outline is unchanged.
+- **Book source** (0.8). The view and the board read chapters, text and properties through
+  `bookSource(...)` (`core/books.ts`, see "Book source"): `OutlineModule.rowsPort()` spreads it
+  into `RowsPort`, which extends `BookSource` and adds only counts, placeholders, the chapter
+  default and POV. The view has no port of its own, and a chapter's text is the open editor's
+  when there is one. A chapter left out of an export (`compile: false`) still shows here.
 - **Chapter rows** (`rows.ts`, pure, 0.7). `loadRows(port, book)` builds one
   `ChapterRow` per chapter, once, for the outline view and the board: number and label, title, summary,
   status and its stage, the POV, the piece with where its target came from
@@ -1036,10 +1352,13 @@ measurer, the vault index and the notes service are core and always on.
 
 - **Pure checks** (`src/publish/checks.ts`, tested): `runChecks(text, frontmatter, ctx)
   → Check[]`, each `{ id, level: blocker | warning | passed, line?, items, vars }`
-  (messages are built with `t()` in the modal from the id and vars). In order:
-  `unclosedComment` (the note's last span is a `%%` comment with no closer, as
+  (messages are built with `t()` in the modal from the id and vars). The marker checks come
+  from `core/readiness.ts` (`readinessOf`, see "Readiness"), shared with the export so that
+  both warn the same way; `runChecks` segments once, calls it and adds the property checks.
+  In order: `unclosedComment` (the note's last span is a `%%` comment with no closer, as
   `core/markdown` reads it: outside fenced and inline code; or a closed `<!-- -->`
-  holding an odd number of `%%`; blocker, with the opening line), `placeholders` (blocker, each item jumps to its line), `unwrittenBeats`
+  holding an odd number of `%%`; blocker, with the opening line), `unclosedHtmlComment` (0.8:
+  a `<!--` that never closes; blocker; listed only when it fails), `placeholders` (blocker, each item jumps to its line), `unwrittenBeats`
   (warning), `emptyBody` (`countWords` = 0; blocker), `recommended` (missing
   `recommendedProperties`, case-insensitive; warning; skipped when the list is empty),
   `overLimit` (the piece's `limit` in its unit; warning; only when a limit is set).
@@ -1061,6 +1380,126 @@ measurer, the vault index and the notes service are core and always on.
   and unpublished settings any more (0.3 values migrate into `stages`). Records follow
   file and folder renames and are dropped on delete, through an index follower. Escrita never commits, pushes or uploads.
 - **Commands** (also in the file menu): "Publish this note", "Unpublish this note".
+
+### export (`src/export/`, 0.8)
+
+Serves the ready and published stages: turns a note or a book into the manuscript an editor
+or a contest asks for. It asks nothing of the writer beyond an author name and contact lines
+set once. No network, no site: the file goes into the vault. Roadmap: N 7, stages 1 and 2.
+Plan: `docs/PLAN-0.8.md`. The pipeline (model, writers, presets, zip) is in "Export pipeline";
+this module reads the vault, calls the writer and writes the file.
+
+- **Commands** (no default hotkeys): "Export…" for the active note, and "Export again", which
+  shows only for a work that has a last export. "Export…" is also in the file menu of a
+  Markdown note ("Export again" is not). Neither appears for a snapshot, a submission or an export
+  (`classify`'s `snapshot`, `submission`, `export`). A chapter or a book note exports its book
+  (a chapter also offers "This chapter"); any other note exports itself. The key of a work's
+  remembered choices is the book note's path, or the note's.
+- **Modal** (`modal.ts`, boards 26 and 27). Two views of one `ExportModal`: the options (what,
+  the chapters: all, a range or ticked, each shown with its manuscript heading and with the
+  `compile: false` chapters named as left out; the format, Markdown or DOCX; the preset, Shunn
+  or pt-BR; where it writes; the readiness warnings with "Export anyway"; and a caption for the
+  last export with an "Export again" button) and the preview. The modal reaches Obsidian only
+  through `ExportHost`, which `index.ts` implements. It opens with the work's remembered choices
+  or defaults (DOCX, the preset of the writing language).
+- **Preview** (`writers/preview.ts`). `PreviewWriter` is a third `ManuscriptWriter<ExportDoc>`
+  that draws the same model the file gets into the modal with `createEl`, so it can't drift
+  from the file. A reading column, not pages: no page breaks or numbers, since Escrita doesn't
+  lay out pages. Bands mark where the file starts a page for the dedication, the epigraph and
+  the text. A click on a paragraph opens its note at that line (`line` on each block).
+- **Building** (`source.ts`, pure over ports). `ExportPlan` (title, author, unit, `PartPlan[]`)
+  is made from the modal's state: for a book, the front pages (`dedication` and `epigraph`
+  properties of the book note, each a link to a note), then the chosen chapters with their
+  headings (`planChapters` in `logic.ts`: numbering over every included chapter before the
+  selection narrows it; the settings' `chapterHeadingFormat` overrides the preset's);
+  for a note, one part. `buildExport` reads each part once through the book source (so unsaved
+  text counts), measures the body through `measure.counts` (seeded only by text read from disk),
+  and calls `yieldBudget` after each part, so a long book doesn't freeze the phone. It builds
+  the `ExportDoc` and the warnings once. `warningsOf` runs `readinessOf` on each part plus the
+  embeds the manuscript drops; placeholders, unclosed comments and an empty note are blockers,
+  unwritten beats a warning, embeds only information, and each warning links to its lines.
+  `needsConfirm` is true when any is a blocker or warning ("Export anyway").
+- **Writing** (`index.ts`, `write`). The file goes through `plugin.notes.create` into the export
+  folder (`exportFolder`, default `Escrita/Exports`): `<title>.md` or `<title> (<preset>).docx`.
+  It never replaces without asking. When the name is taken, the modal asks to replace or keep
+  both (keep both names the new file with the date and time, `<title> (<preset>) YYYY-MM-DD
+  HHhMM.docx`, written with `exists: "unique"`). Replace is offered only for an export at exactly
+  that path (a case-only clash is another file); a file that isn't a recorded export goes to the
+  trash first (`trashOld`), never over. The source notes are never touched. The notice after a
+  write offers "Show in the file explorer" (see the documented exceptions).
+- **Export again** (Q17). `data.exportChoices[key]` is `ExportChoice { format, preset, whole,
+  chapters?, last? }` and `last` is `LastExport { format, preset, whole, chapters,
+  chapterCount?, at, path, folder, name, source? }`: enough to repeat the export and to say what
+  it was (`source` is the note a "This chapter" export came from). "Export again" writes at once
+  when nothing needs a confirmation and it is the same kind of export (`canRepeat`: a chapter
+  exported alone is repeated only from that chapter); otherwise the modal opens with those
+  choices and the warnings. It overwrites the last file only while that file is still where it
+  was written (`lastInPlace`: same folder, same name) and is an export; if it moved or is gone,
+  it asks where to write. `data.ts` cleans the choices on load (`cleanExportChoices`).
+- **Followers.** `dataFollowers()` moves the choices with a renamed note or chapter
+  (`renameChoices`: the key, ticked chapters, the last path and its source) and drops them with a
+  deleted one (`dropChoices`; a last export whose file was deleted keeps its record), and moves
+  the `exportFolder` setting when the folder, or one holding it, is renamed. They run while the
+  feature is off. Renaming the export folder is not "moving" the last export.
+- **Writers** (`writers/markdown.ts`, `writers/docx.ts`). The Markdown writer escapes text that
+  would turn prose into structure and writes a title block, chapter headings (`##`), scene breaks
+  and the front pages. The DOCX writer builds the OOXML parts with `core/zip.ts` (9 parts): a
+  title page (contact block and the rounded count on top, title and byline below; a page of its
+  own for a book, the start of page 1 for a note), a page break before each front page and
+  chapter, double spacing and the first-line indent, the running header "Surname / Title / page"
+  with a live page field from page 2, the end mark, and the language of the preset. Output rules:
+  `tests/fixtures/manuscript/README.md`.
+- **Settings** (`settings-ui.ts`): the property names (`compileProperty`, `dedicationProperty`,
+  `epigraphProperty`, `authorProperty`), `authorName`, `authorSurname` (empty means the last word
+  of the name), `contactLines` and `chapterHeadingFormat`. The export folder row is drawn by the
+  core. An `author` property on the book note or the note overrides the settings.
+- **Tests.** `tests/export-*.test.ts` (logic, source, Markdown, DOCX unzipped through
+  `tests/support/zip-reader.ts`), `tests/lifecycle-export*.test.ts` (lifecycle, modal, preview,
+  renames). Strings in `strings.ts` (English and pt-BR), styles in `styles.css`.
+
+### submissions (`src/submissions/`, 0.8)
+
+Serves the ready and published stages: one note per submission, so a work sent twice has two
+notes and the home block counts two. Upkeep: one command per submission; the writer edits the
+`result` by hand when the answer comes. The notes read well with Escrita off. Roadmap: SF 12.
+
+- **A submission is a note** in the submissions folder (`submissionsFolder`, default
+  `Submissions`), named `YYYY-MM-DD <work> – <market>.md` (`submissionPath`, `safeName`).
+  Frontmatter only, an empty body: `work` (a quoted wikilink to the work: a book note or a
+  standalone note), `market`, `sent` (a date), `result` (the first value of the result list) and an
+  empty `responded`. The property names are settings (`submissionWorkProperty`,
+  `submissionMarketProperty`, `submissionSentProperty`, `submissionResultProperty`,
+  `submissionRespondedProperty`, English defaults), and so is `submissionResults`, a
+  comma-separated list whose **first value is "pending"**. `submissionText` writes the note and
+  `workFor` picks the work.
+- **Commands** (no default hotkeys): "Record a submission" (always in the palette) and a
+  "Record a submission…" item in the file menu, shown only for a note that stands for a work. A
+  chapter or a book note stands for its book; a tracked standalone note with a stage stands for
+  itself; any other standalone note gets the "give it a stage" notice; a snapshot, an export, a
+  submission note or a non-Markdown file gets "Open a story or a book". The `SubmissionModal` asks for the market (with the three most recent
+  markets from the folder as chips) and the sent date, and shows the name and the `work` and
+  `result` lines it will write. The note is created with `notes.create(…, { exists: "unique" })`.
+  The link is made with `fileToLinktext`, so a renamed work keeps working through Obsidian's own
+  link updates.
+- **Pending index** (`index.ts`, `logic.ts`). A `metadata`-mode index spec named `submissions`
+  over the folder (`include`: a `.md` file inside it), whose value is a `SubmissionRow { work,
+  market, sent, result }` read from the metadata cache (`rowOf`; never the note text). Its
+  `settingsKey` is the folder root plus the property names. `pendingList` keeps the rows whose
+  result equals the pending value (case-insensitive), resolves each `work` link through
+  `metadataCache.getFirstLinkpathDest`, and sorts newest `sent` first. The list is cached until
+  something changes. A rename, delete or create of any note also notifies, because a `work` link
+  may now resolve elsewhere though no submission note changed.
+- **The port.** The module's `pending` field is the `PendingSource` of `core/pending.ts` (see
+  "Pending submissions"); the desk reads it through `features.get`.
+- **Followers.** `dataFollowers()` moves the `submissionsFolder` setting with a renamed folder,
+  while the feature is off too. The notes themselves are the data, so there is no path-keyed
+  record to follow.
+- **Settings** (`settings-ui.ts`): the result list, the five property names (a name that
+  duplicates another is refused). The folder row is drawn by the core. `offNotice` says how many
+  notes stay in the folder.
+- **Tests.** `tests/lifecycle-submissions.test.ts`, `tests/submissions-*.test.ts` (logic,
+  properties, folder follow) and `tests/desk-pending.test.ts`. Strings in `strings.ts`, styles in
+  `styles.css`.
 
 ### explorer (`src/explorer/` + `src/core/explorer-decorations.ts`)
 
@@ -1308,6 +1747,15 @@ logic lives in core (`stages`, `works`, `left-off`); the desk draws and records.
   isn't a stage) is a single count. Notices (no works, nothing in draft or revision, a
   folder that doesn't exist) are muted lines. A click opens the work where the writer
   left off; the block has no buttons that change anything.
+- **Pending count** (0.8). While `features.isOn("submissions")`, `gatherDesk` reads the pending
+  submissions through `pendingSource(plugin)` (`desk/gather.ts`: `features.get` on the submissions
+  module's `pending` port; the desk never imports that module). `buildPending` (pure, in `works.ts`)
+  counts one per submission, so a conto sent twice counts 2, and with a `folder:` filter keeps
+  only submissions whose work resolves to a kept path. The count bar shows "pending" after
+  "ready" and before "published", and expands to the submissions (work, market, date), each
+  linking to its note. The block follows the submissions feature (`features.onChange`, then it
+  rebinds `onChange` of the port) and redraws when the list changes. With submissions off the
+  count and its trace are gone.
 - **Opening a work** (`open.ts`). A note opens at its left-off spot, else the first
   unwritten beat, else the end (`noteSpot`). A book opens the chapter edited last, else the
   first chapter with an unwritten beat, else the last chapter at its end (`bookTarget`).
@@ -1389,8 +1837,10 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   that may mention an entry and answers `appearsIn(entry)`: the works and chapters that
   mention it with counts, the first and last mention (only inside a book), a group of "Other
   notes", and a range for "click to jump" that is checked against the live text before it is
-  selected (otherwise the note opens at the top). It rebuilds as described in "Names
-  matcher". `appears-in.ts` draws the list for the Entries tab and `appears-in-widget.ts`
+  selected (otherwise the note opens at the top). It builds on demand and rebuilds as described
+  in "Names matcher"; its `include` skips the export and submission folders as well as snapshots,
+  templates and the universe note, and the entries and threads indexes skip them too
+  (`isUniverseNote`). Threads read `segmentDoc`. `appears-in.ts` draws the list for the Entries tab and `appears-in-widget.ts`
   draws it as a block widget at the end of an entry note in Live Preview and Source mode,
   from a `StateField` in an editor slot; it is never written into the file, so it is not
   selectable, exported or counted. Reading view shows nothing yet (gate G0d is open: the

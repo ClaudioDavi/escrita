@@ -765,6 +765,8 @@ conto to revisão takes a stage snapshot, and existing status settings carry ove
 
 ## 12. Submissions (v0.8)
 
+**Built in 0.8 (not yet released).**
+
 **Why.** Sending a conto to contests and magazines, and tracking where it went and
 what came back, is a large part of short fiction. It ships with export (novel
 roadmap, 7), since export is how a work gets sent.
@@ -783,6 +785,16 @@ note, the contract. Bases or Dataview can table them without Escrita.
 - `classify` gains a `submission` field, like `snapshot`; submission notes are never
   works or tracked.
 
+**As built.**
+- The pending count follows "pronto" in the home block and counts submissions, so a conto
+  sent twice counts 2. It shows only while the submissions feature is on.
+- The modal offers the three most recent markets from the folder.
+- The note is named `YYYY-MM-DD <work> – <market>.md`.
+- A note with no stage gets a notice instead of a submission.
+- The property names (work, market, sent, result, responded) and the result values are
+  settings; the first result value means pending.
+- The folder is kept out of tracking: submission notes are never works or tracked.
+
 **Done when** recording a submission for a conto creates a note that links back to it,
 renaming the conto updates the link, and the notes read well with Escrita turned off.
 
@@ -795,7 +807,13 @@ renaming the conto updates the link, and the notes read well with Escrita turned
 | Stages | Idea / draft / revision / ready / published values (replace published and unpublished values, status colors) | `idea`, `draft`, `revision`, `ready`, `published` | `ideia`, `rascunho`, `revisao`, `pronto`, `publicado` |
 | | Other status colors (`otherStatusColors`: one `word: color` per line, for statuses that are not a stage, such as chapter ones) | (empty) | (migrated from the old status colors) |
 | | Home note / open it on startup | (empty) / off | `Início.md` (their existing note) / on |
-| Submissions | Folder / result values | `Submissions` / `pending`, `accepted`, `rejected`, `withdrawn` | (author's choice) |
+| Submissions (0.8) | Folder / result values | `Submissions` / `pending`, `accepted`, `rejected`, `withdrawn` | (author's choice) |
+| | Work, market, sent, result, responded properties | `work`, `market`, `sent`, `result`, `responded` | same |
+| Export (0.8) | Export folder | `Escrita/Exports` | (author's choice) |
+| | Author name / surname (empty: last word of the name) | (empty) / (empty) | (author's choice) |
+| | Contact lines (title page) | (empty) | (author's choice) |
+| | Chapter heading format (`{n}`, `{title}`) | (empty: the preset's) | (author's choice) |
+| | Compile, dedication, epigraph, author properties | `compile`, `dedication`, `epigraph`, `author` | same |
 | Publishing | Date property | `date` | `date` |
 | | Recommended properties | `description` | `description` |
 | Goals | Target, limit, unit properties | `target`, `limit`, `unit` | same |
@@ -807,7 +825,7 @@ renaming the conto updates the link, and the notes read well with Escrita turned
 | | Auto snapshot before first edit of the day | off | (author's choice) |
 | | Keep automatic snapshots | 20 | same |
 | Features (0.7) | Writing language (moved here from Revision, same key) | Automatic (from Obsidian's language) | `pt-BR` |
-| Features (0.7) | Seventeen switches in five groups | all on | (author's choice) |
+| Features (0.7, 19 in 0.8) | Nineteen switches in five groups | all on | (author's choice) |
 | Revision | Word lists note | (empty) | `Modelos/Revisão.md` |
 | | Echo window / long sentence length | 40 / 45 | same |
 | | Skip quotes (`>` lines) | on | same |

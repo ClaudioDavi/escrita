@@ -13,15 +13,21 @@ describe("unclosedHtmlComment", () => {
     expect(unclosedHtmlComment("")).toBeNull();
   });
   it("finds the line of an unclosed opener", () => {
-    expect(unclosedHtmlComment("um\ndois <!-- três\nquatro")).toBe(1);
+    expect(unclosedHtmlComment("um\n<!-- três\nquatro")).toBe(1);
+    expect(unclosedHtmlComment("um\n   <!-- três")).toBe(1);
     expect(unclosedHtmlComment("<!-- a -->\nb\n<!-- c")).toBe(2);
+  });
+  it("ignores a mid-line or deeply indented opener (D19: literal text)", () => {
+    expect(unclosedHtmlComment("um\ndois <!-- três\nquatro")).toBeNull();
+    expect(unclosedHtmlComment("um\n    <!-- três")).toBeNull();
+    expect(unclosedHtmlComment("a <!-- x\n<!-- y")).toBe(1);
   });
   it("ignores code, frontmatter and %% comments", () => {
     expect(unclosedHtmlComment("use `<!--` aqui")).toBeNull();
     expect(unclosedHtmlComment("a\n```\n<!--\n```\nb")).toBeNull();
     expect(unclosedHtmlComment("---\nx: \"<!--\"\n---\ntexto")).toBeNull();
     expect(unclosedHtmlComment("a %% <!-- %% b")).toBeNull();
-    expect(unclosedHtmlComment("---\nx: 1\n---\ntexto <!-- aberto")).toBe(3);
+    expect(unclosedHtmlComment("---\nx: 1\n---\n<!-- aberto")).toBe(3);
   });
   it("accepts a segmented Markdown", () => {
     expect(unclosedHtmlComment(segment("a\n<!-- b"))).toBe(1);
@@ -39,7 +45,7 @@ describe("readinessOf", () => {
   });
   it("blocks on unclosed %% and <!--", () => {
     expect(find(readinessOf("a\n%% b", o), "unclosedComment")).toMatchObject({ level: "blocker", line: 1, vars: { line: 2 } });
-    const r = readinessOf("a\nb <!-- c", o);
+    const r = readinessOf("a\n<!-- c", o);
     expect(find(r, "unclosedHtmlComment")).toMatchObject({ level: "blocker", line: 1, vars: { line: 2 } });
     expect(r.blocked).toBe(true);
   });
@@ -63,7 +69,7 @@ describe("publish uses readiness", () => {
   const ctx = { placeholderMarker: "XXX", recommendedProperties: [] };
   it("lists the html check only when it blocks", () => {
     expect(runChecks("Texto.", {}, ctx).some((c) => c.id === "unclosedHtmlComment")).toBe(false);
-    const c = runChecks("Texto <!-- aberto", {}, ctx).find((x) => x.id === "unclosedHtmlComment")!;
+    const c = runChecks("Texto\n\n<!-- aberto", {}, ctx).find((x) => x.id === "unclosedHtmlComment")!;
     expect(c.level).toBe("blocker");
   });
 });

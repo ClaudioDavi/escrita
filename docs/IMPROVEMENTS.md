@@ -102,6 +102,7 @@ universe) · **Target:** 0.9
   misspelling detector, a different job, and stays as it is.
 - **Change.** `foldText` becomes `foldName`, or a thin re-export of it.
 - **Wins.** One fold. Then this candidate is done.
+- **Done in 0.8 (Wave 2, task 2.6b):** `foldText` is now `foldName`. It moves to "Done" at release.
 - **Shipped in 0.7.0:** `core/names.ts` and the `plugin.names` port; "Appears in", the
   name marks, the lens and the outline's POV read names through it.
 
@@ -328,6 +329,8 @@ on a phone · **Planned for 0.8**
   - Optionally, charCode tests instead of `WS.test` in `core/sentences.ts` `region`.
 - **Wins.** `findNames` gets about 1.4× faster (10k words: 12.1 to 8.4–8.8 ms), with
   the same output. The lens pass drops 20–35%.
+- **0.8 note.** The `normalizeWord` memo was left out: it is a core file and worth about
+  1 ms. Say so when this moves to "Done".
 
 ### 23. Small redraws and re-reads
 
@@ -379,7 +382,8 @@ Small; good for a release whose features don't touch the candidates above.
   and `editor/features.ts:85,332`. The rule (PLAN-0.8.md, Q9): an edit at the
   cursor of the editor that triggered it may write directly, and `plugin.notes` is for
   writes to any other note. The author agreed on 2026-10-04; the item closes when 0.8
-  writes that line into ARCHITECTURE's conventions (PLAN-0.8.md, task 4.2).
+  writes that line into ARCHITECTURE's conventions (PLAN-0.8.md, task 4.2). **The rule is
+  now written in ARCHITECTURE's conventions (Q9), so this closes at release.**
 
 ## Known issues
 

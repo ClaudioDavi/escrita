@@ -59,22 +59,29 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
 
 - `src/main.ts` builds the services, then each module (`src/<module>/index.ts`,
   a `FeatureModule`). Modules: goals, outline, placeholders, darlings, editor, lens,
-  publish, explorer, snapshots, desk, universe. **They are switchable features** (17
+  publish, export, submissions, explorer, snapshots, desk, universe. **They are switchable features** (19
   ids in `core/features.ts`; the editor is split into typing, dialogue focus, moving
   blocks, templates and spellcheck): the `FeatureRegistry` loads and unloads each from the
   writer's switches at runtime, and a module registers everything through its
   `ModuleContext`, never straight on the plugin. A module must unload cleanly and its
   path-keyed data must follow renames through a data follower even while it is off.
-  ARCHITECTURE.md, "Modules and feature switches".
+  ARCHITECTURE.md, "Modules and feature switches". Each module draws its own settings
+  section (`settingsSection` in its `settings-ui.ts`); the order of all sections is one
+  list in `core/settings-order.ts`, and `settings.ts` imports no module internals.
 - **Shared services on `plugin`** (use them; never re-derive):
   - `books.classify(x)`: what a file is (chapter, book note, note…), its book,
-    `tracked`, `piece`, `snapshot`, `stage`. Backed by `core/classify.ts`.
+    `tracked`, `piece`, `snapshot`, `stage`, `submission`, `export`. Backed by `core/classify.ts`.
   - `measure`: every count shown or recorded (`core/measurer.ts`, cached by mtime).
   - `notes`: every write into a note's text (editor when open, else `vault.process`;
     check-then-replace through `core/note-text.ts`).
+  - `notes.create(path, data, { exists, trashOld })`: every new file (text or binary).
+    `exists` is `return`, `fail`, `unique` or `replace`; `replace` refuses a case-only
+    clash, and `trashOld` sends the old file to the trash first.
   - `decorations`: the only code that draws in the file explorer.
   - `chapterOps`: create, renumber, retitle chapters.
-  - `features`: the registry; `features.isOn(id)` for a soft dependency on another feature.
+  - `features`: the registry; `features.isOn(id)` for a soft dependency on another feature. A
+    module's port is read through `features.get` (the desk reads the submissions' `pending`
+    port, `core/pending.ts`, and never imports that module).
   - `names`: the names port (`core/names-source.ts`); the lens, the name marks and the
     outline read names through it and never import the universe. The matcher is
     `core/names.ts`.
@@ -113,11 +120,20 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
 - **Scene break**: a `---` line with blank lines around it.
 - **Darlings**: cut passages kept in a note, restorable to where they came from.
 - **Snapshot**: a `.txt` copy of a note under `Escrita/Snapshots`, comparable word by word.
+- **Export** (0.8): a manuscript file (Markdown or DOCX) written into the export folder.
+  Derived, never tracked, never a work.
+- **Submission** (0.8): a note in the submissions folder recording where a work was
+  sent and what came back. Never tracked, never a work.
 - **Feature** (0.7): a switchable part of Escrita (`FeatureId`); off means not loaded, data stays.
 - **Entry** (0.6): a note with the type property, in a universe. **Mention**: a place in
   a note where an entry's name or alias appears (0.7, `core/names.ts`).
 - **Tracked**: counted by goals (inside track folders, outside exclude folders).
 - Deep/shallow module, seam, locality: as defined at the top of IMPROVEMENTS.md.
+
+## Editor writes
+
+An edit at the cursor of the editor that triggered it may write straight to that editor;
+`plugin.notes` is for writes to any other note (ARCHITECTURE.md, "Conventions").
 
 ## Working process
 
@@ -154,7 +170,7 @@ and what upkeep it asks of the writer.
   selection, open threads, insert from a template (U 1.1, U 1.3, U 1.5, SF 9).
   Improvement: the outline's beat writes through the note text port (IMPROVEMENTS 3).
 - **0.7 (shipped), characters across works**: the Features page
-  (17 switches, SF 10) on modules that load and unload at runtime (IMPROVEMENTS 6), `universe:
+  (17 switches then, 19 in 0.8; SF 10) on modules that load and unload at runtime (IMPROVEMENTS 6), `universe:
   false`, "Appears in" (the names matcher, the mentions index), names in spellcheck and the
   lens, POV and status in the outline, per-chapter targets (U 1.1, U 1.2, U 1.4, N 1, N 2).
   Improvements: IMPROVEMENTS 6 and chapter rows (IMPROVEMENTS 7). First version with the
@@ -178,7 +194,7 @@ data follows renames on its own vault events in two places, the measurer and the
 explorer's tracked set (IMPROVEMENTS 2, done in 0.4 for everything else, which follows
 through `plugin.index.follow`; the snapshots store moved there in 0.7, and since 0.7
 those followers run even when their feature is off); the Reading-view "Appears in"
-section and the phone checks for name marks and the names bench (G0c, G0d, G0h) are
-still open; two editor commands (plant a thread, insert
-from a template) still write straight to the editor instead of `plugin.notes`; a few Markdown parity
-questions with Reading view are pinned in `tests/markdown-consumers.test.ts`.
+section across re-renders is still unchecked on desktop (0.7's G0d); the phone checks
+(name marks, the names bench) are waived, because the author has no phone sync; the Markdown
+parity questions with Reading view were checked in a real vault (0.8, G0c) and the
+segmenter follows them, pinned in `tests/markdown-consumers.test.ts`.

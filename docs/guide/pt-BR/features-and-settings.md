@@ -5,7 +5,7 @@ desligar os que não usa. Um recurso desligado não é carregado: não acrescent
 painéis, itens de menu nem trabalho em segundo plano. Os seus dados ficam, e voltam quando
 você liga o recurso de novo.
 
-Outras páginas: [Escrita](writing.md) e [O mundo](the-world.md).
+Outras páginas: [Escrita](writing.md), [Publicação](publishing.md) e [O mundo](the-world.md).
 
 ## A página Recursos
 
@@ -14,7 +14,7 @@ Abra Configurações › Escrita. A seção **Recursos** fica no topo. Ela tem:
 - **Idioma da escrita**. Automático segue o idioma do Obsidian: qualquer português dá pt-BR e
   qualquer inglês dá inglês. Outro idioma dá nenhum. A lente de revisão e o reconhecimento de
   nomes leem esse idioma. (Antes ele ficava na seção Revisão.)
-- **Dezessete interruptores em cinco grupos**, cada um com uma linha sobre o que faz. Os
+- **Dezenove interruptores em cinco grupos**, cada um com uma linha sobre o que faz. Os
   estágios ficam sempre ligados, porque o esboço, a aba Obras e a checagem de publicação leem
   os estágios.
 
@@ -23,7 +23,7 @@ Abra Configurações › Escrita. A seção **Recursos** fica no topo. Ela tem:
 | Escrita | Metas e sprints · Esboço e beats fantasmas · Marcadores · Enter e tipografia · Foco no diálogo · Mover parágrafo ou cena · Inserir de um modelo · Ortografia sob demanda · Contagens no explorador |
 | Revisão | Lente de revisão · Versões · Darlings |
 | Acompanhamento | Versão a cada estágio · Bloco de obras e onde você parou |
-| Publicação | Checagem de publicação · (Exportar e submissões, acinzentado: chega na 0.8) |
+| Publicação | Checagem de publicação · Exportar · Envios |
 | O mundo | Universo compartilhado · Fios |
 
 Três interruptores eram configurações antes da 0.7, e agora ficam só aqui: **Contagens no
@@ -31,8 +31,8 @@ explorador**, **Ortografia sob demanda** e o modo do **Universo compartilhado**.
 universo é uma lista (Desligado, Por livro, Universo) em vez de um interruptor, porque o modo
 é o interruptor.
 
-Quando você atualiza para a 0.7, todos os recursos ficam ligados, então nada some até você
-escolher.
+Quando você atualiza, todos os recursos ficam ligados, então nada some até você escolher.
+Exportar e Envios são os dois interruptores que a 0.8 acrescenta, no grupo Publicação.
 
 ## O que cada interruptor desliga
 
@@ -53,6 +53,8 @@ escolher.
 | Versão a cada estágio | Uma mudança de estágio não guarda versão. |
 | Bloco de obras e onde você parou | O bloco `escrita-works` aparece como código simples; o Escrita para de registrar onde você parou; sem comando da nota inicial nem abrir ao iniciar. |
 | Checagem de publicação | Sem comandos de publicar e despublicar. |
+| Exportar | Sem os comandos **Exportar…** e **Exportar de novo**, sem item no menu do arquivo e sem a seção Exportação nas configurações. A linha da pasta das exportações continua. |
+| Envios | Sem o comando nem o item de menu **Registrar envio**, sem a contagem de pendentes no bloco de obras e sem a seção Envios nas configurações. A linha da pasta dos envios continua. |
 | Universo compartilhado | Sem painel, sem comandos do universo, sem "Aparece em", sem marcas de nomes nem nomes na lente. |
 | Fios | Sem comandos de fio, sinal na margem nem aba no painel. |
 
@@ -68,6 +70,8 @@ Nada é apagado quando você desliga um recurso.
 - **Metas**: o seu histórico de escrita fica nos dados do Escrita (o aviso diz quantos dias).
 - **Lente**: as suas listas de palavras ficam na nota delas.
 - **Acompanhamento**: o ponto onde você parou fica nos dados do Escrita.
+- **Exportar**: os arquivos já gravados ficam na pasta das exportações. As suas escolhas para cada obra (formato, modelo, capítulos) e a última exportação ficam nos dados do Escrita, e acompanham renomeações e mudanças de lugar com o recurso desligado. Ligue de novo e "Exportar de novo" ainda conhece o último arquivo.
+- **Envios**: as notas de envio ficam onde estão, na pasta dos envios. O aviso diz o nome da pasta e quantas notas há. São notas comuns: com o recurso desligado elas continuam sem entrar nas metas e sem virar obras. Se você já usa esse nome de pasta para outra coisa, mude a pasta nas configurações.
 - **Fios**: os marcadores ficam nas suas notas; as datas em que cada um foi visto pela
   primeira vez ficam nos dados.
 - **Universo**: as entradas são notas comuns, então nunca são tocadas. As cores escolhidas
@@ -83,6 +87,8 @@ versões, isso inclui mover os arquivos de versão no disco.
 - **Versão a cada estágio precisa de Versões.** Enquanto Versões está desligado, o
   interruptor da versão a cada estágio fica acinzentado, com um botão **Ligar Versões**. A sua
   escolha para ele é guardada e volta quando Versões volta.
+- **O bloco de obras só mostra pendentes enquanto Envios está ligado.** É o número de envios que ainda esperam resposta, ao lado da contagem de prontos. Desligue Envios e a contagem some.
+- **Exportar funciona sem a Publicação, e a Publicação sem Exportar.** Exportar avisa dos mesmos problemas da checagem de publicação (marcador esquecido, comentário que nunca fecha, beats sem texto, nota vazia), por conta própria.
 - **A publicação funciona sem versões.** Ela só não guarda versão antes de publicar.
 - **O esboço funciona sem marcadores.** Ele não mostra a contagem de marcadores.
 - **As configurações seguem os interruptores.** Uma configuração se esconde quando todos os
@@ -92,7 +98,39 @@ versões, isso inclui mover os arquivos de versão no disco.
 - **Nomes compartilhados ficam à vista.** Os nomes das propriedades (meta, limite, unidade,
   prazo, meta do livro, ponto de vista, meta dos capítulos), as pastas acompanhadas e
   ignoradas e a pasta de capítulos ficam numa seção sempre visível, **Propriedades e pastas**,
-  porque vários recursos as leem.
+  porque vários recursos as leem. Desde a 0.8, as linhas **Pasta das exportações** e **Pasta dos
+  envios** também ficam ali, e aparecem mesmo com Exportar ou Envios desligado, porque as
+  pastas continuam valendo: as notas dentro delas nunca entram nas metas e nunca viram obras.
+  Uma linha de pasta só salva uma pasta segura (veja abaixo).
+
+## Linhas de pasta e como os campos salvam
+
+A pasta das exportações (padrão `Escrita/Exports`), a pasta dos envios (padrão `Submissions`)
+e a pasta das versões são lugares do próprio Escrita. Elas não podem conter umas às outras
+nem ficar uma dentro da outra. O campo de pasta ganha um contorno e um aviso aparece embaixo da
+descrição da configuração, e o valor salvo continua, quando o novo é:
+
+- uma pasta que não é simples dentro do cofre (sem `..` nem `.` no caminho);
+- dentro da pasta de configurações do Obsidian, dentro ou em volta de uma pasta acompanhada,
+  ou dentro de um livro;
+- uma pasta que tem um livro dentro;
+- outra pasta do Escrita, ou uma que contém uma delas;
+- uma pasta que já tem arquivos seus (a pasta que o Escrita já usa para essa configuração
+  não conta, porque só tem os arquivos dele).
+
+Mudar a pasta não move os arquivos que já estão lá. Se você renomeia a pasta no Obsidian, a
+configuração acompanha.
+
+Os campos de texto das configurações agora salvam quando você sai do campo (ou aperta Enter),
+e não a cada tecla. Um campo de nome de propriedade ou de pasta deixado vazio volta ao padrão.
+
+## A seção Editor
+
+Desde a 0.8, a seção Editor lista primeiro as linhas de digitação (Enter, Enter, Enter,
+tipografia inteligente, onde ela vale, travessão de diálogo) e depois **Parágrafos são
+separados por** (estilo de parágrafo) e **Aspas** (estilo de aspas). Essas duas linhas são
+compartilhadas com o foco no diálogo, o mover blocos e a lente de revisão, então aparecem
+enquanto qualquer um deles está ligado.
 
 ## Ligar e desligar um recurso enquanto você escreve
 
@@ -115,14 +153,15 @@ somem quando você reinicia:
 
 ## Versão mínima do Obsidian
 
-Remover comandos durante o uso exige o Obsidian **1.7.2** ou mais novo. A 0.7 do Escrita pede
-essa versão.
+Remover comandos durante o uso exige o Obsidian **1.7.2** ou mais novo. A 0.7 do Escrita e as
+seguintes pedem essa versão.
 
 ## Quando algo parece errado
 
 | Você vê | Por quê | O que fazer |
 |---|---|---|
 | Falta um comando | O recurso dele está desligado | Ligue na seção Recursos |
+| O bloco de obras não mostra pendentes | Envios está desligado, ou nada espera resposta | Ligue Envios |
 | Falta uma configuração | Todos os recursos que a leem estão desligados | Ligue um; a configuração volta |
 | Um ícone da lateral diz que o recurso está desligado | Você o desligou nesta sessão | Ligue o recurso, ou reinicie para tirar o ícone |
 | O interruptor da versão a cada estágio está cinza | Versões está desligado | Clique em **Ligar Versões** |

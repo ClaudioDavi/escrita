@@ -126,6 +126,9 @@ describe("workFor", () => {
     expect(workFor(base, "Notas soltas")).toEqual({ kind: "no-stage", title: "Notas soltas" });
     expect(workFor({ ...base, tracked: false, stage: null }, "N")).toMatchObject({ kind: "no-stage" });
   });
+  it("a staged note outside the tracked folders gets its own notice kind", () => {
+    expect(workFor({ ...base, tracked: false, stage: "draft" }, "N")).toEqual({ kind: "untracked", title: "N" });
+  });
   it("submissions, snapshots and non-notes are not works", () => {
     expect(workFor({ ...base, submission: true }, "S")).toEqual({ kind: "none" });
     expect(workFor({ ...base, snapshot: true }, "S")).toEqual({ kind: "none" });
