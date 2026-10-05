@@ -5,22 +5,8 @@ import { MentionsIndex, MENTIONS_INDEX_NAME } from "../src/universe/mentions-ind
 import type { MentionCtx } from "../src/universe/mentions";
 import type { EntriesSettings } from "../src/universe/entries";
 import { defaultUniverseSettings } from "../src/universe/settings";
-import { ManualTimers, MemoryVault, settle, type MemFile } from "./support/memory-vault";
-
-const src = (id: string, name: string, aliases: string[] = []): NameSource => ({
-  id, name, aliases, person: true, firstName: false, caseSensitive: false, ignore: [],
-});
-const table = (sources: NameSource[]): TermTable => compileTerms(sources, { lang: "pt", extraTitles: [] });
-
-function settings(): EntriesSettings {
-  return { ...defaultUniverseSettings(), universeMode: "universe", chaptersFolder: "Chapters", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "" };
-}
-
-class CountingTimers extends ManualTimers {
-  yields = 0;
-  override now(): number { return performance.now(); }
-  override yieldNow(): Promise<void> { this.yields++; return super.yieldNow(); }
-}
+import { settle } from "./support/memory-vault";
+import { setup, src, table } from "./support/mentions-setup";
 
 function ctx(entry: string, over: Partial<MentionCtx> = {}): MentionCtx {
   return {
@@ -32,41 +18,6 @@ function ctx(entry: string, over: Partial<MentionCtx> = {}): MentionCtx {
     workRank: () => 0,
     ...over,
   };
-}
-
-function setup(files: Record<string, string>, sources: NameSource[], opts: { batch?: number; resolve?: (l: string, from: string) => string | null; timers?: ManualTimers } = {}) {
-  const vault = new MemoryVault(files);
-  const timers = opts.timers ?? new ManualTimers();
-  const cbs = { modify: [] as ((f: MemFile) => void)[], rename: [] as ((f: MemFile, o: string) => void)[], del: [] as ((f: MemFile) => void)[], create: [] as ((f: MemFile) => void)[] };
-  const events: HubEvents<MemFile> = {
-    onCreate: (cb) => void cbs.create.push(cb),
-    onModify: (cb) => void cbs.modify.push(cb),
-    onDelete: (cb) => void cbs.del.push(cb),
-    onRename: (cb) => void cbs.rename.push(cb),
-    onMetaChanged: () => {},
-    onResolved: () => {},
-    onLayoutReady: (cb) => cb(),
-    layoutReady: () => true,
-    hasCache: () => true,
-  };
-  vault.onEvent((e) => {
-    if (e.type === "create") cbs.create.forEach((c) => c(e.file));
-    else if (e.type === "modify") cbs.modify.forEach((c) => c(e.file));
-    else if (e.type === "delete") cbs.del.forEach((c) => c({ path: e.path, extension: "", text: "" }));
-    else if (e.type === "rename") cbs.rename.forEach((c) => c({ path: e.path, extension: "", text: "" }, e.oldPath));
-  });
-  const hub = new IndexHub<MemFile>(events, vault, timers, { snapshotsRoot: () => "Escrita/Snapshots", batch: opts.batch });
-  const state = { table: table(sources) };
-  const mentions = new MentionsIndex<MemFile>({
-    add: (spec) => hub.add(spec),
-    remove: (ix) => hub.remove(ix),
-    rebuild: (n) => hub.rebuild(n),
-    table: () => state.table,
-    settings,
-    resolve: opts.resolve ?? (() => null),
-    timers,
-  });
-  return { vault, timers, hub, mentions, state };
 }
 
 const A = src("Universo/Teo.md", "Teo");
@@ -312,55 +263,4 @@ describe("MentionsIndex lookup maps follow an edit for the changed note only (fi
     s.mentions.appearsIn(B.id, c(B.id));
     expect(resolves.n - before).toBeGreaterThanOrEqual(20);
   });
-});
-
-// CI ceilings from G0h. Desktop: segment + readerMask + findNames cost 1.9-2.2 ms per 1,000
-// words with 300 entries (docs/PLAN-0.7.md, G0h). The phone figure is still open, so these
-// are derived from the desktop figure alone. Model: 2.2 ms per 1,000 words x the vault's
-// words; ceiling = model x 5, the margin names.test.ts uses (20 ms budget, 100 ms ceiling) to
-// catch quadratic code without failing on a loaded CI runner.
-const MS_PER_1000_WORDS = 2.2;
-const MARGIN = 5;
-const WORDS_PER_NOTE = 2000;
-
-function bigVault(notes: number) {
-  let seed = 7;
-  const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
-  const first = ["Maria", "João", "Zélia", "Luísa", "Sebastião", "Conceição", "Ângela", "Inácio", "Têmis", "Joaquim"];
-  const last = ["Silva", "Antunes", "Magalhães", "Albuquerque", "Pôrto", "Guimarães", "Vasconcelos", "Nóbrega", "Cavalcanti", "Rêgo"];
-  const filler = "o a de que e do da em um para com não uma os no se na por mais as dos como mas ao ele das seu sua ou quando muito casa tempo caminho janela chuva silêncio porta mão noite olhar vento rua cidade manhã lembrança voz mar luz".split(" ");
-  const sources: NameSource[] = [];
-  for (let i = 0; i < 300; i++) {
-    sources.push(src(`Universo/${i}.md`, `${first[i % 10]} ${last[(i / 10 | 0) % 10]} ${String.fromCharCode(65 + (i / 100 | 0))}`, [`${first[(i + 3) % 10]} ${last[(i / 7 | 0) % 10]}inho`]));
-  }
-  const forms = sources.flatMap((x) => [x.name.replace(/ [A-C]$/, ""), ...x.aliases]);
-  const variants: string[] = [];
-  for (let v = 0; v < 20; v++) {
-    const words: string[] = [];
-    for (let w = 0; w < WORDS_PER_NOTE; w++) words.push(rnd() < 0.02 ? forms[Math.floor(rnd() * forms.length)]! : filler[Math.floor(rnd() * filler.length)]!);
-    const paras: string[] = [];
-    for (let i = 0; i < words.length; i += 40) paras.push(words.slice(i, i + 40).join(" ") + ".");
-    variants.push(paras.join("\n\n"));
-  }
-  const files: Record<string, string> = {};
-  for (let n = 0; n < notes; n++) files[`Contos/n${n}.md`] = variants[n % variants.length]!;
-  return { files, sources };
-}
-
-describe("MentionsIndex performance (CI ceilings from G0h)", () => {
-  for (const notes of [500, 5000]) {
-    it(`${notes} notes of ${WORDS_PER_NOTE} words, 300 entries: under the ceiling, yielding between batches`, async () => {
-      const { files, sources } = bigVault(notes);
-      const timers = new CountingTimers();
-      const s = setup(files, sources, { timers });
-      const t0 = performance.now();
-      s.mentions.start();
-      while (!s.mentions.isReady()) await new Promise((r) => setTimeout(r, 5));
-      const took = performance.now() - t0;
-      const ceiling = (notes * WORDS_PER_NOTE / 1000) * MS_PER_1000_WORDS * MARGIN;
-      expect(took).toBeLessThan(ceiling);
-      expect(timers.yields).toBeGreaterThanOrEqual(Math.max(1, Math.floor(took / 100)));
-      expect(s.mentions.get("Contos/n0.md")?.occurrences.length).toBeGreaterThan(10);
-    }, 300_000);
-  }
 });

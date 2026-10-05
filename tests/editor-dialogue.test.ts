@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { dialogueInDoc, dialogueRanges, dimPlan, MAX_WIDEN, type DialogueOptions, type Range } from "../src/editor/dialogue";
 import { segment } from "../src/core/markdown";
+import { dialogueNote } from "./support/dialogue-note";
 import type { QuoteStyle } from "../src/settings";
 
 const S = (text: string, rs: Range[]) => rs.map((r) => text.slice(r.from, r.to));
@@ -184,16 +185,7 @@ describe("dimPlan", () => {
 });
 
 describe("performance: viewport-limited", () => {
-  // ~10,000 words: 1,500 paragraphs of mixed dialogue and narration
-  const paras: string[] = [];
-  for (let i = 0; i < 1500; i++) {
-    paras.push(i % 3 === 0
-      ? "— Vem cá — disse ela, olhando pela janela."
-      : i % 3 === 1
-        ? "Ele respondeu “não posso agora” e voltou ao livro."
-        : "A casa estava quieta, e a chuva não parava de cair lá fora.");
-  }
-  const text = paras.join("\n\n");
+  const text = dialogueNote();
   const md = segment(text);
 
   it("the fixture is a 10k-word note", () => {
@@ -209,29 +201,5 @@ describe("performance: viewport-limited", () => {
       expect(r.from).toBeGreaterThanOrEqual(lo);
       expect(r.to).toBeLessThanOrEqual(hi);
     }
-  });
-
-  it("builds a viewport's decorations quickly", () => {
-    dimPlan(md, 0, 60, BLANK); // warm up (math overlay cache)
-    const runs = 200;
-    const t0 = performance.now();
-    for (let i = 0; i < runs; i++) {
-      const from = (i * 13) % (md.lineCount - 60);
-      dimPlan(md, from, from + 60, BLANK);
-    }
-    const per = (performance.now() - t0) / runs;
-    // a 60-line viewport should cost well under a millisecond; the bound is loose for CI
-    expect(per).toBeLessThan(5);
-  });
-
-  it("a viewport costs much less than the whole note", () => {
-    const time = (f: () => void, n: number) => {
-      const t0 = performance.now();
-      for (let i = 0; i < n; i++) f();
-      return (performance.now() - t0) / n;
-    };
-    const whole = time(() => dimPlan(md, 0, md.lineCount - 1, BLANK), 5);
-    const view = time(() => dimPlan(md, 1500, 1560, BLANK), 50);
-    expect(view).toBeLessThan(whole);
   });
 });

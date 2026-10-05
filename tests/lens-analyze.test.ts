@@ -129,35 +129,3 @@ describe("lens analyze: visible and measuresFor", () => {
     expect(half.scenes).toEqual([]);
   });
 });
-
-describe("lens analyze: performance", () => {
-  const big = (() => {
-    const body = conto.replace(/^---[\s\S]*?---\n/, "");
-    const words = body.split(/\s+/).length;
-    return Array.from({ length: Math.ceil(10000 / words) }, () => body).join("\n\n");
-  })();
-  const o = opts("pt-BR");
-  const md = segment(big);
-  const time = <T>(f: () => T): [T, number] => {
-    const t = performance.now();
-    const v = f();
-    return [v, performance.now() - t];
-  };
-
-  it("CI ceiling: analyze under 300 ms, visible under 1 ms, measuresFor under 5 ms", () => {
-    analyze(md, o);
-    const [r, ms] = time(() => analyze(md, o));
-    expect(r.words).toBeGreaterThanOrEqual(9000);
-    expect(ms).toBeLessThan(300);
-    const mid = Math.floor(big.length / 2);
-    expect(time(() => visible(r.matches, mid, mid + 3000))[1]).toBeLessThan(1);
-    expect(time(() => measuresFor(r.pass, md, o, { from: mid, to: mid + 600 }))[1]).toBeLessThan(5);
-  });
-
-  // Timing under a parallel suite is noisy; run alone with ESCRITA_PERF=1 to check it.
-  it.runIf(!!process.env.ESCRITA_PERF)("local budget: median of 5 analyze runs under 60 ms", () => {
-    analyze(md, o);
-    const ts = Array.from({ length: 5 }, () => time(() => analyze(md, o))[1]).sort((a, b) => a - b);
-    expect(ts[2]).toBeLessThan(60);
-  });
-});
