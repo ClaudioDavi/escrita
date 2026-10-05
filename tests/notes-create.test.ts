@@ -163,11 +163,21 @@ describe("notes.create: case clash", () => {
     expect(err.path).toBe("N/TITLE.md");
     expect(err.existing).toBe("N/Title.md");
   });
-  it("replace overwrites the clashing file, not a second one", async () => {
-    const r = await notes.create("N/title.md", "new", { exists: "replace" });
-    expect(r.outcome).toBe("replaced");
-    expect(vault.text.get("N/Title.md")).toBe("new");
+  it("replace refuses a case-only clash: nothing is written or trashed", async () => {
+    let trashed = 0;
+    const app = {
+      vault, workspace: { getLeavesOfType: () => [] },
+      fileManager: { trashFile: async () => { trashed++; } },
+    } as unknown as App;
+    const err = await new NoteService(app).create("N/title.md", "new", { exists: "replace", trashOld: true }).catch((e) => e);
+    expect(err).toBeInstanceOf(NoteExistsError);
+    expect(err.existing).toBe("N/Title.md");
+    expect(trashed).toBe(0);
+    expect(vault.text.get("N/Title.md")).toBe("old");
     expect(vault.getAbstractFileByPath("N/title.md")).toBeNull();
+    expect(vault.calls.some((c) => c.startsWith("modify") || c.startsWith("create N/title"))).toBe(false);
+    await expect(notes.create("N/title.md", "new", { exists: "replace" })).rejects.toBeInstanceOf(NoteExistsError);
+    expect(vault.text.get("N/Title.md")).toBe("old");
   });
   it("unique avoids the clashing name and its numbered case variants", async () => {
     vault.seedFile("N/title 1.md", "x");

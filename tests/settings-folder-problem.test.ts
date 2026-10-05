@@ -39,7 +39,10 @@ describe("book folders", () => {
   it("refuses a book's folder, its chapters folder, and a folder holding the book", () => {
     expect(pluginFolderProblem("Novels/B", [], ".obsidian", "", none, [book])).toEqual({ reason: "book", folder: "Novels/B" });
     expect(pluginFolderProblem("Novels/B/Chapters", [], ".obsidian", "", none, [book])).toEqual({ reason: "book", folder: "Novels/B" });
-    expect(bookProblem("Novels", [book])).toEqual({ reason: "book", folder: "Novels/B" });
+  });
+  it("tells a folder holding a book from a folder inside one", () => {
+    expect(bookProblem("Novels", [book])).toEqual({ reason: "holds-book", folder: "Novels" });
+    expect(bookProblem("Novels/B/Chapters", [book])).toEqual({ reason: "book", folder: "Novels/B" });
   });
   it("accepts a folder beside the book", () => {
     expect(pluginFolderProblem("Novels/B2", [], ".obsidian", "", none, [book])).toBeNull();

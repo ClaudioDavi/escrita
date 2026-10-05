@@ -67,6 +67,7 @@ function snapshotsProblemText(p: FolderProblem): string {
     case "config":
     case "tracked":
     case "book": return t("settings.snapshotsFolder.invalid", { folder: p.folder });
+    case "holds-book": return t("settings.folderProblem.holdsBook", { folder: p.folder });
     case "notes": return t("settings.snapshotsFolder.notes", { folder: p.folder });
     case "overlap": return t("settings.folderProblem.overlap", { folder: p.folder });
   }

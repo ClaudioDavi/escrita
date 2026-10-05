@@ -4,8 +4,10 @@ import { exportRoot, inExports, inFolder, inSnapshots, inSubmissions, snapshotsF
 export type FolderProblem = SnapshotsFolderProblem
   /** it holds, or sits inside, another of the plugin's own folders */
   | { reason: "overlap"; folder: string }
-  /** it sits inside a book (or its chapters folder), or holds a book */
-  | { reason: "book"; folder: string };
+  /** it sits inside a book (or its chapters folder) */
+  | { reason: "book"; folder: string }
+  /** it holds a book (the book's folder or note is inside it) */
+  | { reason: "holds-book"; folder: string };
 
 type FolderSettings = Pick<ClassifySettings, "exportFolder" | "submissionsFolder" | "snapshotsFolder">;
 
@@ -29,9 +31,8 @@ export type BookPaths = { note: { path: string }; folder: { path: string } };
  */
 export function bookProblem(root: string, books: readonly BookPaths[]): FolderProblem | null {
   for (const b of books) {
-    if (inFolder(root, b.folder.path) || inFolder(b.folder.path, root) || inFolder(b.note.path, root)) {
-      return { reason: "book", folder: b.folder.path };
-    }
+    if (inFolder(root, b.folder.path)) return { reason: "book", folder: b.folder.path };
+    if (inFolder(b.folder.path, root) || inFolder(b.note.path, root)) return { reason: "holds-book", folder: root };
   }
   return null;
 }

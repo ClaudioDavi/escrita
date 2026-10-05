@@ -137,6 +137,8 @@ export class NoteService {
       if (found !== null && target instanceof TFile && o.exists !== "unique") {
         if (o.exists === "return") return { file: target, outcome: "existing" };
         if (o.exists === "fail") throw new NoteExistsError(norm, found, false);
+        // rule 1: a replace never touches a file whose path differs only by case
+        if (found !== norm) throw new NoteExistsError(norm, found, false);
         if (o.trashOld) {
           await this.app.fileManager.trashFile(target);
           const file = typeof payload === "string" ? await vault.create(norm, payload) : await vault.createBinary(norm, payload);

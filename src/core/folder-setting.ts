@@ -10,6 +10,7 @@ export function folderProblemText(p: FolderProblem): string {
     case "config":
     case "tracked":
     case "book": return t("settings.folderProblem.outside", { folder: p.folder });
+    case "holds-book": return t("settings.folderProblem.holdsBook", { folder: p.folder });
     case "overlap": return t("settings.folderProblem.overlap", { folder: p.folder });
     case "notes": return t("settings.folderProblem.notes", { folder: p.folder });
   }

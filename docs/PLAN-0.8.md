@@ -407,6 +407,46 @@ Other numbers:
 | 3.3 Desk pending count | `desk/works.ts`, `desk/render.ts`, `desk/strings.ts` | "2 pendentes" next to ready while submissions is on; redraw on its change; desk tests |
 | 3.4 Publish on readiness | `publish/index.ts` | Same behaviour (1.5 already moved `runChecks` onto `readinessOf`; check only, no change expected) |
 
+**Wave 3 result (2026-10-05).** Done. Typecheck, 2,905 tests, build and bundle check
+pass. It ran as ultracode in three passes:
+
+- **Build** (3.1–3.5).
+- **A per-area review.** Three rounds, 24 findings confirmed by two Opus skeptics each,
+  all fixed.
+- **A completeness pass.** Opus critics traced whole user flows, and 13 of 14 findings
+  were confirmed and fixed. Seven were major:
+  - Replace could overwrite the source note through a case-only clash.
+  - Replace could overwrite the writer's own `.docx`.
+  - "Export again" didn't repeat in one click, and didn't ask when the file had moved.
+  - "Export again" after a "This chapter" export exported the whole book.
+  - The export and submissions folder rows vanished with the feature off, while the
+    folders still applied.
+  - The export and submissions folders didn't follow folder renames.
+
+  An Opus check of those fixes wired one that never ran: the folder check over all
+  files.
+
+I found one more gap myself. Export and submissions had no slot in
+`core/settings-order.ts`, so their settings never drew. They have slots now, and a guard
+test checks that every module with a settings section has one.
+
+New shared core this wave, for 4.2 to document:
+- `core/pending.ts`, the pending-submissions port.
+- `core/folder-problem.ts` and `core/folder-setting.ts`: one validation for the export,
+  submissions and snapshots folders, which may not overlap, hold the writer's notes, or
+  sit inside or hold a book.
+- `notes.create` gains `trashOld`, and refuses "replace" on a case-only clash.
+- `ExportChoice.last`: the last export with its folder and source, following renames.
+- Classify skips the export and submission folders in the universe indexes.
+
+4.2 also lists the export notice's "Show in the file explorer" in ARCHITECTURE's
+exceptions. It reuses the guarded `revealInFolder` cast from `universe/view-entries.ts`.
+
+Decided in this wave:
+- Renaming the export folder is not "moving" the last export.
+- Every folder setting row is drawn in the shared section.
+- "Envios" is the pt-BR feature name.
+
 ## Wave 4: docs (Sonnet), then review (Opus)
 
 - **4.1** `docs/guide/en/publishing.md` and `pt-BR/publishing.md` cover the publish

@@ -167,6 +167,13 @@ function mapPaths(c: ExportChoice, fn: (path: string) => string | null): boolean
       c.last.path = to;
       changed = true;
     }
+    if (c.last.folder !== undefined) {
+      const dir = fn(c.last.folder);
+      if (dir !== null && dir !== c.last.folder) {
+        c.last.folder = dir;
+        changed = true;
+      }
+    }
     if (c.last.source !== undefined) {
       const src = fn(c.last.source);
       if (src !== null && src !== c.last.source) {

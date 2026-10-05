@@ -155,6 +155,17 @@ describe("last export (Q17)", () => {
     expect(c["Books/B.md"].last!.path).toBe("Escrita/Exports/B (pt-BR).docx");
     expect(renameChoices(c, "nothing", "else")).toBe(false);
   });
+  it("a renamed export folder is not a move: folder and path follow together", () => {
+    const c = make();
+    const l = c["Books/A.md"].last!;
+    l.path = "Escrita/Exports/A (pt-BR).docx";
+    l.folder = "Escrita/Exports";
+    l.name = "A (pt-BR).docx";
+    expect(renameChoices(c, "Escrita/Exports", "Escrita/Out")).toBe(true);
+    expect(l.path).toBe("Escrita/Out/A (pt-BR).docx");
+    expect(l.folder).toBe("Escrita/Out");
+    expect(lastInPlace(l)).toBe(true);
+  });
   it("drops a deleted work's choices and ticked chapters, and keeps a last file's record", () => {
     const c = make();
     expect(dropChoices(c, "Books/A/Chapters/x.md")).toBe(true);
