@@ -317,15 +317,8 @@ export class LensUi {
     const p = this.plugin;
     const l = this.host.lang();
     const path = normalizePath(listsTarget(p.settings.lensListsNote, l));
-    const found: TAbstractFile | null = p.app.vault.getAbstractFileByPath(path);
-    const low = path.toLowerCase();
-    let file: TFile | null = found instanceof TFile ? found
-      : p.app.vault.getMarkdownFiles().find((f) => f.path.toLowerCase() === low) ?? null;
-    if (!file) {
-      const parent = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
-      if (parent !== "") await p.notes.ensureFolder(parent);
-      file = await p.app.vault.create(path, starterNote(l ?? "en"));
-    }
+    // "return": the note itself, or the one a case clash points at, else a new starter note
+    const { file } = await p.notes.create(path, starterNote(l ?? "en"), { exists: "return" });
     // the lens reads the exact path in the setting: point it at the note that was found
     if (listsPath(p.settings.lensListsNote) !== file.path) {
       p.settings.lensListsNote = file.path;
@@ -362,23 +355,20 @@ export class LensUi {
     const l = this.host.lang();
     const path = normalizePath(listsTarget(p.settings.lensListsNote, l));
     try {
-      const existing = p.app.vault.getAbstractFileByPath(path);
-      if (existing instanceof TFile) {
-        new Notice(t("lens.notice.listsExists", { path }));
-        await p.app.workspace.getLeaf(false).openFile(existing);
-        return;
-      }
       // getAbstractFileByPath is case-sensitive; the adapter's check is not on Windows/macOS
-      if (await p.app.vault.adapter.exists(path)) {
+      if (!(p.app.vault.getAbstractFileByPath(path) instanceof TFile) && await p.app.vault.adapter.exists(path)) {
         new Notice(t("lens.notice.listsExists", { path }));
         const low = path.toLowerCase();
         const same = p.app.vault.getMarkdownFiles().find((f) => f.path.toLowerCase() === low);
         if (same) await p.app.workspace.getLeaf(false).openFile(same);
         return;
       }
-      const parent = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
-      if (parent !== "") await p.notes.ensureFolder(parent);
-      const file = await p.app.vault.create(path, starterNote(l ?? "en"));
+      const { file, outcome } = await p.notes.create(path, starterNote(l ?? "en"), { exists: "return" });
+      if (outcome === "existing") {
+        new Notice(t("lens.notice.listsExists", { path }));
+        await p.app.workspace.getLeaf(false).openFile(file);
+        return;
+      }
       if (p.settings.lensListsNote.trim() === "") {
         p.settings.lensListsNote = path;
         await p.saveSettings();

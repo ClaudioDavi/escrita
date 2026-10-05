@@ -19,11 +19,12 @@ describe(`lens hot loops, ${toks.length} tokens (10k words)`, () => {
   bench("normalizeWord() per token", () => { for (const t of toks) normalizeWord(t.text); }, opts);
 });
 
-const chapters = Array.from({ length: 30 }, (_, i) => ({ path: `L/Chapters/${i}.md`, basename: `${i} Cap`, text: chapter(5000) }));
+const chapters = Array.from({ length: 30 }, (_, i) => ({ path: `L/Chapters/${i}.md`, title: "Cap", number: i, include: true, text: chapter(5000) }));
 const byPath = new Map(chapters.map((c) => [c.path, c]));
 const counts = new Map(chapters.map((c) => [c.path, measureText(c.text)]));
 const port: RowsPort<null> = {
-  chapters: () => chapters, read: async (p) => ({ text: byPath.get(p)!.text, mtime: 1 }),
+  chapters: () => chapters.map(({ path, title, number, include }) => ({ path, title, number, include })),
+  read: async (p) => ({ text: byPath.get(p)!.text, mtime: 1 }),
   frontmatter: () => ({ status: "rascunho" }), counts: async (p) => counts.get(p)!, placeholders: () => 0,
   chapterDefault: () => null, resolvePov: () => null, stages: () => ({}) as never,
   settings: () => ({ statusProperty: "status", povProperty: "pov", targetProperty: "target", limitProperty: "limit", unitProperty: "unit", deadlineProperty: "deadline", chapterTargetProperty: "chapterTarget" }),

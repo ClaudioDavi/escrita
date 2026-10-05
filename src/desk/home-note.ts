@@ -64,9 +64,8 @@ async function show(plugin: EscritaPlugin, file: TFile): Promise<void> {
 
 async function create(plugin: EscritaPlugin, path: string): Promise<TFile | null> {
   const norm = normalizePath(path);
-  const slash = norm.lastIndexOf("/");
-  if (slash > 0) await plugin.notes.ensureFolder(norm.slice(0, slash));
-  const file = await plugin.app.vault.create(norm, HOME_TEMPLATE);
+  // "fail": the caller offered to create a missing note, so one that appeared since is not overwritten or reused
+  const { file } = await plugin.notes.create(norm, HOME_TEMPLATE, { exists: "fail" });
   if (!homePath(plugin.settings.homeNote)) {
     plugin.settings.homeNote = norm;
     await plugin.saveSettings();

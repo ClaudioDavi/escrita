@@ -9,7 +9,7 @@
 
 import { Notice, TFile, TFolder, type TAbstractFile, type WorkspaceLeaf } from "obsidian";
 import type EscritaPlugin from "../main";
-import { FeatureModule, type FeatureSlots } from "../core/module-context";
+import { FeatureModule, type FeatureSlots, type SettingsUi } from "../core/module-context";
 import type { Follower } from "../core/vault-index";
 import { movedPath } from "../core/path-keys";
 import { inSnapshots, snapshotsRoot } from "../core/classify";
@@ -25,6 +25,7 @@ import { isInside } from "./paths";
 import { SharedFolderError, SnapshotStore, type SnapshotFs, type TakeResult } from "./store";
 import { SNAPSHOTS_VIEW, SnapshotsView } from "./view";
 import { COMPARE_VIEW, CompareView, type CompareMode } from "./compare-view";
+import { snapshotsOffNotice, snapshotsSettingsSection } from "./settings-ui";
 
 export { SNAPSHOTS_VIEW } from "./view";
 export { COMPARE_VIEW } from "./compare-view";
@@ -543,4 +544,7 @@ export class SnapshotsModule extends FeatureModule {
     const next = movedPath(this.shownPath, oldPath, newPath);
     if (next !== null) this.shownPath = next;
   }
+
+  settingsSection(el: HTMLElement, ui: SettingsUi): void { snapshotsSettingsSection(el, ui, this.plugin); }
+  offNotice(): Promise<string | null> { return snapshotsOffNotice(this.plugin); }
 }

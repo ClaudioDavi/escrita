@@ -44,6 +44,7 @@ async function indexFor(files: Record<string, string>, table: ReturnType<typeof 
     timers,
   });
   mentions.start();
+  mentions.demand();
   while (!mentions.isReady()) await settle();
   return mentions;
 }

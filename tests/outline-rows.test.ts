@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { loadRows, type RowsPort, type RowSettings } from "../src/outline/rows";
 import { DEFAULT_STAGES } from "../src/core/stages";
+import { chapterNumber, chapterTitle } from "../src/core/book";
 import { povValue } from "../src/outline/pov";
 
 const settings: RowSettings = {
@@ -10,12 +11,19 @@ const settings: RowSettings = {
 };
 
 interface Fake { text: string; fm?: Record<string, unknown> }
-function port(files: Record<string, Fake>, o: { def?: { target: number; unit: any } | null; placeholders?: Record<string, number> } = {}): RowsPort<string[]> {
+function port(files: Record<string, Fake>, o: { def?: { target: number; unit: any } | null; placeholders?: Record<string, number>; editor?: boolean; seeds?: unknown[] } = {}): RowsPort<string[]> {
   return {
-    chapters: (b) => b.map((p) => ({ path: p, basename: p.replace(/\.md$/, "") })),
-    read: async (p) => ({ text: files[p].text, mtime: 1 }),
-    frontmatter: (p) => files[p].fm,
-    counts: async (_p, seed) => ({ words: seed.text.split(/\s+/).filter(Boolean).length, characters: seed.text.length, charactersNoSpaces: seed.text.replace(/\s/g, "").length }),
+    chapters: (b) => b.map((p) => {
+      const base = p.replace(/\.md$/, "");
+      return { path: p, title: chapterTitle(base), number: chapterNumber(base), include: true };
+    }),
+    read: async (p) => ({ text: files[p].text, mtime: o.editor ? null : 1 }),
+    frontmatter: (p) => files[p].fm ?? {},
+    counts: async (p, seed) => {
+      o.seeds?.push(seed);
+      const text = seed?.text ?? files[p].text;
+      return { words: text.split(/\s+/).filter(Boolean).length, characters: text.length, charactersNoSpaces: text.replace(/\s/g, "").length };
+    },
     placeholders: (p) => o.placeholders?.[p] ?? 0,
     chapterDefault: () => o.def ?? null,
     resolvePov: (v) => povValue(v, (l) => (l === "Maria" ? { path: "Maria.md", name: "Maria" } : null)),
@@ -98,5 +106,24 @@ describe("loadRows", () => {
     expect(rows[0]).toMatchObject({ unit: "characters", pieceSource: "book" });
     expect(rows[1].unit).toBe("characters");
     expect(rows[2].unit).toBe("words");
+  });
+
+  it("seeds the measurer with saved text only", async () => {
+    const seeds: unknown[] = [];
+    await loadRows(port({ "a.md": { text: "a b" } }, { seeds }), ["a.md"]);
+    expect(seeds).toEqual([{ text: "a b", mtime: 1 }]);
+  });
+
+  it("gives no seed for editor text (mtime null) and still reads beats from it", async () => {
+    const seeds: unknown[] = [];
+    const [r] = await loadRows(port({ "a.md": { text: "%% beat: x %%\n\nProse here.\n" } }, { seeds, editor: true }), ["a.md"]);
+    expect(seeds).toEqual([undefined]);
+    expect(r.beats.map((b) => b.text)).toEqual(["x"]);
+  });
+
+  it("lists left-out chapters too", async () => {
+    const p = port({ "a.md": { text: "x" } });
+    const rows = await loadRows({ ...p, chapters: (b) => p.chapters(b).map((c) => ({ ...c, include: false })) }, ["a.md"]);
+    expect(rows).toHaveLength(1);
   });
 });

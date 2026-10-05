@@ -50,6 +50,7 @@ describe("MentionsIndex performance (CI ceilings from G0h)", () => {
       const s = setup(files, sources, { timers });
       const t0 = performance.now();
       s.mentions.start();
+      s.mentions.demand();
       while (!s.mentions.isReady()) await new Promise((r) => setTimeout(r, 5));
       const took = performance.now() - t0;
       const ceiling = (notes * WORDS_PER_NOTE / 1000) * MS_PER_1000_WORDS * MARGIN;

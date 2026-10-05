@@ -29,6 +29,9 @@ export interface FakeIndexHandle {
   /** tests call these to simulate the index */
   emitChange(changes: readonly unknown[]): void;
   becomeReady(): void;
+  /** how many times demand() was called (a `start: "demand"` index) */
+  demands: number;
+  demand(): void;
 }
 
 export interface FakeEventRef { source: string; name: string; cb: (...args: unknown[]) => unknown; live: boolean; off(): void }
@@ -134,7 +137,8 @@ export class FakePlugin extends Component {
       const readyCbs = new Set<() => void>();
       let ready = false;
       const h: FakeIndexHandle = {
-        disposed: false, spec, values: new Map(),
+        disposed: false, spec, values: new Map(), demands: 0,
+        demand() { this.demands++; },
         dispose() { this.disposed = true; changeCbs.clear(); readyCbs.clear(); },
         get(path) { return this.values.get(path); },
         entries() { return this.values.entries(); },

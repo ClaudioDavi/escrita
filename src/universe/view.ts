@@ -271,6 +271,9 @@ export class UniverseView extends PanelBase {
     if (threadsOn) add("threads", openThreads);
     if (!perBook) add("works", works.length);
 
+    // the Entries and Works tabs show counts: start them (Q15); the panel redraws when they are ready
+    if (tab === "entries" || tab === "works") this.plugin.universe.demandMentions();
+
     const body = el.createDiv({ cls: "escrita-universe-body" });
     if (tab === "entries") {
       if (!perBook) this.addToUniverse(body, info);

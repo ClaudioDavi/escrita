@@ -5,7 +5,7 @@
 
 import type { TFile } from "obsidian";
 import type EscritaPlugin from "../main";
-import { FeatureModule, type FeatureSlots } from "../core/module-context";
+import { FeatureModule, type FeatureSlots, type SettingsUi } from "../core/module-context";
 import type { FeatureId } from "../core/features";
 import type { Follower } from "../core/vault-index";
 import { locale } from "../i18n";
@@ -22,6 +22,7 @@ import { shownResult } from "./shown";
 import { LensUi } from "./ui";
 import { LENS_VIEW } from "./view";
 import { RULES, type Dismissal, type Lists, type LensLang, type LensResult, type Match, type Measures, type RuleId } from "./types";
+import { lensOffNotice, lensSettingsSection } from "./settings-ui";
 
 /** What `Platform.isMobile` reads (the body class); index.ts has no runtime obsidian import, so tests can load it. */
 function isMobile(): boolean {
@@ -273,4 +274,7 @@ export class LensModule extends FeatureModule {
   createLists(): Promise<void> {
     return this.ui?.createLists() ?? Promise.resolve();
   }
+
+  settingsSection(el: HTMLElement, ui: SettingsUi): void { lensSettingsSection(el, ui, this.plugin); }
+  offNotice(): Promise<string | null> { return lensOffNotice(this.plugin); }
 }

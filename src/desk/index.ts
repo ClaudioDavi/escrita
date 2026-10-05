@@ -1,7 +1,7 @@
 import { MarkdownView } from "obsidian";
 import type EscritaPlugin from "../main";
 import { t } from "../i18n";
-import { FeatureModule } from "../core/module-context";
+import { FeatureModule, type SettingsUi } from "../core/module-context";
 import type { Follower } from "../core/vault-index";
 import { newestLeftOff, pruneMissing } from "../core/left-off";
 import { homeAfterMove } from "./home";
@@ -9,6 +9,7 @@ import { LeftOffRecorder } from "./recorder";
 import { DeskBlock } from "./render";
 import { openHome, startupOpen } from "./home-note";
 import { dropKeys, renameKeys } from "../core/path-keys";
+import { deskOffNotice, deskSettingsSection } from "./settings-ui";
 
 /**
  * The writing desk (feature "desk"). While loaded it binds the `escrita-works` block
@@ -94,4 +95,7 @@ export class DeskModule extends FeatureModule {
     });
     ws.updateOptions();   // Live Preview widgets
   }
+
+  settingsSection(el: HTMLElement, ui: SettingsUi): void { deskSettingsSection(el, ui, this.plugin); }
+  offNotice(): Promise<string | null> { return deskOffNotice(this.plugin); }
 }

@@ -31,6 +31,7 @@ describe("MentionsIndex lifecycle", () => {
     expect(s.mentions.isReady()).toBe(false);
     expect(s.mentions.started).toBe(false);
     s.mentions.start();
+    s.mentions.demand();
     await settle();
     expect(s.mentions.isReady()).toBe(true);
     expect(s.vault.readCount).toBe(2);                       // templates and snapshots are not scanned
@@ -41,20 +42,21 @@ describe("MentionsIndex lifecycle", () => {
     expect(s.vault.readCount).toBe(2);
   });
 
-  it("follows modify (after the 300 ms settle), rename and delete", async () => {
+  it("follows modify (after the 4 s settle), rename and delete", async () => {
     const s = setup({ "Contos/a.md": "Teo chegou." }, [A]);
     s.mentions.start();
+    s.mentions.demand();
     await settle();
     let fired = 0;
     s.mentions.onChange(() => fired++);
     s.vault.modify("Contos/a.md", "Teo e Teo.");
-    await s.timers.advance(299);
+    await s.timers.advance(3999);
     expect(s.mentions.get("Contos/a.md")?.occurrences).toHaveLength(1);
     await s.timers.advance(1);
     expect(s.mentions.get("Contos/a.md")?.occurrences).toHaveLength(2);
     expect(fired).toBeGreaterThan(0);
     s.vault.rename("Contos/a.md", "Contos/b.md");
-    await s.timers.advance(400);
+    await s.timers.advance(4000);
     expect(s.mentions.get("Contos/a.md")).toBeUndefined();
     expect(s.mentions.get("Contos/b.md")?.occurrences).toHaveLength(2);
     s.vault.delete("Contos/b.md");
@@ -65,9 +67,10 @@ describe("MentionsIndex lifecycle", () => {
   it("a work's rename moves its notes' mentions and counts follow", async () => {
     const s = setup({ "Contos/Obra/c1.md": "Teo.", "Contos/Obra/c2.md": "Teo." }, [A]);
     s.mentions.start();
+    s.mentions.demand();
     await settle();
     s.vault.rename("Contos/Obra", "Contos/Nova");
-    await s.timers.advance(400);
+    await s.timers.advance(4000);
     expect(s.mentions.get("Contos/Nova/c1.md")).toBeDefined();
     expect(s.mentions.get("Contos/Obra/c1.md")).toBeUndefined();
     s.vault.delete("Contos/Nova");
@@ -78,6 +81,7 @@ describe("MentionsIndex lifecycle", () => {
   it("an alias change rebuilds once after 2 s and keeps the old values until done", async () => {
     const s = setup({ "Contos/a.md": "Quica chegou. Teo também." }, [A, B]);
     s.mentions.start();
+    s.mentions.demand();
     await settle();
     expect(s.mentions.get("Contos/a.md")?.occurrences).toHaveLength(2);
     const reads = s.vault.readCount;
@@ -100,6 +104,7 @@ describe("MentionsIndex lifecycle", () => {
   it("several table changes inside 2 s make one rebuild", async () => {
     const s = setup({ "Contos/a.md": "Teo" }, [A]);
     s.mentions.start();
+    s.mentions.demand();
     await settle();
     const reads = s.vault.readCount;
     for (const n of ["X", "Y", "Z"]) {
@@ -115,6 +120,7 @@ describe("MentionsIndex lifecycle", () => {
   it("a thread edit or a scope-only change leaves the signature alone and doesn't rebuild", async () => {
     const s = setup({ "Contos/a.md": "Teo" }, [A]);
     s.mentions.start();
+    s.mentions.demand();
     await settle();
     const reads = s.vault.readCount;
     s.state.table = table([A]);                      // a new table object, same signature
@@ -129,6 +135,7 @@ describe("MentionsIndex lifecycle", () => {
     expect(s.timers.count).toBe(0);
     s.state.table = table([A, B]);
     s.mentions.start();
+    s.mentions.demand();
     await settle();
     await s.timers.advance(5000);
     expect(s.vault.readCount).toBe(1);               // one full build, no second one 2 s later
@@ -139,6 +146,7 @@ describe("MentionsIndex lifecycle", () => {
     const s = setup({ "Contos/a.md": "Teo" }, [A]);
     expect(s.mentions.workCount(A.id, ctx(A.id))).toBe(0);
     s.mentions.start();
+    s.mentions.demand();
     await settle();
     expect(s.mentions.workCount(A.id, ctx(A.id, { workOf: () => ({ work: "W", chapter: null }) }))).toBe(1);
     s.mentions.dispose();
@@ -162,6 +170,7 @@ describe("MentionsIndex queries", () => {
     }
     const s = setup(files, sources);
     s.mentions.start();
+    s.mentions.demand();
     while (!s.mentions.isReady()) await settle();
     let scopeCalls = 0;
     const work = (p: string) => ({ work: p.split("/")[0]!, chapter: null });
@@ -181,6 +190,7 @@ describe("MentionsIndex queries", () => {
     const target = { v: "Universo/Teo.md" as string | null };
     const s = setup({ "Contos/a.md": "Veja [[Teo]] hoje." }, [], { resolve: () => target.v });
     s.mentions.start();
+    s.mentions.demand();
     await settle();
     const w = (p: string) => ({ work: "W", chapter: p === "x" ? 1 : null });
     expect(s.mentions.appearsIn("Universo/Teo.md", ctx("Universo/Teo.md", { resolve: () => target.v, workOf: w })).total).toBe(1);
@@ -193,11 +203,12 @@ describe("MentionsIndex queries", () => {
   it("answers again after an edit changes the counts", async () => {
     const s = setup({ "Contos/a.md": "Teo." }, [A]);
     s.mentions.start();
+    s.mentions.demand();
     await settle();
     const c = () => ctx(A.id);
     expect(s.mentions.appearsIn(A.id, c()).total).toBe(1);
     s.vault.modify("Contos/a.md", "Teo, Teo.");
-    await s.timers.advance(300);
+    await s.timers.advance(4000);
     expect(s.mentions.appearsIn(A.id, c()).total).toBe(2);
   });
 });
@@ -211,6 +222,7 @@ describe("MentionsIndex lookup maps follow an edit for the changed note only (fi
     for (let i = 0; i < 20; i++) files[`Contos/l${i}.md`] = `Ver [[Ana]] ${i}.`;
     const s = setup(files, [A, B], { resolve: (l) => { resolves.n++; return l === "Teo" ? A.id : l === "Ana" ? B.id : null; } });
     s.mentions.start();
+    s.mentions.demand();
     await settle();
     const c = (id: string) => ctx(id, { workOf: wk, resolve: (l) => (l === "Teo" ? A.id : l === "Ana" ? B.id : null) });
     return { s, resolves, c };
@@ -222,7 +234,7 @@ describe("MentionsIndex lookup maps follow an edit for the changed note only (fi
     const built1 = resolves.n;
     expect(built1).toBeGreaterThanOrEqual(20);
     s.vault.modify("Contos/b.md", "Ana e [[Ana]] sozinha.");
-    await s.timers.advance(300);
+    await s.timers.advance(4000);
     expect(s.mentions.appearsIn(B.id, c(B.id)).total).toBe(22);   // 20 links, and b's name and link
     expect(resolves.n - built1).toBeLessThanOrEqual(2);
   });
@@ -232,7 +244,7 @@ describe("MentionsIndex lookup maps follow an edit for the changed note only (fi
     const forA = s.mentions.appearsIn(A.id, c(A.id));
     const forB = s.mentions.appearsIn(B.id, c(B.id));
     s.vault.modify("Contos/b.md", "Ana e Ana.");
-    await s.timers.advance(300);
+    await s.timers.advance(4000);
     expect(s.mentions.appearsIn(A.id, c(A.id))).toBe(forA);
     expect(s.mentions.appearsIn(B.id, c(B.id))).not.toBe(forB);
   });
@@ -241,10 +253,10 @@ describe("MentionsIndex lookup maps follow an edit for the changed note only (fi
     const { s, c } = await built();
     expect(s.mentions.appearsIn(A.id, c(A.id)).total).toBe(2);
     s.vault.modify("Contos/a.md", "Nada.");
-    await s.timers.advance(300);
+    await s.timers.advance(4000);
     expect(s.mentions.appearsIn(A.id, c(A.id)).total).toBe(0);
     s.vault.modify("Contos/a.md", "Teo voltou.");
-    await s.timers.advance(300);
+    await s.timers.advance(4000);
     expect(s.mentions.appearsIn(A.id, c(A.id)).total).toBe(1);
   });
 
@@ -252,7 +264,7 @@ describe("MentionsIndex lookup maps follow an edit for the changed note only (fi
     const { s, resolves, c } = await built();
     s.mentions.appearsIn(A.id, c(A.id));
     s.vault.rename("Contos/a.md", "Contos/z.md");
-    await s.timers.advance(400);
+    await s.timers.advance(4000);
     const r = s.mentions.appearsIn(A.id, c(A.id));
     expect(r.other.length + r.works.flatMap((w) => w.notes).length).toBe(1);
     expect(r.works.flatMap((w) => w.notes.map((n) => n.path))).toEqual(["Contos/z.md"]);

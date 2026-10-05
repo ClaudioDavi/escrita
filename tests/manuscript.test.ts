@@ -132,6 +132,8 @@ describe("manuscriptOf", () => {
   it("drops the title heading only when it is first and equal", () => {
     expect(md("# A Visita\n\nx", { dropTitleHeading: " a visita " }).blocks.map(text)).toEqual(["x"]);
     expect(md("x\n\n# A Visita", { dropTitleHeading: "a visita" }).blocks.map(text)).toEqual(["x", "A Visita"]);
+    expect(md("# A chegada\n\nx", { dropTitleHeading: ["Chapter 1: A chegada", " a CHEGADA"] }).blocks.map(text)).toEqual(["x"]);
+    expect(md("# Outro\n\nx", { dropTitleHeading: ["Chapter 1", "A chegada"] }).blocks.map(text)).toEqual(["Outro", "x"]);
     expect(md("# A Visita\n\nx").blocks.map(text)).toEqual(["A Visita", "x"]);
   });
 

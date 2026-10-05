@@ -2,7 +2,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { FEATURE_IDS, FEATURE_PAGE, FEATURE_SPECS, wanted } from "../src/core/features";
 import { registerStrings } from "../src/i18n";
 import { coreStrings } from "../src/strings";
-import { DEFAULT_SETTINGS, SETTING_FEATURES, rowShown, setFeature, switchesOf } from "../src/settings";
+import { DEFAULT_SETTINGS, SETTING_FEATURES, rowShown, setFeature } from "../src/settings";
+import { switchesOf } from "../src/core/feature-registry";
 import { defaultUniverseSettings } from "../src/universe/settings";
 
 beforeAll(() => registerStrings(coreStrings));
@@ -28,7 +29,7 @@ describe("the Features page text", () => {
       "settings.features.stages", "settings.features.stages.desc", "settings.features.alwaysOn",
       "settings.features.uses.snapshots", "settings.features.needs.snapshots", "settings.features.needs.snapshots.desc",
       "settings.features.turnOn.snapshots", "settings.features.snapshots.off",
-      "settings.features.export", "settings.features.export.desc", "settings.features.export.tag",
+      "settings.features.export", "settings.features.export.desc",
       "settings.shared", "settings.shared.desc",
       "settings.povProperty", "settings.povProperty.desc", "settings.chapterTargetProperty", "settings.chapterTargetProperty.desc",
     ];

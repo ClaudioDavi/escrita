@@ -8,7 +8,7 @@
 
 import { parseThreads, type ThreadMarker } from "../core/markers";
 import type { IndexFile, IndexSpec } from "../core/vault-index";
-import { basenameOf, isUniverseNote, type EntriesSettings } from "./entries";
+import { basenameOf, classifyKeyOf, isUniverseNote, type EntriesSettings } from "./entries";
 import { seenAt, type SeenStore } from "./first-seen";
 import { sameScope, type Scope } from "./scope";
 
@@ -34,7 +34,7 @@ export function sameThreads(a: NoteThreads, b: NoteThreads): boolean {
 }
 
 export function threadsSettingsKey(s: ThreadsSettings): string {
-  return JSON.stringify([s.threadKeyword, s.threadClosedWord, s.snapshotsFolder, s.templatesFolder, s.chapterTemplate,
+  return JSON.stringify([s.threadKeyword, s.threadClosedWord, s.templatesFolder, classifyKeyOf(s),
     s.entryTypes.character.template, s.entryTypes.place.template, s.entryTypes.object.template,
     s.entryTypes.group.template, s.entryTypes.event.template]);
 }

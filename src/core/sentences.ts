@@ -36,7 +36,14 @@ const OPENERS = "*_~([¡¿“‘«\"'";
 const LETTER_OR_DIGIT = /[\p{L}\p{N}]/u;
 const UPPER = /\p{Lu}/u;
 const LOWER = /\p{Ll}/u;
-const WS = /\s/;
+/** Same set as /\s/, by char code (no regex per character). NaN (past the end) is false. */
+function isWs(s: string, i: number): boolean {
+  const c = s.charCodeAt(i);
+  if (c <= 32) return c === 32 || (c >= 9 && c <= 13);
+  if (c < 160) return false;
+  return c === 160 || c === 0x1680 || (c >= 0x2000 && c <= 0x200a) || c === 0x2028 || c === 0x2029 ||
+    c === 0x202f || c === 0x205f || c === 0x3000 || c === 0xfeff;
+}
 const PREV_TOKEN = /[\p{L}\p{N}.ºª°]+$/u;
 const INITIALS = /^(?:\p{Lu}\.)*\p{Lu}$/u;
 const LINE_CLOSED = /[.!?…](?:["”’»)*_'’]|\[\^?[\w-]+\])*$/u;
@@ -91,7 +98,7 @@ function isDashAt(s: string, i: number, le: number): number {
   if (i >= le) return 0;
   if (DASHES.includes(s[i])) return 1;
   if (s[i] === "-" && s[i + 1] === "-") return 2;
-  if (s[i] === "-" && i + 1 < le && WS.test(s[i + 1])) return 1;
+  if (s[i] === "-" && i + 1 < le && isWs(s, i + 1)) return 1;
   return 0;
 }
 
@@ -101,7 +108,7 @@ function skipOpeners(s: string, i: number, le: number, dashes: boolean): number 
     if (i >= le) return i;
     const d = dashes ? isDashAt(s, i, le) : 0;
     if (d) { i += d; continue; }
-    if (OPENERS.includes(s[i]) || WS.test(s[i])) { i++; continue; }
+    if (OPENERS.includes(s[i]) || isWs(s, i)) { i++; continue; }
     return i;
   }
 }
@@ -113,7 +120,7 @@ function region(s: string, ls: number, le: number, abbr: ReadonlySet<string> | n
   let i = ls;
   const push = (to: number) => {
     let e = to;
-    while (e > start && WS.test(s[e - 1])) e--;
+    while (e > start && isWs(s, e - 1)) e--;
     if (hasWord && e > start) out.push({ from: start, to: e });
     start = -1;
     hasWord = false;
@@ -122,7 +129,7 @@ function region(s: string, ls: number, le: number, abbr: ReadonlySet<string> | n
   while (i < le) {
     const ch = s[i];
     if (start < 0) {
-      if (WS.test(ch)) { i++; continue; }
+      if (isWs(s, i)) { i++; continue; }
       start = i;
     }
     if (LETTER_OR_DIGIT.test(ch)) { hasWord = true; i++; continue; }
@@ -164,7 +171,7 @@ function region(s: string, ls: number, le: number, abbr: ReadonlySet<string> | n
 
     let k = end;
     let sawBreak = false;
-    while (k < le && WS.test(s[k])) { if (s[k] === "\n") sawBreak = true; k++; }
+    while (k < le && isWs(s, k)) { if (s[k] === "\n") sawBreak = true; k++; }
     if (k >= le) { push(end); i = k; continue; }
 
     const afterDash = isDashAt(s, k, le);

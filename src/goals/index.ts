@@ -2,6 +2,7 @@ import { Notice, TAbstractFile, TFile, debounce } from "obsidian";
 import { EditorView, type ViewUpdate } from "@codemirror/view";
 import type EscritaPlugin from "../main";
 import { FeatureModule } from "../core/module-context";
+import type { SettingsUi } from "../core/module-context";
 import type { Follower } from "../core/vault-index";
 import type { FeatureId } from "../core/features";
 import { dropFromMap, isUnder, renameInMap } from "../core/path-keys";
@@ -18,6 +19,7 @@ import { StatusBar } from "./status-bar";
 import {
   ActiveFiles, addedOn, applyDelta, countsAsWriting, recordBookTotal, renameBook, streak,
 } from "./tracker";
+import { goalsSettingsSection, goalsOffNotice } from "./settings-ui";
 
 /**
  * Word goals: tracks real typing in the active file, shows progress in the
@@ -374,4 +376,7 @@ export class GoalsModule extends FeatureModule {
     if (this.sprintTimer !== null) window.clearInterval(this.sprintTimer);
     this.sprintTimer = null;
   }
+
+  settingsSection(el: HTMLElement, ui: SettingsUi): void { goalsSettingsSection(el, ui, this.plugin); }
+  offNotice(): Promise<string | null> { return goalsOffNotice(this.plugin); }
 }

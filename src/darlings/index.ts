@@ -3,17 +3,18 @@ import {
   type MarkdownFileInfo, type WorkspaceLeaf,
 } from "obsidian";
 import type EscritaPlugin from "../main";
-import { FeatureModule, type FeatureSlots } from "../core/module-context";
+import { FeatureModule, type FeatureSlots, type SettingsUi } from "../core/module-context";
 import { t } from "../i18n";
 import { writingDay } from "../core/dates";
 import { chapterTitle } from "../core/book";
-import { FolderBlockedError } from "../core/notes";
+import { FolderBlockedError, NoteExistsError } from "../core/notes";
 import {
   alreadyRestored, appendEntry, appendText, baseName, findRestoreOffset, formatEntry,
   matchLineEndings, newId, parseEntries, planCut, removeEntry, restoreText, withMd,
   type DarlingEntry,
 } from "./format";
 import { ConfirmModal, DarlingsView, VIEW_DARLINGS } from "./view";
+import { darlingsOffNotice, darlingsSettingsSection } from "./settings-ui";
 
 export { VIEW_DARLINGS };
 
@@ -185,18 +186,13 @@ export class DarlingsModule extends FeatureModule {
   // --- cutting --------------------------------------------------------------
 
   private async ensureNote(path: string): Promise<TFile> {
-    const { vault } = this.plugin.app;
-    const existing = vault.getAbstractFileByPath(path);
-    if (existing instanceof TFile) return existing;
-    if (existing) throw new Error(t("darlings.error.notAFile", { path }));
-    const parent = path.split("/").slice(0, -1).join("/");
     try {
-      await this.plugin.notes.ensureFolder(parent);
+      return (await this.plugin.notes.create(path, `${t("darlings.intro")}\n`, { exists: "return" })).file;
     } catch (e) {
       if (e instanceof FolderBlockedError) throw new Error(t("darlings.error.notAFolder", { path: e.path }));
+      if (e instanceof NoteExistsError) throw new Error(t("darlings.error.notAFile", { path }));
       throw e;
     }
-    return vault.create(path, `${t("darlings.intro")}\n`);
   }
 
   /**
@@ -447,4 +443,7 @@ export class DarlingsModule extends FeatureModule {
       },
     }).open();
   }
+
+  settingsSection(el: HTMLElement, ui: SettingsUi): void { darlingsSettingsSection(el, ui, this.plugin); }
+  offNotice(): Promise<string | null> { return darlingsOffNotice(this.plugin); }
 }

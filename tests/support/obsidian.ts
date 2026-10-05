@@ -95,17 +95,74 @@ export class Keymap {
 }
 export class MarkdownView {}
 export class Editor {}
+/** One row a `Setting` drew, in order: what the settings tab tests read (name, line under it, heading or not). */
+export interface SettingRow { name: string; desc: string; heading: boolean }
+export const settingLog: SettingRow[] = [];
+export function resetSettingLog(): void { settingLog.length = 0; }
+
+/** A control inside a `Setting`: remembers its value, ignores the rest. Elements exist only where there is a DOM. */
+class StubControl {
+  inputEl: HTMLInputElement = undefined as unknown as HTMLInputElement;
+  selectEl: HTMLSelectElement = undefined as unknown as HTMLSelectElement;
+  toggleEl: HTMLElement = undefined as unknown as HTMLElement;
+  buttonEl: HTMLElement = undefined as unknown as HTMLElement;
+  extraSettingsEl: HTMLElement = undefined as unknown as HTMLElement;
+  value: unknown = "";
+  private changed: ((v: never) => unknown) | null = null;
+  constructor() {
+    if (typeof document !== "undefined") {
+      this.inputEl = document.createElement("input");
+      this.selectEl = document.createElement("select");
+      this.toggleEl = document.createElement("div");
+      this.buttonEl = document.createElement("button");
+      this.extraSettingsEl = document.createElement("div");
+    }
+  }
+  setValue(v: unknown): this { this.value = v; if (this.inputEl && typeof v === "string") this.inputEl.value = v; return this; }
+  getValue(): unknown { return this.inputEl && typeof this.value === "string" ? this.inputEl.value : this.value; }
+  setPlaceholder(): this { return this; }
+  setDisabled(): this { return this; }
+  setIcon(): this { return this; }
+  setTooltip(): this { return this; }
+  setButtonText(): this { return this; }
+  addOption(): this { return this; }
+  onChange(cb: (v: never) => unknown): this { this.changed = cb; return this; }
+  onClick(): this { return this; }
+  /** Test helper: what typing `v` into the control would run. */
+  fire(v: unknown): unknown { return this.changed?.(v as never); }
+}
+
 export class Setting {
-  constructor(public containerEl?: HTMLElement) {}
-  setName(): this { return this; }
-  setDesc(): this { return this; }
-  setHeading(): this { return this; }
-  addText(): this { return this; }
-  addToggle(): this { return this; }
-  addDropdown(): this { return this; }
-  addButton(): this { return this; }
-  addExtraButton(): this { return this; }
-  addTextArea(): this { return this; }
+  readonly row: SettingRow = { name: "", desc: "", heading: false };
+  settingEl: HTMLElement = undefined as unknown as HTMLElement;
+  nameEl: HTMLElement = undefined as unknown as HTMLElement;
+  descEl: HTMLElement = undefined as unknown as HTMLElement;
+  controlEl: HTMLElement = undefined as unknown as HTMLElement;
+  constructor(public containerEl?: HTMLElement) {
+    settingLog.push(this.row);
+    if (typeof document !== "undefined") {
+      this.settingEl = document.createElement("div");
+      this.nameEl = this.settingEl.appendChild(document.createElement("div"));
+      this.descEl = this.settingEl.appendChild(document.createElement("div"));
+      this.controlEl = this.settingEl.appendChild(document.createElement("div"));
+      containerEl?.appendChild(this.settingEl);
+    }
+  }
+  setName(name: string): this { this.row.name = name; return this; }
+  setDesc(desc: string): this { this.row.desc = desc; return this; }
+  setHeading(): this { this.row.heading = true; return this; }
+  private control(cb?: (c: never) => unknown): this {
+    // Callbacks run only where there is a DOM: node tests that build a Setting get the old no-op.
+    if (typeof document !== "undefined" && cb) cb(new StubControl() as never);
+    return this;
+  }
+  addText(cb?: (c: never) => unknown): this { return this.control(cb); }
+  addToggle(cb?: (c: never) => unknown): this { return this.control(cb); }
+  addDropdown(cb?: (c: never) => unknown): this { return this.control(cb); }
+  addButton(cb?: (c: never) => unknown): this { return this.control(cb); }
+  addExtraButton(cb?: (c: never) => unknown): this { return this.control(cb); }
+  addTextArea(cb?: (c: never) => unknown): this { return this.control(cb); }
+  addColorPicker(cb?: (c: never) => unknown): this { return this.control(cb); }
 }
 export class PluginSettingTab {
   containerEl: unknown = {};
@@ -165,7 +222,13 @@ export function debounce<A extends unknown[]>(cb: (...args: A) => unknown, timeo
 
 export const moment = Object.assign(
   (..._args: unknown[]) => ({ isValid: () => false, format: () => "", localeData: () => ({ longDateFormat: () => "" }) }),
-  { locale: () => "en" },
+  {
+    locale: () => "en",
+    // the weekday checkboxes of the goals section
+    localeData: () => ({ firstDayOfWeek: () => 0, longDateFormat: () => "" }),
+    weekdaysShort: (d: number) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d] ?? "",
+    weekdays: (d: number) => ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][d] ?? "",
+  },
 );
 
 export const editorInfoField = StateField.define<null>({ create: () => null, update: (v) => v });

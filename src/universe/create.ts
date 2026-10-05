@@ -11,6 +11,7 @@ import {
   type App, type Editor, type MarkdownFileInfo, type Menu,
 } from "obsidian";
 import type EscritaPlugin from "../main";
+import { segmentDoc } from "../core/markdown";
 import { parseThreads, threadComment, type ThreadMarker } from "../core/markers";
 import { replaceIfExact } from "../core/note-text";
 import { t } from "../i18n";
@@ -528,10 +529,10 @@ class ThreadMarkersPlugin {
     this.words = `${s.threadKeyword}\u0000${s.threadClosedWord}`;
     const builder = new RangeSetBuilder<Decoration>();
     const doc = view.state.doc;
-    const text = doc.toString();
-    if (!text.includes("%%")) return builder.finish();
+    const md = segmentDoc(doc);
+    if (!md.text.includes("%%")) return builder.finish();
     // line decoration (the margin flag) first, then the marks; a RangeSetBuilder wants them sorted by position
-    const found = parseThreads(text, s.threadKeyword, s.threadClosedWord).filter((th) => th.line + 1 <= doc.lines);
+    const found = parseThreads(md, s.threadKeyword, s.threadClosedWord).filter((th) => th.line + 1 <= doc.lines);
     const hasOpen = new Map<number, boolean>();
     const items: { from: number; to: number; deco: Decoration }[] = [];
     for (const th of found) {

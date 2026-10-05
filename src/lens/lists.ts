@@ -2,6 +2,9 @@
 // Three headings, in Portuguese or English, hold one entry per line.
 
 import type { LensLang, Lists } from "./types";
+import { listsPath } from "./settings";
+
+export { listsPath };
 
 type Section = keyof Lists;
 
@@ -63,12 +66,6 @@ export function parseLists(text: string): Lists {
   return out;
 }
 
-/** The setting as a vault path: trimmed, no leading or trailing "/", "//" collapsed, ".md" added. "" stays "". */
-export function listsPath(setting: string): string {
-  const s = setting.trim().replace(/\/{2,}/g, "/").replace(/^\/+|\/+$/g, "").trim();
-  if (!s) return "";
-  return /\.md$/i.test(s) ? s : `${s}.md`;
-}
 
 interface Starter {
   title: string; intro: string;

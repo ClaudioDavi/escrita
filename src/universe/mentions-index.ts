@@ -3,6 +3,7 @@
 // No Obsidian imports: the hub's `add`, `rebuild`, link resolution and time come in
 // through `MentionsDeps`, so it is tested on MemoryVault and ManualTimers.
 
+import { classifyKey, type ClassifySettings } from "../core/classify";
 import { segment } from "../core/markdown";
 import { findNames, type TermTable } from "../core/names";
 import type { IndexChange, IndexFile, IndexSpec, IndexTimers, VaultIndex } from "../core/vault-index";
@@ -35,16 +36,21 @@ export interface MentionsDeps<F extends IndexFile> {
   timers: IndexTimers;
 }
 
+/** Q15 / IMPROVEMENTS 21: the quiet time after a modify; a mention count can wait while the writer types. */
+export const MENTIONS_SETTLE_MS = 4000;
+
 /** What decides which notes the index scans, apart from the table. */
 function includeKey(s: EntriesSettings): string {
   return JSON.stringify([
-    s.universeMode, s.snapshotsFolder, s.templatesFolder, s.chapterTemplate,
+    classifyKey(s as ClassifySettings), s.universeMode, s.templatesFolder,
     Object.values(s.entryTypes).map((t) => t.template),
   ]);
 }
 
 export class MentionsIndex<F extends IndexFile> {
   private index: VaultIndex<F, NoteMentions> | null = null;
+  /** something asked for the counts (Q15): the first query, a panel tab, an entry note. Kept until `start`. */
+  private wanted = false;
   private lastSignature = "";
   private timer: unknown = null;
   private listeners = new Set<() => void>();
@@ -56,13 +62,15 @@ export class MentionsIndex<F extends IndexFile> {
   /** note -> what its links resolved to when notesByLink was built (so an edit can take them out) */
   private linkTargets = new Map<string, string[]>();
   private answers = new Map<string, AppearsIn>();
+  private demanded = false;
 
   constructor(private deps: MentionsDeps<F>) {}
 
   /**
    * Adds the content spec. Call it once the entries index is ready and the provider has its
    * first table, so startup does one full build, not one against an empty table and a
-   * second 2 s later (the hub builds a content spec at layout ready). Safe to call twice.
+   * second 2 s later. The spec starts on demand (Q15): adding it builds nothing until
+   * `demand()` (a demand made before `start` is kept and fires here). Safe to call twice.
    */
   start(): void {
     if (this.index) return;
@@ -73,7 +81,26 @@ export class MentionsIndex<F extends IndexFile> {
       index.onChange((c) => this.changed(c)),
       index.onReady(() => this.changed(null)),
     );
+    if (this.wanted) this.demand();
   }
+
+  /**
+   * Asks for the counts (Q15): the first `appearsIn` or `workCount` query, opening the panel's
+   * Works or entry tab, an entry note becoming active. The first call builds the index;
+   * later calls do nothing. Surfaces show their "counting" state until `isReady()`.
+   */
+  demand(): void {
+    this.wanted = true;
+    const index = this.index;
+    if (!index || this.demanded) return;
+    this.demanded = true;
+    // the first build reads the table as it is now
+    this.lastSignature = this.deps.table().signature;
+    index.demand();
+  }
+
+  /** The index was asked to build (it may still be building). */
+  get demandedYet(): boolean { return this.demanded; }
 
   get started(): boolean { return this.index !== null; }
   isReady(): boolean { return this.index?.isReady() ?? false; }
@@ -89,10 +116,10 @@ export class MentionsIndex<F extends IndexFile> {
   /**
    * The term table may have changed. Debounced 2 s; then rebuilds when the table's signature
    * differs from the last build's (Q33). Old values stay visible until the new build is done.
-   * Before `start` it does nothing: the first build reads the table as it is then.
+   * Before the first demand it does nothing: the first build reads the table as it is then.
    */
   tableChanged(): void {
-    if (!this.index) return;
+    if (!this.index || !this.demanded) return;
     if (this.timer !== null) this.deps.timers.clear(this.timer);
     this.timer = this.deps.timers.set(() => {
       this.timer = null;
@@ -121,6 +148,7 @@ export class MentionsIndex<F extends IndexFile> {
 
   /** The entry's mentions grouped for display; the same object until the next change. */
   appearsIn(entry: string, ctx: MentionCtx): AppearsIn {
+    this.demand();
     const hit = this.answers.get(entry);
     if (hit) return hit;
     const index = this.index;
@@ -148,6 +176,8 @@ export class MentionsIndex<F extends IndexFile> {
     this.stops = [];
     if (this.index) this.deps.remove?.(this.index);
     this.index = null;
+    this.wanted = false;
+    this.demanded = false;
     this.listeners.clear();
     this.notesByEntry = null;
     this.notesByLink = null;
@@ -169,6 +199,8 @@ export class MentionsIndex<F extends IndexFile> {
       },
       same: mentionsSame,
       settingsKey: () => includeKey(this.deps.settings()),
+      start: "demand",
+      settleMs: MENTIONS_SETTLE_MS,
     };
   }
 

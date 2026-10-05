@@ -1,7 +1,7 @@
 // A chapter's row, loaded once for the outline view and the board (0.7 plan Q51,
 // IMPROVEMENTS 7). Pure: no Obsidian or CodeMirror imports, no i18n.
 
-import { chapterTitle } from "../core/book";
+import type { BookSource } from "../core/book-source";
 import { parseBeats, type BeatMarker } from "../core/markers";
 import {
   countIn, effectivePiece, noteProgress, parseUnit, readPiece,
@@ -31,12 +31,10 @@ export interface RowSettings {
   chapterTargetProperty: string;
 }
 
-/** Generic over the book type, so tests pass a plain object; titles and labels come from chapterTitle/chapterNumber (core/book.ts). */
-export interface RowsPort<B> {
-  chapters(book: B): { path: string; basename: string }[];
-  read(path: string): Promise<{ text: string; mtime: number }>;
-  frontmatter(path: string): Record<string, unknown> | undefined;
-  counts(path: string, seed: { text: string; mtime: number }, unit: PieceUnit): Promise<Counts>;
+/** Generic over the book type, so tests pass a plain object. Chapters, text and frontmatter come from the book source; the title is ChapterRef.title, the label the digits of the file name. */
+export interface RowsPort<B> extends BookSource<B> {
+  /** `seed` is undefined when the text came from an open editor (read's mtime is null): the measurer then reads the file itself. */
+  counts(path: string, seed: { text: string; mtime: number } | undefined, unit: PieceUnit): Promise<Counts>;
   placeholders(path: string): number;          // 0 when the feature is off
   chapterDefault(book: B): ChapterDefault | null;
   resolvePov(value: unknown, path: string): PovValue | null;
@@ -59,7 +57,8 @@ export async function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRo
   const s = port.settings();
   const def = port.chapterDefault(book);
   return Promise.all(port.chapters(book).map(async (ch, i): Promise<ChapterRow> => {
-    const seed = await port.read(ch.path);
+    const read = await port.read(ch.path);
+    const basename = ch.path.slice(ch.path.lastIndexOf("/") + 1).replace(/\.md$/, "");
     const fm = port.frontmatter(ch.path) ?? {};
     const status = readStatus(fm, s.statusProperty) ?? "";
     const own = readPiece(fm, s);
@@ -68,12 +67,13 @@ export async function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRo
     const ownUnit = rawUnit === undefined || rawUnit === null || (typeof rawUnit === "string" && rawUnit.trim() === "") ? null : parseUnit(rawUnit);
     const { piece, source } = effectivePiece(own, def, ownUnit);
     const unit: PieceUnit = piece?.unit ?? ownUnit ?? "words";
-    const counts = await port.counts(ch.path, seed, unit);
+    // only saved text may seed the measurer's mtime cache: an editor's buffer may be unsaved
+    const counts = await port.counts(ch.path, read.mtime === null ? undefined : { text: read.text, mtime: read.mtime }, unit);
     return {
       path: ch.path,
       index: i,
-      label: /^\d+/.exec(ch.basename)?.[0] ?? String(i + 1),   // the digits as written ("01"), as the view always showed them
-      title: chapterTitle(ch.basename),
+      label: /^\d+/.exec(basename)?.[0] ?? String(i + 1),   // the digits as written ("01"), as the view always showed them
+      title: ch.title,
       summary: s.summaryProperty ? oneLine(str(fm[s.summaryProperty])) : "",
       status,
       stage: stageOf(status, port.stages()),
@@ -84,9 +84,9 @@ export async function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRo
       words: counts.words,
       count: countIn(counts, unit),
       progress: piece ? noteProgress(counts, piece, unit) : null,
-      beats: parseBeats(seed.text),
+      beats: parseBeats(read.text),
       placeholders: port.placeholders(ch.path),
-      bodyBlank: isBlankBody(seed.text),
+      bodyBlank: isBlankBody(read.text),
     };
   }));
 }

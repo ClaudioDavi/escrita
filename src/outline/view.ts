@@ -17,7 +17,7 @@ import {
 } from "./model";
 import { confirmAction } from "./modals";
 import { errorMessage } from "./errors";
-import { loadRows, type ChapterRow as LoadedRow, type RowsPort } from "./rows";
+import { loadRows, type ChapterRow as LoadedRow } from "./rows";
 import {
   canReorder, filterActive, hiddenByFilter, povValue, rowMatches, type PovColor, type RowFilter,
 } from "./pov";
@@ -61,38 +61,6 @@ export function toViewRow(row: LoadedRow, file: TFile): ChapterRow {
     bodyBlank: row.bodyBlank,
     data: row,
   };
-}
-
-/**
- * What `rows.loadRows` needs from Obsidian, for the panel and the board. `files` maps
- * each chapter path of the book being loaded to its file.
- */
-export function chaptersPort(plugin: EscritaPlugin): { port: RowsPort<Book>; files: Map<string, TFile> } {
-  const files = new Map<string, TFile>();
-  const { app, books, settings } = plugin;
-  const fileAt = (path: string): TFile => files.get(path) as TFile;
-  const port: RowsPort<Book> = {
-    chapters: (book) => books.chapters(book).map((ch) => {
-      files.set(ch.file.path, ch.file);
-      return { path: ch.file.path, basename: ch.file.basename };
-    }),
-    read: async (path) => {
-      const file = fileAt(path);
-      return { text: await app.vault.cachedRead(file), mtime: file.stat.mtime };
-    },
-    frontmatter: (path) => books.frontmatter(fileAt(path)),
-    counts: (path, seed, unit) => plugin.measure.counts(fileAt(path), seed, unit),
-    placeholders: (path) => (plugin.features.isOn("placeholders") ? plugin.placeholders.countFor(path) : 0),
-    chapterDefault: (book) => readChapterDefault(books.frontmatter(book.note), settings),
-    resolvePov: (value, path) => povValue(value, (link) => {
-      const dest = app.metadataCache.getFirstLinkpathDest(link, path);
-      if (dest) return { path: dest.path, name: dest.basename };
-      return plugin.names.entryFor(link, path);
-    }),
-    settings: () => settings,
-    stages: () => settings.stages,
-  };
-  return { port, files };
 }
 
 interface LineInfo {
@@ -358,13 +326,12 @@ export class OutlineView extends ItemView {
   }
 
   private async loadRows(book: Book): Promise<ChapterRow[]> {
-    const { port, files } = chaptersPort(this.plugin);
     const s = this.plugin.settings;
-    const rows = await loadRows(port, book);
+    const rows = await loadRows(this.plugin.outline.rowsPort(), book);
     // Q42: rows call colorsFor when they load, so a POV seen for the first time gets the next free colour
     this.colors = this.plugin.outline.colorsFor(rows.flatMap((r) => (r.pov ? [r.pov.key] : [])));
     return rows.map((row) => {
-      const file = files.get(row.path) as TFile;
+      const file = this.plugin.app.vault.getAbstractFileByPath(row.path) as TFile;
       const fm = this.plugin.books.frontmatter(file);
       // summary and status as written, as the panel always showed them (the row's are one line and trimmed)
       return { ...toViewRow(row, file), summary: str(fm[s.summaryProperty]), status: str(fm[s.statusProperty]) };

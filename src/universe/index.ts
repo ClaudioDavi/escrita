@@ -19,10 +19,11 @@
 
 import { Keymap, TFile, normalizePath } from "obsidian";
 import type EscritaPlugin from "../main";
-import { FeatureModule } from "../core/module-context";
+import { FeatureModule, type SettingsUi } from "../core/module-context";
 import { locale, t } from "../i18n";
+import { NoteExistsError } from "../core/notes";
 import { closeThreadPlan, reopenThreadPlan, type ThreadMarker } from "../core/markers";
-import type { VaultIndex } from "../core/vault-index";
+import { macrotaskYield, type VaultIndex } from "../core/vault-index";
 import { entriesIn, entriesSpec, type Entry, type ScopedEntry } from "./entries";
 import { entryPath, entryText } from "./new-entry";
 import { appearsInExtension, type AppearsInAnswer, type AppearsInSource } from "./appears-in-widget";
@@ -41,6 +42,7 @@ import type { NoteMentions } from "./mentions";
 import { addUniverseEditorMenuItems, createEntryFromSelection, inSource } from "./create";
 import { addMigrateFileMenuItem, migrateActiveBook } from "./migrate";
 import { UNIVERSE_VIEW, UniverseView, activateThreadsView, activateUniverseView } from "./view";
+import { universeSettingsSection } from "./settings-ui";
 
 /** A universe the vault knows: the settings' one, and any other a work or entry links to. */
 export interface UniverseInfo {
@@ -151,7 +153,7 @@ export class UniverseModule extends FeatureModule {
       table: () => names.globalTable(),
       settings: () => p.settings,
       resolve: (link, from) => p.app.metadataCache.getFirstLinkpathDest(link, from)?.path ?? null,
-      timers: { ...timers, yieldNow: () => new Promise<void>((r) => window.setTimeout(r, 0)) },
+      timers: { ...timers, yieldNow: macrotaskYield },
     });
     this.mentions = mentions;
     this.mentionsShown = false;
@@ -302,6 +304,12 @@ export class UniverseModule extends FeatureModule {
    */
   appearsInSource(): AppearsInSource | null { return this.source; }
 
+  /**
+   * Starts the mentions index if nothing has yet (Q15). The panel calls it when its Works or
+   * Entries tab draws; surfaces read "counting" until the first build is done. No-op while unloaded.
+   */
+  demandMentions(): void { this.mentions?.demand(); }
+
   /** The names provider while loaded (the mentions index reads `globalTable()` and the entries' readiness from here). */
   names(): UniverseNamesProvider | null { return this.namesProvider; }
 
@@ -410,15 +418,17 @@ export class UniverseModule extends FeatureModule {
         try { template = await p.app.vault.cachedRead(tf); } catch (e) { console.error("Escrita: couldn't read the entry template", e); }
       }
     }
-    await p.notes.ensureFolder(target.slice(0, target.lastIndexOf("/")));
     const uniFile = o.scope.kind === "universe" && o.scope.note ? p.app.vault.getAbstractFileByPath(o.scope.note) : null;
     const universeLink = uniFile instanceof TFile ? p.app.metadataCache.fileToLinktext(uniFile, target, true) : undefined;
     const text = entryText(s, { name: o.name.trim(), kind: o.kind, scope: o.scope, alias: o.alias, universeLink, template, now: new Date() });
     try {
-      return await p.app.vault.create(target, text);
+      // never overwrites: a file at the path (or one that differs only in case) stays as it is
+      return (await p.notes.create(target, text, { exists: "fail" })).file;
     } catch (e) {
-      const raced = p.app.vault.getAbstractFileByPath(target);
-      if (raced instanceof TFile) throw new CreateEntryError("exists", raced);
+      if (e instanceof NoteExistsError && !e.folder) {
+        const there = p.app.vault.getAbstractFileByPath(e.existing);
+        throw new CreateEntryError("exists", there instanceof TFile ? there : null);
+      }
       throw e;
     }
   }
@@ -431,11 +441,9 @@ export class UniverseModule extends FeatureModule {
     const p = this.plugin;
     const path = normalizePath(universeNotePath(p.settings.universeNote));
     await p.notes.ensureFolder(universeRootOf(path));
-    const there = p.app.vault.getAbstractFileByPath(path);
-    if (there instanceof TFile) return { file: there, created: false };
-    const slash = path.lastIndexOf("/");
-    if (slash > 0) await p.notes.ensureFolder(path.slice(0, slash));
-    return { file: await p.app.vault.create(path, "---\nname:\ndescription:\n---\n"), created: true };
+    // only what is missing: a note already there is returned untouched
+    const r = await p.notes.create(path, "---\nname:\ndescription:\n---\n", { exists: "return" });
+    return { file: r.file, created: r.outcome === "created" };
   }
 
   /**
@@ -469,6 +477,7 @@ export class UniverseModule extends FeatureModule {
     const m = this.mentions;
     const f = this.ctxFactory;
     if (!m || !f || !this.entriesIdx?.get(path) || this.scopeOf(path).kind === "none") return null;
+    m.demand();
     if (!m.isReady() || !this.entriesIdx.isReady()) return "counting";
     return m.appearsIn(path, f.ctx(path));
   }
@@ -578,4 +587,6 @@ export class UniverseModule extends FeatureModule {
       if (this.mode() === "universe") addMigrateFileMenuItem(p, menu, file);
     }));
   }
+
+  settingsSection(el: HTMLElement, ui: SettingsUi): void { universeSettingsSection(el, ui, this.plugin); }
 }

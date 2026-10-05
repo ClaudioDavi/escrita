@@ -1,17 +1,15 @@
-import { App, Notice, PluginSettingTab, Setting, moment, type ColorComponent } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting, type ColorComponent, type TextAreaComponent, type TextComponent } from "obsidian";
 import type EscritaPlugin from "./main";
-import { fmt, lang, locale, plural, t } from "./i18n";
-import { listsPath } from "./lens/lists";
-import { listsTarget } from "./lens/shown";
-import { lensLang } from "./lens/lang";
-import { RULES } from "./lens/types";
+import { lang, t } from "./i18n";
+import { listsPath } from "./lens/settings";
 import { cleanWeekdays } from "./core/merge";
-import { invalidDatesOff } from "./core/daysoff";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, STAGES, hexColor, normalizeStages, stageConflicts, writtenWord, type Stage, type StageMapping } from "./core/stages";
-import { FEATURE_SPECS, cleanFeatures, wanted, type FeatureId, type FeatureGroup, type FeatureSwitches } from "./core/features";
-import { renderUniverseSettings } from "./universe/settings-ui";
+import { FEATURE_IDS, FEATURE_PAGE, FEATURE_SPECS, cleanFeatures, wanted, type FeatureId } from "./core/features";
+import { switchesOf } from "./core/feature-registry";
+import { sectionOrder, type SectionSlot } from "./core/settings-order";
+import type { FeatureModule, SettingsUi } from "./core/module-context";
 import { defaultUniverseSettings, normalizeUniverse, type UniverseMode, type UniverseSettings } from "./universe/settings";
-import { DEFAULT_SNAPSHOTS_FOLDER, inFolder, snapshotsFolderProblem, snapshotsRoot, type SnapshotsFolderProblem } from "./core/classify";
+import { DEFAULT_SNAPSHOTS_FOLDER, snapshotsRoot } from "./core/classify";
 
 export type ParagraphStyle = "single" | "blank";
 export type Scope = "books" | "all";
@@ -293,12 +291,12 @@ export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "a
   weekdaysOff: ["goals"], datesOff: ["goals"],
   explorerFolderTotals: ["explorerCounts"], explorerShowTarget: ["explorerCounts"],
   dateProperty: ["publish"], recommendedProperties: ["publish"],
-  // 0.8: the folders are read by the classifier; the rest move to ["export"] / ["submissions"] when
-  // task 1.9 adds those ids, and to their modules' sections in 2.1 (no rows are drawn for them yet)
+  // 0.8: the folders are read by the classifier; the rest belong to the export and submissions modules
+  // (their rows are drawn by those modules' sections, tasks 3.1 and 3.2)
   exportFolder: "always", submissionsFolder: "always",
-  compileProperty: ["publish"], dedicationProperty: ["publish"], epigraphProperty: ["publish"],
-  authorName: ["publish"], authorSurname: ["publish"], contactLines: ["publish"], chapterHeadingFormat: ["publish"],
-  submissionResults: ["publish"],
+  compileProperty: ["export"], dedicationProperty: ["export"], epigraphProperty: ["export"],
+  authorName: ["export"], authorSurname: ["export"], contactLines: ["export"], chapterHeadingFormat: ["export"],
+  submissionResults: ["submissions"],
   snapshotsFolder: ["snapshots"], snapshotBeforeFirstEdit: ["snapshots"], snapshotsKeepAuto: ["snapshots"],
   ghostBeats: ["outline"],
   placeholderMarker: ["placeholders", "publish"], showExplorerDots: ["placeholders"],
@@ -310,20 +308,6 @@ export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "a
   lensListsNote: ["lens"], lensEchoWindow: ["lens"], lensLongSentence: ["lens"], lensRulesOff: ["lens"],
   lensSkipQuotes: ["lens"], lensShowDialogue: ["lens"], lensShowReadability: ["lens"],
 };
-
-/** The Features page, in the order of the approved board: group, then the rows of the group. */
-export const FEATURE_PAGE: readonly { group: FeatureGroup; ids: readonly FeatureId[] }[] = [
-  { group: "writing", ids: ["goals", "outline", "placeholders", "typing", "dialogueFocus", "moveBlocks", "templates", "spellcheck", "explorerCounts"] },
-  { group: "revision", ids: ["lens", "snapshots", "darlings"] },
-  { group: "desk", ids: ["stageSnapshot", "desk"] },
-  { group: "publishing", ids: ["publish"] },
-  { group: "world", ids: ["universe", "threads"] },
-];
-
-/** The writer's switches as the registry reads them (the same record `wanted` takes). */
-export function switchesOf(s: EscritaSettings): FeatureSwitches {
-  return { features: s.features, explorerCounts: s.explorerCounts, spellcheckOnDemand: s.spellcheckOnDemand, universeMode: s.universeMode };
-}
 
 /** Does a row of this setting draw, with these features on? */
 export function rowShown(key: string, want: ReadonlySet<FeatureId>): boolean {
@@ -341,45 +325,118 @@ export function setFeature(s: EscritaSettings, id: FeatureId, on: boolean): void
     default: s.features = { ...s.features, [id]: on };
   }
 }
-
 /** What the color input holds while a stage has no color (not black, so black is a real choice). */
 const EMPTY_SWATCH = "#808080";
 
+/** A number typed in a field: its digits, at least `min`; `fallback` when blank or not a number. */
+export function digitsNumber(v: string, fallback: number, min = 0): number {
+  const n = Number(v.replace(/[^\d]/g, ""));
+  return Number.isFinite(n) && v.trim() !== "" ? Math.max(min, n) : fallback;
+}
+
 export class EscritaSettingTab extends PluginSettingTab {
+  /** The features loaded at the start of this draw (modules' sections draw while loaded, not just switched on). */
+  private loaded: ReadonlySet<FeatureId> = new Set();
+
   constructor(app: App, private plugin: EscritaPlugin) {
     super(app, plugin);
+  }
+
+  /** What every section gets (IMPROVEMENTS 11): saving, committed text fields, redrawing, numbers. */
+  private makeUi(): SettingsUi {
+    const save = async () => { await this.plugin.saveSettings(); };
+    return {
+      app: this.app,
+      save,
+      saveOnCommit: (c: TextComponent | TextAreaComponent, fallback: () => string, apply: (v: string) => void) => {
+        c.inputEl.addEventListener("change", () => {
+          const v = c.getValue().trim() || fallback();
+          c.setValue(v);
+          apply(v);
+          void save();
+        });
+      },
+      redraw: () => this.display(),
+      num: digitsNumber,
+    };
   }
 
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
+    const ui = this.makeUi();
+    this.loaded = new Set(FEATURE_IDS.filter((id) => this.plugin.features.isOn(id)));
+    for (const slot of sectionOrder(this.loaded)) this.drawSlot(slot, containerEl, ui);
+  }
+
+  /** The core part of a slot (shared rows, headings), then the module's own section while it is loaded. */
+  private drawSlot(slot: SectionSlot, el: HTMLElement, ui: SettingsUi): void {
     const s = this.plugin.settings;
-    const save = async () => { await this.plugin.saveSettings(); };
-    const want = wanted(switchesOf(s));
-    const shown = (key: string) => rowShown(key, want);
-    /** Draws the heading when at least one of the section's rows shows (a section without rows is not drawn). */
-    const section = (title: string, keys: string[]): boolean => {
-      if (!keys.some(shown)) return false;
-      new Setting(containerEl).setName(title).setHeading();
-      return true;
-    };
-    const num = (v: string, fallback: number, min = 0) => {
-      const n = Number(v.replace(/[^\d]/g, ""));
-      return Number.isFinite(n) && v.trim() !== "" ? Math.max(min, n) : fallback;
-    };
+    const shown = (key: string) => rowShown(key, this.loaded);
+    switch (slot.id) {
+      case "features": this.featuresSection(el, ui, wanted(switchesOf(s))); return;
+      case "shared": this.sharedSection(el, ui); return;
+      case "books": this.booksSection(el, ui, shown("templatesFolder")); return;
+      case "dayEnds":
+        if (shown("dayEndsAt")) {
+          new Setting(el)
+            .setName(t("settings.dayEndsAt"))
+            .setDesc(t("settings.dayEndsAt.desc"))
+            .addDropdown((d) => {
+              for (let h = 0; h <= 6; h++) d.addOption(String(h), `${String(h).padStart(2, "0")}:00`);
+              d.setValue(String(s.dayEndsAt)).onChange(async (v) => { s.dayEndsAt = Number(v); await ui.save(); });
+            });
+        }
+        return;
+      case "stages": this.stagesSettings(el, ui); return;
+      case "placeholders":
+        // The heading and the marker are shared with publish; the module adds its own rows under them.
+        new Setting(el).setName(t("settings.placeholders")).setHeading();
+        new Setting(el)
+          .setName(t("settings.placeholderMarker"))
+          .setDesc(t("settings.placeholderMarker.desc", { marker: s.placeholderMarker }))
+          .addText((c) => {
+            c.setValue(s.placeholderMarker);
+            ui.saveOnCommit(c, () => "XXX", (v) => {
+              s.placeholderMarker = v.replace(/[^\p{L}\p{N}_-]/gu, "") || "XXX";
+              c.setValue(s.placeholderMarker);
+            });
+          });
+        break;
+      case "editor":
+        new Setting(el).setName(t("settings.editor")).setHeading();
+        this.drawModule("typing", el, ui);
+        this.editorSharedRows(el, ui, shown);
+        return;
+      case "universe":
+        // Drawn for threads alone too: the thread words sit in this section in every mode.
+        new Setting(el).setName(t("universe.settings")).setHeading();
+        break;
+      default:
+    }
+    if (slot.feature !== null) this.drawModule(slot.feature, el, ui);
+  }
+
+  /** The module's `settingsSection`. */
+  private drawModule(id: FeatureId, el: HTMLElement, ui: SettingsUi): void {
+    if (!this.loaded.has(id)) return;
+    this.plugin.features.get<FeatureModule>(id)?.settingsSection?.(el, ui);
+  }
+
+  /** Names and folders several features read: always shown (Q13). */
+  private sharedSection(el: HTMLElement, ui: SettingsUi): void {
+    const s = this.plugin.settings;
     const textRow = (key: "targetProperty" | "limitProperty" | "unitProperty" | "deadlineProperty" | "goalProperty" | "povProperty" | "chapterTargetProperty",
       name: string, placeholder: string, desc?: string) => {
-      const row = new Setting(containerEl).setName(name);
+      const row = new Setting(el).setName(name);
       if (desc) row.setDesc(desc);
-      row.addText((c) => c.setPlaceholder(placeholder).setValue(s[key])
-        .onChange(async (v) => { s[key] = v.trim() || DEFAULT_SETTINGS[key]; await save(); }));
+      row.addText((c) => {
+        c.setPlaceholder(placeholder).setValue(s[key]);
+        ui.saveOnCommit(c, () => DEFAULT_SETTINGS[key], (v) => { s[key] = v; });
+      });
     };
-
-    this.featuresSection(containerEl, save, want);
-
-    // Names and folders several features read: always shown (Q13).
-    new Setting(containerEl).setName(t("settings.shared")).setHeading();
-    containerEl.createDiv({ cls: "setting-item-description escrita-shared-desc", text: t("settings.shared.desc") });
+    new Setting(el).setName(t("settings.shared")).setHeading();
+    el.createDiv({ cls: "setting-item-description escrita-shared-desc", text: t("settings.shared.desc") });
     textRow("targetProperty", t("settings.targetProperty"), "target", t("settings.pieceProperties.desc"));
     textRow("limitProperty", t("settings.limitProperty"), "limit");
     textRow("unitProperty", t("settings.unitProperty"), "unit");
@@ -387,155 +444,65 @@ export class EscritaSettingTab extends PluginSettingTab {
     textRow("goalProperty", t("settings.goalProperty"), "goal", t("settings.goalProperty.desc"));
     textRow("povProperty", t("settings.povProperty"), "pov", t("settings.povProperty.desc"));
     textRow("chapterTargetProperty", t("settings.chapterTargetProperty"), "chapterTarget", t("settings.chapterTargetProperty.desc"));
-    new Setting(containerEl)
+    new Setting(el)
       .setName(t("settings.trackFolders"))
       .setDesc(t("settings.trackFolders.desc"))
-      .addTextArea((c) => c.setPlaceholder("Fiction\nNovels").setValue(s.trackFolders)
-        .onChange(async (v) => { s.trackFolders = v; await save(); }));
-    new Setting(containerEl)
+      .addTextArea((c) => {
+        c.setPlaceholder("Fiction\nNovels").setValue(s.trackFolders);
+        ui.saveOnCommit(c, () => "", (v) => { s.trackFolders = v; });
+      });
+    new Setting(el)
       .setName(t("settings.excludeFolders"))
-      .addTextArea((c) => c.setValue(s.excludeFolders)
-        .onChange(async (v) => { s.excludeFolders = v; await save(); }));
+      .addTextArea((c) => {
+        c.setValue(s.excludeFolders);
+        ui.saveOnCommit(c, () => "", (v) => { s.excludeFolders = v; });
+      });
+  }
 
-    new Setting(containerEl).setName(t("settings.books")).setHeading();
-    new Setting(containerEl)
+  private booksSection(el: HTMLElement, ui: SettingsUi, templatesShown: boolean): void {
+    const s = this.plugin.settings;
+    new Setting(el).setName(t("settings.books")).setHeading();
+    new Setting(el)
       .setName(t("settings.chaptersFolder"))
       .setDesc(t("settings.chaptersFolder.desc"))
-      .addText((c) => c.setPlaceholder("Chapters").setValue(s.chaptersFolder)
-        .onChange(async (v) => { s.chaptersFolder = v.trim() || DEFAULT_SETTINGS.chaptersFolder; await save(); }));
-    new Setting(containerEl)
+      .addText((c) => {
+        c.setPlaceholder("Chapters").setValue(s.chaptersFolder);
+        ui.saveOnCommit(c, () => DEFAULT_SETTINGS.chaptersFolder, (v) => { s.chaptersFolder = v; });
+      });
+    new Setting(el)
       .setName(t("settings.chapterTemplate"))
       .setDesc(t("settings.chapterTemplate.desc"))
-      .addText((c) => c.setPlaceholder("Templates/Chapter.md").setValue(s.chapterTemplate)
-        .onChange(async (v) => { s.chapterTemplate = v.trim(); await save(); }));
-    if (shown("templatesFolder")) {
-      new Setting(containerEl)
+      .addText((c) => {
+        c.setPlaceholder("Templates/Chapter.md").setValue(s.chapterTemplate);
+        ui.saveOnCommit(c, () => "", (v) => { s.chapterTemplate = v; });
+      });
+    if (templatesShown) {
+      new Setting(el)
         .setName(t("settings.templatesFolder"))
         .setDesc(t("settings.templatesFolder.desc"))
-        .addText((c) => c.setPlaceholder("Templates").setValue(s.templatesFolder)
-          .onChange(async (v) => { s.templatesFolder = v.trim(); await save(); }));
+        .addText((c) => {
+          c.setPlaceholder("Templates").setValue(s.templatesFolder);
+          ui.saveOnCommit(c, () => "", (v) => { s.templatesFolder = v; });
+        });
     }
-    new Setting(containerEl)
+    new Setting(el)
       .setName(t("settings.numberPadding"))
       .setDesc(t("settings.numberPadding.desc"))
       .addDropdown((d) => {
         for (let w = 1; w <= 4; w++) d.addOption(String(w), "1".padStart(w, "0"));
-        d.setValue(String(s.numberPadding)).onChange(async (v) => { s.numberPadding = Number(v); await save(); });
+        d.setValue(String(s.numberPadding)).onChange(async (v) => { s.numberPadding = Number(v); await ui.save(); });
       });
-    new Setting(containerEl)
+    new Setting(el)
       .setName(t("settings.statusProperty"))
       .setDesc(t("settings.statusProperty.desc"))
-      .addText((c) => c.setPlaceholder("status").setValue(s.statusProperty)
-        .onChange(async (v) => { s.statusProperty = v.trim() || "status"; await save(); }))
-      .addText((c) => c.setPlaceholder("summary").setValue(s.summaryProperty)
-        .onChange(async (v) => { s.summaryProperty = v.trim() || "summary"; await save(); }));
-
-    if (shown("dayEndsAt")) {
-      new Setting(containerEl)
-        .setName(t("settings.dayEndsAt"))
-        .setDesc(t("settings.dayEndsAt.desc"))
-        .addDropdown((d) => {
-          for (let h = 0; h <= 6; h++) d.addOption(String(h), `${String(h).padStart(2, "0")}:00`);
-          d.setValue(String(s.dayEndsAt)).onChange(async (v) => { s.dayEndsAt = Number(v); await save(); });
-        });
-    }
-
-    if (section(t("settings.goals"), ["dailyGoal", "ignoreJumpsOver", "sprintMinutes", "showStatusBar", "weekdaysOff", "datesOff"])) {
-      if (shown("dailyGoal")) {
-        new Setting(containerEl)
-          .setName(t("settings.dailyGoal"))
-          .addText((c) => c.setValue(String(s.dailyGoal))
-            .onChange(async (v) => { s.dailyGoal = num(v, s.dailyGoal); await save(); }));
-      }
-      if (shown("ignoreJumpsOver")) {
-        new Setting(containerEl)
-          .setName(t("settings.ignoreJumpsOver"))
-          .setDesc(t("settings.ignoreJumpsOver.desc"))
-          .addText((c) => c.setValue(String(s.ignoreJumpsOver))
-            .onChange(async (v) => { s.ignoreJumpsOver = num(v, s.ignoreJumpsOver, 50); await save(); }));
-        new Setting(containerEl)
-          .setName(t("settings.sprintMinutes"))
-          .setDesc(t("settings.sprintMinutes.desc"))
-          .addText((c) => c.setValue(String(s.sprintMinutes))
-            .onChange(async (v) => { s.sprintMinutes = Math.min(240, num(v, s.sprintMinutes, 1)); await save(); }))
-          .addText((c) => c.setValue(String(s.sprintTarget))
-            .onChange(async (v) => { s.sprintTarget = num(v, s.sprintTarget, 0); await save(); }));
-        new Setting(containerEl)
-          .setName(t("settings.showStatusBar"))
-          .addToggle((c) => c.setValue(s.showStatusBar)
-            .onChange(async (v) => { s.showStatusBar = v; await save(); }));
-        this.weekdaysSetting(containerEl, save);
-        const datesOff = new Setting(containerEl)
-          .setName(t("settings.datesOff"))
-          .setDesc(t("settings.datesOff.desc"));
-        const datesHint = datesOff.descEl.createDiv({ cls: "escrita-setting-warning" });
-        const showDatesHint = () => {
-          const bad = invalidDatesOff(s.datesOff);
-          datesHint.setText(bad.length ? t("settings.datesOff.invalid", { dates: bad.join(", ") }) : "");
-          datesHint.toggle(bad.length > 0);
-        };
-        showDatesHint();
-        datesOff.addTextArea((c) => c.setPlaceholder("2026-12-25\n2027-01-01").setValue(s.datesOff)
-          .onChange(async (v) => { s.datesOff = v; showDatesHint(); await save(); }));
-      }
-    }
-
-    if (section(t("settings.publishing"), ["dateProperty", "recommendedProperties"])) {
-      new Setting(containerEl)
-        .setName(t("settings.dateProperty"))
-        .setDesc(t("settings.dateProperty.desc"))
-        .addText((c) => c.setPlaceholder("date").setValue(s.dateProperty)
-          .onChange(async (v) => { s.dateProperty = v.trim() || DEFAULT_SETTINGS.dateProperty; await save(); }));
-      new Setting(containerEl)
-        .setName(t("settings.recommendedProperties"))
-        .setDesc(t("settings.recommendedProperties.desc"))
-        .addTextArea((c) => c.setPlaceholder("description").setValue(s.recommendedProperties)
-          .onChange(async (v) => { s.recommendedProperties = v; await save(); }));
-    }
-
-    if (shown("ghostBeats")) {
-      new Setting(containerEl).setName(t("settings.outline")).setHeading();
-      new Setting(containerEl)
-        .setName(t("settings.ghostBeats"))
-        .setDesc(t("settings.ghostBeats.desc"))
-        .addToggle((c) => c.setValue(s.ghostBeats)
-          .onChange(async (v) => { s.ghostBeats = v; await save(); }));
-    }
-
-    if (section(t("settings.placeholders"), ["placeholderMarker", "showExplorerDots"])) {
-      new Setting(containerEl)
-        .setName(t("settings.placeholderMarker"))
-        .setDesc(t("settings.placeholderMarker.desc", { marker: s.placeholderMarker }))
-        .addText((c) => c.setValue(s.placeholderMarker)
-          .onChange(async (v) => { s.placeholderMarker = v.replace(/[^\p{L}\p{N}_-]/gu, "") || "XXX"; await save(); }));
-      if (shown("showExplorerDots")) {
-        new Setting(containerEl)
-          .setName(t("settings.showExplorerDots"))
-          .addToggle((c) => c.setValue(s.showExplorerDots)
-            .onChange(async (v) => { s.showExplorerDots = v; await save(); }));
-      }
-    }
-
-    if (shown("darlingsNote")) {
-      new Setting(containerEl).setName(t("settings.darlings")).setHeading();
-      new Setting(containerEl)
-        .setName(t("settings.darlingsNote"))
-        .setDesc(t("settings.darlingsNote.desc"))
-        .addText((c) => c.setValue(s.darlingsNote)
-          .onChange(async (v) => { s.darlingsNote = v.trim() || "Darlings.md"; await save(); }));
-      new Setting(containerEl)
-        .setName(t("settings.globalDarlingsNote"))
-        .addText((c) => c.setValue(s.globalDarlingsNote)
-          .onChange(async (v) => { s.globalDarlingsNote = v.trim() || "Darlings.md"; await save(); }));
-    }
-
-    this.editorSettings(containerEl, save, section, shown);
-    if (shown("lensEchoWindow")) this.lensSettings(containerEl, save);
-
-    this.stagesSettings(containerEl, save);
-    if (shown("homeNote")) this.homeSettings(containerEl, save);
-    if (shown("snapshotsFolder")) this.snapshotsSettings(containerEl, save, num);
-    renderUniverseSettings(this.plugin, containerEl, save);
+      .addText((c) => {
+        c.setPlaceholder("status").setValue(s.statusProperty);
+        ui.saveOnCommit(c, () => DEFAULT_STATUS_PROPERTY, (v) => { s.statusProperty = v; });
+      })
+      .addText((c) => {
+        c.setPlaceholder("summary").setValue(s.summaryProperty);
+        ui.saveOnCommit(c, () => "summary", (v) => { s.summaryProperty = v; });
+      });
   }
 
   /**
@@ -543,9 +510,9 @@ export class EscritaSettingTab extends PluginSettingTab {
    * group, each with a switch and one line on what it does. The universe's row is the mode
    * dropdown. The stage snapshot is disabled while snapshots is off, its stored value kept.
    */
-  private featuresSection(containerEl: HTMLElement, save: () => Promise<void>, want: ReadonlySet<FeatureId>): void {
+  private featuresSection(containerEl: HTMLElement, ui: SettingsUi, want: ReadonlySet<FeatureId>): void {
     const s = this.plugin.settings;
-    const apply = async () => { await save(); this.display(); };
+    const apply = async () => { await ui.save(); this.display(); };
     new Setting(containerEl).setName(t("settings.features")).setHeading();
     containerEl.createDiv({ cls: "setting-item-description escrita-features-desc", text: t("settings.features.desc") });
 
@@ -601,9 +568,11 @@ export class EscritaSettingTab extends PluginSettingTab {
         // The switch shows the writer's own choice, so turning the requirement back on restores it.
         const shownOn = needs ? false : on;
         addSwitch(row, t(`settings.features.${id}`), shownOn, needs !== undefined, async (v) => {
+          // The module is read before it unloads: its offNotice reads only what stays (module-context.ts).
+          const mod = v ? undefined : this.plugin.features.get<FeatureModule>(id);
           setFeature(s, id, v);
           await apply();
-          if (!v) void this.offNotice(id);
+          if (!v) void this.offNotice(id, mod);
         });
         if (id === "snapshots" && !on && s.features.stageSnapshot !== false) {
           row.descEl.createDiv({ text: t("settings.features.snapshots.off") });
@@ -614,106 +583,35 @@ export class EscritaSettingTab extends PluginSettingTab {
             .addEventListener("click", () => { setFeature(s, needs, true); void apply(); });
         }
 
-        if (id === "explorerCounts" && on) this.explorerRows(containerEl, save);
-      }
-      if (group === "publishing") {
-        const row = new Setting(containerEl).setName(t("settings.features.export")).setDesc(t("settings.features.export.desc"));
-        row.settingEl.addClasses(["escrita-feature-row", "escrita-feature-off"]);
-        row.nameEl.createSpan({ cls: "escrita-tag", text: t("settings.features.export.tag") });
-        addSwitch(row, t("settings.features.export"), false, true, async () => {});
+        // The explorer's own rows sit right under its switch (Q13).
+        if (id === "explorerCounts" && on) this.drawModule("explorerCounts", containerEl, ui);
       }
     }
   }
 
   /** Turning off a feature that keeps data says what stays and where (board FeaturesStates, state 1). */
-  private async offNotice(id: FeatureId): Promise<void> {
-    const p = this.plugin;
-    const s = p.settings;
-    const say = (text: string) => { new Notice(text); };
-    switch (id) {
-      case "snapshots": {
-        let n = 0;
-        try {
-          for (const note of await p.snapshots.store.notesWithSnapshots()) n += (await p.snapshots.store.list(note)).length;
-        } catch { return; }
-        if (n > 0) say(plural("settings.features.off.snapshots", n, { n: fmt(n), folder: s.snapshotsFolder }));
-        return;
-      }
-      case "darlings":
-        say(t("settings.features.off.darlings"));
-        return;
-      case "goals": {
-        const n = Object.keys(p.data.history).length;
-        if (n > 0) say(plural("settings.features.off.goals", n, { n: fmt(n) }));
-        return;
-      }
-      case "lens":
-        say(t("settings.features.off.lens", { note: s.lensListsNote || listsTarget("", lensLang(s.lensLanguage, locale())) }));
-        return;
-      case "desk": {
-        const n = Object.keys(p.data.leftOff).length;
-        if (n > 0) say(plural("settings.features.off.desk", n, { n: fmt(n) }));
-        return;
-      }
-      default:
-    }
+  private async offNotice(id: FeatureId, mod: FeatureModule | undefined): Promise<void> {
+    try {
+      const text = mod?.offNotice ? await mod.offNotice() : null;
+      if (text) new Notice(text);
+    } catch { /* a notice that can't be built is not worth a failure */ }
   }
 
-  /** The explorer's own rows, right under its switch (Q13). */
-  private explorerRows(containerEl: HTMLElement, save: () => Promise<void>): void {
+  /** The Editor section's rows several features read: paragraph style and quote style, while one of them is loaded. */
+  private editorSharedRows(el: HTMLElement, ui: SettingsUi, shown: (key: string) => boolean): void {
     const s = this.plugin.settings;
-    new Setting(containerEl)
-      .setName(t("settings.explorerFolderTotals"))
-      .setDesc(t("settings.explorerFolderTotals.desc"))
-      .addToggle((c) => c.setValue(s.explorerFolderTotals)
-        .onChange(async (v) => { s.explorerFolderTotals = v; await save(); }))
-      .settingEl.addClass("escrita-feature-child");
-    new Setting(containerEl)
-      .setName(t("settings.explorerShowTarget"))
-      .setDesc(t("settings.explorerShowTarget.desc"))
-      .addToggle((c) => c.setValue(s.explorerShowTarget)
-        .onChange(async (v) => { s.explorerShowTarget = v; await save(); }))
-      .settingEl.addClass("escrita-feature-child");
-  }
-
-  /** The Editor section: each row shows while a feature that reads it is on. */
-  private editorSettings(containerEl: HTMLElement, save: () => Promise<void>,
-    section: (title: string, keys: string[]) => boolean, shown: (key: string) => boolean): void {
-    const s = this.plugin.settings;
-    if (!section(t("settings.editor"), ["enterFlow", "paragraphStyle", "smartTypography", "typographyScope", "quoteStyle", "dialogueDash"])) return;
-    if (shown("enterFlow")) {
-      new Setting(containerEl)
-        .setName(t("settings.enterFlow"))
-        .setDesc(t("settings.enterFlow.desc"))
-        .addToggle((c) => c.setValue(s.enterFlow)
-          .onChange(async (v) => { s.enterFlow = v; await save(); }));
-    }
     if (shown("paragraphStyle")) {
-      new Setting(containerEl)
+      new Setting(el)
         .setName(t("settings.paragraphStyle"))
         .setDesc(t("settings.paragraphStyle.desc"))
         .addDropdown((d) => d
           .addOption("blank", t("settings.paragraphStyle.blank"))
           .addOption("single", t("settings.paragraphStyle.single"))
           .setValue(s.paragraphStyle)
-          .onChange(async (v) => { s.paragraphStyle = v as ParagraphStyle; await save(); }));
-    }
-    if (shown("smartTypography")) {
-      new Setting(containerEl)
-        .setName(t("settings.smartTypography"))
-        .setDesc(t("settings.smartTypography.desc"))
-        .addToggle((c) => c.setValue(s.smartTypography)
-          .onChange(async (v) => { s.smartTypography = v; await save(); }));
-      new Setting(containerEl)
-        .setName(t("settings.typographyScope"))
-        .addDropdown((d) => d
-          .addOption("books", t("settings.scope.books"))
-          .addOption("all", t("settings.scope.all"))
-          .setValue(s.typographyScope)
-          .onChange(async (v) => { s.typographyScope = v as Scope; await save(); }));
+          .onChange(async (v) => { s.paragraphStyle = v as ParagraphStyle; await ui.save(); }));
     }
     if (shown("quoteStyle")) {
-      new Setting(containerEl)
+      new Setting(el)
         .setName(t("settings.quoteStyle"))
         .addDropdown((d) => d
           .addOption("curly", "“…” ‘…’")
@@ -721,103 +619,16 @@ export class EscritaSettingTab extends PluginSettingTab {
           .addOption("german", "„…“ ‚…‘")
           .addOption("off", t("settings.quoteStyle.off"))
           .setValue(s.quoteStyle)
-          .onChange(async (v) => { s.quoteStyle = v as QuoteStyle; await save(); }));
-    }
-    if (shown("dialogueDash")) {
-      new Setting(containerEl)
-        .setName(t("settings.dialogueDash"))
-        .setDesc(t("settings.dialogueDash.desc"))
-        .addToggle((c) => c.setValue(s.dialogueDash)
-          .onChange(async (v) => { s.dialogueDash = v; await save(); }));
+          .onChange(async (v) => { s.quoteStyle = v as QuoteStyle; await ui.save(); }));
     }
   }
 
   /**
    * The Stages section: one row per stage (words, color, clear), the duplicate
-   * warning under the rows, the other-status-colors box and the home note rows.
+   * warning under the rows, the other-status-colors box and the draft switch.
    * A duplicate word never blocks saving; the first stage wins (stageOf).
    */
-  private lensSettings(containerEl: HTMLElement, save: () => Promise<void>): void {
-    const s = this.plugin.settings;
-    new Setting(containerEl).setName(t("settings.lens")).setHeading();
-    containerEl.createDiv({ cls: "setting-item-description escrita-lens-desc", text: t("settings.lens.desc") });
-
-    const listsRow = new Setting(containerEl)
-      .setName(t("settings.lens.lists"))
-      .setDesc(t("settings.lens.lists.desc"))
-      .addText((c) => {
-        c.setPlaceholder(listsTarget("", lensLang(s.lensLanguage, locale()))).setValue(s.lensListsNote);
-        c.inputEl.setAttr("aria-label", t("settings.lens.lists"));
-        c.inputEl.addEventListener("blur", () => {
-          const path = listsPath(c.getValue());
-          c.setValue(path);
-          if (path === s.lensListsNote) return;
-          s.lensListsNote = path;
-          void save();
-        });
-      })
-      .addButton((b) => b.setButtonText(t("settings.lens.lists.create"))
-        .onClick(async () => { await this.plugin.lens.createLists(); this.display(); }));
-    listsRow.settingEl.addClass("escrita-lens-stack");
-
-    const numberRow = (key: "lensEchoWindow" | "lensLongSentence", name: string, min: number, max: number) => {
-      new Setting(containerEl)
-        .setName(t(`settings.lens.${name}`))
-        .setDesc(t(`settings.lens.${name}.desc`))
-        .addText((c) => {
-          c.inputEl.type = "text";
-          c.inputEl.inputMode = "numeric";
-          c.inputEl.addClass("escrita-lens-number");
-          c.inputEl.setAttr("aria-label", t(`settings.lens.${name}`));
-          c.setValue(String(s[key]));
-          const commit = (final: boolean) => {
-            const raw = c.getValue().trim();
-            const n = Number(raw);
-            if (raw !== "" && /^\d+$/.test(raw) && n >= min && n <= max && n !== s[key]) { s[key] = n; void save(); }
-            if (final) c.setValue(String(s[key]));
-          };
-          c.onChange(() => commit(false));
-          c.inputEl.addEventListener("blur", () => commit(true));
-        })
-        .controlEl.createSpan({ cls: "setting-item-description", text: t("settings.lens.words") });
-    };
-    numberRow("lensEchoWindow", "echoWindow", 10, 200);
-    numberRow("lensLongSentence", "longSentence", 15, 200);
-
-    new Setting(containerEl)
-      .setName(t("settings.lens.skipQuotes"))
-      .setDesc(t("settings.lens.skipQuotes.desc"))
-      .addToggle((c) => c.setValue(s.lensSkipQuotes).onChange(async (v) => { s.lensSkipQuotes = v; await save(); }));
-
-    new Setting(containerEl).setName(t("settings.lens.rules")).setHeading();
-    const lens = lensLang(s.lensLanguage, locale());
-    const english = lens === "en";
-    for (const r of RULES) {
-      const key = r === "gerund" && english ? "gerund.en" : r;
-      const desc = r === "adverb"
-        ? t(`settings.lens.rule.adverb.${lens ?? "none"}.desc`)
-        : t(`settings.lens.rule.${key}.desc`);
-      const row = new Setting(containerEl).setName(t(`lens.rule.${key}`));
-      if (desc !== "") row.setDesc(desc);
-      row.addToggle((c) => c.setValue(!s.lensRulesOff.includes(r)).onChange(async (v) => {
-        const off = s.lensRulesOff.filter((x) => x !== r);
-        if (!v) off.push(r);
-        s.lensRulesOff = off;
-        await save();
-      }));
-    }
-
-    new Setting(containerEl).setName(t("settings.lens.measures")).setHeading();
-    new Setting(containerEl)
-      .setName(t("settings.lens.showDialogue"))
-      .addToggle((c) => c.setValue(s.lensShowDialogue).onChange(async (v) => { s.lensShowDialogue = v; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.lens.showReadability"))
-      .setDesc(t("settings.lens.showReadability.desc"))
-      .addToggle((c) => c.setValue(s.lensShowReadability).onChange(async (v) => { s.lensShowReadability = v; await save(); }));
-  }
-
-  private stagesSettings(containerEl: HTMLElement, save: () => Promise<void>): void {
+  private stagesSettings(containerEl: HTMLElement, ui: SettingsUi): void {
     const s = this.plugin.settings;
     new Setting(containerEl).setName(t("settings.stages")).setHeading();
     containerEl.createDiv({ cls: "setting-item-description escrita-stages-desc", text: t("settings.stages.desc") });
@@ -855,16 +666,15 @@ export class EscritaSettingTab extends PluginSettingTab {
         if (v === s.stages[k].words) return;
         s.stages[k].words = v;
         showWarnings();
-        await save();
+        await ui.save();
       };
       setting.addText((c) => {
-        // An empty field is never stored: on blur it shows the previous (or default) words again.
-        const fieldChange = (v: string) => { if (v.trim() !== "") void saveWords(v); };
-        c.setValue(s.stages[k].words).onChange(fieldChange);
+        c.setValue(s.stages[k].words);
         c.inputEl.addClass("escrita-stage-words");
         c.inputEl.setAttr("aria-label", t("settings.stages.words", { stage }));
-        // Also on blur, so a value typed and left is never lost.
-        c.inputEl.addEventListener("blur", () => {
+        // Saved when the writer commits the field (Enter or leaving it), never per key. An empty field
+        // is never stored: it shows the previous (or default) words again.
+        const commit = () => {
           if (c.getValue().trim() === "") {
             if (s.stages[k].words.trim() === "") s.stages[k].words = DEFAULT_STAGES[k].words;
             c.setValue(s.stages[k].words);
@@ -872,7 +682,10 @@ export class EscritaSettingTab extends PluginSettingTab {
             return;
           }
           void saveWords(c.getValue());
-        });
+        };
+        c.inputEl.addEventListener("change", commit);
+        // Also on blur, so a value typed and left is never lost.
+        c.inputEl.addEventListener("blur", commit);
       });
       let picker: ColorComponent | null = null;
       setting.addColorPicker((c) => {
@@ -880,7 +693,7 @@ export class EscritaSettingTab extends PluginSettingTab {
         c.setValue(hexColor(s.stages[k].color) ?? EMPTY_SWATCH).onChange(async (v) => {
           s.stages[k].color = hexColor(v) ?? "";
           paint();
-          await save();
+          await ui.save();
         });
       });
       swatch = setting.controlEl.querySelector<HTMLInputElement>('input[type="color"]');
@@ -892,7 +705,7 @@ export class EscritaSettingTab extends PluginSettingTab {
           // The empty state is the dashed swatch; the input holds a neutral grey so black can still be picked.
           (picker as ColorComponent | null)?.setValue(EMPTY_SWATCH);
           paint();
-          await save();
+          await ui.save();
         });
         clear = b.extraSettingsEl as unknown as HTMLButtonElement;
         clear.addClass("escrita-swatch-clear");
@@ -905,101 +718,21 @@ export class EscritaSettingTab extends PluginSettingTab {
     }
     showWarnings();
 
-    const other = new Setting(containerEl)
+    new Setting(containerEl)
       .setName(t("settings.otherStatusColors"))
-      .setDesc(t("settings.otherStatusColors.desc"));
-    other.addTextArea((c) => {
-      c.setPlaceholder("paused: #6e6b66").setValue(s.otherStatusColors)
-        .onChange(async (v) => { s.otherStatusColors = v; await save(); });
-      c.inputEl.addClass("escrita-mono");
-      c.inputEl.setAttr("aria-label", t("settings.otherStatusColors"));
-    });
+      .setDesc(t("settings.otherStatusColors.desc"))
+      .addTextArea((c) => {
+        c.setPlaceholder("paused: #6e6b66").setValue(s.otherStatusColors);
+        c.inputEl.addClass("escrita-mono");
+        c.inputEl.setAttr("aria-label", t("settings.otherStatusColors"));
+        ui.saveOnCommit(c, () => "", (v) => { s.otherStatusColors = v; });
+      });
 
     new Setting(containerEl)
       .setName(t("settings.draftNewNotes"))
       .setDesc(t("settings.draftNewNotes.desc", { word: writtenWord(s.stages, "draft") }))
       .addToggle((c) => c.setValue(s.draftNewNotes)
-        .onChange(async (v) => { s.draftNewNotes = v; await save(); }));
-  }
-
-  /** The home note rows, shown while the desk is on. */
-  private homeSettings(containerEl: HTMLElement, save: () => Promise<void>): void {
-    const s = this.plugin.settings;
-    new Setting(containerEl).setName(t("settings.homeNoteHeading")).setHeading();
-    new Setting(containerEl)
-      .setName(t("settings.homeNote"))
-      .setDesc(t("settings.homeNote.desc"))
-      .addText((c) => c.setPlaceholder(lang() === "pt-BR" ? "Inicio.md" : "Home.md").setValue(s.homeNote)
-        .onChange(async (v) => { s.homeNote = v.trim(); await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.openHomeOnStartup"))
-      .setDesc(t("settings.openHomeOnStartup.desc"))
-      .addToggle((c) => c.setValue(s.openHomeOnStartup)
-        .onChange(async (v) => { s.openHomeOnStartup = v; await save(); }));
-  }
-
-  /**
-   * The Snapshots section. The folder is saved only when it passes
-   * snapshotsFolderProblem; otherwise the saved value stays and a warning under
-   * the setting says why (no notices while typing).
-   */
-  private snapshotsSettings(containerEl: HTMLElement, save: () => Promise<void>, num: (v: string, fallback: number, min?: number) => number): void {
-    const s = this.plugin.settings;
-    new Setting(containerEl).setName(t("settings.snapshots")).setHeading();
-    const folder = new Setting(containerEl)
-      .setName(t("settings.snapshotsFolder"))
-      .setDesc(t("settings.snapshotsFolder.desc"));
-    const hint = folder.descEl.createDiv({ cls: "escrita-setting-warning" });
-    hint.toggle(false);
-    folder.addText((c) => c.setPlaceholder(DEFAULT_SNAPSHOTS_FOLDER).setValue(s.snapshotsFolder)
-      .onChange(async (v) => {
-        const root = snapshotsRoot(v);
-        const problem = snapshotsFolderProblem(v, this.app.vault.configDir, s.trackFolders, (r) =>
-          r !== s.snapshotsFolder && this.app.vault.getMarkdownFiles().some((f) => inFolder(f.path, r)));
-        c.inputEl.toggleClass("escrita-invalid", problem !== null);
-        hint.setText(problem ? snapshotsProblemText(problem) : "");
-        hint.toggle(problem !== null);
-        if (problem || root === s.snapshotsFolder) return;
-        s.snapshotsFolder = root;
-        await save();
-      }));
-    new Setting(containerEl)
-      .setName(t("settings.snapshotBeforeFirstEdit"))
-      .setDesc(t("settings.snapshotBeforeFirstEdit.desc"))
-      .addToggle((c) => c.setValue(s.snapshotBeforeFirstEdit)
-        .onChange(async (v) => { s.snapshotBeforeFirstEdit = v; await save(); }));
-    new Setting(containerEl)
-      .setName(t("settings.snapshotsKeepAuto"))
-      .setDesc(t("settings.snapshotsKeepAuto.desc"))
-      .addText((c) => c.setValue(String(s.snapshotsKeepAuto))
-        .onChange(async (v) => { s.snapshotsKeepAuto = num(v, DEFAULT_SETTINGS.snapshotsKeepAuto, 1); await save(); }));
-  }
-
-  /** One labeled checkbox per weekday, in the locale's week order. */
-  private weekdaysSetting(containerEl: HTMLElement, save: () => Promise<void>): void {
-    const s = this.plugin.settings;
-    const setting = new Setting(containerEl)
-      .setName(t("settings.weekdaysOff"))
-      .setDesc(t("settings.weekdaysOff.desc"));
-    setting.settingEl.addClass("escrita-setting-weekdays");
-    const box = setting.controlEl.createDiv({ cls: "escrita-weekdays" });
-    const first = moment.localeData().firstDayOfWeek();
-    for (let i = 0; i < 7; i++) {
-      const day = (first + i) % 7;
-      const label = box.createEl("label", { cls: "escrita-weekday" });
-      const input = label.createEl("input", { type: "checkbox" });
-      input.checked = s.weekdaysOff.includes(day);
-      label.createSpan({ text: moment.weekdaysShort(day) });
-      label.setAttr("aria-label", moment.weekdays(day));
-      // The listener lives and dies with the element (re-rendered on every display()).
-      input.addEventListener("change", () => {
-        const set = new Set(s.weekdaysOff);
-        if (input.checked) set.add(day);
-        else set.delete(day);
-        s.weekdaysOff = cleanWeekdays([...set]);
-        void save();
-      });
-    }
+        .onChange(async (v) => { s.draftNewNotes = v; await ui.save(); }));
   }
 }
 
@@ -1019,13 +752,4 @@ function listJoin(items: string[]): string {
   if (items.length < 2) return items.join("");
   const and = lang() === "pt-BR" ? " e " : " and ";
   return items.slice(0, -1).join(", ") + and + items[items.length - 1];
-}
-
-function snapshotsProblemText(p: SnapshotsFolderProblem): string {
-  switch (p.reason) {
-    case "path": return t("settings.snapshotsFolder.path");
-    case "config":
-    case "tracked": return t("settings.snapshotsFolder.invalid", { folder: p.folder });
-    case "notes": return t("settings.snapshotsFolder.notes", { folder: p.folder });
-  }
 }

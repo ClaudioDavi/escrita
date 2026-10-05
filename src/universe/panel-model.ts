@@ -4,7 +4,7 @@
 import { linkTarget } from "../core/markers";
 import { segment } from "../core/markdown";
 import type { ThreadRef } from "./threads";
-import { foldText } from "./entries";
+import { foldName } from "../core/names";
 
 export interface Segment {
   text: string;
@@ -16,14 +16,14 @@ export interface Segment {
  * accents ("mae" marks "Mã" in "Mãe"). The parts always join back into `text`.
  */
 export function splitHighlight(text: string, query: string): Segment[] {
-  const q = foldText(query.trim());
+  const q = foldName(query.trim());
   if (q === "" || text === "") return [{ text, hit: false }];
   let folded = "";
   const from: number[] = []; // folded index → start of the original character
   const to: number[] = []; // folded index → end of the original character
   let i = 0;
   for (const ch of text) {
-    const f = foldText(ch);
+    const f = foldName(ch);
     for (let k = 0; k < f.length; k++) { from.push(i); to.push(i + ch.length); }
     folded += f;
     i += ch.length;

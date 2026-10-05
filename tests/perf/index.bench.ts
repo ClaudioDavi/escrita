@@ -82,6 +82,7 @@ const th = (hub: IndexHub<MemFile>) => hub.add(threadsSpec<MemFile>(settings));
 const me = (hub: IndexHub<MemFile>) => {
   const m = new MentionsIndex<MemFile>({ add: (s) => hub.add(s), remove: (ix) => hub.remove(ix), rebuild: (n) => hub.rebuild(n), table: () => table, settings, resolve: () => null, timers });
   m.start();
+  m.demand();   // on demand since 2.4 (Q15): the bench measures the build a first query triggers
   return { isReady: () => m.isReady(), onReady: (cb: () => void) => m.onChange(() => { if (m.isReady()) cb(); }) };
 };
 

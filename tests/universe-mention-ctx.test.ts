@@ -152,6 +152,7 @@ describe("MentionCtx over the mentions index", () => {
       resolve: (l, f) => s.deps.resolve(l, f), timers,
     });
     mentions.start();
+    mentions.demand();
     while (!mentions.isReady()) await settle();
     return { ...s, mentions };
   }

@@ -1,6 +1,7 @@
 import { MarkdownView, Notice, TFile } from "obsidian";
 import type EscritaPlugin from "../main";
 import { FeatureModule } from "../core/module-context";
+import type { SettingsUi } from "../core/module-context";
 import type { FeatureId } from "../core/features";
 import type { Follower } from "../core/vault-index";
 import { lineList } from "../core/lists";
@@ -11,6 +12,7 @@ import { t } from "../i18n";
 import { isPublished, runChecks } from "./checks";
 import { dateText, initialDate, shouldWriteDate } from "./date";
 import { PublishModal } from "./modal";
+import { publishSettingsSection } from "./settings-ui";
 
 type Frontmatter = Record<string, unknown>;
 
@@ -230,4 +232,6 @@ export class PublishModule extends FeatureModule {
   private deleted(path: string): void {
     if (dropKeys(this.plugin.data.publish, path)) this.plugin.requestSave();
   }
+
+  settingsSection(el: HTMLElement, ui: SettingsUi): void { publishSettingsSection(el, ui, this.plugin); }
 }

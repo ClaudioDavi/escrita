@@ -1,38 +1,31 @@
-// The Universe section of the settings tab (boards 19 and 24). It sits right after the
-// revision lens section. The mode is set on the Features page (0.7, Q10), so this section
-// has one line pointing there. The thread words draw while threads is on, in every mode;
-// the other rows while the universe is on (per book hides the universe note and the
-// folders; universe shows everything). Text fields save when the writer leaves them (a change event), so a
-// word typed letter by letter doesn't rebuild the vault indexes at every key.
+// The Universe section of the settings tab (boards 19 and 24), drawn by the universe module
+// (`UniverseModule.settingsSection`). The tab's core draws the heading (the slot is shared with
+// threads); this draws the rows: the description, the mode pointer, the note and folders, the form
+// rows, the thread words (while threads is loaded: `threadWordRows`), the types table and the names.
+// With the mode off only the thread words draw. Text fields save when the writer leaves them
+// (ui.saveOnCommit or a change event), so a word typed letter by letter doesn't rebuild the vault
+// indexes at every key.
 
-import { Notice, Setting, type TextComponent } from "obsidian";
-import { switchedOn } from "../core/features";
-import type EscritaPlugin from "../main";
+import { Notice, Setting } from "obsidian";
 import { locale, t } from "../i18n";
+import type { SettingsUi } from "../core/module-context";
+import type EscritaPlugin from "../main";
 import { ENTRY_KINDS, defaultUniverseSettings, normalizeNotePath } from "./settings";
 import { builtinTitlesText } from "./names-settings";
 import { formValuesText, parseFormValues } from "./works-list";
-
-/** Saves when the field loses focus or Enter is pressed; the field shows what was kept (blank → the fallback). */
-function commit(c: TextComponent, fallback: () => string, apply: (v: string) => void): TextComponent {
-  c.inputEl.addEventListener("change", () => {
-    const v = c.getValue().trim() || fallback();
-    c.setValue(v);
-    apply(v);
-  });
-  return c;
-}
+import { threadWordRows } from "./threads-settings-ui";
 
 const stripSlashes = (p: string) => p.replace(/^\/+|\/+$/g, "");
 
-export function renderUniverseSettings(plugin: EscritaPlugin, containerEl: HTMLElement, save: () => Promise<void>): void {
+export function universeSettingsSection(containerEl: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
   const s = plugin.settings;
   const d = defaultUniverseSettings();
   const mode = s.universeMode;
-
-  new Setting(containerEl).setName(t("universe.settings")).setHeading();
-  if (mode !== "off") containerEl.createDiv({ cls: "setting-item-description escrita-universe-settings-desc", text: t("universe.settings.desc") });
-
+  if (mode === "off") {
+    if (plugin.features.isOn("threads")) threadWordRows(containerEl, ui, s);
+    return;
+  }
+  containerEl.createDiv({ cls: "setting-item-description escrita-universe-settings-desc", text: t("universe.settings.desc") });
   containerEl.createDiv({ cls: "setting-item-description escrita-universe-settings-desc", text: t("universe.settings.mode.pointer") });
 
   if (mode === "universe") {
@@ -42,7 +35,7 @@ export function renderUniverseSettings(plugin: EscritaPlugin, containerEl: HTMLE
     note.addText((c) => {
       c.setPlaceholder(d.universeNote).setValue(s.universeNote);
       c.inputEl.setAttr("aria-label", t("universe.settings.note"));
-      commit(c, () => d.universeNote, (v) => { s.universeNote = normalizeNotePath(v, d.universeNote); void save(); });
+      ui.saveOnCommit(c, () => d.universeNote, (v) => { s.universeNote = normalizeNotePath(v, d.universeNote); });
     });
     note.addButton((b) => b.setButtonText(t("universe.settings.note.create")).onClick(async () => {
       try {
@@ -60,11 +53,11 @@ export function renderUniverseSettings(plugin: EscritaPlugin, containerEl: HTMLE
       .addTextArea((c) => {
         c.setPlaceholder("Short stories\nNovels").setValue(s.defaultUniverseFolders);
         c.inputEl.setAttr("aria-label", t("universe.settings.folders"));
-        c.inputEl.addEventListener("change", () => { s.defaultUniverseFolders = c.getValue(); void save(); });
+        c.inputEl.addEventListener("change", () => { s.defaultUniverseFolders = c.getValue(); void ui.save(); });
       });
   }
 
-  if (mode !== "off") {
+  {
     const form = new Setting(containerEl)
       .setName(t("universe.settings.form"))
       .setDesc(t(mode === "universe" ? "universe.settings.form.desc" : "universe.settings.form.desc.perBook"));
@@ -72,7 +65,7 @@ export function renderUniverseSettings(plugin: EscritaPlugin, containerEl: HTMLE
       c.setPlaceholder(d.formProperty).setValue(s.formProperty);
       c.inputEl.addClass("escrita-universe-narrow");
       c.inputEl.setAttr("aria-label", t("universe.settings.form"));
-      commit(c, () => d.formProperty, (v) => { s.formProperty = v; void save(); });
+      ui.saveOnCommit(c, () => d.formProperty, (v) => { s.formProperty = v; });
     });
     if (mode === "universe") {
       form.addText((c) => {
@@ -82,7 +75,7 @@ export function renderUniverseSettings(plugin: EscritaPlugin, containerEl: HTMLE
         c.inputEl.addEventListener("change", () => {
           s.formValues = parseFormValues(c.getValue(), s.formValues);
           c.setValue(formValuesText(s.formValues));
-          void save();
+          void ui.save();
         });
       });
       new Setting(containerEl)
@@ -91,33 +84,13 @@ export function renderUniverseSettings(plugin: EscritaPlugin, containerEl: HTMLE
         .addTextArea((c) => {
           c.setPlaceholder("Short stories: short story\nEssays: essay").setValue(s.formFolders);
           c.inputEl.setAttr("aria-label", t("universe.settings.formFolders"));
-          c.inputEl.addEventListener("change", () => { s.formFolders = c.getValue(); void save(); });
+          c.inputEl.addEventListener("change", () => { s.formFolders = c.getValue(); void ui.save(); });
         });
     }
   }
 
-  if (switchedOn("threads", s)) {
-    new Setting(containerEl)
-      .setName(t("universe.settings.threadWord"))
-      .setDesc(mode === "off" ? "" : t("universe.settings.threadWord.desc", { example: `%% ${s.threadKeyword}: … %%` }))
-      .addText((c) => {
-        c.setPlaceholder("thread").setValue(s.threadKeyword);
-        c.inputEl.addClass("escrita-universe-narrow");
-        c.inputEl.setAttr("aria-label", t("universe.settings.threadWord"));
-        commit(c, () => "thread", (v) => { s.threadKeyword = v; void save(); });
-      });
-    new Setting(containerEl)
-      .setName(t("universe.settings.closedWord"))
-      .setDesc(mode === "off" ? "" : t("universe.settings.closedWord.desc", { example: `%% ${s.threadKeyword} ${s.threadClosedWord}: … %%` }))
-      .addText((c) => {
-        c.setPlaceholder(d.threadClosedWord).setValue(s.threadClosedWord);
-        c.inputEl.addClass("escrita-universe-narrow");
-        c.inputEl.setAttr("aria-label", t("universe.settings.closedWord"));
-        commit(c, () => d.threadClosedWord, (v) => { s.threadClosedWord = v; void save(); });
-      });
-  }
-
-  if (mode === "off") return;
+  // The thread words sit between the form rows and the types (today's order).
+  if (plugin.features.isOn("threads")) threadWordRows(containerEl, ui, s);
 
   new Setting(containerEl).setName(t("universe.settings.types")).setHeading();
   if (mode === "perBook") {
@@ -136,7 +109,7 @@ export function renderUniverseSettings(plugin: EscritaPlugin, containerEl: HTMLE
       c.setPlaceholder(d.typeProperty).setValue(s.typeProperty);
       c.inputEl.addClass("escrita-universe-narrow");
       c.inputEl.setAttr("aria-label", t("universe.settings.types.property"));
-      commit(c, () => d.typeProperty, (v) => { s.typeProperty = v; void save(); });
+      ui.saveOnCommit(c, () => d.typeProperty, (v) => { s.typeProperty = v; });
     });
 
   const table = containerEl.createDiv({ cls: "escrita-types", attr: { role: "group", "aria-label": t("universe.settings.types") } });
@@ -157,7 +130,7 @@ export function renderUniverseSettings(plugin: EscritaPlugin, containerEl: HTMLE
         const v = input.value.trim() || fallback();
         input.value = v;
         apply(v);
-        void save();
+        void ui.save();
       });
     };
     field("value", d.entryTypes[k].value, (v) => { type.value = v; }, () => d.entryTypes[k].value);
@@ -167,11 +140,11 @@ export function renderUniverseSettings(plugin: EscritaPlugin, containerEl: HTMLE
   }
   containerEl.createDiv({ cls: "setting-item-description escrita-universe-settings-desc", text: t("universe.settings.types.note") });
 
-  renderNameRows(plugin, containerEl, save);
+  renderNameRows(plugin, ui, containerEl);
 }
 
 /** "Names" (board 24, l): the underline switch, the extra titles and the three per-entry property names (collapsed). */
-function renderNameRows(plugin: EscritaPlugin, containerEl: HTMLElement, save: () => Promise<void>): void {
+function renderNameRows(plugin: EscritaPlugin, ui: SettingsUi, containerEl: HTMLElement): void {
   const s = plugin.settings;
   const d = defaultUniverseSettings();
   new Setting(containerEl).setName(t("universe.settings.names")).setHeading();
@@ -180,7 +153,7 @@ function renderNameRows(plugin: EscritaPlugin, containerEl: HTMLElement, save: (
     .setName(t("universe.settings.underline"))
     .setDesc(t("universe.settings.underline.desc"))
     .addToggle((c) => {
-      c.setValue(s.underlineNames).onChange(async (v) => { s.underlineNames = v; await save(); });
+      c.setValue(s.underlineNames).onChange(async (v) => { s.underlineNames = v; await ui.save(); });
       c.toggleEl.setAttr("aria-label", t("universe.settings.underline"));
     });
 
@@ -192,7 +165,7 @@ function renderNameRows(plugin: EscritaPlugin, containerEl: HTMLElement, save: (
       c.setPlaceholder(t("universe.settings.titles.none")).setValue(s.nameTitles);
       c.inputEl.addClass("escrita-universe-titles");
       c.inputEl.setAttr("aria-label", t("universe.settings.titles"));
-      c.inputEl.addEventListener("change", () => { s.nameTitles = c.getValue(); void save(); });
+      c.inputEl.addEventListener("change", () => { s.nameTitles = c.getValue(); void ui.save(); });
     });
 
   // collapsed by default; the writer's click only shows or hides the block, it saves nothing
@@ -221,7 +194,7 @@ function renderNameRows(plugin: EscritaPlugin, containerEl: HTMLElement, save: (
       const v = input.value.trim() || d[prop];
       input.value = v;
       s[prop] = v;
-      void save();
+      void ui.save();
     });
   };
   row("caseSensitive", "caseSensitiveProperty");
@@ -232,4 +205,3 @@ function renderNameRows(plugin: EscritaPlugin, containerEl: HTMLElement, save: (
 function noteName(note: string): string {
   return stripSlashes(note).replace(/\.md$/i, "").split("/").pop() ?? note;
 }
-

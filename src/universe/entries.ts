@@ -6,7 +6,8 @@
 // new entries are created). Notes in the templates folder, and the entry templates
 // themselves, are never entries.
 
-import { inFolder, snapshotsRoot } from "../core/classify";
+import { foldName } from "../core/names";
+import { classifyKey, inFolder, snapshotsRoot, type ClassifySettings } from "../core/classify";
 import type { IndexFile, IndexSpec } from "../core/vault-index";
 import { sameScope, type Scope } from "./scope";
 import { ENTRY_KINDS, type EntryKind, type UniverseSettings } from "./settings";
@@ -94,11 +95,16 @@ export function sameEntry(a: Entry, b: Entry): boolean {
 export type EntriesSettings = Pick<UniverseSettings,
   "universeMode" | "universeNote" | "defaultUniverseFolders" | "universeProperty" | "typeProperty" | "entryTypes"
   | "caseSensitiveProperty" | "ignoreProperty" | "firstNameProperty"> & {
-  chaptersFolder: string;
-  snapshotsFolder: string;
   templatesFolder: string;
-  chapterTemplate: string;
-};
+} & Pick<ClassifySettings, "chaptersFolder" | "snapshotsFolder" | "chapterTemplate"> & Partial<ClassifySettings>;
+
+/**
+ * classifyKey of the settings an index reads. Real settings are whole; `classifyKey`
+ * reads every field through `str()` and defaults, so a partial one (a test's) is safe.
+ */
+export function classifyKeyOf(s: Partial<ClassifySettings>): string {
+  return classifyKey(s as ClassifySettings);
+}
 
 /** Whether the note is a template (the templates folder, an entry template or the chapter template). */
 export function isTemplatePath(path: string, s: Pick<EntriesSettings, "templatesFolder" | "chapterTemplate" | "entryTypes">): boolean {
@@ -124,7 +130,7 @@ export function entriesSettingsKey(s: EntriesSettings): string {
     s.universeMode, s.universeNote, s.defaultUniverseFolders, s.universeProperty, s.typeProperty,
     s.caseSensitiveProperty, s.ignoreProperty, s.firstNameProperty,
     ENTRY_KINDS.map((k) => [s.entryTypes[k].value, s.entryTypes[k].template]),
-    s.chaptersFolder, s.snapshotsFolder, s.templatesFolder, s.chapterTemplate,
+    s.templatesFolder, classifyKeyOf(s),
   ]);
 }
 
@@ -164,14 +170,12 @@ export function groupByKind<E extends Entry>(entries: E[]): { kind: EntryKind; e
   return ENTRY_KINDS.map((kind) => ({ kind, entries: entries.filter((e) => e.kind === kind) }));
 }
 
-/** Folds case and accents so "mae" finds "Mãe". */
-export function foldText(s: string): string {
-  return s.normalize("NFD").replace(/\p{M}+/gu, "").toLowerCase();
-}
+/** Folds case and accents so "mae" finds "Mãe": the one fold, core/names.ts (kept under its old name). */
+export { foldName as foldText };
 
 /** Entries whose name or an alias contains the query (folded); an empty query keeps all. */
 export function searchEntries<E extends Entry>(entries: E[], query: string): E[] {
-  const q = foldText(query.trim());
+  const q = foldName(query.trim());
   if (q === "") return entries;
-  return entries.filter((e) => foldText(e.name).includes(q) || e.aliases.some((a) => foldText(a).includes(q)));
+  return entries.filter((e) => foldName(e.name).includes(q) || e.aliases.some((a) => foldName(a).includes(q)));
 }

@@ -6,7 +6,7 @@ import type { TFile } from "obsidian";
 import type EscritaPlugin from "../main";
 import type { VaultIndexes } from "../main";
 import { chapterTitle } from "./book";
-import { inFolder, snapshotsRoot } from "./classify";
+import { classifyKey, inFolder, snapshotsRoot, type ClassifySettings } from "./classify";
 import type { Piece } from "./measure";
 import { stageOf, type Stage, type StageMapping } from "./stages";
 import type { IndexChange, IndexFile, IndexSpec, VaultIndex } from "./vault-index";
@@ -22,19 +22,9 @@ export interface WorksPlacement {
   book: { note: { path: string }; title: string } | null;
 }
 
-/** The settings the entries depend on. */
-export interface WorksSettings {
-  trackFolders: string;
-  excludeFolders: string;
-  chaptersFolder: string;
-  chapterTemplate: string;
-  snapshotsFolder: string;
-  statusProperty?: string;
+/** The settings the entries depend on: what classify reads, plus the book goal property. */
+export interface WorksSettings extends ClassifySettings {
   stages: StageMapping;
-  targetProperty?: string;
-  limitProperty?: string;
-  unitProperty?: string;
-  deadlineProperty?: string;
   goalProperty?: string;
 }
 
@@ -48,11 +38,7 @@ export interface WorksDeps<F extends IndexFile> {
 
 /** Changes whenever a setting that decides who is a work, or what its entry holds, changes. */
 export function settingsKeyOf(s: WorksSettings): string {
-  return JSON.stringify([
-    s.trackFolders, s.excludeFolders, s.chaptersFolder, s.chapterTemplate, s.snapshotsFolder,
-    s.statusProperty ?? "", s.stages,
-    s.targetProperty ?? "", s.limitProperty ?? "", s.unitProperty ?? "", s.deadlineProperty ?? "", s.goalProperty ?? "",
-  ]);
+  return JSON.stringify([classifyKey(s), s.goalProperty ?? ""]);
 }
 
 function basename(path: string): string {

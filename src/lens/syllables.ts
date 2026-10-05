@@ -8,8 +8,27 @@
 
 import type { LensLang } from "./types";
 
-/** Syllables in one token: 1 or more for a token with letters, 0 for one without. */
+const MEMO_LIMIT = 50000;
+const memo: Record<LensLang, Map<string, number>> = { en: new Map(), "pt-BR": new Map() };
+
+/** For tests. */
+export function clearSyllableMemo(): void {
+  memo.en.clear();
+  memo["pt-BR"].clear();
+}
+
+/** Syllables in one token: 1 or more for a token with letters, 0 for one without. Memoized per language (bounded). */
 export function syllables(word: string, lang: LensLang): number {
+  const bucket = memo[lang];
+  const hit = bucket.get(word);
+  if (hit !== undefined) return hit;
+  const n = countSyllables(word, lang);
+  if (bucket.size >= MEMO_LIMIT) bucket.clear();
+  bucket.set(word, n);
+  return n;
+}
+
+function countSyllables(word: string, lang: LensLang): number {
   const w = word.normalize("NFC").toLowerCase().replace(/[’]/g, "'");
   let total = 0;
   for (const part of w.split(/[-‐‑–—]/)) {

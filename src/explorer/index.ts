@@ -6,14 +6,15 @@
 
 import { TFile, TFolder, debounce, type Editor, type MarkdownFileInfo, type MarkdownView, type TAbstractFile } from "obsidian";
 import type EscritaPlugin from "../main";
-import { FeatureModule } from "../core/module-context";
+import { FeatureModule, type SettingsUi } from "../core/module-context";
 import type { FeatureId } from "../core/features";
 import type { ExplorerItem, Decoration } from "../core/explorer-decorations";
-import { ancestors, inBook, inSnapshots } from "../core/classify";
+import { ancestors, classifyKey, inBook, inSnapshots } from "../core/classify";
 import type { Book } from "../core/books";
 import { measureText, noteProgress, type Counts } from "../core/measure";
 import { fmt, lang, t, unitAmount } from "../i18n";
 import { abbreviate, countLabel, explorerTotals, stateClass, type Abbrev, type BookShape, type NumFmt, type Totals } from "./counts";
+import { explorerSettingsSection } from "./settings-ui";
 
 /** files counted concurrently per step of the first pass */
 const BATCH = 40;
@@ -25,10 +26,8 @@ const LIVE_MS = 500;
 interface Last {
   folders: boolean;
   target: boolean;
-  /** settings that change which files are tracked or what a book is */
-  tracked: string;
-  /** settings that change a note's unit or target */
-  props: string;
+  /** classifyKey: every setting that changes which files are tracked, what a book is, or a note's unit or target */
+  key: string;
 }
 
 export class ExplorerModule extends FeatureModule {
@@ -107,11 +106,11 @@ export class ExplorerModule extends FeatureModule {
     const was = this.last ?? now;
     this.last = now;
     const p = this.plugin;
-    if (now.tracked !== was.tracked) {
+    if (now.key !== was.key) {
       if (p.app.workspace.layoutReady) void this.rebuild();
       return;
     }
-    if (now.folders !== was.folders || now.target !== was.target || now.props !== was.props) {
+    if (now.folders !== was.folders || now.target !== was.target) {
       this.totals = null;
       p.decorations.refresh("count");
     }
@@ -124,8 +123,7 @@ export class ExplorerModule extends FeatureModule {
     return {
       folders: s.explorerFolderTotals,
       target: s.explorerShowTarget,
-      tracked: JSON.stringify([s.trackFolders, s.excludeFolders, s.chaptersFolder, s.chapterTemplate, s.snapshotsFolder]),
-      props: JSON.stringify([s.targetProperty, s.limitProperty, s.unitProperty]),
+      key: classifyKey(s),
     };
   }
 
@@ -397,4 +395,6 @@ export class ExplorerModule extends FeatureModule {
         : amount;
     return { text: label.text, tooltip, cls: stateClass(label.state) };
   }
+
+  settingsSection(el: HTMLElement, ui: SettingsUi): void { explorerSettingsSection(el, ui, this.plugin); }
 }

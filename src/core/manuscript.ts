@@ -81,11 +81,12 @@ export interface ManuscriptOptions {
    */
   strictLineBreaks?: boolean;
   /**
-   * When the first block is a heading whose text equals this (trimmed, case
-   * ignored), it is dropped: a note that starts with `# Its title` doesn't print
-   * the title twice under the pipeline's own heading. Omitted = keep every heading.
+   * When the first block is a heading whose text equals this, or any of these
+   * (trimmed, case ignored), it is dropped: a note that starts with `# Its title`
+   * doesn't print the title twice under the pipeline's own heading. Omitted = keep
+   * every heading.
    */
-  dropTitleHeading?: string;
+  dropTitleHeading?: string | readonly string[];
 }
 
 
@@ -429,7 +430,8 @@ export function manuscriptOf(md: string | Markdown, o: ManuscriptOptions): Manus
 
   if (o.dropTitleHeading !== undefined && out[0]?.kind === "heading") {
     const t = out[0].runs.map((r) => r.text).join("").trim().toLowerCase();
-    if (t === o.dropTitleHeading.trim().toLowerCase()) out.shift();
+    const drop = typeof o.dropTitleHeading === "string" ? [o.dropTitleHeading] : o.dropTitleHeading;
+    if (drop.some((d) => d.trim().toLowerCase() === t)) out.shift();
   }
   while (out.length && out[0].kind === "sceneBreak") out.shift();
   return { blocks: out, dropped };

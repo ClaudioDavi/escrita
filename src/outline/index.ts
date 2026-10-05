@@ -4,9 +4,10 @@ import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
 import type { Follower } from "../core/vault-index";
 import { FeatureModule, type EditorSlot, type FeatureSlots } from "../core/module-context";
+import type { SettingsUi } from "../core/module-context";
 import type { Book } from "../core/books";
 import { safeFileName } from "../core/book";
-import { FolderBlockedError } from "../core/notes";
+import { FolderBlockedError, NoteExistsError } from "../core/notes";
 import { parseBeats } from "../core/markers";
 import { statusColor } from "../core/stages";
 import { t } from "../i18n";
@@ -14,10 +15,13 @@ import { beatAtLine, insertBeat, minimalChange } from "./beats-edit";
 import { buildBoard, canOverwriteBoard, mergeBoard, type BoardChapter } from "./model";
 import { reportError } from "./errors";
 import { ghostBeats } from "./ghost";
-import { loadRows } from "./rows";
-import { assignColors, renamePovKey, type PovColor } from "./pov";
+import { loadRows, type RowsPort } from "./rows";
+import { bookSource } from "../core/books";
+import { readChapterDefault } from "../core/measure";
+import { assignColors, povValue, renamePovKey, type PovColor } from "./pov";
 import { CreateBookModal, confirmAction } from "./modals";
-import { OUTLINE_VIEW, OutlineView, chaptersPort, str } from "./view";
+import { OUTLINE_VIEW, OutlineView, str } from "./view";
+import { outlineSettingsSection } from "./settings-ui";
 
 /** Default goal written into a new book's note. */
 
@@ -50,6 +54,31 @@ export class OutlineModule extends FeatureModule {
     const out: Record<string, PovColor> = {};
     for (const k of keys) if (Object.prototype.hasOwnProperty.call(store, k)) out[k] = store[k];
     return out;
+  }
+
+  /**
+   * What `loadRows` needs from Obsidian, for the panel and the board. Chapters, text
+   * and frontmatter come through the book source (reads go through plugin.notes, so
+   * an open editor's text is what shows).
+   */
+  rowsPort(): RowsPort<Book> {
+    const plugin = this.plugin;
+    const { app, books } = plugin;
+    const source = bookSource(app, books, plugin.notes, () => plugin.settings);
+    const fileAt = (path: string): TFile => app.vault.getAbstractFileByPath(path) as TFile;
+    return {
+      ...source,
+      counts: (path, seed, unit) => plugin.measure.counts(fileAt(path), seed, unit),
+      placeholders: (path) => (plugin.features.isOn("placeholders") ? plugin.placeholders.countFor(path) : 0),
+      chapterDefault: (book) => readChapterDefault(books.frontmatter(book.note), plugin.settings),
+      resolvePov: (value, path) => povValue(value, (link) => {
+        const dest = app.metadataCache.getFirstLinkpathDest(link, path);
+        if (dest) return { path: dest.path, name: dest.basename };
+        return plugin.names.entryFor(link, path);
+      }),
+      settings: () => plugin.settings,
+      stages: () => plugin.settings.stages,
+    };
   }
 
   onload(): void {
@@ -187,7 +216,7 @@ export class OutlineModule extends FeatureModule {
   async openBoard(book: Book): Promise<void> {
     const { app, settings } = this.plugin;
     try {
-      const { port } = chaptersPort(this.plugin);
+      const port = this.rowsPort();
       const chapters: BoardChapter[] = (await loadRows(port, book)).map((row) => {
         // summary and status as written in the note, as the board always had them
         const fm = port.frontmatter(row.path) ?? {};
@@ -220,7 +249,7 @@ export class OutlineModule extends FeatureModule {
       } else if (existing) {
         throw new Error(t("outline.create.exists", { path }));
       } else {
-        file = await app.vault.create(path, JSON.stringify(board, null, 2));
+        file = (await this.plugin.notes.create(path, JSON.stringify(board, null, 2), { exists: "fail" })).file;
       }
       await app.workspace.getLeaf("tab").openFile(file, { active: true });
     } catch (e) {
@@ -253,9 +282,12 @@ export class OutlineModule extends FeatureModule {
       return false;
     }
     try {
-      if (base) await this.ensureFolder(base);
-      // starts in the draft stage, in the writer's own status word
-      const note = await app.vault.create(notePath, newBookNote(settings));
+      // starts in the draft stage, in the writer's own status word; "fail": the check above found nothing, so a file that appeared since is not touched
+      const note = (await this.plugin.notes.create(notePath, newBookNote(settings), { exists: "fail" }).catch((e) => {
+        if (e instanceof FolderBlockedError) throw new Error(t("outline.create.exists", { path: e.path }));
+        if (e instanceof NoteExistsError) throw new Error(t("outline.create.exists", { path: e.existing }));
+        throw e;
+      })).file;
       await this.ensureFolder(folderPath);
       await this.ensureFolder(join(folderPath, settings.chaptersFolder));
       const book = books.classify(note).book;
@@ -285,4 +317,6 @@ export class OutlineModule extends FeatureModule {
   private fail(e: unknown): void {
     reportError(e);
   }
+
+  settingsSection(el: HTMLElement, ui: SettingsUi): void { outlineSettingsSection(el, ui, this.plugin); }
 }

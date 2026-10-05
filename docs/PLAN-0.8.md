@@ -115,6 +115,7 @@ These are Opus decisions; agents don't reopen them.
 | N 7 | "Prologue/Epilogue rule" | Unnumbered chapters get their title alone (Q5) | No new property; it reads what the writer has |
 | SF 12 | Home block "can show 2 pendentes" | Shown next to the ready count only while submissions is on | Off feature, no trace |
 | IMPROVEMENTS 14 | Every content index | Mentions only | Measured: the others are cheap |
+| Q13 (settings look) | Same look as 0.7 | Editor section: paragraph style and quote style, shared with dialogue focus, moving blocks and the lens, now come after the typing rows | One owner per row (IMPROVEMENTS 11); the author confirms in the manual settings check |
 
 ## Gates
 
@@ -341,6 +342,39 @@ Two fixes landed after the wave:
 
 **Opus judge** after the wave.
 
+**Wave 2 result (2026-10-05).** Done. Typecheck, 2,705 tests, build and bundle check pass.
+
+- **Settings.** Each module draws its own section and off notice (a `settings-ui.ts`
+  per module). The order list is `core/settings-order.ts`. Text rows save on commit.
+  `src/settings-sections/` is gone, and `settings.ts` imports no module internals.
+- **Writers.** The Markdown writer matches all four expected files. The DOCX writer
+  makes 9 parts; it was written fresh, not from the G0a spike, so the manual check
+  opens it in Google Docs too. A chapter that starts with its own `# Title` loses it
+  under the chapter heading: `ExportPart.title`, and 3.1 fills it from
+  `ChapterRef.title`.
+- **Indexes.** The specs compose `classifyKey`. Mentions builds on demand, with
+  `settleMs` 4 s. Dots redraw the changed paths, and threads read `segmentDoc`.
+- **Callers.** The create sites use `notes.create`, and the outline reads the book
+  source.
+
+Bench on 3,020 notes, after the bench learned to call `demand()`:
+
+| Index | Total | Longest block |
+|---|---|---|
+| placeholders | 47 ms | 11 ms |
+| threads | 38 ms | 16 ms |
+| mentions (first query) | 3.4 s | 18 ms |
+| all three | 3.6 s | 26 ms |
+
+At startup only placeholders and threads build now: about 85 ms instead of 4.2 s.
+
+Other numbers:
+- `findNames`: 3k words 2.8 ms, 10k words 9.9 ms.
+- Lens full pass: 3k words 7.6 ms, 10k words 21.0 ms (was 25.8 ms, about 19% faster;
+  re-measure on a quiet machine in 4.3).
+- The `normalizeWord` memo was not built (a core file, worth about 1 ms); note it when
+  IMPROVEMENTS 22 moves to Done.
+
 ## Wave 3: features (parallel, Sonnet, gated by G1 and G2)
 
 | Task | Owns | Done when |
@@ -370,14 +404,14 @@ Two fixes landed after the wave:
   - Open the file in LibreOffice and Word.
   - Check the header, the title page count, `#` scene breaks, travessão dialogue kept,
     and no `%%` text.
-- **Open both presets' DOCX in Word and Pages** (the rest of G0a): no repair prompt, header numbers, page breaks, spacing.
+- **Open both presets' DOCX in Word, Pages and Google Docs** (the writer from 2.3, not the G0a spike; the rest of G0a): no repair prompt, header numbers, page breaks, spacing.
 - **Export a test book with a "Prólogo".** Check the chapter headings and that the
   `compile: false` chapter is left out.
 - **Submissions.**
   - Record a submission for a conto, then rename the conto: the link must follow.
   - The home block must show the pending count.
   - Turn submissions off: the count and the settings section must go.
-- **Settings tab.** It must look the same as 0.7. Typing in a folder field must not
+- **Settings tab.** It must look the same as 0.7, except the Editor section's order: paragraph style and quote style now come after the typing rows (a recorded deviation; say if it should change). Typing in a folder field must not
   reload features per key.
 - **Universe on, startup.** No mentions pass until "Appears in" is opened. Typing in a
   10k-word chapter must not recompute mentions.

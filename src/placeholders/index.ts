@@ -1,15 +1,17 @@
 import { MarkdownView, Notice, TFile, debounce, type Editor, type PaneType, type WorkspaceLeaf } from "obsidian";
 import type EscritaPlugin from "../main";
 import { FeatureModule } from "../core/module-context";
+import type { SettingsUi } from "../core/module-context";
 import type { FeatureId } from "../core/features";
 import { folderList } from "../core/lists";
-import type { VaultIndex } from "../core/vault-index";
-import { snapshotsRoot } from "../core/classify";
+import type { IndexChange, VaultIndex } from "../core/vault-index";
+import { classifyKey, snapshotsRoot } from "../core/classify";
 import type { Applied } from "../core/note-text";
 import { t } from "../i18n";
 import { locate, placeholderSpec, planInsert, resolvePlaceholder, scan, stepIndex, type IndexedMarker } from "./logic";
 import { placeholderDecorations } from "./decoration";
 import { PLACEHOLDERS_VIEW, PlaceholdersView } from "./view";
+import { placeholdersSettingsSection } from "./settings-ui";
 
 export { PLACEHOLDERS_VIEW } from "./view";
 export type { IndexedMarker } from "./logic";
@@ -22,10 +24,10 @@ export class PlaceholdersModule extends FeatureModule {
   /** Subscribers to onChange. They outlive a load: the index feeds them only while loaded. */
   private listeners = new Set<() => void>();
   private lastMarker = "";
-  private lastExclude = "";
-  private lastSnapshots = "";
   private lastDots = true;
-  private dotsSoon = debounce(() => this.applyDots(), 100, true);
+  /** paths whose dot may have changed since the last redraw; "all" redraws every item */
+  private dotPaths: Set<string> | "all" = new Set();
+  private dotsSoon = debounce(() => this.flushDots(), 100, true);
 
   constructor(private plugin: EscritaPlugin) {
     super();
@@ -76,14 +78,12 @@ export class PlaceholdersModule extends FeatureModule {
     const p = this.plugin;
     const ctx = this.ctx;
     this.lastMarker = this.marker();
-    this.lastExclude = p.settings.excludeFolders;
-    this.lastSnapshots = p.settings.snapshotsFolder;
     this.lastDots = p.settings.showExplorerDots;
 
     const idx = ctx.index<TFile, IndexedMarker[]>(placeholderSpec<TFile>({
       marker: () => this.marker(),
       exclude: () => this.excluded(),
-      settingsKey: () => JSON.stringify([this.marker(), p.settings.excludeFolders, p.settings.snapshotsFolder]),
+      settingsKey: () => JSON.stringify([classifyKey(p.settings), this.marker()]),
     }));
     this.idx = idx;
     // Views waiting on "indexing" leave it once a build completes.
@@ -122,8 +122,9 @@ export class PlaceholdersModule extends FeatureModule {
     ctx.decorate("dot", (it) =>
       !it.folder && p.settings.showExplorerDots && this.countFor(it.path) > 0 ? {} : null);
     // One subscription per load; the index is disposed on unload, which ends it.
-    idx.onChange(() => {
+    idx.onChange((changes) => {
       for (const cb of [...this.listeners]) cb();
+      this.markDots(changes);
       this.dotsSoon();
     });
   }
@@ -131,23 +132,19 @@ export class PlaceholdersModule extends FeatureModule {
   onunload(): void {
     this.idx = null;
     this.dotsSoon.cancel();
+    this.dotPaths = new Set();
   }
 
   settingsChanged(): void {
     const s = this.plugin.settings;
     const marker = this.marker();
-    const reindex = marker !== this.lastMarker || s.excludeFolders !== this.lastExclude
-      || s.snapshotsFolder !== this.lastSnapshots;
     const dots = s.showExplorerDots !== this.lastDots;
+    const markerMoved = marker !== this.lastMarker;
     this.lastMarker = marker;
-    this.lastExclude = s.excludeFolders;
-    this.lastSnapshots = s.snapshotsFolder;
     this.lastDots = s.showExplorerDots;
-    if (reindex) {
-      // Editors read the marker on each update; this makes them update now.
-      this.plugin.app.workspace.updateOptions();
-      this.plugin.index.settingsChanged();
-    }
+    // Editors read the marker on each update; this makes them update now. The hub itself
+    // rebuilds the index when its settings key (classify's inputs and the marker) changed.
+    if (markerMoved) this.plugin.app.workspace.updateOptions();
     if (dots) this.applyDots();
   }
 
@@ -164,7 +161,26 @@ export class PlaceholdersModule extends FeatureModule {
   }
 
   private applyDots(): void {
+    this.dotPaths = new Set();
     this.plugin.decorations.refresh("dot");
+  }
+
+  /** Notes which items' dots an index change may have moved (a build or a settings change: all of them). */
+  private markDots(changes: readonly IndexChange<IndexedMarker[]>[]): void {
+    if (this.dotPaths === "all") return;
+    for (const c of changes) {
+      if (c.cause === "build") { this.dotPaths = "all"; return; }
+      this.dotPaths.add(c.path);
+      if (c.from !== undefined) this.dotPaths.add(c.from);
+    }
+  }
+
+  /** Redraws only the items whose dot may have changed (IMPROVEMENTS 23). */
+  private flushDots(): void {
+    const paths = this.dotPaths;
+    this.dotPaths = new Set();
+    if (paths === "all") this.plugin.decorations.refresh("dot");
+    else if (paths.size > 0) this.plugin.decorations.refresh("dot", paths);
   }
 
   // ---------------------------------------------------------------- commands
@@ -313,4 +329,6 @@ export class PlaceholdersModule extends FeatureModule {
     }
     return true;
   }
+
+  settingsSection(el: HTMLElement, ui: SettingsUi): void { placeholdersSettingsSection(el, ui, this.plugin); }
 }

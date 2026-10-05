@@ -94,10 +94,12 @@ export abstract class FeatureModule extends Component {
   dataFollowers?(): Follower[];
 
   /**
-   * Draws this module's rows of the settings tab into `el`, heading included
-   * (IMPROVEMENTS 11). Called only while the feature is loaded, in the tab's one
-   * order list (PLAN-0.8 Q13), so an off feature's section is gone with it. Read
-   * from task 2.1 on; the sections move here in 2.2.
+   * Draws this module's rows of the settings tab into `el` (IMPROVEMENTS 11), with
+   * its own heading, except in a slot with shared rows (core/settings-order.ts `also`:
+   * placeholders, editor, universe), where the core draws the heading and those rows.
+   * Called only while the feature is loaded, in the tab's one order list (PLAN-0.8
+   * Q13), so an off feature's section is gone with it. Read from task 2.1 on; the
+   * sections move here in 2.2.
    */
   settingsSection?(el: HTMLElement, ui: SettingsUi): void;
 

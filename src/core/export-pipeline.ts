@@ -12,7 +12,7 @@
 // Owner: the pure helpers below are stubs for task 2.3 (the writers need them).
 
 import type { Markdown } from "./markdown";
-import type { Manuscript, ManuscriptOptions } from "./manuscript";
+import { manuscriptOf, type Manuscript, type ManuscriptOptions } from "./manuscript";
 import type { PieceUnit } from "./measure";
 
 // ------------------------------------------------------------------ source
@@ -37,6 +37,8 @@ export interface ExportPart {
   role: "body" | "dedication" | "epigraph";
   /** the chapter heading, already formatted (chapterHeadings); null for a single note and front matter */
   heading: string | null;
+  /** the chapter's own title (ChapterRef.title), for dropping a leading heading that repeats it; null for front matter and a single note */
+  title?: string | null;
   md: Markdown;
 }
 
@@ -64,13 +66,34 @@ export interface ExportDoc {
 }
 
 /**
- * Source → model: `manuscriptOf` on each part, with the part's heading as
- * `dropTitleHeading` for a body part (and the title for a single note).
+ * Source → model: `manuscriptOf` on each part. A body part drops a leading
+ * heading that repeats its formatted heading, its own title ("Chapter 1: A chegada"
+ * or "A chegada"), or, for a single note, the work's title.
  * Empty parts stay (a chapter heading with no prose is still a chapter).
  */
 export function exportDocOf(source: ExportSource, o: ManuscriptOptions): ExportDoc {
-  void source; void o;
-  throw new Error("not implemented: 0.8 task 2.3");
+  return {
+    title: source.title,
+    author: source.author,
+    count: source.count,
+    parts: source.parts.map((p) => {
+      // a body part's leading heading goes when it repeats the part's heading or title
+      // (or the work's title for a single note); front matter keeps every heading
+      const drop = p.role !== "body" ? [] : [p.heading, p.title, p.heading === null ? source.title : null]
+        .filter((d): d is string => typeof d === "string" && d.trim() !== "");
+      const opts = drop.length === 0 ? o : { ...o, dropTitleHeading: drop };
+      return { role: p.role, heading: p.heading, manuscript: manuscriptOf(p.md, opts) };
+    }),
+  };
+}
+
+/**
+ * A book (a title page of its own, chapters) or a single note (the title starts page 1)?
+ * A book has a chapter heading or a front matter part; a single note is one body part
+ * with no heading. Writers share this rule (tests/fixtures/manuscript/README.md, 5).
+ */
+export function isBookDoc(doc: ExportDoc): boolean {
+  return doc.parts.some((p) => p.role !== "body" || p.heading !== null);
 }
 
 /**
@@ -80,8 +103,7 @@ export function exportDocOf(source: ExportSource, o: ManuscriptOptions): ExportD
  * `dropped.placeholder` is for tests and diagnostics.
  */
 export function droppedIn(doc: ExportDoc): { part: number; dropped: Manuscript["dropped"][number] }[] {
-  void doc;
-  throw new Error("not implemented: 0.8 task 2.3");
+  return doc.parts.flatMap((p, part) => p.manuscript.dropped.map((dropped) => ({ part, dropped })));
 }
 
 // ------------------------------------------------------------------ presets
@@ -153,8 +175,9 @@ export interface ManuscriptWriter<M, P = Preset> {
  * preset's `countLabel`.
  */
 export function aboutCount(amount: number): number {
-  void amount;
-  throw new Error("not implemented: 0.8 task 2.3");
+  if (!Number.isFinite(amount) || amount <= 0) return 0;
+  const step = amount < 10000 ? 100 : 500;
+  return Math.max(100, Math.round(amount / step) * step);
 }
 
 /**
@@ -169,12 +192,31 @@ export function aboutCount(amount: number): number {
  * and the separator before it are left out ("Capítulo 1").
  */
 export function chapterHeadings(chapters: readonly { number: number | null; title: string }[], format: string): string[] {
-  void chapters; void format;
-  throw new Error("not implemented: 0.8 task 2.3");
+  let n = 0;
+  return chapters.map((c) => {
+    const title = c.title.trim();
+    if (c.number === null) return title;
+    n++;
+    if (title !== "") return fillTemplate(format, { n, title }).trim();
+    // no title of its own: cut `{title}` and the separator on the side facing `{n}`
+    const t = format.indexOf("{title}");
+    const k = format.indexOf("{n}");
+    const SEP = "[\\s:\u2014\u2013\\-.,]*";
+    let cut = format;
+    if (t >= 0) {
+      const head = format.slice(0, t);
+      const tail = format.slice(t + 7);
+      cut = k >= 0 && k > t
+        ? head + tail.replace(new RegExp(`^${SEP}`), "")
+        : head.replace(new RegExp(`${SEP}$`), "") + tail;
+    }
+    return fillTemplate(cut, { n, title: "" }).trim();
+  });
 }
 
 /** `{name}` slots filled from `vars`; an unknown slot stays as written. */
 export function fillTemplate(template: string, vars: Readonly<Record<string, string | number>>): string {
-  void template; void vars;
-  throw new Error("not implemented: 0.8 task 2.3");
+  return template.replace(/\{(\w+)\}/g, (all, name: string) =>
+    Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : all,
+  );
 }

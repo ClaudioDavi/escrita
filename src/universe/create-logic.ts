@@ -4,7 +4,8 @@
 
 import { linkTarget, parseThreads, threadComment, type ThreadMarker } from "../core/markers";
 import type { Change } from "../core/note-text";
-import { foldText, type Entry } from "./entries";
+import { foldName } from "../core/names";
+import type { Entry } from "./entries";
 
 /** The longest selection the editor menu offers "Create universe entry" for. */
 export const MAX_SELECTION_NAME = 60;
@@ -24,12 +25,12 @@ export interface Duplicate {
 
 /** The entry whose name or alias is `name` (accents and case ignored; a name match wins over an alias), or null. */
 export function findDuplicate(entries: Entry[], name: string): Duplicate | null {
-  const q = foldText(name.trim());
+  const q = foldName(name.trim());
   if (q === "") return null;
   let alias: Duplicate | null = null;
   for (const entry of entries) {
-    if (foldText(entry.name) === q) return { entry, via: "name" };
-    if (!alias && entry.aliases.some((a) => foldText(a.trim()) === q)) alias = { entry, via: "alias" };
+    if (foldName(entry.name) === q) return { entry, via: "name" };
+    if (!alias && entry.aliases.some((a) => foldName(a.trim()) === q)) alias = { entry, via: "alias" };
   }
   return alias;
 }
@@ -169,15 +170,15 @@ const baseOf = (p: string) => p.slice(p.lastIndexOf("/") + 1).replace(/\.md$/i, 
 export function resolveAnswer(input: string, works: WorkChoice[]): AnswerTarget {
   const text = stripLink(input);
   if (text === "") return { kind: "none" };
-  const q = foldText(text);
-  const work = works.find((w) => foldText(w.title) === q || foldText(baseOf(w.path)) === q || foldText(w.path.replace(/\.md$/i, "")) === q);
+  const q = foldName(text);
+  const work = works.find((w) => foldName(w.title) === q || foldName(baseOf(w.path)) === q || foldName(w.path.replace(/\.md$/i, "")) === q);
   return work ? { kind: "work", work } : { kind: "text", text };
 }
 
 /** Works whose title contains the query, the ones that start with it first; an empty query keeps all. */
 export function suggestWorks(works: WorkChoice[], query: string, limit = 20): WorkChoice[] {
-  const q = foldText(query.trim());
-  const hits = q === "" ? [...works] : works.filter((w) => foldText(w.title).includes(q));
-  hits.sort((x, y) => Number(foldText(y.title).startsWith(q)) - Number(foldText(x.title).startsWith(q)) || x.title.localeCompare(y.title));
+  const q = foldName(query.trim());
+  const hits = q === "" ? [...works] : works.filter((w) => foldName(w.title).includes(q));
+  hits.sort((x, y) => Number(foldName(y.title).startsWith(q)) - Number(foldName(x.title).startsWith(q)) || x.title.localeCompare(y.title));
   return hits.slice(0, limit);
 }

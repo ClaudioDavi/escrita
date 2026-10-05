@@ -7,13 +7,14 @@
 import { TFile } from "obsidian";
 import type EscritaPlugin from "../main";
 import { t } from "../i18n";
-import { FeatureModule } from "../core/module-context";
+import { FeatureModule, type SettingsUi } from "../core/module-context";
 import type { Follower, VaultIndex } from "../core/vault-index";
 import { dropSeen, pruneSeen, recordSeen, renameSeen } from "./first-seen";
 import { collectThreads, inScope, threadsSpec, type NoteThreads, type ThreadRef } from "./threads";
 import type { Scope } from "./scope";
 import { addThreadsEditorMenuItems, closeThreadAtCursor, inSource, plantThread, threadAtCursor, threadMarkerExtension } from "./create";
 import { THREADS_VIEW, ThreadsView } from "./view";
+import { threadsSettingsSection } from "./threads-settings-ui";
 
 export class ThreadsFeature extends FeatureModule {
   readonly id = "threads" as const;
@@ -127,4 +128,6 @@ export class ThreadsFeature extends FeatureModule {
       },
     });
   }
+
+  settingsSection(el: HTMLElement, ui: SettingsUi): void { threadsSettingsSection(el, ui, this.plugin); }
 }
