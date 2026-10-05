@@ -286,7 +286,7 @@ Each task lists its model.
 - `yieldBudget` returns a checkpoint (`BUDGET_MS`, 8 ms after G0d).
 - A separate `unclosedHtmlComment` check id.
 
-The 0.8 settings keys are declared with English defaults and no UI: `exportFolder`, `compileProperty`, `dedicationProperty`, `epigraphProperty`, `authorName`, `authorSurname`, `contactLines`, `chapterHeadingFormat`, `submissionsFolder` and `submissionResults`. `data.exportChoices` is declared too.
+The 0.8 settings keys are declared with English defaults and no UI: `exportFolder`, `compileProperty`, `dedicationProperty`, `epigraphProperty`, `authorProperty`, `authorName`, `authorSurname`, `contactLines`, `chapterHeadingFormat`, `submissionsFolder` and `submissionResults`. `data.exportChoices` is declared too.
 
 The judge's fixture rules are in `tests/fixtures/manuscript/README.md`:
 - The scene break is written `\#`.

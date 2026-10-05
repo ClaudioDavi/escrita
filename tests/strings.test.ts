@@ -7,6 +7,8 @@ import { placeholdersStrings } from "../src/placeholders/strings";
 import { darlingsStrings } from "../src/darlings/strings";
 import { editorStrings } from "../src/editor/strings";
 import { publishStrings } from "../src/publish/strings";
+import { exportStrings } from "../src/export/strings";
+import { submissionsStrings } from "../src/submissions/strings";
 import { explorerStrings } from "../src/explorer/strings";
 import { snapshotsStrings } from "../src/snapshots/strings";
 import { deskStrings } from "../src/desk/strings";
@@ -24,6 +26,8 @@ const all: Record<string, Strings> = {
   darlings: darlingsStrings,
   editor: editorStrings,
   publish: publishStrings,
+export: exportStrings,
+submissions: submissionsStrings,
   explorer: explorerStrings,
   snapshots: snapshotsStrings,
   desk: deskStrings,

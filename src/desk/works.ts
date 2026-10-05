@@ -3,6 +3,7 @@
 // Facts carry a state per number so the renderer can color it (Q23).
 
 import type { PieceUnit } from "../core/measure";
+import type { PendingSubmission } from "../core/pending";
 import type { Stage } from "../core/stages";
 import type { DeskRole } from "../core/works";
 
@@ -44,7 +45,12 @@ export type Fact =
 
 export interface WorkLine { path: string; title: string; fact: Fact }
 
+/** One pending submission as the expanded count lists it. */
+export interface PendingLine { path: string; title: string; market: string; sent: string | null }
+
 export interface DeskModel {
+  /** pending submissions (not works), newest first; absent when there are none to show */
+  pending?: { n: number; items: PendingLine[] };
   writing: WorkLine[];
   revising: WorkLine[];
   /** idea, ready, published, none, in that order; zero counts left out */
@@ -159,7 +165,38 @@ function byRecency(a: WorkSource, b: WorkSource): number {
   return b.editedAt - a.editedAt || a.title.localeCompare(b.title);
 }
 
-export function buildDesk(works: readonly WorkSource[], today?: string): DeskModel {
+/**
+ * The pending count: one per submission, so a conto sent twice counts 2. With `keep`,
+ * only submissions whose work resolves to a kept path stay (the block's folder filter).
+ */
+export function buildPending(
+  subs: readonly PendingSubmission[],
+  keep?: ReadonlySet<string>,
+): DeskModel["pending"] {
+  const items = subs
+    .filter((s) => !keep || (s.workPath !== null && keep.has(s.workPath)))
+    .map((s): PendingLine => ({ path: s.path, title: s.workTitle, market: s.market, sent: s.sent }));
+  return items.length ? { n: items.length, items } : undefined;
+}
+
+export type CountKey = Stage | "none" | "pending";
+
+/** The count bar in order: idea, ready, pending, published, none. Zero counts are left out. */
+export function countBar(model: DeskModel): { key: CountKey; n: number }[] {
+  const out: { key: CountKey; n: number }[] = [];
+  const add = (key: CountKey, n: number) => out.push({ key, n });
+  const stages = model.counts;
+  const pending = model.pending;
+  let placed = !pending;
+  for (const c of stages) {
+    if (!placed && (c.stage === "published" || c.stage === "none")) { add("pending", pending!.n); placed = true; }
+    add(c.stage, c.n);
+  }
+  if (!placed) add("pending", pending!.n);
+  return out;
+}
+
+export function buildDesk(works: readonly WorkSource[], today?: string, pending: readonly PendingSubmission[] = [], keepPending?: ReadonlySet<string>): DeskModel {
   const shown = works.filter((w) => w.role !== "chapter").sort(byRecency);
   const line = (w: WorkSource): WorkLine => ({ path: w.path, title: w.title, fact: factOf(w, today) });
   const counts: DeskModel["counts"] = [];
@@ -168,6 +205,7 @@ export function buildDesk(works: readonly WorkSource[], today?: string): DeskMod
     if (items.length) counts.push({ stage, n: items.length, items });
   }
   return {
+    pending: buildPending(pending, keepPending),
     writing: shown.filter((w) => w.stage === "draft").map(line),
     revising: shown.filter((w) => w.stage === "revision").map(line),
     counts,

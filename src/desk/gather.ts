@@ -7,6 +7,13 @@ import { readStatus } from "../core/stages";
 import { bookChapterProgress, type DeskEntry } from "../core/works";
 import { buildDesk, filterByFolders, type DeskModel, type WorkSource } from "./works";
 import { parseBlock } from "./block";
+import type { PendingSource } from "../core/pending";
+
+/** The pending-submissions port, only while the submissions feature is on (never imports that module). */
+export function pendingSource(plugin: EscritaPlugin): PendingSource | null {
+  if (!plugin.features.isOn("submissions")) return null;
+  return plugin.features.get<{ pending?: PendingSource }>("submissions")?.pending ?? null;
+}
 
 export type DeskNotice =
   | { kind: "noWorks" }
@@ -94,7 +101,9 @@ export async function gatherDesk(plugin: EscritaPlugin, source: string, today: s
   const all = (await Promise.all(entries.map(make))).filter((w): w is WorkSource => w !== null);
   const bookFolderOf = (p: string) => books.classify(p).book?.folder.path ?? null;
   const kept = filterByFolders(all, folders, bookFolderOf);
-  const model = buildDesk(kept, today);
+  const pending = pendingSource(plugin)?.list() ?? [];
+  const keptPaths = folders.length > 0 ? new Set(kept.map((w) => w.path)) : undefined;
+  const model = buildDesk(kept, today, pending, keptPaths);
   const folderExists = (f: string) => app.vault.getFolderByPath(f) !== null;
   const shown = new Set<string>();
   for (const w of kept) shown.add(w.path);

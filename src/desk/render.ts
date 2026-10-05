@@ -5,14 +5,14 @@
 import { Keymap, MarkdownRenderChild, debounce } from "obsidian";
 import type EscritaPlugin from "../main";
 import type { LeftOffEvents } from "../core/left-off";
-import { STAGES, writtenWord, type Stage } from "../core/stages";
+import { STAGES, writtenWord } from "../core/stages";
 import type { DeskEntry } from "../core/works";
 import type { IndexChange } from "../core/vault-index";
 import { isoDay } from "../core/dates";
 import { fmt, fmtShortDay, lang, plural, t } from "../i18n";
-import { gatherDesk, type DeskNotice, type Gathered } from "./gather";
+import { gatherDesk, pendingSource, type DeskNotice, type Gathered } from "./gather";
 import { openWork } from "./open";
-import { factParts, type FactLabels, type WorkLine } from "./works";
+import { countBar, factParts, type CountKey, type FactLabels, type FactPart, type WorkLine } from "./works";
 
 const RENDER_MS = 250;
 const KEY = "data-escrita-key";
@@ -37,7 +37,8 @@ function orList(words: string[]): string {
 }
 
 export class DeskBlock extends MarkdownRenderChild {
-  private expanded = new Set<Stage | "none">();
+  private expanded = new Set<CountKey>();
+  private unbindPending: (() => void) | null = null;
   private last: Gathered | null = null;
   private generation = 0;
   /** the day the last gather used */
@@ -89,7 +90,16 @@ export class DeskBlock extends MarkdownRenderChild {
     this.register(works.onReady(() => { void this.refresh(); }));
     this.register(measure.onChange((paths) => { if (paths.some((p) => this.touches(p))) this.soon(); }));
     this.register(this.leftOff.onChange((paths) => { if (paths.some((p) => this.touches(p))) this.soon(); }));
+    // the pending count: follow the submissions feature and its list
+    this.register(this.plugin.features.onChange((id) => { if (id === "submissions") { this.bindPending(); void this.refresh(); } }));
+    this.register(() => { this.unbindPending?.(); this.unbindPending = null; });
+    this.bindPending();
     void this.refresh();
+  }
+
+  private bindPending(): void {
+    this.unbindPending?.();
+    this.unbindPending = pendingSource(this.plugin)?.onChange(() => this.soon()) ?? null;
   }
 
   onunload(): void {
@@ -175,15 +185,14 @@ export class DeskBlock extends MarkdownRenderChild {
     if (lines.length === 0) return;
     const sec = parent.createDiv({ cls: "escrita-desk-section" });
     sec.createDiv({ cls: "escrita-desk-heading", text: heading });
-    for (const line of lines) this.row(sec, "escrita-desk-row", line, `${id}:${line.path}`);
+    for (const line of lines) this.row(sec, "escrita-desk-row", line.title, factParts(line.fact, labels), `${id}:${line.path}`, line.path);
   }
 
-  private row(parent: HTMLElement, cls: string, line: WorkLine, key: string): void {
+  private row(parent: HTMLElement, cls: string, title: string, parts: FactPart[], key: string, path: string): void {
     const b = parent.createEl("button", { cls });
     b.setAttribute("type", "button");
     b.setAttribute(KEY, key);
-    b.createSpan({ cls: "escrita-desk-title", text: line.title });
-    const parts = factParts(line.fact, labels);
+    b.createSpan({ cls: "escrita-desk-title", text: title });
     if (parts.length > 0) {
       b.createSpan({ cls: "escrita-desk-leader" }).setAttribute("aria-hidden", "true");
       const fact = b.createSpan({ cls: "escrita-desk-fact" });
@@ -192,40 +201,48 @@ export class DeskBlock extends MarkdownRenderChild {
       }
     }
     this.actions.set(key, (newTab) => {
-      openWork(this.plugin, line.path, newTab).catch((err) => console.error("Escrita: could not open the work", err));
+      openWork(this.plugin, path, newTab).catch((err) => console.error("Escrita: could not open the work", err));
     });
   }
 
   private counts(parent: HTMLElement, g: Gathered): void {
-    const items = g.model.counts;
-    if (items.length === 0) return;
+    const bar = countBar(g.model);
+    if (bar.length === 0) return;
     const wrap = parent.createDiv({ cls: "escrita-desk-counts-wrap" });
-    const bar = wrap.createDiv({ cls: "escrita-desk-counts" });
-    items.forEach((c, i) => {
-      if (i > 0) bar.createSpan({ cls: "escrita-desk-dot", text: "·" }).setAttribute("aria-hidden", "true");
-      const open = this.expanded.has(c.stage);
-      const b = bar.createEl("button", { cls: "escrita-desk-count" });
+    const barEl = wrap.createDiv({ cls: "escrita-desk-counts" });
+    bar.forEach((c, i) => {
+      if (i > 0) barEl.createSpan({ cls: "escrita-desk-dot", text: "·" }).setAttribute("aria-hidden", "true");
+      const open = this.expanded.has(c.key);
+      const b = barEl.createEl("button", { cls: "escrita-desk-count" });
       b.setAttribute("type", "button");
       // the stage's color, as a key: the only place the block shows it
-      const color = c.stage === "none" ? "" : this.plugin.settings.stages[c.stage]?.color ?? "";
+      const color = c.key === "none" || c.key === "pending" ? "" : this.plugin.settings.stages[c.key]?.color ?? "";
       if (color) {
         const dot = b.createSpan({ cls: "escrita-desk-stage-dot" });
         dot.setAttribute("aria-hidden", "true");
         dot.setCssProps({ "--escrita-dot": color });
       }
-      b.createSpan({ text: plural(`desk.count.${c.stage}`, c.n) });
-      b.setAttribute(KEY, `count:${c.stage}`);
+      b.createSpan({ text: plural(`desk.count.${c.key}`, c.n) });
+      b.setAttribute(KEY, `count:${c.key}`);
       b.setAttribute("aria-expanded", open ? "true" : "false");
-      this.actions.set(`count:${c.stage}`, () => {
-        const wasOpen = this.expanded.has(c.stage);
+      this.actions.set(`count:${c.key}`, () => {
+        const wasOpen = this.expanded.has(c.key);
         this.expanded.clear();
-        if (!wasOpen) this.expanded.add(c.stage);
+        if (!wasOpen) this.expanded.add(c.key);
         this.paint();
       });
     });
-    const open = items.find((c) => this.expanded.has(c.stage));
+    const open = bar.find((c) => this.expanded.has(c.key));
     if (!open) return;
     const list = wrap.createDiv({ cls: "escrita-desk-items" });
-    for (const line of open.items) this.row(list, "escrita-desk-sub", line, `item:${open.stage}:${line.path}`);
+    if (open.key === "pending") {
+      for (const s of g.model.pending?.items ?? []) {
+        const text = [s.market, s.sent ? fmtShortDay(s.sent) : ""].filter(Boolean).join(" · ");
+        this.row(list, "escrita-desk-sub", s.title, text ? [{ text, state: null }] : [], `item:pending:${s.path}`, s.path);
+      }
+      return;
+    }
+    const stage = g.model.counts.find((c) => c.stage === open.key);
+    for (const line of stage?.items ?? []) this.row(list, "escrita-desk-sub", line.title, factParts(line.fact, labels), `item:${open.key}:${line.path}`, line.path);
   }
 }

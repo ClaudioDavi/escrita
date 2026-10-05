@@ -19,13 +19,68 @@ export interface DayRecord {
   books: Record<string, DayBook>;
 }
 
-/** The export modal's last choices for one work (PLAN-0.8 Q4); the export module (task 3.1) reads and cleans them. */
+/**
+ * Which chapters of a book an export takes (PLAN-0.8 Q4). Chapters left out by
+ * `compile: false` are never in, whatever the selection says.
+ * - `all`: every included chapter.
+ * - `range`: positions `from` to `to` (1-based, inclusive) in the list of included chapters.
+ * - `pick`: the ticked chapters, by vault path.
+ */
+export type ExportSelection =
+  | { mode: "all" }
+  | { mode: "range"; from: number; to: number }
+  | { mode: "pick"; paths: string[] };
+
+/** The last export of a work (Q17): enough to repeat it, and to say what it was. */
+export interface LastExport {
+  format: "md" | "docx";
+  preset: string;
+  whole: boolean;
+  chapters: ExportSelection;
+  /** how many chapters went into a book export; absent for a single note */
+  chapterCount?: number;
+  /** when it was written, ISO 8601 */
+  at: string;
+  /** the vault path of the file it wrote */
+  path: string;
+}
+
+/** The export modal's last choices for one work (PLAN-0.8 Q4, Q17); the export module reads and cleans them. */
 export interface ExportChoice {
   format: "md" | "docx";
   /** preset id, e.g. "shunn" or "ptbr" */
   preset: string;
   /** export the whole book, or only this note */
   whole: boolean;
+  /** the chapter selection of a book export; absent = all */
+  chapters?: ExportSelection;
+  /** the last export of this work; absent before the first one */
+  last?: LastExport;
+}
+
+function cleanSelection(raw: unknown): ExportSelection | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const c = raw as Record<string, unknown>;
+  if (c.mode === "all") return { mode: "all" };
+  if (c.mode === "range" && Number.isFinite(c.from) && Number.isFinite(c.to)) {
+    return { mode: "range", from: Math.max(1, Math.floor(c.from as number)), to: Math.max(1, Math.floor(c.to as number)) };
+  }
+  if (c.mode === "pick" && Array.isArray(c.paths)) return { mode: "pick", paths: c.paths.filter((p): p is string => typeof p === "string") };
+  return undefined;
+}
+
+function cleanLast(raw: unknown): LastExport | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const c = raw as Partial<LastExport>;
+  if ((c.format !== "md" && c.format !== "docx") || typeof c.preset !== "string" || typeof c.whole !== "boolean") return undefined;
+  if (typeof c.at !== "string" || typeof c.path !== "string" || c.path === "") return undefined;
+  const out: LastExport = {
+    format: c.format, preset: c.preset, whole: c.whole,
+    chapters: cleanSelection(c.chapters) ?? { mode: "all" },
+    at: c.at, path: c.path,
+  };
+  if (typeof c.chapterCount === "number" && Number.isFinite(c.chapterCount)) out.chapterCount = c.chapterCount;
+  return out;
 }
 
 /** Drop entries that aren't an ExportChoice (data saved by hand or by a later version). */
@@ -35,7 +90,12 @@ export function cleanExportChoices(raw: unknown): Record<string, ExportChoice> {
   for (const [path, v] of Object.entries(raw as Record<string, unknown>)) {
     const c = v as Partial<ExportChoice> | null;
     if (!c || (c.format !== "md" && c.format !== "docx") || typeof c.preset !== "string" || typeof c.whole !== "boolean") continue;
-    out[path] = { format: c.format, preset: c.preset, whole: c.whole };
+    const choice: ExportChoice = { format: c.format, preset: c.preset, whole: c.whole };
+    const chapters = cleanSelection(c.chapters);
+    if (chapters) choice.chapters = chapters;
+    const last = cleanLast(c.last);
+    if (last) choice.last = last;
+    out[path] = choice;
   }
   return out;
 }

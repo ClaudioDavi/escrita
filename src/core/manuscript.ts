@@ -52,10 +52,22 @@ export interface Run {
  *   dropped, since a chapter boundary already separates (N 7).
  */
 export type Block =
-  | { kind: "paragraph"; runs: Run[] }
-  | { kind: "heading"; level: 1 | 2 | 3 | 4 | 5 | 6; runs: Run[] }
-  | { kind: "quote"; runs: Run[] }
-  | { kind: "sceneBreak" };
+  | { kind: "paragraph"; runs: Run[]; line?: number }
+  | { kind: "heading"; level: 1 | 2 | 3 | 4 | 5 | 6; runs: Run[]; line?: number }
+  | { kind: "quote"; runs: Run[]; line?: number }
+  | { kind: "sceneBreak"; line?: number };
+
+/**
+ * Every block `manuscriptOf` makes carries `line`: the 0-based line in the whole file
+ * (frontmatter included) where the block starts, for the export preview's click to open
+ * the note there (PLAN-0.8 Q16). It is set as a non-enumerable property, so it is
+ * invisible to `toEqual`, spreads and JSON: it is a pointer back to the source, not
+ * part of the prose. Blocks built by hand have none.
+ */
+function withLine<T extends Block>(b: T, line: number): T {
+  Object.defineProperty(b, "line", { value: line, enumerable: false, writable: true, configurable: true });
+  return b;
+}
 
 /** Something Reading view would not show, or that can't go into a manuscript. */
 export interface Dropped {
@@ -110,6 +122,8 @@ interface Built {
   vis: string;
   codes: string[];
   dropped: Dropped[];
+  /** where each stretch of `vis` came from: its offset in `vis` and the 0-based file line it starts on */
+  marks: { vis: number; line: number }[];
 }
 
 /** The visible text: comments and embeds become GONE, code a token, frontmatter nothing. */
@@ -118,9 +132,11 @@ function build(md: Markdown, o: ManuscriptOptions): Built {
   const dropped: Dropped[] = [];
   const order = new Map<Dropped, number>();
   const codes: string[] = [];
+  const marks: { vis: number; line: number }[] = [];
   let vis = "";
   for (const span of md.spans()) {
     if (span.kind === "frontmatter") continue;
+    marks.push({ vis: vis.length, line: md.lineOf(span.from) });
     if (span.kind === "comment") {
       vis += GONE;
       if (!span.closed) {
@@ -184,7 +200,7 @@ function build(md: Markdown, o: ManuscriptOptions): Built {
   }
   const at = (d: Dropped) => order.get(d) ?? md.lineStart(d.line);
   dropped.sort((a, b) => a.line - b.line || at(a) - at(b));
-  return { vis, codes, dropped };
+  return { vis, codes, dropped, marks };
 }
 
 function hasGone(s: string): boolean {
@@ -349,26 +365,47 @@ function trimRuns(runs: Run[]): Run[] {
  */
 export function manuscriptOf(md: string | Markdown, o: ManuscriptOptions): Manuscript {
   const seg = typeof md === "string" ? segment(md) : md;
-  const { vis, codes, dropped } = build(seg, o);
+  const { vis, codes, dropped, marks } = build(seg, o);
   const join = o.strictLineBreaks ? " " : "\n";
 
-  // lines, with the ones a removal emptied left out
+  // lines, with the ones a removal emptied left out; `at[i]` is the file line `lines[i]` came from
   const lines: string[] = [];
-  for (const raw of vis.split(/\r?\n/)) {
-    if (hasGone(raw)) {
-      const t = stripGone(raw).replace(/^[ \t]+/, "");
-      if (t.trim() === "") continue;
-      lines.push(t);
-    } else lines.push(raw);
+  const at: number[] = [];
+  {
+    let pos = 0;
+    let m = 0;
+    let counted = marks.length ? marks[0].vis : 0;
+    let newlines = 0;
+    for (const raw of vis.split(/\r?\n/)) {
+      while (m + 1 < marks.length && marks[m + 1].vis <= pos) {
+        m++;
+        counted = marks[m].vis;
+        newlines = 0;
+      }
+      for (let k = vis.indexOf("\n", counted); k !== -1 && k < pos; k = vis.indexOf("\n", k + 1)) newlines++;
+      counted = Math.max(counted, pos);
+      const line = marks.length ? marks[m].line + newlines : 0;
+      pos += raw.length + (vis[pos + raw.length] === "\r" ? 2 : 1);
+      if (hasGone(raw)) {
+        const t = stripGone(raw).replace(/^[ \t]+/, "");
+        if (t.trim() === "") continue;
+        lines.push(t);
+        at.push(line);
+      } else {
+        lines.push(raw);
+        at.push(line);
+      }
+    }
   }
 
   const blocks: Block[] = [];
   let para: string[] = [];
   let paraKind: "paragraph" | "quote" = "paragraph";
+  let paraLine = 0;
   const endPara = () => {
     if (!para.length) return;
     const runs = trimRuns(runsOf(para.map((l) => l.trim()).join(join), codes));
-    if (runs.length && !isBlankRuns(runs)) blocks.push({ kind: paraKind, runs });
+    if (runs.length && !isBlankRuns(runs)) blocks.push(withLine({ kind: paraKind, runs }, paraLine));
     para = [];
     paraKind = "paragraph";
   };
@@ -382,14 +419,14 @@ export function manuscriptOf(md: string | Markdown, o: ManuscriptOptions): Manus
     }
     if (prevBlank(i) && SCENE_BREAK.test(line)) {
       endPara();
-      blocks.push({ kind: "sceneBreak" });
+      blocks.push(withLine({ kind: "sceneBreak" }, at[i]));
       continue;
     }
     const setext = SETEXT.exec(line);
     if (setext && para.length && paraKind === "paragraph" && !LIST_ITEM.test(para[0])) {
       const runs = trimRuns(runsOf(para.map((l) => l.trim()).join(" "), codes));
       para = [];
-      if (runs.length) blocks.push({ kind: "heading", level: setext[1][0] === "=" ? 1 : 2, runs });
+      if (runs.length) blocks.push(withLine({ kind: "heading", level: setext[1][0] === "=" ? 1 : 2, runs }, paraLine));
       continue;
     }
     const h = HEADING.exec(line);
@@ -397,7 +434,7 @@ export function manuscriptOf(md: string | Markdown, o: ManuscriptOptions): Manus
       endPara();
       if (h) {
         const runs = trimRuns(runsOf(h[2], codes));
-        if (runs.length) blocks.push({ kind: "heading", level: h[1].length as 1, runs });
+        if (runs.length) blocks.push(withLine({ kind: "heading", level: h[1].length as 1, runs }, at[i]));
       }
       continue;
     }
@@ -411,11 +448,13 @@ export function manuscriptOf(md: string | Markdown, o: ManuscriptOptions): Manus
         paraKind = "quote";
         continue;
       }
+      if (para.length === 0) paraLine = at[i];
       para.push(body);
       continue;
     }
     if (paraKind === "quote") endPara();
     if (LIST_ITEM.test(line)) endPara();
+    if (para.length === 0) paraLine = at[i];
     para.push(line);
   }
   endPara();

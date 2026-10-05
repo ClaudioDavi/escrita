@@ -27,6 +27,10 @@ import { darlingsStrings } from "./darlings/strings";
 import { editorStrings } from "./editor/strings";
 import { PublishModule } from "./publish";
 import { publishStrings } from "./publish/strings";
+import { ExportModule } from "./export";
+import { exportStrings } from "./export/strings";
+import { SubmissionsModule } from "./submissions";
+import { submissionsStrings } from "./submissions/strings";
 import { ExplorerModule } from "./explorer";
 import { explorerStrings } from "./explorer/strings";
 import type { Follower, IndexSpec, IndexFile, VaultIndex } from "./core/vault-index";
@@ -89,6 +93,8 @@ export default class EscritaPlugin extends Plugin {
   snapshots!: SnapshotsModule;
   desk!: DeskModule;
   publish!: PublishModule;
+  export!: ExportModule;
+  submissions!: SubmissionsModule;
   lens!: LensModule;
   universe!: UniverseModule;
   threads!: ThreadsFeature;
@@ -99,6 +105,7 @@ export default class EscritaPlugin extends Plugin {
   async onload(): Promise<void> {
     for (const s of [
       coreStrings, goalsStrings, outlineStrings, placeholdersStrings, darlingsStrings, editorStrings, publishStrings,
+      exportStrings, submissionsStrings,
       explorerStrings, snapshotsStrings, deskStrings, lensStrings,
       universeStrings, universeViewStrings, universeCreateStrings, universeMigrateStrings,
     ]) {
@@ -140,6 +147,8 @@ export default class EscritaPlugin extends Plugin {
     // before publish: "Before publishing" snapshots
     this.snapshots = new SnapshotsModule(this);
     this.publish = new PublishModule(this);
+    this.export = new ExportModule(this);
+    this.submissions = new SubmissionsModule(this);
     this.desk = new DeskModule(this);
     this.universe = new UniverseModule(this);
     this.threads = new ThreadsFeature(this);
@@ -151,7 +160,8 @@ export default class EscritaPlugin extends Plugin {
       ["moveBlocks", new MoveBlocksFeature(this)], ["templates", new TemplatesFeature(this)],
       ["spellcheck", new SpellcheckFeature(this)],
       ["lens", this.lens], ["snapshots", this.snapshots], ["stageSnapshot", new StageSnapshotFeature(this)],
-      ["publish", this.publish], ["desk", this.desk],
+      ["publish", this.publish], ["export", this.export], ["submissions", this.submissions],
+      ["desk", this.desk],
       ["universe", this.universe], ["threads", this.threads],
     ]);
     this.features = new FeatureRegistry(this, modules);

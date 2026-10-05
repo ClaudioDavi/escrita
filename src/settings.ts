@@ -86,6 +86,8 @@ export interface EscritaSettings extends UniverseSettings {
   /** book note properties linking to the dedication and epigraph notes (Q7) */
   dedicationProperty: string;
   epigraphProperty: string;
+  /** the work property that names its author on the title page; empty uses the name below (Q2) */
+  authorProperty: string;
   /** the author on the title page; an `author` property on the work overrides the name (Q2) */
   authorName: string;
   /** surname in the manuscript header; empty = the last word of authorName */
@@ -100,6 +102,12 @@ export interface EscritaSettings extends UniverseSettings {
   submissionsFolder: string;
   /** result words, comma or newline separated: pending, accepted, rejected, withdrawn (the first is pending) */
   submissionResults: string;
+  /** property names of a submission note (rule 6): the work link, market, sent date, result, response date */
+  submissionWorkProperty: string;
+  submissionMarketProperty: string;
+  submissionSentProperty: string;
+  submissionResultProperty: string;
+  submissionRespondedProperty: string;
 
   // Snapshots
   /** vault folder holding one folder of snapshots per note; always read through core/classify.snapshotsRoot */
@@ -189,12 +197,18 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   compileProperty: "compile",
   dedicationProperty: "dedication",
   epigraphProperty: "epigraph",
+  authorProperty: "author",
   authorName: "",
   authorSurname: "",
   contactLines: "",
   chapterHeadingFormat: "",
   submissionsFolder: "Submissions",
   submissionResults: "pending, accepted, rejected, withdrawn",
+  submissionWorkProperty: "work",
+  submissionMarketProperty: "market",
+  submissionSentProperty: "sent",
+  submissionResultProperty: "result",
+  submissionRespondedProperty: "responded",
 
   snapshotsFolder: DEFAULT_SNAPSHOTS_FOLDER,
   snapshotBeforeFirstEdit: false,
@@ -268,7 +282,8 @@ function clampInt(v: unknown, min: number, max: number, fallback: number): numbe
 
 /** Frontmatter property names a piece or book is read from; normalizeSettings trims them and restores empty ones. */
 const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadlineProperty", "goalProperty", "povProperty", "chapterTargetProperty",
-  "compileProperty", "dedicationProperty", "epigraphProperty"] as const;
+  "compileProperty", "dedicationProperty", "epigraphProperty",
+  "submissionWorkProperty", "submissionMarketProperty", "submissionSentProperty", "submissionResultProperty", "submissionRespondedProperty"] as const;
 
 /**
  * Which features read each setting (0.7 plan Q13). A row draws while any of them is on;
@@ -294,9 +309,11 @@ export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "a
   // 0.8: the folders are read by the classifier; the rest belong to the export and submissions modules
   // (their rows are drawn by those modules' sections, tasks 3.1 and 3.2)
   exportFolder: "always", submissionsFolder: "always",
-  compileProperty: ["export"], dedicationProperty: ["export"], epigraphProperty: ["export"],
+  compileProperty: ["export"], dedicationProperty: ["export"], epigraphProperty: ["export"], authorProperty: ["export"],
   authorName: ["export"], authorSurname: ["export"], contactLines: ["export"], chapterHeadingFormat: ["export"],
   submissionResults: ["submissions"],
+  submissionWorkProperty: ["submissions"], submissionMarketProperty: ["submissions"], submissionSentProperty: ["submissions"],
+  submissionResultProperty: ["submissions"], submissionRespondedProperty: ["submissions"],
   snapshotsFolder: ["snapshots"], snapshotBeforeFirstEdit: ["snapshots"], snapshotsKeepAuto: ["snapshots"],
   ghostBeats: ["outline"],
   placeholderMarker: ["placeholders", "publish"], showExplorerDots: ["placeholders"],

@@ -5,7 +5,7 @@
 import type { FeatureId } from "./features";
 
 export type SectionId =
-  | "features" | "shared" | "books" | "dayEnds" | "goals" | "publish" | "outline" | "placeholders"
+  | "features" | "shared" | "books" | "dayEnds" | "goals" | "publish" | "export" | "submissions" | "outline" | "placeholders"
   | "darlings" | "editor" | "lens" | "stages" | "desk" | "snapshots"
   | "universe" | "threads";
 
@@ -37,6 +37,8 @@ export const SECTION_ORDER: readonly SectionSlot[] = [
   { id: "dayEnds", feature: null },
   { id: "goals", feature: "goals" },
   { id: "publish", feature: "publish" },
+  { id: "export", feature: "export" },
+  { id: "submissions", feature: "submissions" },
   { id: "outline", feature: "outline" },
   { id: "placeholders", feature: "placeholders", also: ["publish"] },
   { id: "darlings", feature: "darlings" },

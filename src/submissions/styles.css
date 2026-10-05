@@ -1,0 +1,68 @@
+/* ---------- "Record a submission" modal ---------- */
+.escrita-submission-modal {
+  width: min(460px, 100%);
+}
+.escrita-submission {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-4);
+}
+.escrita-submission-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+.escrita-submission-work {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  min-height: 34px;
+  padding: 0 var(--size-4-2);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  font-size: var(--font-ui-medium);
+  color: var(--text-normal);
+}
+.escrita-submission-work-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.escrita-submission-work-info {
+  margin-left: auto;
+  flex: none;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.escrita-submission-input {
+  min-height: 34px;
+}
+.escrita-submission-date {
+  width: 160px;
+}
+.escrita-submission-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+}
+.escrita-submission-chip {
+  min-height: 32px;
+  padding: 0 var(--size-4-3);
+  border-radius: 16px;
+  font-size: var(--font-ui-small);
+}
+.escrita-submission-where {
+  padding: var(--size-4-2) var(--size-4-3);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.55;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.escrita-submission-where code {
+  color: var(--text-normal);
+}

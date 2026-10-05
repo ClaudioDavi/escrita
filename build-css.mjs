@@ -3,7 +3,7 @@
 import { readFileSync, writeFileSync, existsSync } from "fs";
 
 const parts = ["src/styles.css", "src/goals/styles.css", "src/outline/styles.css",
-  "src/placeholders/styles.css", "src/darlings/styles.css", "src/editor/styles.css", "src/publish/styles.css",
+  "src/placeholders/styles.css", "src/darlings/styles.css", "src/editor/styles.css", "src/publish/styles.css", "src/export/styles.css", "src/submissions/styles.css",
   "src/explorer/styles.css", "src/snapshots/styles.css", "src/desk/styles.css",
   "src/lens/editor.css", "src/lens/panel.css",
   "src/universe/styles.css", "src/universe/view.css", "src/universe/create.css", "src/universe/migrate.css",

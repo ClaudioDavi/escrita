@@ -1,7 +1,8 @@
 import { Setting } from "obsidian";
 import { fmt, plural, t } from "../i18n";
 import { DEFAULT_SETTINGS } from "../settings";
-import { DEFAULT_SNAPSHOTS_FOLDER, inFolder, snapshotsFolderProblem, snapshotsRoot, type SnapshotsFolderProblem } from "../core/classify";
+import { DEFAULT_SNAPSHOTS_FOLDER, exportRoot, inFolder, snapshotsFolderProblem, snapshotsRoot, submissionsRoot } from "../core/classify";
+import { overlapProblem, type FolderProblem } from "../core/folder-problem";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
 
@@ -17,8 +18,15 @@ export function snapshotsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin
     .setDesc(t("settings.snapshotsFolder.desc"));
   const hint = folder.descEl.createDiv({ cls: "escrita-setting-warning" });
   hint.toggle(false);
-  const problemOf = (v: string) => snapshotsFolderProblem(v, ui.app.vault.configDir, s.trackFolders, (r) =>
-    r !== s.snapshotsFolder && ui.app.vault.getMarkdownFiles().some((f) => inFolder(f.path, r)));
+  const problemOf = (v: string): FolderProblem | null => {
+    const first = snapshotsFolderProblem(v, ui.app.vault.configDir, s.trackFolders, () => false);
+    if (first) return first;
+    const root = snapshotsRoot(v);
+    const overlap = overlapProblem(root, [exportRoot(s.exportFolder), submissionsRoot(s.submissionsFolder)]);
+    if (overlap) return overlap;
+    return snapshotsFolderProblem(v, ui.app.vault.configDir, s.trackFolders, (r) =>
+      r !== s.snapshotsFolder && ui.app.vault.getMarkdownFiles().some((f) => inFolder(f.path, r)));
+  };
   folder.addText((c) => {
     c.setPlaceholder(DEFAULT_SNAPSHOTS_FOLDER).setValue(s.snapshotsFolder);
     const show = (v: string) => {
@@ -51,12 +59,13 @@ export function snapshotsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin
     });
 }
 
-function snapshotsProblemText(p: SnapshotsFolderProblem): string {
+function snapshotsProblemText(p: FolderProblem): string {
   switch (p.reason) {
     case "path": return t("settings.snapshotsFolder.path");
     case "config":
     case "tracked": return t("settings.snapshotsFolder.invalid", { folder: p.folder });
     case "notes": return t("settings.snapshotsFolder.notes", { folder: p.folder });
+    case "overlap": return t("settings.folderProblem.overlap", { folder: p.folder });
   }
 }
 

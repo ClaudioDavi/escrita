@@ -4,6 +4,9 @@ import { FeatureRegistry } from "../src/core/feature-registry";
 import type { FeatureId } from "../src/core/features";
 import { makeLeftOff } from "../src/core/left-off";
 import { DeskModule } from "../src/desk";
+import { gatherDesk } from "../src/desk/gather";
+import { FeatureModule } from "../src/core/module-context";
+import type { PendingSource, PendingSubmission } from "../src/core/pending";
 import { openWork } from "../src/desk/open";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
 
@@ -176,5 +179,124 @@ describe("openWork and the desk switch", () => {
     await openWork(plugin.asPlugin, "a.md", false);
     expect((eStates[0] as { line: number }).line).not.toBe(1);
     expect(Object.keys(plugin.data.leftOff)).toEqual(["a.md"]);   // read, never dropped
+  });
+});
+
+describe("desk pending-count wiring", () => {
+  class StubSubmissions extends FeatureModule {
+    readonly id = "submissions" as const;
+    subscriptions = 0;
+    unsubs: ReturnType<typeof vi.fn>[] = [];
+    rows: PendingSubmission[] = [];
+    pending: PendingSource = {
+      list: () => this.rows,
+      onChange: () => {
+        this.subscriptions++;
+        const off = vi.fn();
+        this.unsubs.push(off);
+        return off;
+      },
+    };
+  }
+
+  function withSubmissions(): StubSubmissions {
+    const desk = new DeskModule(plugin.asPlugin);
+    const subs = new StubSubmissions();
+    plugin.settings.features = { ...plugin.settings.features, submissions: true };
+    registry = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, FeatureModule>([["desk", desk], ["submissions", subs]]));
+    plugin.features = registry;
+    registry.init();
+    registry.apply();
+    return subs;
+  }
+
+  function stubIndex(): void {
+    Object.assign(plugin, {
+      works: { isReady: () => false, onChange: () => () => {}, onReady: () => () => {}, get: () => undefined, list: () => [] },
+      measure: { onChange: () => () => {} },
+    });
+  }
+
+  it("follows the submissions switch and unsubscribes when the block unloads", () => {
+    stubIndex();
+    const subs = withSubmissions();
+    const { el, children } = draw();
+    document.body.appendChild(el);
+    const block = children[0] as { load(): void; unload(): void; refresh(): Promise<void> };
+    const refresh = vi.spyOn(block, "refresh");
+    block.load();
+    expect(subs.subscriptions).toBe(1);
+    refresh.mockClear();   // the first paint at load is not under test
+
+    plugin.settings.features = { ...plugin.settings.features, submissions: false };
+    registry.apply();
+    expect(subs.unsubs[0]).toHaveBeenCalledTimes(1);
+    expect(subs.subscriptions).toBe(1);   // nothing new while it is off
+    expect(refresh).toHaveBeenCalledTimes(1);
+
+    plugin.settings.features = { ...plugin.settings.features, submissions: true };
+    registry.apply();
+    expect(subs.subscriptions).toBe(2);
+    expect(refresh).toHaveBeenCalledTimes(2);   // one per switch
+
+    block.unload();
+    expect(subs.unsubs[1]).toHaveBeenCalledTimes(1);
+    el.remove();
+  });
+
+  it("a block that never loaded, or one unloaded while off, leaves nothing subscribed", () => {
+    stubIndex();
+    const subs = withSubmissions();
+    const { children } = draw();
+    const block = children[0] as { load(): void; unload(): void };
+    block.load();
+    plugin.settings.features = { ...plugin.settings.features, submissions: false };
+    registry.apply();
+    block.unload();
+    expect(subs.unsubs[0]).toHaveBeenCalledTimes(1);   // not called twice
+    expect(subs.subscriptions).toBe(1);
+  });
+
+  describe("gatherDesk", () => {
+    const row = (path: string, workPath: string): PendingSubmission =>
+      ({ path, workPath, workTitle: workPath, market: "Revista", sent: "2026-10-05" });
+
+    function wireWorks(subs: StubSubmissions): void {
+      const file = new TFile();
+      file.path = "Contos/a.md";
+      plugin.app.vault.files.set("Contos/a.md", file);
+      Object.assign(plugin.app.vault, {
+        getFileByPath: (p: string) => (p === "Contos/a.md" ? file : null),
+        getFolderByPath: () => ({}),
+      });
+      Object.assign(plugin, {
+        works: {
+          list: () => [["Contos/a.md", { role: "note", stage: "draft", title: "A" }]],
+          get: () => undefined,
+        },
+        measure: { note: async () => ({ unit: "words", counts: { words: 10, characters: 50, charactersNoSpaces: 40 } }) },
+        books: { classify: () => ({ kind: "note", book: null }), frontmatter: () => ({}) },
+      });
+      subs.rows = [row("s1", "Contos/a.md"), row("s2", "Outros/b.md")];
+    }
+
+    it("with a folder filter, a submission of a work outside the folder is not counted", async () => {
+      const subs = withSubmissions();
+      wireWorks(subs);
+      subs.rows = [row("s2", "Outros/b.md")];
+      const g = await gatherDesk(plugin.asPlugin, "folder: Contos", "2026-10-05");
+      expect(g.model.pending).toBeUndefined();
+      subs.rows = [row("s1", "Contos/a.md"), row("s2", "Outros/b.md")];
+      const h = await gatherDesk(plugin.asPlugin, "folder: Contos", "2026-10-05");
+      expect(h.model.pending?.items.map((i) => i.path)).toEqual(["s1"]);
+    });
+
+    it("with no folder filter, the same outside row is counted", async () => {
+      const subs = withSubmissions();
+      wireWorks(subs);
+      subs.rows = [row("s2", "Outros/b.md")];
+      const g = await gatherDesk(plugin.asPlugin, "", "2026-10-05");
+      expect(g.model.pending?.n).toBe(1);
+    });
   });
 });
