@@ -473,6 +473,26 @@ Decided in this wave:
 - **4.3 Opus release review:** `/code-review high` over the branch, data safety (rule 1)
   on every write path, rule 8 on `createBinary`, and the bench numbers against Wave 1.
 
+**4.3 done (2026-10-05).** `/code-review high` over `ae33d03..HEAD` found 7 likely bugs
+and 3 cleanups. Each was confirmed with a failing test first, and all were real; fixed in
+`064a69f`:
+- Embed line offsets.
+- The book source's mtime race.
+- The outline when a chapter vanishes mid-load.
+- A case-variant home note.
+- Multi-word highlight in the universe panel.
+- The surrogate cut in submission file names.
+- Pending-list events through `ctx.follow`.
+- One `followFolderSetting` helper for the three plugin folders.
+- The publish check measures once.
+- **A recorded deviation:** the submissions folder default is `Escrita/Submissions`
+  (an existing vault-root `Submissions/` would have been untracked silently on upgrade).
+
+`notes.create` replaces text through `vault.process` (rule 8). Data safety: no write
+path overwrites or deletes a writer's file without asking (the completeness pass and its
+Opus check). Lens full pass on a 10k-word chapter, on a quieter machine: 19–20 ms (was
+25.8 ms), so the 22–26% speed-up meets the ≥ 20% target.
+
 ## Manual verification on `~/projects/website/escrita/`
 
 - **Export a conto from `Contos/` to DOCX (Shunn and pt-BR).**
