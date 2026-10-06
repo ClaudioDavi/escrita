@@ -1,7 +1,7 @@
 import { App, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 import type { EscritaSettings } from "../settings";
 import { includeChapter, type BookSource } from "./book-source";
-import type { Collection } from "./collection";
+import { collectionOf, type Collection } from "./collection";
 import type { NoteService } from "./notes";
 import { chapterTitle, compareChapters, chapterNumber } from "./book";
 import { linkText } from "./scope";
@@ -129,8 +129,11 @@ export function collectionAt(
   note: TFile,
   settings: () => Pick<EscritaSettings, "collectionProperty">,
 ): Collection | null {
-  void app; void note; void settings;
-  throw new Error("not implemented: 0.9 task 1.7");
+  const fm = app.metadataCache.getFileCache(note)?.frontmatter as Record<string, unknown> | undefined;
+  return collectionOf(fm, settings().collectionProperty, (link) => {
+    const dest = app.metadataCache.getFirstLinkpathDest(link, note.path);
+    return dest instanceof TFile && dest.extension === "md" && dest.path !== note.path ? dest.path : null;
+  });
 }
 
 /**
@@ -147,6 +150,27 @@ export function collectionSource(
   notes: Pick<NoteService, "text" | "editorView">,
   settings: () => Pick<EscritaSettings, "collectionProperty">,
 ): BookSource<TFile> {
-  void app; void notes; void settings;
-  throw new Error("not implemented: 0.9 task 1.7");
+  const fileAt = (path: string): TFile | null => {
+    const f = app.vault.getAbstractFileByPath(path) ?? app.vault.getAbstractFileByPath(normalizePath(path));
+    return f instanceof TFile ? f : null;
+  };
+  const frontmatter = (path: string): Record<string, unknown> => {
+    const f = fileAt(path);
+    return ((f && app.metadataCache.getFileCache(f)?.frontmatter) as Record<string, unknown> | undefined) ?? {};
+  };
+  return {
+    chapters: (note) => (collectionAt(app, note, settings)?.stories ?? []).flatMap((path) => {
+      const f = fileAt(path);
+      return f ? [{ path, title: f.basename, number: null, include: true }] : [];
+    }),
+    async read(path) {
+      const f = fileAt(path);
+      if (!f) throw new Error(`not a file: ${path}`);
+      const open = notes.editorView(f) !== null;
+      const before = f.stat.mtime;
+      const text = await notes.text(f).read();
+      return { text, mtime: open || f.stat.mtime !== before ? null : before };
+    },
+    frontmatter,
+  };
 }

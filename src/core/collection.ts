@@ -52,6 +52,35 @@ export function collectionOf(
   property: string,
   resolve: ResolveStory,
 ): Collection | null {
-  void frontmatter; void property; void resolve;
-  throw new Error("not implemented: 0.9 task 1.7");
+  const fm = frontmatter ?? {};
+  let key: string | undefined = property in fm ? property : undefined;
+  if (key === undefined) {
+    const lower = property.toLowerCase();
+    key = Object.keys(fm).find((k) => k.toLowerCase() === lower);
+  }
+  if (key === undefined) return null;
+  const value = fm[key];
+  if (value !== null && value !== undefined && typeof value !== "string" && !Array.isArray(value)) return null;
+
+  const stories: string[] = [];
+  const missing: string[] = [];
+  const visit = (v: unknown): void => {
+    if (Array.isArray(v)) { v.forEach(visit); return; }
+    if (typeof v !== "string") return;
+    const link = linkText(v);
+    if (link === null) return;
+    const path = resolve(link);
+    if (path === null) {
+      if (!missing.includes(link)) missing.push(link);
+    } else if (!stories.includes(path)) stories.push(path);
+  };
+  visit(value);
+  return { stories, missing };
+}
+
+/** The link text of one list item: `[[A|b]]` and `[[A#h]]` give "A"; plain text stays; blank gives null. */
+function linkText(value: string): string | null {
+  const m = /\[\[([^\]]*)\]\]/.exec(value);
+  const inner = (m ? m[1] : value).split("|")[0].split(/[#^]/)[0].trim();
+  return inner === "" ? null : inner;
 }
