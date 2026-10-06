@@ -66,7 +66,7 @@ EPUB, "Publish next chapter", "Read the book", unlinked mentions and candidate 9
 
 ## Open questions, with recommended answers
 
-**Not answered yet.** The author answers Q1–Q14 and Q21–Q23 before Wave 2 (gate G2).
+**Answered 2026-10-06:** the author accepted every recommendation (Q1–Q14, Q21–Q27) and the design-review recommendations D1–D9 (gate G2).
 Wave 1 builds the recommendation for Q21; a different answer is a small change in 1.3's
 file.
 
