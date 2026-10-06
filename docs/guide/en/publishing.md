@@ -89,11 +89,18 @@ A chapter whose property is `false` is always left out. The property is a settin
 keeps it out. The window says how many are left out and which ones.
 
 **Chapter headings.** A chapter with a number gets the template's heading: "Chapter 1: The
-arrival" (Shunn) or "Capítulo 1 — A chegada" (pt-BR). Name a prologue with a 00
-prefix, "00 Prólogo": it sorts first and gets its title alone, with no number. A file without a
-number in its name, such as "Epílogo", goes last and also gets its title alone. Numbers count
-only chapters numbered 1 or more, so a prologue doesn't shift them and a left-out chapter leaves no
-gap. The numbers are counted before the range or the ticks narrow the list: exporting
+arrival" (Shunn) or "Capítulo 1 — A chegada" (pt-BR). Number every file as usual
+(01 Preface, 02 Prologue, 03 The arrival, 04 Interlude, 05 The cellar, 06 Epilogue). A chapter
+whose title is in **Chapters without a number** (Settings, Books) gets its title alone and is not
+counted, so that book exports as Preface, Prologue, "Chapter 1: The arrival", Interlude,
+"Chapter 2: The cellar", Epilogue. The list is comma-separated and ignores case and accents; a
+title also matches when it starts with a listed word followed by a space or punctuation
+("Interlude: the letter"). The default list is English (Prologue, Preface, Foreword,
+Introduction, Interlude, Epilogue, Afterword); in a Portuguese vault add your words, for example
+"Prólogo, Prefácio, Interlúdio, Epílogo, Posfácio". The older ways still work: a 00 prefix
+("00 Prólogo") sorts first and gets its title alone, and a file without a number in its name goes
+last and also gets its title alone. Numbers count only the chapters left, so none of these shifts
+them and a left-out chapter leaves no gap. The numbers are counted before the range or the ticks narrow the list: exporting
 chapters 5 to 7 keeps "Chapter 5", "6" and "7". If a chapter has no title beyond its number,
 the heading is just "Chapter 1". A heading at the top of the chapter that repeats the
 chapter's own heading or title is dropped, so it doesn't show twice (for a single note, a

@@ -2,6 +2,7 @@
 // IMPROVEMENTS 7). Pure: no Obsidian or CodeMirror imports, no i18n.
 
 import type { BookSource } from "../core/book-source";
+import { countedNumbers } from "../core/book";
 import { parseBeats, type BeatMarker } from "../core/markers";
 import {
   countIn, effectivePiece, noteProgress, parseUnit, readPiece,
@@ -29,6 +30,8 @@ export interface RowSettings {
   unitProperty: string;
   deadlineProperty: string;
   chapterTargetProperty: string;
+  /** "Chapters without a number": titles that show no number (core/book isUnnumberedTitle) */
+  unnumberedTitles?: string;
 }
 
 /** Generic over the book type, so tests pass a plain object. Chapters, text and frontmatter come from the book source; the title is ChapterRef.title, the label the digits of the file name. */
@@ -56,7 +59,20 @@ function oneLine(s: string): string {
 export async function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRow[]> {
   const s = port.settings();
   const def = port.chapterDefault(book);
-  const rows = await Promise.all(port.chapters(book).map(async (ch, i): Promise<ChapterRow | null> => {
+  const chapters = port.chapters(book);
+  // the number export gives each chapter (core/book countedNumbers): left-out chapters are not counted
+  const counted = countedNumbers(chapters.filter((c) => c.include), s.unnumberedTitles ?? "");
+  const inc = new Map(chapters.filter((c) => c.include).map((c, k) => [c.path, counted[k]]));
+  let skipped = false;   // a chapter with a number in its file name but none to show (00, or a listed title) came before
+  const labels = chapters.map((ch) => {
+    const digits = /^\d+/.exec(ch.path.slice(ch.path.lastIndexOf("/") + 1))?.[0];
+    if (ch.number === null) return null;
+    const n = inc.get(ch.path);
+    if (ch.number === 0 || (n === null && ch.include)) { skipped = true; return ""; }
+    // once a listed title is skipped the file digits no longer match export, so show the counted number
+    return skipped && n != null && digits ? String(n).padStart(digits.length, "0") : null;
+  });
+  const rows = await Promise.all(chapters.map(async (ch, i): Promise<ChapterRow | null> => {
     // a chapter renamed or deleted while rows load is skipped; the next refresh draws it
     let read: Awaited<ReturnType<typeof port.read>>;
     try { read = await port.read(ch.path); } catch { return null; }
@@ -77,7 +93,7 @@ export async function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRo
     return {
       path: ch.path,
       index: i,
-      label: ch.number === 0 ? "" : /^\d+/.exec(basename)?.[0] ?? String(i + 1),   // "00 Prólogo" shows no number   // the digits as written ("01"), as the view always showed them
+      label: labels[i] ?? /^\d+/.exec(basename)?.[0] ?? String(i + 1),   // "00 Prólogo" shows no number   // the digits as written ("01"), as the view always showed them
       title: ch.title,
       summary: s.summaryProperty ? oneLine(str(fm[s.summaryProperty])) : "",
       status,

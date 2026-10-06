@@ -129,7 +129,10 @@ differs from the text below (PLAN-0.8.md has the full record):
   gets the heading format (`{n}`, `{title}`). A prologue is named with a 00 prefix ("00
   Prólogo"): it sorts first and gets its title alone. A file without a number sorts last
   and also gets its title alone, so it suits an epilogue. Numbering counts only chapters
-  numbered 1 or more.
+  numbered 1 or more. Extended 2026-10-06: a settings list, "Chapters without a number"
+  (`unnumberedTitles`, English defaults), names titles that export with their title alone and
+  are not counted, so every file can be numbered normally (01 Prefácio, 02 Prólogo, 03 A chegada
+  gives Prefácio, Prólogo, Capítulo 1). The outline label follows the same count.
 - **Preview (Q16).** A reading column, not pages, drawn from the same model the writers
   use, so it can't drift from the file. No page breaks or page numbers.
 - **Export again (Q17).** The modal shows the last export (format, preset, chapters, date,

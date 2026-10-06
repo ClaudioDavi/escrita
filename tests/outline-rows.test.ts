@@ -11,7 +11,7 @@ const settings: RowSettings = {
 };
 
 interface Fake { text: string; fm?: Record<string, unknown> }
-function port(files: Record<string, Fake>, o: { def?: { target: number; unit: any } | null; placeholders?: Record<string, number>; editor?: boolean; seeds?: unknown[] } = {}): RowsPort<string[]> {
+function port(files: Record<string, Fake>, o: { def?: { target: number; unit: any } | null; placeholders?: Record<string, number>; editor?: boolean; seeds?: unknown[]; unnumbered?: string } = {}): RowsPort<string[]> {
   return {
     chapters: (b) => b.map((p) => {
       const base = p.replace(/\.md$/, "");
@@ -27,7 +27,7 @@ function port(files: Record<string, Fake>, o: { def?: { target: number; unit: an
     placeholders: (p) => o.placeholders?.[p] ?? 0,
     chapterDefault: () => o.def ?? null,
     resolvePov: (v) => povValue(v, (l) => (l === "Maria" ? { path: "Maria.md", name: "Maria" } : null)),
-    settings: () => settings,
+    settings: () => (o.unnumbered === undefined ? settings : { ...settings, unnumberedTitles: o.unnumbered }),
     stages: () => DEFAULT_STAGES,
   };
 }
@@ -98,6 +98,16 @@ describe("loadRows", () => {
     const rows = await loadRows(port({ "01 Abertura.md": { text: "" }, "007.md": { text: "" }, "Sem número.md": { text: "" }, "12abc.md": { text: "" } }),
       ["01 Abertura.md", "007.md", "Sem número.md", "12abc.md"]);
     expect(rows.map((r) => r.label)).toEqual(["01", "007", "3", "12"]);
+  });
+
+  it("a listed title shows no number and the next chapters show the counted number", async () => {
+    const names = ["01 Prefácio.md", "02 Prólogo.md", "03 A chegada.md", "04 Interlúdio — a carta.md", "05 O porão.md", "06 Epílogo.md"];
+    const files = Object.fromEntries(names.map((n) => [n, { text: "" }]));
+    const rows = await loadRows(port(files, { unnumbered: "prefacio, Prólogo, Interlúdio, Epílogo" }), names);
+    expect(rows.map((r) => r.label)).toEqual(["", "", "01", "", "02", ""]);
+    // the list is empty: the file digits, as before
+    const plain = await loadRows(port(files, { unnumbered: "" }), names);
+    expect(plain.map((r) => r.label)).toEqual(["01", "02", "03", "04", "05", "06"]);
   });
 
   it("a blank unit never overrides the book's unit", async () => {

@@ -7,6 +7,8 @@
 //
 // The numeric prefix orders chapters and is managed by the plugin.
 
+import { foldName } from "./names";
+
 const PREFIX = /^(\d+)(?:[ \t._-]+|$)/;
 
 export function chapterNumber(basename: string): number | null {
@@ -16,6 +18,39 @@ export function chapterNumber(basename: string): number | null {
 
 export function chapterTitle(basename: string): string {
   return basename.replace(PREFIX, "").trim() || basename;
+}
+
+/** The setting's list: comma- or newline-separated, trimmed, empties dropped. */
+export function parseTitleList(list: string): string[] {
+  return list.split(/[,\n\r]+/).map((s) => s.trim()).filter((s) => s !== "");
+}
+
+/**
+ * Does this chapter title never get a number (the "Chapters without a number"
+ * setting)? Folded with `foldName` (case and accents ignored): it equals a list entry,
+ * or starts with one followed by a space or punctuation ("Interlúdio — a carta" matches
+ * "Interlúdio"; "Interlúdios" does not). An empty list matches nothing.
+ */
+export function isUnnumberedTitle(title: string, list: string | readonly string[]): boolean {
+  const entries = (typeof list === "string" ? parseTitleList(list) : list).map(foldName).filter((e) => e !== "");
+  if (entries.length === 0) return false;
+  const t = foldName(title);
+  return entries.some((e) => t === e || (t.startsWith(e) && /^[\s\p{P}]/u.test(t.slice(e.length))));
+}
+
+/**
+ * The number each chapter is counted as, in order: null for an unnumbered file, a 00
+ * file and a title in the unnumbered list (they are not counted), else 1, 2, 3...
+ * Export headings and the outline label read this one rule.
+ */
+export function countedNumbers(
+  chapters: readonly { number: number | null; title: string }[], unnumbered: string | readonly string[] = [],
+): (number | null)[] {
+  let n = 0;
+  return chapters.map((c) => {
+    if (c.number === null || c.number === 0 || isUnnumberedTitle(c.title, unnumbered)) return null;
+    return ++n;
+  });
 }
 
 export function compareChapters(a: string, b: string): number {

@@ -24,6 +24,8 @@ export interface EscritaSettings extends UniverseSettings {
   /** folder of the notes offered by "Insert from a template"; empty = none */
   templatesFolder: string;
   numberPadding: number;
+  /** titles that never get a chapter number in export and the outline (comma or newline separated); empty = none */
+  unnumberedTitles: string;
   statusProperty: string;
   /** the writer's words and color for each stage */
   stages: StageMapping;
@@ -163,6 +165,7 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   chapterTemplate: "",
   templatesFolder: "",
   numberPadding: 2,
+  unnumberedTitles: "Prologue, Preface, Foreword, Introduction, Interlude, Epilogue, Afterword",
   statusProperty: "status",
   stages: DEFAULT_STAGES,
   otherStatusColors: "",
@@ -265,6 +268,7 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   for (const k of ["authorName", "authorSurname", "contactLines", "chapterHeadingFormat"] as const) {
     s[k] = typeof s[k] === "string" ? s[k].trim() : "";
   }
+  s.unnumberedTitles = typeof s.unnumberedTitles === "string" ? s.unnumberedTitles.trim() : DEFAULT_SETTINGS.unnumberedTitles;
   s.snapshotsKeepAuto = Number.isFinite(s.snapshotsKeepAuto) ? Math.max(1, Math.round(s.snapshotsKeepAuto)) : DEFAULT_SETTINGS.snapshotsKeepAuto;
   s.lensLanguage = s.lensLanguage === "pt-BR" || s.lensLanguage === "en" ? s.lensLanguage : "auto";
   s.lensListsNote = typeof s.lensListsNote === "string" ? listsPath(s.lensListsNote) : DEFAULT_SETTINGS.lensListsNote;
@@ -295,7 +299,7 @@ const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadl
  * the universe section's own rows (universe/settings-ui.ts) are not listed here.
  */
 export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "always">> = {
-  chaptersFolder: "always", chapterTemplate: "always", numberPadding: "always",
+  chaptersFolder: "always", chapterTemplate: "always", numberPadding: "always", unnumberedTitles: ["export", "outline"],
   statusProperty: "always", summaryProperty: "always", stages: "always", otherStatusColors: "always", draftNewNotes: "always",
   lensLanguage: "always",
   targetProperty: "always", limitProperty: "always", unitProperty: "always", deadlineProperty: "always",
@@ -546,6 +550,13 @@ export class EscritaSettingTab extends PluginSettingTab {
       .addDropdown((d) => {
         for (let w = 1; w <= 4; w++) d.addOption(String(w), "1".padStart(w, "0"));
         d.setValue(String(s.numberPadding)).onChange(async (v) => { s.numberPadding = Number(v); await ui.save(); });
+      });
+    new Setting(el)
+      .setName(t("settings.unnumberedTitles"))
+      .setDesc(t("settings.unnumberedTitles.desc"))
+      .addTextArea((c) => {
+        c.setPlaceholder("Prologue, Interlude, Epilogue").setValue(s.unnumberedTitles);
+        ui.saveOnCommit(c, () => "", (v) => { s.unnumberedTitles = v; });
       });
     new Setting(el)
       .setName(t("settings.statusProperty"))

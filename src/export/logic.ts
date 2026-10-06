@@ -27,9 +27,9 @@ export interface ChapterPlan {
  * the included list, clamped to it, and swapped when written backwards; ticked paths
  * that are no longer chapters are ignored.
  */
-export function planChapters(all: readonly ChapterRef[], selection: ExportSelection, format: string): ChapterPlan {
+export function planChapters(all: readonly ChapterRef[], selection: ExportSelection, format: string, unnumbered: string | readonly string[] = []): ChapterPlan {
   const kept = all.filter((c) => c.include);
-  const heads = chapterHeadings(kept, format);
+  const heads = chapterHeadings(kept, format, unnumbered);
   const included = kept.map((ref, i) => ({ ref, heading: heads[i] }));
   const left = all.filter((c) => !c.include);
   let chosen = included;

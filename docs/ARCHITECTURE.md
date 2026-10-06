@@ -845,7 +845,12 @@ ExportSource  →  ExportDoc  →  ManuscriptWriter<M, P>  →  string | Uint8Ar
 - **Helpers.** `aboutCount` (the title page count: nearest 100 below 10,000, nearest 500
   above, never below 100 for a non-empty work), `chapterHeadings` (numbering counts only
   chapters numbered 1 or more, so a "00 Prólogo" doesn't shift the numbers; a 00 chapter
-  (sorts first) and an unnumbered one (sorts last, an epilogue) get their title alone; a numbered chapter with no title of its own gets "Capítulo 1" without
+  (sorts first), an unnumbered one (sorts last) and a chapter whose title is in the
+  `unnumberedTitles` setting (a shared core Books row, read by export and the outline;
+  `core/book.ts` `isUnnumberedTitle` folds with `foldName` and matches an entry or an entry
+  followed by a space or punctuation; `countedNumbers` is the one counting rule, also used for
+  the outline's label) get their title alone and are not counted; the list is passed as a
+  parameter to `chapterHeadings` and `planChapters`; a numbered chapter with no title of its own gets "Capítulo 1" without
   the separator) and `fillTemplate` (`{name}` slots; an unknown slot stays as written).
 - **`core/zip.ts`**: `zipStore(files, { modified? })` writes a STORE-only zip (no
   compression, no dependency) with CRC-32 (`crc32`), local headers, central directory and end

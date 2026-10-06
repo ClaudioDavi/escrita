@@ -52,6 +52,8 @@ export interface BookOptions {
   compileProperty: string;
   /** the settings' chapter heading format; "" = the template's */
   headingOverride: string;
+  /** settings' `unnumberedTitles`: titles that export with no number */
+  unnumberedTitles: string;
   /** the active note is a chapter: offer "This chapter" next to "The whole book" */
   offerChapter: boolean;
   /** front matter pages the book note links to (and that exist) */
@@ -112,7 +114,7 @@ export class ExportModal extends Modal {
     const b = this.o.book;
     if (!b || !this.state.whole) return null;
     const format = b.headingOverride.trim() || presetById(this.state.preset).chapterHeading;
-    return planChapters(b.chapters, this.state.selection, format);
+    return planChapters(b.chapters, this.state.selection, format, b.unnumberedTitles);
   }
 
   private key(): string {

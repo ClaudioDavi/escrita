@@ -224,7 +224,7 @@ A beat counts as written when prose follows it before the next beat, scene break
 
 ## Settings
 
-- **Books**: chapters folder name, chapter template (`{{title}}`, `{{date}}` and `{{time}}` are filled in), how many digits chapter numbers get (`01`, `001`…), and the status and summary property names.
+- **Books**: chapters folder name, chapter template (`{{title}}`, `{{date}}` and `{{time}}` are filled in), how many digits chapter numbers get (`01`, `001`…), the titles that never get a chapter number in export and the outline (Prologue, Interlude, Epilogue…), and the status and summary property names.
 - **Stages**: the five stages of a work (idea, draft, revision, ready, published), the status words you use for each (separate several with commas; the first is the one Escrita writes) and a color for each, used in the outline and its board (a chapter's dot; a single note's stage in the outline header) and as a key on the home block's counts line. Your existing published and unpublished values and status colors carry over the first time you open 0.4.
 - **Other status colors**: colors for statuses that are not a stage, such as chapter ones. One per line, `word: color`.
 - **Home note**: the note that holds your `escrita-works` block, and **Open on startup**, which opens it in the active tab when Obsidian starts (off by default; it replaces the tab Obsidian restored).

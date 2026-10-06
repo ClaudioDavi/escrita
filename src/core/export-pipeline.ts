@@ -11,6 +11,7 @@
 //
 // The pure helpers below (exportDocOf, droppedIn, aboutCount, chapterHeadings, fillTemplate) feed every writer.
 
+import { countedNumbers } from "./book";
 import type { Markdown } from "./markdown";
 import { manuscriptOf, type Manuscript, type ManuscriptOptions } from "./manuscript";
 import type { PieceUnit } from "./measure";
@@ -191,12 +192,14 @@ export function aboutCount(amount: number): number {
  * chapter has no title of its own (its title is only the number prefix), `{title}`
  * and the separator before it are left out ("Capítulo 1").
  */
-export function chapterHeadings(chapters: readonly { number: number | null; title: string }[], format: string): string[] {
-  let n = 0;
-  return chapters.map((c) => {
+export function chapterHeadings(
+  chapters: readonly { number: number | null; title: string }[], format: string, unnumbered: string | readonly string[] = [],
+): string[] {
+  const counted = countedNumbers(chapters, unnumbered);
+  return chapters.map((c, i) => {
     const title = c.title.trim();
-    if (c.number === null || c.number === 0) return title;   // unnumbered, or "00 Prólogo"
-    n++;
+    const n = counted[i];
+    if (n === null) return title;   // no number, "00 Prólogo", or a title in the unnumbered list
     if (title !== "") return fillTemplate(format, { n, title }).trim();
     // no title of its own: cut `{title}` and the separator on the side facing `{n}`
     const t = format.indexOf("{title}");

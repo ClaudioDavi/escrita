@@ -92,11 +92,18 @@ Um capítulo cuja propriedade é `false` fica sempre de fora. A propriedade é u
 propriedades de um capítulo o deixa fora. A janela diz quantos ficam de fora e quais.
 
 **Títulos dos capítulos.** Um capítulo com número recebe o título do modelo: "Capítulo 1 — A
-chegada" (pt-BR) ou "Chapter 1: A chegada" (Shunn). Dê ao prólogo o prefixo 00,
-"00 Prólogo": ele vem primeiro e recebe só o seu título, sem número. Um arquivo sem número no
-nome, como "Epílogo", vai por último e também recebe só o seu título. A numeração conta só os
-capítulos de 1 em diante, então um prólogo não desloca os números e um capítulo deixado de fora
-não abre buraco. Os números são contados antes de o intervalo ou as marcas reduzirem a lista:
+chegada" (pt-BR) ou "Chapter 1: A chegada" (Shunn). Numere todos os arquivos
+como de costume (01 Prefácio, 02 Prólogo, 03 A chegada, 04 Interlúdio, 05 O porão, 06 Epílogo).
+Um capítulo cujo título está em **Capítulos sem número** (Configurações, Livros) recebe só o
+título e não é contado, então esse livro sai como Prefácio, Prólogo, "Capítulo 1 — A chegada",
+Interlúdio, "Capítulo 2 — O porão", Epílogo. A lista é separada por vírgulas e ignora
+maiúsculas e acentos; um título também casa quando começa com uma palavra da lista seguida de
+espaço ou pontuação ("Interlúdio: a carta"). A lista padrão está em inglês; num cofre em
+português acrescente as suas palavras, por exemplo "Prólogo, Prefácio, Interlúdio, Epílogo,
+Posfácio". Os jeitos antigos continuam valendo: o prefixo 00 ("00 Prólogo") vem primeiro e
+recebe só o título, e um arquivo sem número no nome vai por último e também recebe só o título.
+A numeração conta só os capítulos que sobram, então nada disso desloca os números e um capítulo
+deixado de fora não abre buraco. Os números são contados antes de o intervalo ou as marcas reduzirem a lista:
 exportar os capítulos 5 a 7 mantém "Capítulo 5", "6" e "7". Se um capítulo não tem título
 além do número, o título fica só "Capítulo 1". Um título no começo do capítulo que repete o
 título do próprio capítulo é descartado, para não aparecer duas vezes (numa nota avulsa, um

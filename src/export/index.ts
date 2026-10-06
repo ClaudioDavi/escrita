@@ -188,7 +188,7 @@ export class ExportModule extends FeatureModule {
     const base = { placeholderMarker: s.placeholderMarker };
     if (target.book && state.whole) {
       const format = s.chapterHeadingFormat.trim() || preset.chapterHeading;
-      const chapters = planChapters(this.source().chapters(target.book), state.selection, format);
+      const chapters = planChapters(this.source().chapters(target.book), state.selection, format, s.unnumberedTitles);
       const parts: PartPlan[] = [
         ...this.frontPages(target.book).map((f): PartPlan => ({ role: f.role, path: f.path, heading: null, title: null, label: baseName(f.path) })),
         ...chapters.chosen.map((c): PartPlan => ({ role: "body", path: c.ref.path, heading: c.heading, title: c.ref.title, label: baseName(c.ref.path) })),
@@ -245,6 +245,7 @@ export class ExportModule extends FeatureModule {
         chapters: this.source().chapters(target.book),
         compileProperty: s.compileProperty,
         headingOverride: s.chapterHeadingFormat,
+        unnumberedTitles: s.unnumberedTitles,
         offerChapter: target.chapter,
         front: this.frontPages(target.book).map((f) => f.role),
       };

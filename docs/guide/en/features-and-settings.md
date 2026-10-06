@@ -96,6 +96,10 @@ snapshot files on disk.
   never counted by goals and never become works. A folder row saves only a folder that is safe
   (see below).
 
+- **Chapters without a number** (Settings, Books) is read by Export and the outline: a list
+  of titles (Prologue, Interlude, Epilogue…) that export with their title alone and show no
+  number in the outline. The rest are counted from 1.
+
 ## Folder rows and how fields save
 
 The export folder (default `Escrita/Exports`), the submissions folder (default `Escrita/Submissions`)

@@ -102,6 +102,9 @@ versões, isso inclui mover os arquivos de versão no disco.
   envios** também ficam ali, e aparecem mesmo com Exportar ou Envios desligado, porque as
   pastas continuam valendo: as notas dentro delas nunca entram nas metas e nunca viram obras.
   Uma linha de pasta só salva uma pasta segura (veja abaixo).
+- **Capítulos sem número** (Configurações, Livros) é lida por Exportar e pelo esboço: uma lista
+  de títulos (Prólogo, Interlúdio, Epílogo…) que saem na exportação só com o título e não
+  mostram número no esboço. Os demais são contados a partir de 1.
 
 ## Linhas de pasta e como os campos salvam
 

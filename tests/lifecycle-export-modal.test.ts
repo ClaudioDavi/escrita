@@ -59,7 +59,7 @@ function fakeHost(over: Partial<ExportHost> = {}): ExportHost & { built: ReturnT
   }, over, { built, written, jumped }) as never;
 }
 
-const BOOK: BookOptions = { chapters: CHAPTERS, compileProperty: "compile", headingOverride: "", offerChapter: true, front: ["dedication", "epigraph"] };
+const BOOK: BookOptions = { chapters: CHAPTERS, compileProperty: "compile", headingOverride: "", unnumberedTitles: "", offerChapter: true, front: ["dedication", "epigraph"] };
 const LAST: LastExport = {
   format: "docx", preset: "ptbr", whole: true, chapters: { mode: "all" }, chapterCount: 14,
   at: "2026-10-03T14:32:00", path: "Escrita/Exports/A Casa (pt-BR).docx",
