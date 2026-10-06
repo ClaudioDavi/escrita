@@ -78,7 +78,7 @@ describe("readerBlocks (N 8, Q14, Q20)", () => {
   });
 
   it("a scene break at the edge or doubled is not shown, like the export", () => {
-    const text = "---\n\nUm.\n\n---\n\n---\n\nDois.\n\n---\n";
+    const text = "---\ntitle: x\n---\n\n---\n\nUm.\n\n---\n\n---\n\nDois.\n\n---\n";
     expect(readerBlocks(text, O).map((b) => b.text)).toEqual(["Um.", "---", "Dois."]);
   });
 
