@@ -321,6 +321,111 @@ The judge's fixture rules:
 **Opus judge** after the wave. Is any decision made in code that this plan didn't
 settle?
 
+**Wave 1 result (2026-10-07).** Done. The four checks pass (172 test files, 3,004
+tests). The first run of the wave was lost with its workflow. What it left was kept as
+one unverified commit (`b5999aa`: 1.2, 1.6 and the tests of 1.1, 1.3 and 1.7), and the
+wave was run again over it. 1.5 had already landed. Each task's code was checked
+against the recovered tests, and three wrong tests were fixed (two in 1.3, one in 1.6;
+below). Nothing
+changes for the writer yet: no task in this wave touches a view, a command or a setting.
+
+What landed:
+- 1.1: `Placement.scope` is set on every file, book note, chapter, book folder and
+  folder, through `scopeFor`. Snapshots, submissions, exports and "none" keep the none
+  scope. With the mode off or missing, classify returns early and reads nothing more.
+  `tests/universe-scope.test.ts` is now `tests/scope.test.ts`, unchanged.
+- 1.2: `unlinkedIn`, as the contract says.
+- 1.3: `nameRuns`, `namesMask` and `newNames`. The names port needed no change.
+- 1.4: the EPUB writer, its unit tests and an `epubcheck` CI job.
+- 1.5: `serialState`.
+- 1.6: `readerBlocks`, built on `manuscriptOf`, so what is hidden is decided in one place.
+- 1.7: `collectionOf`, `collectionAt` and `collectionSource`.
+
+**G0c after** (`classify()` over the 3,020-file bench, mean per run; before 7.23 ms):
+6.45 and 6.57 ms with the default settings (the mode is off, so this is the early
+return), and 7.76 ms with the mode "universe" and a default universe folder (one run,
+a temporary bench). That is about 7% more, under the 10% of Q15. `scope` stays a plain
+field; no lazy getter.
+
+**G0a:** EPUBCheck 5.4.0 (Java 25), run locally on the `ptbr` fixture book with the
+cover: "No errors or warnings detected", 0 fatals, 0 errors, 0 warnings. The judge ran
+it again on the final writer with the same result. The `shunn` and no-cover variants
+have unit tests only. The CI job has not run on a GitHub runner yet: CI runs on pushes
+to `main` and on pull requests, so it first runs when 0.9 opens its pull request. It
+downloads the latest EPUBCheck release.
+
+**Q16 checked:** every index spec already keys on `classifyKey` (works, placeholders,
+explorer, entries, threads, mentions), so a settings save rebuilds each once. The
+universe module's `settingsChanged` refreshes the names provider, not an index. No
+spec needs moving.
+
+The judge's fixes (`0.9: Wave 1 fixups`):
+- Names rule: English "I" and its contractions ("I'm", "I'll") never start a run, and a
+  contraction never joins one ("I'm Maria" gives "Maria"; "Pedro I" stays). Without
+  this, any first-person English story flagged "I'm".
+- Unlinked mentions: an occurrence inside a link or embed in the text is never listed.
+  The mentions leave in the text of a Markdown link to a web page, and Link would have
+  written a link inside it (rule 1).
+- Collections: a text value with several wikilinks (`contents: "[[A]], [[B]]"`) gives
+  each, not only the first.
+
+Decisions taken in code (the judge keeps them):
+- Scope (1.1): a missing `universeNote` reads as `Universe.md` and a missing
+  `universeProperty` as `universe`, the universe module's defaults. A throw inside
+  `scopeFor` gives the none scope (classify never throws). Scope follows the
+  `universeMode` setting, not the universe feature switch.
+- Names (1.3): a one-letter run is dropped. A run is capitalized words separated only by
+  spaces or tabs, with the `pt` joiners between two capitalized words; after a leading
+  stop word is dropped, a joiner can't start the run. A line break starts a sentence,
+  so a name at the start of a line is skipped. "Sr. Almeida" gives "Sr" and "Almeida";
+  `isKnownName` answers for "Sr" as a name title. `namesMask` is `readerMask` with
+  heading lines and `$$` blocks blanked. A run is marked when it is not in the lens's
+  names list or "Not names" (compared by `foldName`), `known` says no, and it recurs
+  (5 in the note, or 2 works). With no language, every run at a sentence start is
+  skipped. Two recovered expectations were wrong and were fixed: in English "Maria das
+  Dores" gives "Maria" and "Dores"; "Rio\nPequeno" gives "Rio".
+- EPUB (1.4): the identifier hashes `path\ntitle` with four seeded FNV-1a lanes into a
+  version-5-shaped UUID (no crypto API). A chapter heading is `h1` and body headings
+  start at `h2`. Consecutive quote blocks make one `blockquote`. A scene break is
+  `<p class="scene-break">`. The landmark labels ("Capa"/"Cover", "Início"/"Start of
+  content") follow the preset's language, like the contents label. The nav lists the
+  chapters, or the title page when there are none (an empty list fails EPUBCheck). A
+  body part with no heading (one note) is listed by the work's title and has no `h1`.
+  A dedication or epigraph page is written only when it has blocks.
+- Reader (1.6): `ReaderBlock.text` is Markdown rebuilt from the manuscript's runs, with
+  literal marks escaped. Links read as plain text and inline code as plain text, as in
+  the export. A scene break is `---`; one at a chapter's edge, or doubled, is dropped,
+  as in the export. The recovered edge test opened with `---`, which reads as
+  frontmatter; it now has real frontmatter first.
+- Collections (1.7): the property is found ignoring case; nested lists (unquoted
+  `[[A]]` in YAML) are flattened; `collectionOf` keeps its own small link parser
+  (`core/scope`'s `linkText` reads only a list's first item). A link to a non-Markdown
+  file, or to the collection note itself, is missing. A story's title is its basename;
+  its `title` property is not read.
+
+Hand-backs for Wave 2:
+- 2.1: delete `universe/scope.ts` and move its callers, including
+  `tests/universe-entries.test.ts`, `tests/universe-mention-ctx.test.ts` and
+  `tests/universe-names-provider.test.ts`. A placement carries a scope whenever the
+  mode is on, even with the universe feature off; callers that care check the feature.
+- 2.2: `unlinkedIn` already skips text inside links and embeds. Link still checks the
+  text before it writes.
+- 2.3: wire `isKnownName`, `workCount` and `wantNameCounts` behind the port, and call
+  `wantNameCounts` when the rule runs. The `universe-names` index keys runs with
+  `nameRuns` over `namesMask`. The rule runs over the lens's own mask: check that it
+  blanks what `namesMask` blanks (headings, math), so the two counts agree.
+- 2.4: EPUB in the modal. Read the cover as binary into `EpubBook.cover`; set
+  `identifier` to `epubIdentifier(workPath, title)` and `modified` to
+  `epubModified(new Date())`; build the layout with `epubLayout(preset,
+  epubSceneBreak)`; warn when a configured cover is missing (Q8); name the file
+  `<title> (<preset>).epub` (D2).
+- 2.6: draw each block's `text` with the Markdown renderer and the chapter headings from
+  `chapterHeadings`; `line` is 0-based, frontmatter included.
+- 2.7: `collectionAt(app, note, settings)` is null for a note that isn't a collection;
+  `collectionSource` is the `BookSource` with the collection note as the handle; the
+  readiness warning reads `collectionAt(...).missing`. "Create a collection…" writes
+  `[[Name]]` list items, the form `collectionOf` reads.
+
 ## Wave 2: features (parallel, Sonnet, gated by G1 and G2)
 
 | Task | Owns | Done when |
