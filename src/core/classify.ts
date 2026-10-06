@@ -8,7 +8,7 @@ import { folderList } from "./lists";
 import { readPiece, type Piece, type PieceProperties } from "./measure";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, readStatus, stageOf, type Stage, type StageMapping } from "./stages";
 // one direction only: classify imports scope, scope never imports classify (no cycle at load)
-import { inFolder, NO_SCOPE, type Scope, type ScopeMode } from "./scope";
+import { inFolder, NO_SCOPE, scopeFor, type Scope, type ScopeLookup, type ScopeMode } from "./scope";
 // inFolder and NO_SCOPE live in core/scope.ts (0.9); re-exported so their callers keep importing them from here
 export { inFolder, NO_SCOPE };
 
@@ -177,7 +177,7 @@ export interface Placement<F extends Named, D extends Named> {
    * from this placement, the `universeProperty` from frontmatter, links through
    * `VaultTree.resolve`). Set on every placement, folders and "none" included; NO_SCOPE
    * when the universe mode is off or nothing applies. A field, never a new kind (the
-   * growth rule). Until task 1.1 it is NO_SCOPE everywhere.
+   * growth rule).
    */
   scope: Scope;
 }
@@ -399,6 +399,32 @@ function stageFor(fm: Record<string, unknown> | undefined, tracked: boolean, set
   }
 }
 
+/** The scope of `path`, given the book classify already found for it (never throws; none when the mode is off). */
+function scopeOf<F extends Named, D extends Named>(
+  tree: VaultTree<F, D>, settings: ClassifySettings, path: string, book: BookOf<F, D> | null,
+): Scope {
+  const mode = settings.universeMode ?? "off";
+  if (mode === "off") return NO_SCOPE;
+  const prop = settings.universeProperty ?? "universe";
+  const lookup: ScopeLookup = {
+    book: (p) => (book && p === path ? { note: book.note.path, folder: book.folder.path } : null),
+    universe: (p) => {
+      const f = tree.file(p);
+      return f ? frontmatterOf(tree, f)?.[prop] : undefined;
+    },
+    resolve: (link, from) => tree.resolve(link, from),
+  };
+  try {
+    return scopeFor({ path }, {
+      universeMode: mode,
+      universeNote: settings.universeNote ?? "Universe.md",
+      defaultUniverseFolders: settings.defaultUniverseFolders ?? "",
+    }, lookup);
+  } catch {
+    return NO_SCOPE;
+  }
+}
+
 /**
  * Where `path` sits in the vault. Reads the live tree and the settings passed
  * in (no cache, so renames and settings changes need no invalidation) and never
@@ -435,21 +461,21 @@ export function classify<F extends Named, D extends Named>(
       const piece = markdown ? pieceOf(fm, settings) : null;
       // The book note comes first: a book note inside another book's folder belongs to its own book.
       const own = markdown ? bookAt(tree, path.slice(0, -3), ch) : null;
-      if (own) return { path, kind: "book-note", markdown, book: own, tracked, piece, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false, scope: NO_SCOPE };
+      if (own) return { path, kind: "book-note", markdown, book: own, tracked, piece, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false, scope: scopeOf(tree, settings, path, own) };
       const book = ancestorBook(tree, path, ch);
       if (book) {
         // compare against the handle's path, never the settings string
         const kind: Kind = markdown && parentOf(path) === book.chaptersFolder.path ? "chapter" : "book-file";
-        return { path, kind, markdown, book, tracked, piece, snapshot: false, stage: null, submission: false, export: false, scope: NO_SCOPE };
+        return { path, kind, markdown, book, tracked, piece, snapshot: false, stage: null, submission: false, export: false, scope: scopeOf(tree, settings, path, book) };
       }
-      return { path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false, scope: NO_SCOPE };
+      return { path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false, scope: scopeOf(tree, settings, path, null) };
     }
     if (tree.folder(path)) {
       const own = bookAt(tree, path, ch);
-      if (own) return { ...none, path, kind: "book-folder", book: own };
+      if (own) return { ...none, path, kind: "book-folder", book: own, scope: scopeOf(tree, settings, path, own) };
       const book = ancestorBook(tree, path, ch);
       const kind: Kind = book && book.chaptersFolder.path === path ? "chapters-folder" : "folder";
-      return { ...none, path, kind, book };
+      return { ...none, path, kind, book, scope: scopeOf(tree, settings, path, book) };
     }
   } catch {
     // a failing lookup reads as "nothing here"

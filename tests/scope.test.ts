@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { keptOut, linkText, scopeFor, universeNotePath, type ScopeLookup, type ScopeSettings } from "../src/universe/scope";
+import { keptOut, linkText, scopeFor, universeNotePath, type ScopeLookup, type ScopeSettings } from "../src/core/scope";
 import { ENTRY_KINDS, FORM_KINDS, defaultUniverseSettings, normalizeUniverse } from "../src/universe/settings";
 
 interface World {
