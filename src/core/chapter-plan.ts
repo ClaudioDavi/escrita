@@ -1,7 +1,7 @@
 // Pure planning for chapter file operations (no Obsidian imports).
 // Everything works on basenames (file names without ".md").
 
-import { numberedName, type RenamePlan } from "./book";
+import { chapterNumber, numberedName, type RenamePlan } from "./book";
 import { hasFrontmatter, renderTemplate, splitTemplate, yamlKey, type TemplateVars } from "./template";
 
 // The template pieces moved to core/template.ts; re-exported for existing importers.
@@ -36,13 +36,21 @@ export function chapterName(index1: number, title: string, width: number): strin
  * only a number instead of keeping the old number as its title.
  */
 export function planRenumberNames(ordered: string[], pad: number): RenamePlan[] {
-  const width = Math.max(pad, String(ordered.length).length);
+  const counted = ordered.filter((n) => !isPrologue(n)).length;
+  const width = Math.max(pad, String(counted).length);
   const plan: RenamePlan[] = [];
-  ordered.forEach((name, i) => {
-    const to = chapterName(i + 1, titlePart(name), width);
+  let n = 0;
+  for (const name of ordered) {
+    if (isPrologue(name)) continue;   // "00 Prólogo" keeps its prefix and is not counted
+    const to = chapterName(++n, titlePart(name), width);
     if (to !== name) plan.push({ from: name, to });
-  });
+  }
   return plan;
+}
+
+/** A chapter whose prefix number is 0 ("00 Prólogo"): sorts first, no number, not counted. */
+export function isPrologue(basename: string): boolean {
+  return chapterNumber(basename) === 0;
 }
 
 const key = (s: string) => s.toLowerCase();
@@ -114,15 +122,19 @@ export interface InsertPlan {
  */
 export function planInsert(names: string[], at: number, title: string, pad: number): InsertPlan {
   const pos = Math.max(0, Math.min(Math.floor(at), names.length));
-  const total = names.length + 1;
+  const total = names.filter((n) => !isPrologue(n)).length + 1;
   const width = Math.max(pad, String(total).length);
   const renames: RenamePlan[] = [];
+  let n = 0;   // "00" chapters keep their prefix and are not counted
+  let newIndex = 1;
   names.forEach((name, i) => {
-    const index1 = i < pos ? i + 1 : i + 2;
-    const to = chapterName(index1, titlePart(name), width);
+    if (i === pos) newIndex = ++n;
+    if (isPrologue(name)) return;
+    const to = chapterName(++n, titlePart(name), width);
     if (to !== name) renames.push({ from: name, to });
   });
-  return { renames, name: numberedName(pos + 1, title, width) };
+  if (pos >= names.length) newIndex = n + 1;
+  return { renames, name: numberedName(newIndex, title, width) };
 }
 
 /** New basename after changing the title, keeping the numeric prefix. Null when the title is empty. */

@@ -92,9 +92,10 @@ Um capítulo cuja propriedade é `false` fica sempre de fora. A propriedade é u
 propriedades de um capítulo o deixa fora. A janela diz quantos ficam de fora e quais.
 
 **Títulos dos capítulos.** Um capítulo com número recebe o título do modelo: "Capítulo 1 — A
-chegada" (pt-BR) ou "Chapter 1: A chegada" (Shunn). Um capítulo sem número no nome, como um
-"Prólogo" ou um "Epílogo", recebe só o seu título e não leva número. A numeração conta só os
-capítulos numerados, então um Prólogo não desloca os números e um capítulo deixado de fora
+chegada" (pt-BR) ou "Chapter 1: A chegada" (Shunn). Dê ao prólogo o prefixo 00,
+"00 Prólogo": ele vem primeiro e recebe só o seu título, sem número. Um arquivo sem número no
+nome, como "Epílogo", vai por último e também recebe só o seu título. A numeração conta só os
+capítulos de 1 em diante, então um prólogo não desloca os números e um capítulo deixado de fora
 não abre buraco. Os números são contados antes de o intervalo ou as marcas reduzirem a lista:
 exportar os capítulos 5 a 7 mantém "Capítulo 5", "6" e "7". Se um capítulo não tem título
 além do número, o título fica só "Capítulo 1". Um título no começo do capítulo que repete o

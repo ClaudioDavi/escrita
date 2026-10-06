@@ -125,9 +125,11 @@ differs from the text below (PLAN-0.8.md has the full record):
 - **One command.** "Export…" replaces "Compile the book". It works on the active note or
   its book, and one modal picks the source, the chapters, the format and the preset. The
   modal remembers the last choices per work.
-- **Unnumbered chapters.** There is no prologue property. A chapter with a number prefix
-  gets the heading format (`{n}`, `{title}`); one without gets its title alone,
-  unnumbered, and numbering counts only numbered chapters.
+- **Prologue and epilogue.** There is no prologue property. A chapter with a number prefix
+  gets the heading format (`{n}`, `{title}`). A prologue is named with a 00 prefix ("00
+  Prólogo"): it sorts first and gets its title alone. A file without a number sorts last
+  and also gets its title alone, so it suits an epilogue. Numbering counts only chapters
+  numbered 1 or more.
 - **Preview (Q16).** A reading column, not pages, drawn from the same model the writers
   use, so it can't drift from the file. No page breaks or page numbers.
 - **Export again (Q17).** The modal shows the last export (format, preset, chapters, date,
@@ -149,8 +151,8 @@ differs from the text below (PLAN-0.8.md has the full record):
 
 **Stage 1 — Markdown manuscript.** Command "Compile the book": choose chapters
 (all, a range, or checked), then write one Markdown file with chapter headings
-("Capítulo 1 — Título", format configurable, with a "Prologue/Epilogue" rule for
-unnumbered chapters), scene breaks normalized, and all Escrita markers removed (beats,
+("Capítulo 1 — Título", format configurable, with a "Prologue/Epilogue" rule: "00 Prólogo" first, an
+unnumbered file last, both with the title alone), scene breaks normalized, and all Escrita markers removed (beats,
 placeholders, `%%` comments). Warns when placeholders remain. Scene breaks
 come out as the chosen separator (blank line, `#`, `* * *` or custom text; the presets
 set one), never at a chapter boundary. A chapter with `compile: false` (property name

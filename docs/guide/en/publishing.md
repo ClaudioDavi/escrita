@@ -89,9 +89,10 @@ A chapter whose property is `false` is always left out. The property is a settin
 keeps it out. The window says how many are left out and which ones.
 
 **Chapter headings.** A chapter with a number gets the template's heading: "Chapter 1: The
-arrival" (Shunn) or "Capítulo 1 — A chegada" (pt-BR). A chapter without a number in its name,
-such as a "Prólogo" or an "Epílogo", gets its title alone and takes no number. Numbers count
-only the numbered chapters, so a Prólogo doesn't shift them and a left-out chapter leaves no
+arrival" (Shunn) or "Capítulo 1 — A chegada" (pt-BR). Name a prologue with a 00
+prefix, "00 Prólogo": it sorts first and gets its title alone, with no number. A file without a
+number in its name, such as "Epílogo", goes last and also gets its title alone. Numbers count
+only chapters numbered 1 or more, so a prologue doesn't shift them and a left-out chapter leaves no
 gap. The numbers are counted before the range or the ticks narrow the list: exporting
 chapters 5 to 7 keeps "Chapter 5", "6" and "7". If a chapter has no title beyond its number,
 the heading is just "Chapter 1". A heading at the top of the chapter that repeats the

@@ -216,6 +216,11 @@ describe("number-only chapter names (regressions)", () => {
 
   it("planRenumberNames swaps number-only names without adding titles", () => {
     expect(planRenumberNames(["02", "01"], 2)).toEqual([{ from: "02", to: "01" }, { from: "01", to: "02" }]);
+    expect(planRenumberNames(["00 Prólogo", "05 B", "03 A"], 2)).toEqual([{ from: "05 B", to: "01 B" }, { from: "03 A", to: "02 A" }]);
+    expect(planRenumberNames(["00 Prólogo", "01 A"], 2)).toEqual([]);
+    expect(planInsert(["00 Prólogo", "01 A", "02 B"], 1, "N", 2)).toEqual({ renames: [{ from: "01 A", to: "02 A" }, { from: "02 B", to: "03 B" }], name: "01 N" });
+    expect(planInsert(["00 Prólogo", "01 A"], 2, "N", 2)).toEqual({ renames: [], name: "02 N" });
+    expect(planInsert(["00 Prólogo", "01 A"], 0, "N", 2)).toEqual({ renames: [{ from: "01 A", to: "02 A" }], name: "01 N" });
     expect(planRenumberNames(["01 A", "3", "Loose"], 2)).toEqual([{ from: "3", to: "02" }, { from: "Loose", to: "03 Loose" }]);
   });
 

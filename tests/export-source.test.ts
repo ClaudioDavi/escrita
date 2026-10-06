@@ -73,7 +73,7 @@ describe("buildExport: a book", () => {
   const files: Record<string, string> = {
     "ded.md": file(dir + "Dedicatória.md"),
     "epi.md": file(dir + "Epígrafe.md"),
-    "p.md": file(dir + "Chapters/Prólogo.md"),
+    "p.md": file(dir + "Chapters/00 Prólogo.md"),
     "c1.md": file(dir + "Chapters/01 A chegada.md"),
     "c3.md": file(dir + "Chapters/03 A casa.md"),
   };
@@ -82,7 +82,7 @@ describe("buildExport: a book", () => {
     parts: [
       { role: "dedication", path: "ded.md", heading: null, title: null, label: "Dedicatória" },
       { role: "epigraph", path: "epi.md", heading: null, title: null, label: "Epígrafe" },
-      { role: "body", path: "p.md", heading: "Prólogo", title: "Prólogo", label: "Prólogo" },
+      { role: "body", path: "p.md", heading: "Prólogo", title: "Prólogo", label: "00 Prólogo" },
       { role: "body", path: "c1.md", heading: "Capítulo 1 — A chegada", title: "A chegada", label: "01 A chegada" },
       { role: "body", path: "c3.md", heading: "Capítulo 2 — A casa", title: "A casa", label: "03 A casa" },
     ],

@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { chapterHeadings, type ExportPart, type ExportSource, type Preset } from "../src/core/export-pipeline";
 import { segment } from "../src/core/markdown";
+import { fixtureChapters } from "./support/export-fixture";
 
 // tests/support/export-fixture.ts builds file URLs, which happy-dom's URL refuses: the same sources, by path
 const FX = join(process.cwd(), "tests/fixtures/manuscript");
@@ -16,11 +17,7 @@ const contoSource = (count = 612): ExportSource => ({
 });
 function bookSource(preset: Preset, count = 1234): ExportSource {
   const dir = "book/A Casa/";
-  const chapters = [
-    { file: "Prólogo.md", number: null, title: "Prólogo" },
-    { file: "01 A chegada.md", number: 1, title: "A chegada" },
-    { file: "03 A casa.md", number: 3, title: "A casa" },
-  ];
+  const chapters = fixtureChapters(join(FX, dir, "Chapters"));
   const heads = chapterHeadings(chapters, preset.chapterHeading);
   const parts: ExportPart[] = [
     { role: "dedication", heading: null, md: md(dir + "Dedicatória.md") },

@@ -47,7 +47,7 @@ let active: TFile | null;
 
 const CONTO = "Contos/O porão.md";
 const BOOK_NOTE = "Novels/A Casa.md";
-const CH = ["Prólogo", "01 A chegada", "02 Rascunho", "03 A casa"].map((n) => `Novels/A Casa/Chapters/${n}.md`);
+const CH = ["00 Prólogo", "01 A chegada", "02 Rascunho", "03 A casa"].map((n) => `Novels/A Casa/Chapters/${n}.md`);
 
 function addFile(path: string, text: string, frontmatter: Record<string, unknown> = {}): TFile {
   const f = file(path);

@@ -5,7 +5,10 @@ import {
 import { PRESETS, PTBR, SHUNN, presetById } from "../src/export/presets";
 import { markdownWriter } from "../src/export/writers/markdown";
 import { segment as segmentOf } from "../src/core/markdown";
-import { bookSource, contoSource, read } from "./support/export-fixture";
+import { bookSource, contoSource, fixtureChapters, read } from "./support/export-fixture";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const O = { placeholderMarker: "XXX" };
 const FILES: [string, typeof SHUNN][] = [["shunn-en", SHUNN], ["ptbr", PTBR]];
@@ -139,7 +142,7 @@ describe("export pipeline helpers", () => {
 
   it("chapterHeadings numbers only numbered chapters", () => {
     const list = [
-      { number: null, title: "Prólogo" },
+      { number: 0, title: "Prólogo" },
       { number: 1, title: "A chegada" },
       { number: 3, title: "A casa" },
       { number: 4, title: "" },
@@ -165,5 +168,16 @@ describe("export pipeline helpers", () => {
     expect(PTBR.page.width).toBeCloseTo(595.3);
     expect(presetById("ptbr")).toBe(PTBR);
     expect(presetById("nope")).toBe(PRESETS[0]);
+  });
+});
+
+describe("book order and headings from the real chapter rule", () => {
+  it("00 Prólogo first, numbered chapters in order, an unnumbered file last", () => {
+    const dir = mkdtempSync(join(tmpdir(), "escrita-ch-"));
+    for (const n of ["Epílogo", "02 B", "00 Prólogo", "01 A"]) writeFileSync(join(dir, n + ".md"), "Texto.\n");
+    const chapters = fixtureChapters(dir);
+    expect(chapters.map((c) => c.file)).toEqual(["00 Prólogo.md", "01 A.md", "02 B.md", "Epílogo.md"]);
+    expect(chapterHeadings(chapters, PTBR.chapterHeading)).toEqual(["Prólogo", "Capítulo 1 — A", "Capítulo 2 — B", "Epílogo"]);
+    expect(chapterHeadings(chapters, SHUNN.chapterHeading)).toEqual(["Prólogo", "Chapter 1: A", "Chapter 2: B", "Epílogo"]);
   });
 });

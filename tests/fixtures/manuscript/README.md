@@ -8,7 +8,7 @@ Inputs and the Markdown manuscript each preset must produce. Used by the tests f
 - `conto.md`: a standalone conto. Export input: title `A visita` (the file name is not
   the title; the test passes it), author `Ana Souza` (also in its frontmatter).
 - `book/A Casa.md`: the book note (`dedication` and `epigraph` link to notes).
-  Chapters in `book/A Casa/Chapters/`: `Prólogo` (no number), `01 A chegada`,
+  Chapters in `book/A Casa/Chapters/`: `00 Prólogo` (sorts first, title alone, not counted), `01 A chegada`,
   `03 A casa`, `02 Rascunho` (`compile: false`, left out). Title `A Casa`, author `Ana Souza`.
 - Presets: `shunn-en` and `ptbr`. Expected files: `expected/<conto|book>.<preset>.md`.
 
@@ -32,7 +32,7 @@ counts numbered chapters only.
    reads only `byline`, `chapterHeading` and `sceneBreak`.
 2. **Heading levels.** Book title `#`, each chapter `##`. A single note has no chapter heading.
 3. **Chapter heading text.** shunn-en `Chapter {n}: {title}`; ptbr `Capítulo {n} — {title}`
-   (em dash). Unnumbered chapter: `## {title}` alone (`## Prólogo`).
+   (em dash). A `00` or unnumbered chapter: `## {title}` alone (`## Prólogo`).
 4. **Chapter number.** The ordinal among the numbered chapters not left out by
    `compile: false`, counted before the export modal's range or ticks narrow the list
    (exporting chapters 5-7 keeps 5, 6, 7). Not the file-name prefix: `02 Rascunho` is

@@ -844,8 +844,8 @@ ExportSource  →  ExportDoc  →  ManuscriptWriter<M, P>  →  string | Uint8Ar
   labels) and `ptbr` (A4, Portuguese labels, "Capítulo {n} — {title}", "FIM").
 - **Helpers.** `aboutCount` (the title page count: nearest 100 below 10,000, nearest 500
   above, never below 100 for a non-empty work), `chapterHeadings` (numbering counts only
-  numbered chapters, so a "Prólogo" doesn't shift the numbers; an unnumbered chapter gets
-  its title alone; a numbered chapter with no title of its own gets "Capítulo 1" without
+  chapters numbered 1 or more, so a "00 Prólogo" doesn't shift the numbers; a 00 chapter
+  (sorts first) and an unnumbered one (sorts last, an epilogue) get their title alone; a numbered chapter with no title of its own gets "Capítulo 1" without
   the separator) and `fillTemplate` (`{name}` slots; an unknown slot stays as written).
 - **`core/zip.ts`**: `zipStore(files, { modified? })` writes a STORE-only zip (no
   compression, no dependency) with CRC-32 (`crc32`), local headers, central directory and end

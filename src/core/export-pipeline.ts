@@ -182,11 +182,11 @@ export function aboutCount(amount: number): number {
 
 /**
  * The heading of each chapter, in order (Q5). `n` counts only numbered chapters,
- * so a "Prólogo" before chapter 1 doesn't shift the numbers and a left-out
+ * so a "00 Prólogo" before chapter 1 doesn't shift the numbers and a left-out
  * chapter leaves no gap. `n` is the ordinal among the numbered chapters not left
  * out by `compile: false`, counted before the modal's range or ticks narrow the
  * list: pass the compile-included chapters, then keep the headings of the selected
- * ones (exporting chapters 5-7 keeps 5, 6, 7). A numbered chapter gets `format` with
+ * ones (exporting chapters 5-7 keeps 5, 6, 7). A chapter numbered 0 ("00 Prólogo", which sorts first) is not counted and gets its title alone, like an unnumbered one (an epilogue, which sorts last). A numbered chapter gets `format` with
  * `{n}` and `{title}` filled; an unnumbered one its title alone. When a numbered
  * chapter has no title of its own (its title is only the number prefix), `{title}`
  * and the separator before it are left out ("Capítulo 1").
@@ -195,7 +195,7 @@ export function chapterHeadings(chapters: readonly { number: number | null; titl
   let n = 0;
   return chapters.map((c) => {
     const title = c.title.trim();
-    if (c.number === null) return title;
+    if (c.number === null || c.number === 0) return title;   // unnumbered, or "00 Prólogo"
     n++;
     if (title !== "") return fillTemplate(format, { n, title }).trim();
     // no title of its own: cut `{title}` and the separator on the side facing `{n}`

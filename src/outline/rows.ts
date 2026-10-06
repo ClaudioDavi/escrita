@@ -77,7 +77,7 @@ export async function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRo
     return {
       path: ch.path,
       index: i,
-      label: /^\d+/.exec(basename)?.[0] ?? String(i + 1),   // the digits as written ("01"), as the view always showed them
+      label: ch.number === 0 ? "" : /^\d+/.exec(basename)?.[0] ?? String(i + 1),   // "00 Prólogo" shows no number   // the digits as written ("01"), as the view always showed them
       title: ch.title,
       summary: s.summaryProperty ? oneLine(str(fm[s.summaryProperty])) : "",
       status,

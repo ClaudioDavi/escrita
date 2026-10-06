@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { fixtureChapters } from "./support/export-fixture";
 import { manuscriptOf, type Block } from "../src/core/manuscript";
 import { MARKUP } from "../src/core/wordcount";
 import { renderBlocks } from "./support/manuscript-md";
@@ -27,7 +29,7 @@ describe("manuscript fixtures", () => {
       const dir = "book/A Casa/";
       expect(body(read(dir + "Dedicatória.md")).trim()).toBe(front[1]);
       expect(body(read(dir + "Epígrafe.md")).trim()).toBe(front[2]);
-      const files = ["Prólogo.md", "01 A chegada.md", "03 A casa.md"];
+      const files = fixtureChapters(fileURLToPath(new URL(dir + "Chapters", new URL("fixtures/manuscript/", import.meta.url)))).map((c) => c.file);
       files.forEach((f, i) => {
         const section = chunks[i + 1].split("\n").slice(1).join("\n").trim();
         expect(body(read(dir + "Chapters/" + f), 3).trim()).toBe(section);

@@ -1,6 +1,8 @@
 // Builds an ExportSource from tests/fixtures/manuscript/ files, the way the export
 // module will from the vault (task 3.1), with no Obsidian.
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { chapterNumber, chapterTitle, compareChapters } from "../../src/core/book";
 import { chapterHeadings, type ExportPart, type ExportSource } from "../../src/core/export-pipeline";
 import { segment } from "../../src/core/markdown";
 import type { Preset } from "../../src/core/export-pipeline";
@@ -20,14 +22,23 @@ export function contoSource(count = 612): ExportSource {
   };
 }
 
+/**
+ * The compiled chapters of a fixture book directory, in the real book order
+ * (compareChapters over the files on disk); `compile: false` chapters are left out.
+ */
+export function fixtureChapters(chaptersDir: string): { file: string; number: number | null; title: string }[] {
+  return readdirSync(chaptersDir)
+    .filter((f) => f.endsWith(".md"))
+    .map((f) => f.slice(0, -3))
+    .sort(compareChapters)
+    .filter((b) => !/^compile:\s*false\s*$/m.test(readFileSync(`${chaptersDir}/${b}.md`, "utf8")))
+    .map((b) => ({ file: `${b}.md`, number: chapterNumber(b), title: chapterTitle(b) }));
+}
+
 export function bookSource(preset: Preset, count = 1234): ExportSource {
   const dir = "book/A Casa/";
   // `02 Rascunho` has compile: false, so it is not passed; numbers count what is left
-  const chapters = [
-    { file: "Prólogo.md", number: null, title: "Prólogo" },
-    { file: "01 A chegada.md", number: 1, title: "A chegada" },
-    { file: "03 A casa.md", number: 3, title: "A casa" },
-  ];
+  const chapters = fixtureChapters(fileURLToPath(new URL(dir + "Chapters", FX)));
   const heads = chapterHeadings(chapters, preset.chapterHeading);
   const parts: ExportPart[] = [
     { role: "dedication", heading: null, md: md(dir + "Dedicatória.md") },
