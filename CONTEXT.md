@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (0.7.0 at the time of writing). The author's
+Current version: see `manifest.json` (0.8.0 at the time of writing). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down
@@ -175,13 +175,15 @@ and what upkeep it asks of the writer.
   lens, POV and status in the outline, per-chapter targets (U 1.1, U 1.2, U 1.4, N 1, N 2).
   Improvements: IMPROVEMENTS 6 and chapter rows (IMPROVEMENTS 7). First version with the
   user guide in `docs/guide/` (English and pt-BR; The world, Features and settings, Writing).
-- **0.8 (next), submitting work**: Markdown and DOCX export (Shunn and pt-BR presets) for a
+- **0.8 (shipped), submitting work**: Markdown and DOCX export (Shunn and pt-BR presets) for a
   note and a book, submissions (N 7, SF 12). The companion-plugin guide (N 6) was dropped.
   Improvements: each module owns its settings section (IMPROVEMENTS 11, 20), the export
-  and submissions foundations (15–19), and measured performance work (14, 21–23).
-  Plan in `docs/PLAN-0.8.md`.
-- **0.9**: universe phase 2 (timeline, facts over time, continuity, canon), with "Unlinked
-  mentions" and "Names without an entry" (moved there from 0.7).
+  and submissions foundations (15–19), and measured performance work (10, 14, 21–23).
+  Plan and results in `docs/PLAN-0.8.md`.
+- **0.9 (next), a consistent world**: universe phase 2 (timeline, facts over time,
+  continuity, canon), with "Unlinked mentions" and "Names without an entry" (moved there
+  from 0.7). Improvement: IMPROVEMENTS 9, the fuller change (scope as a field on the
+  classifier result).
 - **0.10**: EPUB, book-wide publish check, "Read the book".
 - **1.0**: universe + manuscript export complete, setup with presets (Essentials,
   Writer, Everything), mobile pass, docs in both languages, community plugin submission.

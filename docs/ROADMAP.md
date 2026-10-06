@@ -39,42 +39,28 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 | 0.5.1 | Fix: lens marks stale after the word lists note changes · Add to crutch words, names or ignored words from the editor menu (SF 5; mockups waived by the author) |
 | 0.6.0 | Universe foundations: universe modes, entries, the universe panel (Entries, Threads, Works), migration (U 1.1) · Create entry from selection (U 1.3) · Open threads (U 1.5) · Insert from a template (SF 9) · Forms, with an essay form and form by folder · Improvement: the outline's beat writes through the note text port (candidate 3, finished) |
 | 0.7.0 | Characters across works: "Appears in" (U 1.2) · Names into spellcheck and the revision lens (U 1.4) · Keep a note out of the universe, `universe: false` (U 1.1) · POV and status in the outline (N 1) · Per-chapter targets (N 2) · Feature switches, the Features page (SF 10) · User guide in `docs/guide/` (English and pt-BR) · Minimum Obsidian 1.7.2 · Improvements: modules that load and unload at runtime (candidate 6), chapter rows (candidate 7) |
+| 0.8.0 | Submitting work: export, Markdown and DOCX in the Shunn and pt-BR presets, for a note and a book, with a preview, "Export again" and chapters without a number (N 7, stages 1–2) · Submissions, "Record a submission" and the pending count in the home block (SF 12) · Export and submissions feature switches (19 in all) · User guide "Publishing" (English and pt-BR) · Improvements: each module owns its settings section and feature metadata (11, 20), the export foundations (15–19), mentions on demand (14), time-budgeted index passes (21), name caches and lens (22), small redraws (23) and one name fold (10) |
 
-## Next: 0.8, submitting work
+## Next: 0.9, a consistent world
 
-A conto leaves the vault: export turns a note or a book into a manuscript an editor or a
-contest accepts, and submissions track where it went and what came back. Serves the
-"ready" and "published" stages. Upkeep: one property per submission the writer adds
-when they send a work out; export reads what the note already has.
+Phase 2 of the universe: the world over time, and checks that the story agrees with
+itself. Serves the "draft" and "revision" stages of a series or a shared world. Upkeep:
+a `when` property and dated sections the writer adds only where they want the checks;
+nothing is required.
 
 | Feature | Ref | Effort | Note |
 |---|---|---|---|
-| Export stages 1–2: Markdown manuscript and DOCX | N 7 | M–L | Shunn and pt-BR presets, for a single note and for a book. No network; the file is written into the vault. |
-| Submissions | SF 12 | S | Where a work was sent, when, and the answer; ships with export, since export is how a work gets sent. |
-| ~~Companion-plugin guide~~ | N 6 | S | **Dropped from 0.8 (2026-10-05)**, unscheduled: only if a need shows up. Was: A guide page ("Other plugins") and a settings note; re-check each plugin's maintenance and running next to StoryLine. |
-| User guide for 0.8 | Docs | S | "Publishing" (the publish check, export, submissions), in English and pt-BR. |
+| Story timeline: `when`, timeline view, reading order, shift dates, narrative mode | U 2.1 | M | |
+| Facts that change over time, "as of this story" | U 2.2 | M | |
+| Continuity checks | U 2.3 | M | Leans on scope outside the universe (candidate 9) |
+| Canon | U 2.4 | S | |
+| Unlinked mentions and names without an entry | U 2.5 | M | Moved from 0.7 |
+| User guide for 0.9 | Docs | S | "The world", the timeline and continuity, in English and pt-BR |
 
-**Improvements** (planned 2026-10-04 after an architecture and a measured performance
-review; details in [PLAN-0.8.md](PLAN-0.8.md)):
-
-- Each module owns its settings section, and feature metadata lives in one place
-  (IMPROVEMENTS 11, 20). Export and submissions bring settings and two feature ids.
-- The foundations export and submissions stand on:
-  - 15: the manuscript model, a note's prose as an editor receives it.
-  - 16: `classifyKey` and the `submission` field.
-  - 17: `notes.create`, with binary writes.
-  - 18: the book source.
-  - 19: readiness checks in core, with the unclosed `<!--` check.
-- Performance, all measured on a 3,020-note vault:
-  - Index passes yield on a time budget: the longest block goes from 125 ms to 14 ms
-    (21).
-  - The mentions index starts on demand. It is 85% of startup index work, about 20 s
-    on a phone (14).
-  - The mentions index no longer recomputes on every save while typing (21).
-  - Names matching is about 1.4× faster with caches that last across calls (22).
-  - Small redraw fixes (23).
-- If room: the lens memos (22) and one name fold (10).
-- Set aside after measuring: candidate 12, the shared read per flush.
+**Improvement:** candidate 9, the fuller change: scope as a field on the classifier result
+(`books.classify(x).scope`), with link resolution in the `VaultTree` port and `scopeFor`
+kept pure, so the continuity checks, the lens and the outline ask for scope without the
+universe module. Candidates 5 and 8 are the fallback if room is short.
 
 Open from 0.7, on desktop: gate G0d (the Reading-view "Appears in" section across
 re-renders) and the visual check against the canvas (PLAN-0.7.md, task 5.2). The phone
@@ -91,11 +77,10 @@ shipped as 0.4.0 and the lens as 0.5.0.
 
 | Version | Contents | Ref | Effort | Theme |
 |---|---|---|---|---|
-| 0.9 | Universe phase 2: timeline, facts over time, continuity checks, canon · Unlinked mentions and names without an entry (moved from 0.7) | U 2.1–2.5 | L | A consistent world |
 | 0.10 | Export stage 3: EPUB 3, validated by EPUBCheck in CI · Book-wide publish check and serial dashboard · "Read the book" view | N 7, N 4, N 8 | M + S + M | Books |
 | 1.0 | Stabilization: mobile pass, the user guide complete in English and pt-BR (see "Documentation"), migrations tested on the author's vault, community plugin submission · Set up a writing vault (creates the home note and a first writing layout, with presets: Essentials, Writer, Everything, built on the 0.7 feature switches) · Defaults in the writer's language: Portuguese status words, folders and word lists when Obsidian runs in Portuguese (SF 10) | SF 10 | M + S | Full release |
 
-Improvements: 0.8 is planned above (PLAN-0.8.md); later versions pick from IMPROVEMENTS.md when they're planned in detail.
+Improvements: 0.9 is planned above (candidate 9, the fuller change); later versions pick from IMPROVEMENTS.md when they're planned in detail.
 
 Notes:
 

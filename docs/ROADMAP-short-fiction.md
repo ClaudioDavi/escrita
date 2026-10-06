@@ -52,7 +52,7 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 0.5.0 | Revision lens, pt-BR and English rules, with dialogue share and readability (5) · stemmers | M–L | Shipped |
 | 0.6.0 | Insert from a template (9) | S | Shipped |
 | 0.7.0 | Feature switches (10, the Features page) | M | Shipped |
-| 0.8 | Submissions (12), with export (novel roadmap, 7) | S | Planned |
+| 0.8.0 | Submissions (12), with export (novel roadmap, 7) | S | Shipped |
 | 1.0 | Set up a writing vault and presets (10) | S | Planned |
 
 Sections keep their original numbers so references from the other roadmaps stay valid.
@@ -777,9 +777,9 @@ conto to revisão takes a stage snapshot, and existing status settings carry ove
 
 ---
 
-## 12. Submissions (v0.8)
+## 12. Submissions (v0.8, shipped in 0.8.0)
 
-**Built in 0.8 (not yet released).**
+**Shipped in 0.8.0.**
 
 **Why.** Sending a conto to contests and magazines, and tracking where it went and
 what came back, is a large part of short fiction. It ships with export (novel
