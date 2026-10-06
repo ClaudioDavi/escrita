@@ -43,7 +43,8 @@ export interface Collection {
  *   than a plain note.
  * - A list item, or a single text value, is a link: `[[A visita]]`, `[[A visita|alias]]`,
  *   `[[A visita#Parte]]`, or plain text "A visita" (an Obsidian text list). Blank items
- *   and items that aren't text are skipped without a word.
+ *   and items that aren't text are skipped without a word. A text with several
+ *   wikilinks ("[[A]], [[B]]" typed as one value) gives each, in order.
  * - Each link goes through `resolve`; a path already listed is dropped, a null joins
  *   `missing` (once per link text).
  */
@@ -67,12 +68,16 @@ export function collectionOf(
   const visit = (v: unknown): void => {
     if (Array.isArray(v)) { v.forEach(visit); return; }
     if (typeof v !== "string") return;
-    const link = linkText(v);
-    if (link === null) return;
-    const path = resolve(link);
-    if (path === null) {
-      if (!missing.includes(link)) missing.push(link);
-    } else if (!stories.includes(path)) stories.push(path);
+    // every wikilink in the text ("[[A]], [[B]]" typed as one value), else the text itself
+    const links = [...v.matchAll(/\[\[[^\]]*\]\]/g)].map((m) => m[0]);
+    for (const item of links.length ? links : [v]) {
+      const link = linkText(item);
+      if (link === null) continue;
+      const path = resolve(link);
+      if (path === null) {
+        if (!missing.includes(link)) missing.push(link);
+      } else if (!stories.includes(path)) stories.push(path);
+    }
   };
   visit(value);
   return { stories, missing };

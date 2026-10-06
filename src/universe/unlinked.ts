@@ -5,9 +5,20 @@
 //
 // A note that links an entry anywhere lists no unlinked mention of it: the writer links
 // the first one, and the rest are fine as plain text.
+//
+// An occurrence inside any link or embed in the text is never listed, even one the
+// mentions leave in (the text of a Markdown link to a web page): Link would write a link
+// inside a link and break it (rule 1).
 
 import { pickEntry } from "../core/names";
 import type { NoteMentions } from "./mentions";
+
+/** Wikilinks, embeds and Markdown links or images, as written. */
+const LINKS = /!?\[\[[^\]\n]*\]\]|!?\[[^\]\n]*\]\([^)\n]*\)/g;
+
+function linkSpans(text: string): { from: number; to: number }[] {
+  return [...text.matchAll(LINKS)].map((m) => ({ from: m.index!, to: m.index! + m[0].length }));
+}
 
 /** One place where an entry is named and not linked. */
 export interface UnlinkedMention {
@@ -41,11 +52,13 @@ export function unlinkedIn(
   const inScope = note.inScope ?? (() => true);
   const out: UnlinkedMention[] = [];
   const occ = [...mentions.occurrences].sort((x, y) => x.from - y.from);
+  const spans = occ.length ? linkSpans(note.text) : [];
   let line = 0;
   let at = 0;
   for (const o of occ) {
     const entry = pickEntry(o, inScope);
     if (entry === null || linkedEntries.has(entry)) continue;
+    if (spans.some((l) => o.from < l.to && o.to > l.from)) continue;
     for (let i = note.text.indexOf("\n", at); i !== -1 && i < o.from; i = note.text.indexOf("\n", at)) {
       line++;
       at = i + 1;

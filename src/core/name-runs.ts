@@ -17,6 +17,8 @@
 //   "Em Lisboa"), it is dropped and the rest of the run is the candidate; otherwise the
 //   whole run is skipped ("Depois Teodoro", "Rio Pequeno corria"). The rule errs toward
 //   silence.
+// - English "I" and its contractions never start a run, and a contraction never joins one
+//   ("I'm Maria" gives "Maria"): they are capitalized mid-sentence and would recur.
 // - Name titles stay in the run ("Padre Antônio"); a run that is only a title is the
 //   caller's to drop (NamesPort.isKnownName answers true for it).
 // `lang` null (the language off): no stop words and no joiners, so a run at a sentence
@@ -48,6 +50,10 @@ export const NAME_JOINERS: Record<StemLang, readonly string[]> = {
 
 const GAP = /^[ \t]+$/;
 const HEADING = /^#{1,6} /;
+/** English "I" and its contractions ("I'm", "I'll"): capitalized everywhere, never a name's first word. */
+const PRONOUN_I = /^I(?:['’]\p{Ll}+)?$/u;
+/** A contraction of "I" never joins a run either ("Maria I'm"); a bare "I" may end one ("Pedro I"). */
+const PRONOUN_I_CONTRACTED = /^I['’]\p{Ll}+$/u;
 
 function capitalized(w: string): boolean {
   const c = w[0];
@@ -75,14 +81,14 @@ export function nameRuns(
   const out: NameRun[] = [];
   let i = 0;
   while (i < toks.length) {
-    if (!capitalized(toks[i].text)) { i++; continue; }
+    if (!capitalized(toks[i].text) || PRONOUN_I.test(toks[i].text)) { i++; continue; }
     // extend the run: first..last are token indexes of capitalized words (joiners between)
     let last = i;
     for (;;) {
       const a = toks[last];
       const b = toks[last + 1];
       if (!b || !GAP.test(mask.slice(a.to, b.from))) break;
-      if (capitalized(b.text)) { last += 1; continue; }
+      if (capitalized(b.text) && !PRONOUN_I_CONTRACTED.test(b.text)) { last += 1; continue; }
       const c = toks[last + 2];
       if (c && joiners.includes(b.text) && capitalized(c.text) && GAP.test(mask.slice(b.to, c.from))) { last += 2; continue; }
       break;

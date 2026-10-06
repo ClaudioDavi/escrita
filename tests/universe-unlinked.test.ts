@@ -77,6 +77,13 @@ describe("unlinkedIn rules", () => {
     expect(unlinkedIn(m, new Set(), { text, inScope: () => false })).toEqual([]);
   });
 
+  it("never lists an occurrence inside a link or embed, such as a web link's text", () => {
+    const text = "Leia [Teo](https://x.org/t) e ![[Teo.png]], depois Teo.";
+    const a = text.indexOf("Teo"), b = text.indexOf("Teo", a + 3), c = text.lastIndexOf("Teo");
+    const m: NoteMentions = { occurrences: [occ(a, a + 3, "Teo", [entry]), occ(b, b + 3, "Teo", [entry]), occ(c, c + 3, "Teo", [entry])], links: [] };
+    expect(unlinkedIn(m, new Set(), { text }).map((u) => u.from)).toEqual([c]);
+  });
+
   it("counts lines from the start of the text, frontmatter included", () => {
     const text = "---\na: b\n---\n\nTeo\n\n\nTeo";
     expect(run(text).map((u) => u.line)).toEqual([4, 7]);

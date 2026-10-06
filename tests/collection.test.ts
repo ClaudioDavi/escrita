@@ -27,6 +27,7 @@ describe("collectionOf", () => {
   });
   it("reads a single text value and nested lists from unquoted links", () => {
     expect(collectionOf({ contents: "[[Mar]]" }, "contents", resolve)?.stories).toEqual(["Contos/Mar.md"]);
+    expect(collectionOf({ contents: "[[Mar]], [[A visita]] [[Nada]]" }, "contents", resolve)).toEqual({ stories: ["Contos/Mar.md", "Contos/A visita.md"], missing: ["Nada"] });
     expect(collectionOf({ contents: [["Mar"], ["A visita"]] }, "contents", resolve)?.stories).toEqual(["Contos/Mar.md", "Contos/A visita.md"]);
   });
   it("reports missing links once, in order, and skips blanks and non-text", () => {

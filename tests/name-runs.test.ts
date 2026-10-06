@@ -30,6 +30,10 @@ describe("nameRuns", () => {
   it("a run is never a lone one-letter word", () => {
     expect(runs("Ele disse que I não sabia.", "en")).toEqual([]);
   });
+  it("English I and its contractions never start a run", () => {
+    expect(runs("Yes, I'm here and I'll go, said I'd Maria.", "en")).toEqual(["Maria"]);
+    expect(runs("Then I'm Maria now. We saw Pedro I there.", "en")).toEqual(["Maria", "Pedro I"]);
+  });
   it("namesMask blanks headings and frontmatter, keeping offsets", () => {
     const text = "---\na: Zed\n---\n# Titulo Grande\n\nFala Zeca.\n";
     const m = namesMask(segment(text));
