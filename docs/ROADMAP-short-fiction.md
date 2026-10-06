@@ -643,6 +643,20 @@ without the writer choosing it. A preset is a starting point, not a mode: after 
 each switch is the writer's, and the page shows "Custom" when they differ from all
 three.
 
+**Defaults in the writer's language (v1.0).** Asked by the author on 2026-10-06. When
+Obsidian runs in Portuguese, every default Escrita fills in is Portuguese too, so a pt-BR
+writer doesn't translate the plugin before writing. That covers status words (`ideia`,
+`rascunho`, `revisão`, `pronto`, `publicado`), folder names (`Capítulos`, `Envios`,
+`Escrita/Exportações`), the chapters-without-a-number list (Prólogo, Prefácio, Nota do autor,
+Interlúdio, Epílogo), submission result values, and any later list with words in it.
+- **When:** the setup command (and the first run) picks the default set from Obsidian's
+  language, the way the lens's "Automatic" language already does.
+- **What it never does:** a value the writer already saved is never changed, and switching
+  Obsidian's language later doesn't rewrite settings. It only chooses the starting values.
+- **Rule 6** still holds: every value is a setting, and the code reads the stage, never the
+  word. What changes is that the defaults come as sets per language (English and pt-BR),
+  not English only.
+
 **Design first.** Mockups of the Features page before 0.7, and of the layout (desktop
 and phone) and the setup steps before 1.0, on the design canvas.
 

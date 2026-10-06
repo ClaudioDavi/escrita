@@ -511,6 +511,14 @@ Opus check). Lens full pass on a 10k-word chapter, on a quieter machine: 19–20
 - **Universe on, startup.** No mentions pass until "Appears in" is opened. Typing in a
   10k-word chapter must not recompute mentions.
 
+**Manual verification passed (2026-10-06).** The author installed the build in the vault and
+reported "it all looks alright". Found on the way and fixed:
+- An unnumbered "Prólogo" exported last. Now `00` chapters, and titles listed in
+  "Chapters without a number", get their title alone and aren't counted.
+- Submission notes start with an empty body, by design (SF 12). An optional submission
+  template was offered and not taken.
+- For 1.0 (SF 10): defaults in Portuguese when Obsidian runs in Portuguese.
+
 ## Release checklist (CONTEXT.md, "Working process")
 
 - **ROADMAP.md:** move 0.8 to "Shipped".

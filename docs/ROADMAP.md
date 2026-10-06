@@ -93,7 +93,7 @@ shipped as 0.4.0 and the lens as 0.5.0.
 |---|---|---|---|---|
 | 0.9 | Universe phase 2: timeline, facts over time, continuity checks, canon · Unlinked mentions and names without an entry (moved from 0.7) | U 2.1–2.5 | L | A consistent world |
 | 0.10 | Export stage 3: EPUB 3, validated by EPUBCheck in CI · Book-wide publish check and serial dashboard · "Read the book" view | N 7, N 4, N 8 | M + S + M | Books |
-| 1.0 | Stabilization: mobile pass, the user guide complete in English and pt-BR (see "Documentation"), migrations tested on the author's vault, community plugin submission · Set up a writing vault (creates the home note and a first writing layout, with presets: Essentials, Writer, Everything, built on the 0.7 feature switches) | SF 10 | M + S | Full release |
+| 1.0 | Stabilization: mobile pass, the user guide complete in English and pt-BR (see "Documentation"), migrations tested on the author's vault, community plugin submission · Set up a writing vault (creates the home note and a first writing layout, with presets: Essentials, Writer, Everything, built on the 0.7 feature switches) · Defaults in the writer's language: Portuguese status words, folders and word lists when Obsidian runs in Portuguese (SF 10) | SF 10 | M + S | Full release |
 
 Improvements: 0.8 is planned above (PLAN-0.8.md); later versions pick from IMPROVEMENTS.md when they're planned in detail.
 
