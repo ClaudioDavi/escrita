@@ -6,6 +6,7 @@
 // A note that links an entry anywhere lists no unlinked mention of it: the writer links
 // the first one, and the rest are fine as plain text.
 
+import { pickEntry } from "../core/names";
 import type { NoteMentions } from "./mentions";
 
 /** One place where an entry is named and not linked. */
@@ -37,6 +38,19 @@ export function unlinkedIn(
   linkedEntries: ReadonlySet<string>,
   note: { text: string; inScope?: (id: string) => boolean },
 ): UnlinkedMention[] {
-  void mentions; void linkedEntries; void note;
-  throw new Error("not implemented: 0.9 task 1.2");
+  const inScope = note.inScope ?? (() => true);
+  const out: UnlinkedMention[] = [];
+  const occ = [...mentions.occurrences].sort((x, y) => x.from - y.from);
+  let line = 0;
+  let at = 0;
+  for (const o of occ) {
+    const entry = pickEntry(o, inScope);
+    if (entry === null || linkedEntries.has(entry)) continue;
+    for (let i = note.text.indexOf("\n", at); i !== -1 && i < o.from; i = note.text.indexOf("\n", at)) {
+      line++;
+      at = i + 1;
+    }
+    out.push({ entry, from: o.from, to: o.to, line, text: note.text.slice(o.from, o.to) });
+  }
+  return out;
 }
