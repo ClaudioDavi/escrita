@@ -21,8 +21,11 @@
 // run as written (the panel groups the matches by foldName(text) and offers Create and
 // Dismiss per name).
 
+import { nameRuns } from "../core/name-runs";
+import { foldName } from "../core/names";
 import type { Sentence } from "../core/sentences";
 import type { Token } from "../core/tokens";
+import { stemLang } from "./lang";
 import type { Match, RuleOptions } from "./types";
 
 /** At least this many times in the note makes a run a name to flag, whatever the works say (Q3). */
@@ -40,7 +43,24 @@ export function newNames(
   mask: string,
   o: Pick<RuleOptions, "lang" | "lists" | "newName">,
 ): Match[] {
-  void toks; void sents; void mask;
-  if (!o.newName) return [];
-  return [];   // not implemented: 0.9 task 1.3
+  const nn = o.newName;
+  if (!nn) return [];
+  const runs = nameRuns(toks, sents, mask, o.lang ? stemLang(o.lang) : null);
+  const skip = new Set<string>();
+  for (const w of o.lists.names) skip.add(foldName(w));
+  for (const w of nn.notNames) skip.add(foldName(w));
+  const counts = new Map<string, number>();
+  for (const r of runs) counts.set(r.key, (counts.get(r.key) ?? 0) + 1);
+  const verdict = new Map<string, boolean>();
+  const out: Match[] = [];
+  for (const r of runs) {
+    let ok = verdict.get(r.key);
+    if (ok === undefined) {
+      ok = !skip.has(r.key) && !nn.query.known(r.text) &&
+        ((counts.get(r.key) ?? 0) >= NEW_NAME_IN_NOTE || nn.query.works(r.text) >= NEW_NAME_IN_WORKS);
+      verdict.set(r.key, ok);
+    }
+    if (ok) out.push({ rule: "newName", kind: "base", from: r.from, to: r.to, text: r.text });
+  }
+  return out;
 }

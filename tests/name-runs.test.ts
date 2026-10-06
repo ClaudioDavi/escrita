@@ -13,14 +13,14 @@ function runs(text: string, lang: "pt" | "en" | null = "pt"): string[] {
 describe("nameRuns", () => {
   it("joins capitalized words and pt joiners", () => {
     expect(runs("Ele viu Maria das Dores e João da Silva no Rio Pequeno.")).toEqual(["Maria das Dores", "João da Silva", "Rio Pequeno"]);
-    expect(runs("He met Maria das Dores.", "en")).toEqual(["Maria"]);
+    expect(runs("He met Maria das Dores.", "en")).toEqual(["Maria", "Dores"]);
   });
   it("keeps titles in the run, splits on punctuation", () => {
     expect(runs("Ela chamou Dona Zefa.")).toEqual(["Dona Zefa"]);
     expect(runs("Ela viu Sr. Almeida.")).toEqual(["Sr", "Almeida"]);
   });
   it("never joins across a line break", () => {
-    expect(runs("Ela viu Rio\nPequeno hoje.")).toEqual(["Rio", "Pequeno"]);
+    expect(runs("Ela viu Rio\nPequeno hoje.")).toEqual(["Rio"]);   // the line break starts a sentence, so "Pequeno" is skipped
   });
   it("sentence starts: drop a leading stop word, otherwise skip", () => {
     expect(runs("A Joana chegou. Depois Teodoro saiu. Em Lisboa chovia.")).toEqual(["Joana", "Lisboa"]);
