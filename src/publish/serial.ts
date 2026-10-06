@@ -15,7 +15,8 @@
 //   never a block.
 
 import type { ChapterRef } from "../core/book-source";
-import type { StageMapping } from "../core/stages";
+import { countedNumbers } from "../core/book";
+import { stageOf, type StageMapping } from "../core/stages";
 
 /** One chapter as the serial model reads it: the book source's ref plus two properties. */
 export interface SerialChapter extends ChapterRef {
@@ -46,6 +47,13 @@ export function serialState(
   stages: StageMapping,
   unnumbered: string | readonly string[] = [],
 ): SerialState {
-  void chapters; void stages; void unnumbered;
-  throw new Error("not implemented: 0.9 task 1.5");
+  const kept = chapters.filter((c) => c.include);
+  const counted = countedNumbers(kept, unnumbered);
+  const sequence = kept.filter((_, i) => counted[i] !== null);
+  const published = sequence.map((c) => stageOf(c.status, stages) === "published");
+  const next = sequence.find((_, i) => !published[i]) ?? null;
+  const lastIndex = published.lastIndexOf(true);
+  const last = lastIndex < 0 ? null : { chapter: sequence[lastIndex], date: sequence[lastIndex].date ?? null };
+  const gaps = sequence.filter((_, i) => i < lastIndex && !published[i]);
+  return { sequence, next, last, gaps };
 }
