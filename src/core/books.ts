@@ -1,8 +1,10 @@
 import { App, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 import type { EscritaSettings } from "../settings";
 import { includeChapter, type BookSource } from "./book-source";
+import type { Collection } from "./collection";
 import type { NoteService } from "./notes";
 import { chapterTitle, compareChapters, chapterNumber } from "./book";
+import { linkText } from "./scope";
 import { classify, listBooks, lookupPath, placementPath, type BookOf, type Placement, type VaultTree } from "./classify";
 
 /** A book: its note (Novels/A Casa.md), folder (Novels/A Casa), chapters folder (Novels/A Casa/Chapters) and title. */
@@ -34,6 +36,7 @@ export class BookService {
       folder: (p) => { const f = get(p); return f instanceof TFolder && !f.isRoot() ? f : null; },
       folders: () => this.app.vault.getAllLoadedFiles().filter((f): f is TFolder => f instanceof TFolder && !f.isRoot()),
       frontmatter: (f) => this.app.metadataCache.getFileCache(f)?.frontmatter as Record<string, unknown> | undefined,
+      resolve: (link, from) => this.app.metadataCache.getFirstLinkpathDest(linkText(link) ?? link, from)?.path ?? null,
     };
   }
 
@@ -112,4 +115,38 @@ export function bookSource(
     },
     frontmatter,
   };
+}
+
+/**
+ * The collection a note describes (core/collection.ts `collectionOf`), its links resolved
+ * as Obsidian resolves them from that note (`getFirstLinkpathDest`). A link to a file
+ * that isn't Markdown, or to the collection note itself, is missing. Null when the note
+ * has no `collectionProperty`. Export asks this about the active note (Q28); the
+ * collection source below reads the same answer, so the two never disagree. Task 1.7.
+ */
+export function collectionAt(
+  app: App,
+  note: TFile,
+  settings: () => Pick<EscritaSettings, "collectionProperty">,
+): Collection | null {
+  void app; void note; void settings;
+  throw new Error("not implemented: 0.9 task 1.7");
+}
+
+/**
+ * The collection's `BookSource` (PLAN-0.9 Q28): the handle is the collection note.
+ * `chapters` lists the resolved stories in the note's order (`collectionAt`, missing
+ * links left out), each with `number: null`, `include: true` (a story's own properties
+ * are ignored, `compile` too: Q26) and its basename as `title`, never `chapterTitle`'s
+ * (a conto's name is not a chapter name: "1984" keeps its digits). `read` and
+ * `frontmatter` behave as `bookSource`'s: text through `notes`, so an open editor's
+ * unsaved text is what gets exported. Task 1.7.
+ */
+export function collectionSource(
+  app: App,
+  notes: Pick<NoteService, "text" | "editorView">,
+  settings: () => Pick<EscritaSettings, "collectionProperty">,
+): BookSource<TFile> {
+  void app; void notes; void settings;
+  throw new Error("not implemented: 0.9 task 1.7");
 }

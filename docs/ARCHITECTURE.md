@@ -862,7 +862,7 @@ ExportSource  →  ExportDoc  →  ManuscriptWriter<M, P>  →  string | Uint8Ar
 
 ## Book source (`core/book-source.ts`, 0.8)
 
-`BookSource<B>` is the port through which export (and, in 0.10, "Read the book") reads a
+`BookSource<B>` is the port through which export (and, in 0.9, "Read the book") reads a
 book. `B` is the adapter's book handle, so the file stays free of Obsidian types.
 
 - `chapters(book)`: every `.md` file directly in the chapters folder, in `compareChapters`
@@ -886,7 +886,7 @@ factory, not a plugin service. The export module and the outline both call it
 
 `readinessOf(md, { placeholderMarker })` runs the marker checks that decide whether a note is
 ready to leave the desk. They moved out of `publish/checks.ts` so that export can warn the
-same way while publish is off, and the book-wide check of 0.10 gets the same answer. Pure.
+same way while publish is off, and the book-wide check of 0.9 gets the same answer. Pure.
 It reads the text it is given (the editor's, maybe unsaved), never a cache, from one
 segmentation. A check is `{ id, level, line?, items, vars }`, untranslated; the caller's
 strings make the text.

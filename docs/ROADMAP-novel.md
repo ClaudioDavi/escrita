@@ -25,11 +25,11 @@ mobile-safe manuscript tool with first-class Portuguese.
 | 1 | POV and status in the outline (shipped in 0.7.0) | Quick win | S |
 | 2 | Per-chapter targets (shipped in 0.7.0) | Quick win | S |
 | 3 | ~~Dialogue focus~~ (moved to short fiction, feature 7, v0.3) | — | — |
-| 4 | Book-wide publish check and serial dashboard (v0.10) | Quick win | S |
+| 4 | Book-wide publish check and serial dashboard (v0.9) | Quick win | S |
 | 5 | Longform importer (after 1.0) | Quick win | S–M |
 | 6 | Companion-plugin guide (unscheduled; dropped from 0.8) | Quick win | S |
-| 7 | Book compile: Markdown and DOCX (shipped in 0.8.0), EPUB (v0.10) | Big bet | L |
-| 8 | "Read the book" view (v0.10) | Big bet | M |
+| 7 | Book compile: Markdown and DOCX (shipped in 0.8.0), EPUB (v0.9) | Big bet | L |
+| 8 | "Read the book" view (v0.9) | Big bet | M |
 | 9 | ~~Codex-lite~~ (replaced by the universe's "appears in", shipped in 0.7.0) | — | — |
 | 10 | Book-wide snapshots and revision reports (after 1.0) | Big bet | M |
 
@@ -71,7 +71,7 @@ outline shows a bar (a later improvement closes that gap).
 Moved to [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md), feature 7, and scheduled
 for v0.3: it works on any note, so contos get it too.
 
-## 4. Book-wide publish check and serial dashboard (v0.10)
+## 4. Book-wide publish check and serial dashboard (v0.9)
 
 Extends feature 1 of the short-fiction roadmap to chapters, for writers who release a
 book one chapter at a time (a newsletter, a serial platform, a blog):
@@ -111,7 +111,7 @@ Escrita's status values and fill its "modified" events while typing. Suggest poi
 Escrita's status property elsewhere or keeping StoryLine's scenes out of the track
 folders, and check both together before 0.8 ships.
 
-## 7. Book compile (stages 1–2 in v0.8, shipped in 0.8.0; stage 3 in v0.10)
+## 7. Book compile (stages 1–2 in v0.8, shipped in 0.8.0; stage 3 in v0.9)
 
 The step Scrivener users miss most, and Longform's oldest open requests.
 
@@ -185,7 +185,7 @@ and adds Fountain, PDF and FDX writers. Keep the format writers behind one seam 
 they plug in without changing it. The PDF exception is only for scripts: Courier-only
 monospace layout needs no typography decisions, and the PDF is what gets submitted.
 
-## 8. "Read the book" view (v0.10)
+## 8. "Read the book" view (v0.9)
 
 A read-only view of all chapters in order, rendered with Obsidian's Markdown renderer,
 with chapter headings, scene breaks, and markers hidden; remembers the reading position;

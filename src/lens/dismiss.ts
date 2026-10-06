@@ -4,7 +4,7 @@
 
 import { wordRegex } from "../core/wordcount";
 import { normalizeWord } from "../core/stem";
-import { RULES, type Dismissal, type Match, type RuleId } from "./types";
+import { ALL_RULES, type Dismissal, type Match, type RuleId } from "./types";
 
 const DEFAULT_WORDS = 3;
 const DEFAULT_CAP = 500;
@@ -65,7 +65,7 @@ export function mergeDismissals(moved: Dismissal[], existing: Dismissal[]): Dism
 }
 
 function isRule(x: unknown): x is RuleId {
-  return typeof x === "string" && (RULES as readonly string[]).includes(x);
+  return typeof x === "string" && (ALL_RULES as readonly string[]).includes(x);
 }
 
 /** Saved data in, a safe shape out: wrong types and unknown rules are dropped. */

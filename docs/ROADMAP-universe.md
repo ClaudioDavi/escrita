@@ -7,7 +7,9 @@ folder (`Romances/<Book>/Personagens/`), so contos can't share them. This roadma
 makes the **universe** the container and every work a part of it.
 
 Versions are decided in [ROADMAP.md](ROADMAP.md): 1.1, 1.3 and 1.5 in v0.6; 1.2 and 1.4 in
-v0.7; phase 2 (with 2.5, moved from 1.2 and 1.3) in v0.9, which completes the universe for v1.0.
+v0.7; 2.5 (moved from 1.2 and 1.3) in v0.9. The rest of phase 2 (2.1–2.4: the timeline,
+dates, facts over time, continuity, canon) comes after screenwriting, after 1.0 (moved on
+2026-10-06).
 
 It is independent of [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md) and
 [ROADMAP-novel.md](ROADMAP-novel.md); where features overlap (character tracking in the
@@ -82,7 +84,7 @@ The author's vault uses **Universe** mode.
 | Phase | Contents | Effort |
 |---|---|---|
 | 1 | Universe container and entry types · "Appears in" across works · Create entry from selection · Names into spellcheck and revision lens · Open threads | M–L |
-| 2 | Story timeline · Facts that change over time · Continuity checks · Canon status | L |
+| 2 | Unlinked mentions and names without an entry (v0.9) · Story timeline · Facts that change over time · Continuity checks · Canon status (after screenwriting) | L |
 
 Phase 1 is useful as soon as contos start sharing characters, so it can run alongside
 the short-fiction roadmap.
@@ -295,7 +297,7 @@ Hooks planted in one story for future stories. They work in every mode.
 
 ---
 
-## Phase 2 (v0.9)
+## Phase 2 (2.5 in v0.9; 2.1–2.4 after screenwriting)
 
 ### 2.1 Story timeline
 
@@ -401,4 +403,4 @@ story-order reading pages or a public wiki on their own site, reading the vault'
 | Point of view property (0.7, outline) | `pov` | author's choice |
 | Chapter target property (0.7, outline) | `chapterTarget` | author's choice |
 | `universe: false` (0.7) | a property on a note, not a setting | as needed |
-| When / born / died / canon properties (0.9) | `when`, `born`, `died`, `canon` | same or Portuguese names |
+| When / born / died / canon properties (after screenwriting) | `when`, `born`, `died`, `canon` | same or Portuguese names |

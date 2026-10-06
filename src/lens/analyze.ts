@@ -13,13 +13,14 @@ import { LEXICON } from "./lexicon";
 import { measures, passExtras } from "./measures";
 import { echoes, nameVariants } from "./rules-stem";
 import { adverbs, crutches, gerunds, inferredNames, longSentences } from "./rules-words";
-import { LANG_RULES, RULES, type LensPass, type LensResult, type Match, type Measures, type ReadOptions, type RuleId, type RuleOptions } from "./types";
+import { newNames } from "./rules-names";
+import { ALL_RULES, LANG_RULES, OPT_IN_RULES, RULES, type LensPass, type LensResult, type Match, type Measures, type ReadOptions, type RuleId, type RuleOptions } from "./types";
 
 export interface AnalyzeOptions extends RuleOptions, ReadOptions {}
 
 const HEADING = /^#{1,6} /;
 const QUOTE = /^[ \t]*>/;
-const RULE_ORDER: Record<RuleId, number> = Object.fromEntries(RULES.map((r, i) => [r, i])) as Record<RuleId, number>;
+const RULE_ORDER: Record<RuleId, number> = Object.fromEntries(ALL_RULES.map((r, i) => [r, i])) as Record<RuleId, number>;
 
 /** Lines the lens never reads: headings, `$$` blocks and, with skipQuotes, `>` lines. */
 function blankedLines(md: Markdown, o: ReadOptions): { line: number; heading: boolean }[] {
@@ -80,9 +81,12 @@ export function analyze(md: Markdown, o: AnalyzeOptions, version = 0): LensResul
   if (on("crutch")) matches = matches.concat(crutches(toks, mask, o));
   if (on("name")) matches = matches.concat(nameVariants(toks, new Set<number>(), o));
   if (on("long")) matches = matches.concat(longSentences(toks, sents, o));
+  if (on("newName")) matches = matches.concat(newNames(toks, sents, mask, o));
   matches.sort((a, b) => a.from - b.from || RULE_ORDER[a.rule] - RULE_ORDER[b.rule] || a.to - b.to);
 
-  const counts = Object.fromEntries(RULES.map((r) => [r, 0])) as Record<RuleId, number>;
+  // an opt-in rule has a count only when it was on, so turning none on changes no output
+  const counted = [...RULES, ...OPT_IN_RULES.filter((r) => on(r))];
+  const counts = Object.fromEntries(counted.map((r) => [r, 0])) as Record<RuleId, number>;
   for (const m of matches) counts[m.rule]++;
   return { version, matches, counts, words: toks.length, measures: measures(md, pass, o), pass };
 }

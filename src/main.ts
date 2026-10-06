@@ -1,7 +1,7 @@
 import { Plugin, TFile, debounce, setTooltip } from "obsidian";
 import { DEFAULT_SETTINGS, EscritaSettingTab, normalizeSettings, type EscritaSettings } from "./settings";
 import type { EscritaData, PublishRecord } from "./data";
-import { cleanExportChoices } from "./data";
+import { cleanExportChoices, cleanReadPositions } from "./data";
 import { mergeDefaults } from "./core/merge";
 import { migrateSettings } from "./core/migrate";
 import { cleanLeftOff } from "./core/left-off";
@@ -231,6 +231,7 @@ export default class EscritaPlugin extends Plugin {
       threadSeen: cleanSeen(raw.threadSeen),
       povColors: cleanPovColors(raw.povColors),
       exportChoices: cleanExportChoices(raw.exportChoices),
+      readPosition: cleanReadPositions(raw.readPosition),
     };
   }
 

@@ -66,6 +66,11 @@ class FakeTree implements VaultTree<FakeFile, FakeDir> {
   folder(path: string): FakeDir | null { this.lookups++; return this.dirs.get(path) ?? null; }
   folders(): Iterable<FakeDir> { return this.dirs.values(); }
   frontmatter(file: FakeFile): Record<string, unknown> | undefined { return this.fm[file.path]; }
+  /** link resolution, simplified: the link as a path, with `.md` added when missing */
+  resolve(link: string): string | null {
+    const p = /\.md$/i.test(link) ? link : `${link}.md`;
+    return this.files.has(p) ? p : null;
+  }
 
   /** getAbstractFileByPath, for the oracle */
   get(path: string): FakeFile | FakeDir | null {
@@ -306,6 +311,7 @@ describe("classify: piece", () => {
     const counting: VaultTree<FakeFile, FakeDir> = {
       file: (p) => tree.file(p), folder: (p) => tree.folder(p), folders: () => tree.folders(),
       frontmatter: (f) => { reads++; return tree.frontmatter(f); },
+      resolve: (l) => tree.resolve(l),
     };
     classify(counting, BASE, "Novels/Livro");
     classify(counting, BASE, "Novels/Livro/board.canvas");
@@ -554,6 +560,7 @@ describe("invariants", () => {
     const broken: VaultTree<FakeFile, FakeDir> = {
       file: () => { throw new Error("x"); }, folder: () => { throw new Error("x"); },
       folders: () => { throw new Error("x"); }, frontmatter: () => { throw new Error("x"); },
+      resolve: () => { throw new Error("x"); },
     };
     expect(classify(broken, BASE, "a.md").kind).toBe("none");
     expect(listBooks(broken, BASE)).toEqual([]);
@@ -611,6 +618,7 @@ describe("adapter: lookupPath", () => {
       folder: (p) => { const f = get(p); return f && "children" in f && !f.root ? f : null; },
       folders: () => t.folders(),
       frontmatter: () => undefined,
+      resolve: () => null,
     };
     expect(classify(adapted, BASE, nbsp)).toMatchObject({ kind: "chapter", tracked: true, book: { title: "Livro" } });
     expect(classify(adapted, BASE, nfd)).toMatchObject({ kind: "note", tracked: true });

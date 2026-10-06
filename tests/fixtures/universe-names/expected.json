@@ -1,0 +1,168 @@
+{
+  "settings": {
+    "universeMode": "universe",
+    "universeNote": "Universo.md",
+    "defaultUniverseFolders": "Contos",
+    "typeProperty": "type",
+    "entryTypes": {
+      "character": "personagem",
+      "place": "lugar"
+    },
+    "language": "pt-BR",
+    "notNamesWithout": [],
+    "notNamesWith": [
+      "Deus"
+    ]
+  },
+  "unlinked": {
+    "Contos/A travessia.md": [
+      {
+        "entry": "Universo/Personagens/Beatriz Lemos.md",
+        "text": "Beatriz",
+        "line": 8
+      },
+      {
+        "entry": "Universo/Personagens/Beatriz Lemos.md",
+        "text": "Beatriz",
+        "line": 10
+      },
+      {
+        "entry": "Universo/Personagens/Beatriz Lemos.md",
+        "text": "Bia",
+        "line": 10
+      },
+      {
+        "entry": "Universo/Lugares/Porto Alto.md",
+        "text": "Portinho",
+        "line": 16
+      },
+      {
+        "entry": "Universo/Personagens/Teodoro Ramos.md",
+        "text": "Teo",
+        "line": 22
+      },
+      {
+        "entry": "Universo/Lugares/Porto Alto.md",
+        "text": "Porto Alto",
+        "line": 24
+      }
+    ],
+    "Contos/O retorno.md": [
+      {
+        "entry": "Universo/Lugares/Serra Azul.md",
+        "text": "Serra Azul",
+        "line": 6
+      },
+      {
+        "entry": "Universo/Lugares/Porto Alto.md",
+        "text": "Portinho",
+        "line": 10
+      }
+    ],
+    "Contos/A febre.md": [
+      {
+        "entry": "Universo/Lugares/Serra Azul.md",
+        "text": "Serra Azul",
+        "line": 28
+      }
+    ]
+  },
+  "names": {
+    "without": [
+      {
+        "text": "Almeida",
+        "works": 2
+      },
+      {
+        "text": "Deus",
+        "works": 2
+      },
+      {
+        "text": "Paulo",
+        "works": 2
+      },
+      {
+        "text": "Rio Pequeno",
+        "works": 2
+      },
+      {
+        "text": "Tavares",
+        "works": 1,
+        "countInNote": 5
+      }
+    ],
+    "with": [
+      {
+        "text": "Almeida",
+        "works": 2
+      },
+      {
+        "text": "Paulo",
+        "works": 2
+      },
+      {
+        "text": "Rio Pequeno",
+        "works": 2
+      },
+      {
+        "text": "Tavares",
+        "works": 1,
+        "countInNote": 5
+      }
+    ]
+  },
+  "notMarked": [
+    {
+      "text": "Lucena",
+      "works": 1,
+      "countInNote": 2,
+      "why": "twice in one conto only"
+    },
+    {
+      "text": "Zeferino",
+      "works": 1,
+      "countInNote": 1,
+      "why": "once in prose (O retorno); the heading in A febre is never read"
+    },
+    {
+      "text": "Chuva",
+      "why": "only at sentence starts, in all three contos, five times in one"
+    },
+    {
+      "text": "Vamos",
+      "why": "only after a travessão at the start of a line, in two contos"
+    },
+    {
+      "text": "Zacarias",
+      "why": "only in a comment, a code block and frontmatter"
+    },
+    {
+      "text": "Portinho",
+      "why": "an alias of Porto Alto"
+    },
+    {
+      "text": "Bia",
+      "why": "an alias of Beatriz Lemos"
+    },
+    {
+      "text": "Teo",
+      "why": "an alias of Teodoro Ramos"
+    },
+    {
+      "text": "Beatriz",
+      "why": "the first name of Beatriz Lemos"
+    },
+    {
+      "text": "Teodoro",
+      "why": "the first name of Teodoro Ramos"
+    },
+    {
+      "text": "Porto Alto",
+      "why": "an entry"
+    },
+    {
+      "text": "Serra Azul",
+      "why": "an entry"
+    }
+  ]
+}

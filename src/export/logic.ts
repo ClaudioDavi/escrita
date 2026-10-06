@@ -3,7 +3,7 @@
 // export's caption, and how a path-keyed choice follows a rename. index.ts and
 // modal.ts are thin around these.
 
-import type { ExportChoice, ExportSelection, LastExport } from "../data";
+import type { ExportChoice, ExportFormat, ExportSelection, LastExport } from "../data";
 import { chapterHeadings, type Author } from "../core/export-pipeline";
 import type { ChapterRef } from "../core/book-source";
 import { dropKeys, movedPath, renameKeys } from "../core/path-keys";
@@ -59,10 +59,11 @@ export function fileTitle(title: string): string {
   return s === "" ? "Export" : s;
 }
 
-/** `<title>.md`, or `<title> (<preset>).docx` (Q3). */
-export function exportFileName(title: string, format: "md" | "docx", preset: string): string {
+/** `<title>.md`, `<title>.epub` (0.9, PLAN-0.9 Q5), or `<title> (<preset>).docx` (Q3). */
+export function exportFileName(title: string, format: ExportFormat, preset: string): string {
   const base = fileTitle(title);
-  return format === "md" ? `${base}.md` : `${base} (${presetLabel(preset)}).docx`;
+  if (format === "md" || format === "epub") return `${base}.${format}`;
+  return `${base} (${presetLabel(preset)}).docx`;
 }
 
 /** "2026-10-05 14h32", local time (the keep-both name, G1). */
@@ -71,10 +72,11 @@ export function stamp(d: Date): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}h${p(d.getMinutes())}`;
 }
 
-/** The keep-both name: `<title> (<preset>) YYYY-MM-DD HHhMM.docx`, or `<title> YYYY-MM-DD HHhMM.md`. */
-export function keepBothName(title: string, format: "md" | "docx", preset: string, at: Date): string {
+/** The keep-both name: `<title> (<preset>) YYYY-MM-DD HHhMM.docx`, or `<title> YYYY-MM-DD HHhMM.md` (and `.epub`). */
+export function keepBothName(title: string, format: ExportFormat, preset: string, at: Date): string {
   const base = fileTitle(title);
-  return format === "md" ? `${base} ${stamp(at)}.md` : `${base} (${presetLabel(preset)}) ${stamp(at)}.docx`;
+  if (format === "md" || format === "epub") return `${base} ${stamp(at)}.${format}`;
+  return `${base} (${presetLabel(preset)}) ${stamp(at)}.docx`;
 }
 
 /** folder + name, without a doubled or leading slash; an empty folder is the vault root. */

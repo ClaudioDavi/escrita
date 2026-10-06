@@ -76,12 +76,13 @@ interface lives. Test through the interface.
 
 ### 9. Scope as one live answer
 
-**Strength:** medium–strong · **Pairs with:** U 2 (continuity needs scope outside the
-universe) · **Target:** 0.9
+**Strength:** medium · **Pairs with:** U 2.5, and later U 2.3 (continuity needs scope
+outside the universe; moved after screenwriting) · **Target:** 0.9
 
 - **Problem.** Scope lives only in the universe: `universe/index.ts:263-266` calls
-  `scopeFor` in `universe/scope.ts`. Nothing outside the universe asks for it yet;
-  0.9's continuity checks will.
+  `scopeFor` in `universe/scope.ts`. Nothing outside the universe asks for it yet; the
+  outline keeps its own copy of `linkText`, and the continuity checks (after
+  screenwriting) will need scope.
 - **Change.** `books.classify(x).scope`, with link resolution in the `VaultTree` port and
   `scopeFor` kept pure, so the lens, editor and outline can ask for scope without the
   universe module.

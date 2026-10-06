@@ -18,6 +18,7 @@ function tree(paths: string[], fm: Record<string, Record<string, unknown>> = {})
     folder: (p) => dirs.get(p) ?? null,
     folders: () => dirs.values(),
     frontmatter: (f) => fm[f.path],
+    resolve: () => null,
   };
 }
 

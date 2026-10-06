@@ -814,6 +814,37 @@ renaming the conto updates the link, and the notes read well with Escrita turned
 
 ---
 
+## 13. Collections (v0.9)
+
+**Why.** A writer of contos releases them together: a collection for a contest, a
+self-published ebook, a chapbook. Exporting them one by one and stitching them by hand
+is the kind of chore Escrita should remove. Asked by the author on 2026-10-06.
+
+**What it does.**
+
+- **A collection is a note** with a `contents` property (name in settings): a list of
+  links to contos, in reading order. It carries the same front-matter properties as a
+  book note: title, `author`, `dedication`, `epigraph`, `cover`. The writer reorders the
+  stories by editing the list. Nothing else to keep in sync (rule 3): renames update the
+  links through Obsidian.
+- **Making one.** Select several contos in the file explorer, right-click, "Create a
+  collection…": it asks for a title and writes the note with the links in the explorer's
+  order. A collection can also be written by hand.
+- **Exporting one.** The Export modal on a collection note exports it like a book, in
+  DOCX, EPUB (and Markdown, for free): the stories are the chapters (all, a range or
+  picked), each under its own title alone (no "Capítulo N"), each on a new page, with
+  its scene breaks. The EPUB's table of contents lists the stories. Readiness checks run
+  over every story; a link to nothing is a warning, and that story is skipped.
+- **Not a book.** A collection has no chapters folder, no chapter numbers and no outline.
+  It is a work only by the usual rule (a tracked note with a status). The stories stay
+  their own works, counted and staged as before.
+
+**Done when** selecting three contos makes a collection note, and exporting it to DOCX
+and EPUB gives one manuscript with the three stories in the note's order, each under its
+title, with the collection's title page.
+
+---
+
 ## Settings summary (new)
 
 | Section | Setting | Default | Author's vault |

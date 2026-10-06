@@ -347,6 +347,8 @@ export class ExportModule extends FeatureModule {
     const path = this.pathFor(title, state);
     let data: string | Uint8Array;
     try {
+      // EPUB is a format from 0.9 on; the modal offers it from task 2.4, which writes it here
+      if (state.format === "epub") throw new Error("not implemented: 0.9 task 2.4");
       data = writer.write(built.doc, preset);
     } catch (e) {
       console.error("Escrita: couldn't format the export", e);

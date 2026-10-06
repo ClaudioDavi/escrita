@@ -41,26 +41,29 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 | 0.7.0 | Characters across works: "Appears in" (U 1.2) · Names into spellcheck and the revision lens (U 1.4) · Keep a note out of the universe, `universe: false` (U 1.1) · POV and status in the outline (N 1) · Per-chapter targets (N 2) · Feature switches, the Features page (SF 10) · User guide in `docs/guide/` (English and pt-BR) · Minimum Obsidian 1.7.2 · Improvements: modules that load and unload at runtime (candidate 6), chapter rows (candidate 7) |
 | 0.8.0 | Submitting work: export, Markdown and DOCX in the Shunn and pt-BR presets, for a note and a book, with a preview, "Export again" and chapters without a number (N 7, stages 1–2) · Submissions, "Record a submission" and the pending count in the home block (SF 12) · Export and submissions feature switches (19 in all) · User guide "Publishing" (English and pt-BR) · Improvements: each module owns its settings section and feature metadata (11, 20), the export foundations (15–19), mentions on demand (14), time-budgeted index passes (21), name caches and lens (22), small redraws (23) and one name fold (10) |
 
-## Next: 0.9, a consistent world
+## Next: 0.9, the book and its world
 
-Phase 2 of the universe: the world over time, and checks that the story agrees with
-itself. Serves the "draft" and "revision" stages of a series or a shared world. Upkeep:
-a `when` property and dated sections the writer adds only where they want the checks;
-nothing is required.
+The book features planned for 0.10 (EPUB, the book-wide publish check, "Read the book"),
+collections of contos, and the universe's U 2.5, merged into one release on 2026-10-06. Plan:
+[PLAN-0.9.md](PLAN-0.9.md). Serves the "revision", "ready" and "published" stages. Upkeep:
+none required; a `cover` property and dismissing flagged names are optional.
 
 | Feature | Ref | Effort | Note |
 |---|---|---|---|
-| Story timeline: `when`, timeline view, reading order, shift dates, narrative mode | U 2.1 | M | |
-| Facts that change over time, "as of this story" | U 2.2 | M | |
-| Continuity checks | U 2.3 | M | Leans on scope outside the universe (candidate 9) |
-| Canon | U 2.4 | S | |
-| Unlinked mentions and names without an entry | U 2.5 | M | Moved from 0.7 |
-| User guide for 0.9 | Docs | S | "The world", the timeline and continuity, in English and pt-BR |
+| Unlinked mentions, with a Link button per mention | U 2.5 | S | Moved from 0.7 |
+| Names without an entry: a revision lens rule, off until the writer turns it on | U 2.5 | M | Moved from 0.7 |
+| Export stage 3: EPUB 3, validated by EPUBCheck in CI | N 7 | M | From 0.10 |
+| Book-wide publish check: "Publish next chapter", the next chapter in the outline header, gaps | N 4 | S | From 0.10 |
+| "Read the book" view | N 8 | M | From 0.10 |
+| Collections: several contos exported together as one DOCX or EPUB | SF 13 | M | Asked by the author on 2026-10-06 |
+| User guide for 0.9 | Docs | S | "The world", "Publishing", "Writing", in English and pt-BR |
 
 **Improvement:** candidate 9, the fuller change: scope as a field on the classifier result
 (`books.classify(x).scope`), with link resolution in the `VaultTree` port and `scopeFor`
-kept pure, so the continuity checks, the lens and the outline ask for scope without the
-universe module. Candidates 5 and 8 are the fallback if room is short.
+kept pure, so modules outside the universe (the outline, the lens) ask for scope without it.
+
+The timeline, dates, facts over time, continuity checks and canon (U 2.1–2.4) were
+planned for 0.9 and moved after screenwriting on 2026-10-06: bloat at this stage.
 
 Open from 0.7, on desktop: gate G0d (the Reading-view "Appears in" section across
 re-renders) and the visual check against the canvas (PLAN-0.7.md, task 5.2). The phone
@@ -72,12 +75,12 @@ assumed from the documented API (2026-10-05).
 1.0 is the full release: **the shared universe and manuscript export**. The versions
 before it build toward those two, contos first (the author's next months are short
 fiction), then the universe, then book features. Planning the writing desk as 0.4
-(2026-10-01) moved every later version up by one, so books land in 0.10. The desk
+(2026-10-01) moved every later version up by one; on 2026-10-06 the book features of
+0.10 merged into 0.9, so 1.0 follows 0.9. The desk
 shipped as 0.4.0 and the lens as 0.5.0.
 
 | Version | Contents | Ref | Effort | Theme |
 |---|---|---|---|---|
-| 0.10 | Export stage 3: EPUB 3, validated by EPUBCheck in CI · Book-wide publish check and serial dashboard · "Read the book" view | N 7, N 4, N 8 | M + S + M | Books |
 | 1.0 | Stabilization: mobile pass, the user guide complete in English and pt-BR (see "Documentation"), migrations tested on the author's vault, community plugin submission · Set up a writing vault (creates the home note and a first writing layout, with presets: Essentials, Writer, Everything, built on the 0.7 feature switches) · Defaults in the writer's language: Portuguese status words, folders and word lists when Obsidian runs in Portuguese (SF 10) | SF 10 | M + S | Full release |
 
 Improvements: 0.9 is planned above (candidate 9, the fuller change); later versions pick from IMPROVEMENTS.md when they're planned in detail.
@@ -92,7 +95,7 @@ Notes:
   reuse them. The vault index (0.4) is also ready for "appears in".
 - Export ships DOCX first (0.8): a conto in standard manuscript format is what contests
   and magazines ask for. Submissions (SF 12) ship with it, since sending a work out is
-  what export is for. EPUB matters mostly for a finished book (0.10).
+  what export is for. EPUB matters mostly for a finished book (0.9).
 - Per-chapter targets (N 2) is small: chapters already take `target` / `limit` since 0.2;
   what's left is the bar in the outline and a book default.
 - The universe's "appears in" (U 1.2) replaces Codex-lite (N 9), which is dropped.
@@ -120,7 +123,7 @@ if any, sit in `docs/guide/images/`. The universe guide moved there in 0.7, as
 | Writing | Outline and ghost beats, goals and sprints, placeholders, Enter flow and typography, dialogue focus, moving blocks, templates, explorer counts |
 | Revision | The revision lens and its word lists, snapshots, darlings |
 | Tracking | Stages, the stage snapshot, the home block and where you left off |
-| Publishing | The publish check; export and submissions (0.8); EPUB (0.10) |
+| Publishing | The publish check; export and submissions (0.8); EPUB (0.9) |
 | The world | The universe, entries, "appears in", open threads (today's universe guide) |
 | Features and settings | The Features page, what each switch turns off, presets (1.0) |
 | Other plugins | The companion-plugin guide (N 6), unscheduled since 2026-10-05: written only if a need shows up |
@@ -156,3 +159,4 @@ and the README links to every guide.
 | Screenwriting, phase 1: screenplay notes, Fountain parser, Fountain and PDF export | SP 1, SP 6 | M + L | Export first: a script can be drafted in plain Fountain, but can't be handed in without a correct PDF. Builds on the 0.8 export pipeline and the `form` property (0.6) |
 | Screenwriting, phase 2: screenplay layout and Tab/Enter in the editor, pages as a unit, scene outline | SP 2–4 | M + S + S | |
 | Screenwriting, phase 3: script report, FDX export, Fountain import, feature-length scripts as a book | SP 5–7 | M + M + M | |
+| Universe phase 2: story timeline, `when` and eras, narrative mode, shift dates, facts over time, continuity checks, canon | U 2.1–2.4 | L | After screenwriting. Planned for 0.9 and moved on 2026-10-06 as bloat at this stage; the draft design is in `research_notes/0.9-dates-draft/` (local) |

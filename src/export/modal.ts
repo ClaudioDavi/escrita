@@ -3,7 +3,7 @@
 // preview (the document the file will have, drawn by the preview writer). Everything it
 // needs from Obsidian comes through `ExportHost`, which index.ts implements.
 import { App, Modal } from "obsidian";
-import type { ExportSelection, LastExport } from "../data";
+import type { ExportFormat, ExportSelection, LastExport } from "../data";
 import type { ChapterRef } from "../core/book-source";
 import { aboutCount } from "../core/export-pipeline";
 import type { PieceUnit } from "../core/measure";
@@ -17,7 +17,8 @@ export interface ModalState {
   /** the whole book (when there is one), or just the active note */
   whole: boolean;
   selection: ExportSelection;
-  format: "md" | "docx";
+  /** "epub" is a format (0.9) the modal doesn't offer until task 2.4 */
+  format: ExportFormat;
   preset: string;
 }
 

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { segment } from "../src/core/markdown";
 import { analyze, measuresFor, readMask, visible, type AnalyzeOptions } from "../src/lens/analyze";
 import { parseLists } from "../src/lens/lists";
-import { RULES, type Lists, type LensLang, type RuleId } from "../src/lens/types";
+import { ALL_RULES, RULES, type Lists, type LensLang, type RuleId } from "../src/lens/types";
 
 const fixture = (n: string) => readFileSync(new URL(`./fixtures/lens/${n}`, import.meta.url), "utf8");
 const conto = fixture("conto.pt.md");
@@ -100,7 +100,7 @@ describe("lens analyze: rules switches", () => {
     for (let i = 1; i < r.matches.length; i++) {
       const a = r.matches[i - 1];
       const b = r.matches[i];
-      expect(a.from < b.from || (a.from === b.from && RULES.indexOf(a.rule) <= RULES.indexOf(b.rule))).toBe(true);
+      expect(a.from < b.from || (a.from === b.from && ALL_RULES.indexOf(a.rule) <= ALL_RULES.indexOf(b.rule))).toBe(true);
     }
     expect(RULES.reduce((n, id) => n + r.counts[id], 0)).toBe(r.matches.length);
   });

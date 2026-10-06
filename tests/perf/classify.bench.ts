@@ -19,7 +19,7 @@ for (let b = 0; b < 20; b++) {
   addF(`Livros/L${b}.md`, { status: "revisão" });
   for (let c = 0; c < 20; c++) addF(`Livros/L${b}/Chapters/${c} Cap.md`, {});
 }
-const tree: VaultTree<N, N> = { file: (p) => files.get(p) ?? null, folder: (p) => folders.get(p) ?? null, folders: () => [...folders.values()], frontmatter: (f) => fm.get(f.path) };
+const tree: VaultTree<N, N> = { file: (p) => files.get(p) ?? null, folder: (p) => folders.get(p) ?? null, folders: () => [...folders.values()], frontmatter: (f) => fm.get(f.path), resolve: () => null };
 const s = { ...DEFAULT_SETTINGS, trackFolders: "Notas, Livros", excludeFolders: "Notas/Sub3" };
 const paths = [...files.keys()];
 const spec = worksSpec<{ path: string; extension: string }>({ settings: () => s, placement: (f) => classify(tree, s, f.path) as never, frontmatter: (f) => fm.get(f.path), bookGoal: () => undefined });

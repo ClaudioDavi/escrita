@@ -31,9 +31,17 @@ export type ExportSelection =
   | { mode: "range"; from: number; to: number }
   | { mode: "pick"; paths: string[] };
 
+/** The export formats (0.8: Markdown and DOCX; 0.9 adds EPUB, PLAN-0.9 Q5). */
+export type ExportFormat = "md" | "docx" | "epub";
+export const EXPORT_FORMATS: readonly ExportFormat[] = ["md", "docx", "epub"];
+
+function isFormat(v: unknown): v is ExportFormat {
+  return typeof v === "string" && (EXPORT_FORMATS as readonly string[]).includes(v);
+}
+
 /** The last export of a work (Q17): enough to repeat it, and to say what it was. */
 export interface LastExport {
-  format: "md" | "docx";
+  format: ExportFormat;
   preset: string;
   whole: boolean;
   chapters: ExportSelection;
@@ -52,7 +60,7 @@ export interface LastExport {
 
 /** The export modal's last choices for one work (PLAN-0.8 Q4, Q17); the export module reads and cleans them. */
 export interface ExportChoice {
-  format: "md" | "docx";
+  format: ExportFormat;
   /** preset id, e.g. "shunn" or "ptbr" */
   preset: string;
   /** export the whole book, or only this note */
@@ -77,7 +85,7 @@ function cleanSelection(raw: unknown): ExportSelection | undefined {
 function cleanLast(raw: unknown): LastExport | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const c = raw as Partial<LastExport>;
-  if ((c.format !== "md" && c.format !== "docx") || typeof c.preset !== "string" || typeof c.whole !== "boolean") return undefined;
+  if (!isFormat(c.format) || typeof c.preset !== "string" || typeof c.whole !== "boolean") return undefined;
   if (typeof c.at !== "string" || typeof c.path !== "string" || c.path === "") return undefined;
   const out: LastExport = {
     format: c.format, preset: c.preset, whole: c.whole,
@@ -97,13 +105,36 @@ export function cleanExportChoices(raw: unknown): Record<string, ExportChoice> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
   for (const [path, v] of Object.entries(raw as Record<string, unknown>)) {
     const c = v as Partial<ExportChoice> | null;
-    if (!c || (c.format !== "md" && c.format !== "docx") || typeof c.preset !== "string" || typeof c.whole !== "boolean") continue;
+    if (!c || !isFormat(c.format) || typeof c.preset !== "string" || typeof c.whole !== "boolean") continue;
     const choice: ExportChoice = { format: c.format, preset: c.preset, whole: c.whole };
     const chapters = cleanSelection(c.chapters);
     if (chapters) choice.chapters = chapters;
     const last = cleanLast(c.last);
     if (last) choice.last = last;
     out[path] = choice;
+  }
+  return out;
+}
+
+/**
+ * Where the writer stopped in "Read the book" (0.9, N 8; PLAN-0.9 Q14), per book.
+ * `chapter` is the chapter's vault path, `line` the 0-based source line of the block
+ * at the top of the view (ReaderBlock.line).
+ */
+export interface ReadPosition {
+  chapter: string;
+  line: number;
+}
+
+/** Drop entries that aren't a ReadPosition; a line is a whole number, at least 0. */
+export function cleanReadPositions(raw: unknown): Record<string, ReadPosition> {
+  const out: Record<string, ReadPosition> = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  for (const [book, v] of Object.entries(raw as Record<string, unknown>)) {
+    const c = v as Partial<ReadPosition> | null;
+    if (!c || typeof c !== "object" || typeof c.chapter !== "string" || c.chapter === "") continue;
+    if (typeof c.line !== "number" || !Number.isFinite(c.line)) continue;
+    out[book] = { chapter: c.chapter, line: Math.max(0, Math.floor(c.line)) };
   }
   return out;
 }
@@ -132,4 +163,7 @@ export interface EscritaData {
   /** the export modal's last choices, keyed by work path (book note or note); absent before 0.8 (loaded as {}).
    *  Path-keyed: the export module keeps it current through a data follower (task 3.1) */
   exportChoices: Record<string, ExportChoice>;
+  /** "Read the book" positions, keyed by book note path; absent before 0.9 (loaded as {}).
+   *  Path-keyed, book and chapter both: kept current through plugin.index.follow (task 2.6) */
+  readPosition: Record<string, ReadPosition>;
 }

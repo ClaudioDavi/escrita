@@ -12,6 +12,29 @@ import { segment } from "../core/markdown";
 import { countIn, sumCounts, type Counts, type PieceUnit } from "../core/measure";
 import { readinessOf, type ReadinessId } from "../core/readiness";
 
+/**
+ * What an export reads (0.9, PLAN-0.9 Q28), the source choice task 2.7 hands the modal
+ * (task 2.4):
+ * - `note`: one note, read whole.
+ * - `book`: a book's chapters through `bookSource`, from a chapter or the book note.
+ * - `collection`: a collection note's stories through `collectionSource`, each an
+ *   unnumbered chapter headed by its title alone (Q26). Its title is the note's
+ *   basename; author, dedication, epigraph and cover come from the note's own
+ *   properties, as a book note's. No "This chapter": the note is the collection.
+ */
+export type SourceKind = "note" | "book" | "collection";
+
+/**
+ * Which source an export takes. A book wins: a chapter or book note with a `contents`
+ * list is still read as its book (books are folders, collections are lists, and a
+ * book's shape is the stronger fact). Otherwise a note that `collectionAt` answers for
+ * is a collection, even an empty one, and anything else is a note.
+ */
+export function sourceKindOf(place: { kind: string; book: unknown }, collection: boolean): SourceKind {
+  if (place.book && (place.kind === "chapter" || place.kind === "book-note")) return "book";
+  return collection ? "collection" : "note";
+}
+
 export interface PartPlan {
   role: ExportPart["role"];
   path: string;
@@ -31,6 +54,14 @@ export interface ExportPlan {
   placeholderMarker: string;
   /** a single note, whose text must not be empty (a book's empty chapter is fine) */
   single: boolean;
+  /**
+   * A collection's links that resolve to nothing (`Collection.missing`), skipped (Q26).
+   * Absent for a note and a book. Task 2.7 turns them into a warning: id
+   * `missingStories` (added to `WarningId` then, not now, so the modal's `warningText`
+   * switch stays exhaustive), level `warning`, the link texts as `names`, no links. The
+   * modal's case and its strings belong to task 2.4; 2.7 hands them over.
+   */
+  missing?: string[];
 }
 
 export interface ExportPorts {

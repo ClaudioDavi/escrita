@@ -119,6 +119,7 @@ function wsetup(files: Record<string, string>, over: Partial<ClassifySettings> =
       return [...set].map((path) => ({ path }));
     },
     frontmatter: fm,
+    resolve: () => null,
   };
   const spec = worksSpec<MemFile>({
     settings: () => settings,

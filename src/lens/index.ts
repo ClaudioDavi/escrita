@@ -21,7 +21,8 @@ import { LENS_SETTLE_MOBILE_MS, LENS_SETTLE_MS, LensSession } from "./session";
 import { shownResult } from "./shown";
 import { LensUi } from "./ui";
 import { LENS_VIEW } from "./view";
-import { RULES, type Dismissal, type Lists, type LensLang, type LensResult, type Match, type Measures, type RuleId } from "./types";
+import { type Dismissal, type Lists, type LensLang, type LensResult, type Match, type Measures, type RuleId } from "./types";
+import { enabledRules } from "./panel-model";
 import { lensOffNotice, lensSettingsSection } from "./settings-ui";
 
 /** What `Platform.isMobile` reads (the body class); index.ts has no runtime obsidian import, so tests can load it. */
@@ -153,7 +154,7 @@ export class LensModule extends FeatureModule {
   private passKey(): string {
     const s = this.plugin.settings;
     return JSON.stringify([
-      s.lensLanguage, s.lensRulesOff, s.lensEchoWindow, s.lensLongSentence,
+      s.lensLanguage, s.lensRulesOff, s.lensRulesOn, s.notNames, s.lensEchoWindow, s.lensLongSentence,
       s.lensSkipQuotes, s.quoteStyle, s.paragraphStyle, listsPath(s.lensListsNote), this.plugin.names.version(),
     ]);
   }
@@ -219,10 +220,10 @@ export class LensModule extends FeatureModule {
   private options(path: string): AnalyzeOptions {
     const s = this.plugin.settings;
     const lists = this.lists();
-    const off = new Set(s.lensRulesOff);
     return {
       lang: this.lensLanguage(),
-      rules: new Set<RuleId>(RULES.filter((r) => !off.has(r))),
+      // `newName` (opt-in) runs only with `newName` options; task 2.3 builds them from plugin.names
+      rules: enabledRules(s.lensRulesOff, s.lensRulesOn),
       echoWindow: s.lensEchoWindow,
       longSentence: s.lensLongSentence,
       lists: { ...lists, names: namesFor(lists.names, this.plugin.names.tableFor(path)) },

@@ -1,0 +1,395 @@
+{
+  "stageWords": {
+    "idea": "ideia",
+    "draft": "rascunho",
+    "revision": "revisão",
+    "ready": "pronto",
+    "published": "publicado"
+  },
+  "cases": [
+    {
+      "name": "none-published",
+      "note": "Nothing published: next is the first chapter, no last date.",
+      "chapters": [
+        {
+          "file": "01 A chegada",
+          "status": "rascunho",
+          "date": null,
+          "compile": true
+        },
+        {
+          "file": "02 O portão",
+          "status": "ideia",
+          "date": null,
+          "compile": true
+        },
+        {
+          "file": "03 A casa",
+          "status": "revisão",
+          "date": null,
+          "compile": true
+        }
+      ],
+      "expected": {
+        "sequence": [
+          "01 A chegada",
+          "02 O portão",
+          "03 A casa"
+        ],
+        "next": "01 A chegada",
+        "last": null,
+        "gaps": []
+      }
+    },
+    {
+      "name": "first-three-published",
+      "note": "1-3 published: next is 4, last is chapter 3's date.",
+      "chapters": [
+        {
+          "file": "01 A chegada",
+          "status": "publicado",
+          "date": "2026-08-01",
+          "compile": true
+        },
+        {
+          "file": "02 O portão",
+          "status": "publicado",
+          "date": "2026-08-08",
+          "compile": true
+        },
+        {
+          "file": "03 A casa",
+          "status": "publicado",
+          "date": "2026-08-15",
+          "compile": true
+        },
+        {
+          "file": "04 A escada",
+          "status": "pronto",
+          "date": null,
+          "compile": true
+        },
+        {
+          "file": "05 A volta",
+          "status": "rascunho",
+          "date": null,
+          "compile": true
+        }
+      ],
+      "expected": {
+        "sequence": [
+          "01 A chegada",
+          "02 O portão",
+          "03 A casa",
+          "04 A escada",
+          "05 A volta"
+        ],
+        "next": "04 A escada",
+        "last": {
+          "chapter": "03 A casa",
+          "date": "2026-08-15"
+        },
+        "gaps": []
+      }
+    },
+    {
+      "name": "gap",
+      "note": "1-3 and 5 published: 4 is a gap and is also the next one; last is chapter 5's date.",
+      "chapters": [
+        {
+          "file": "01 A chegada",
+          "status": "publicado",
+          "date": "2026-08-01",
+          "compile": true
+        },
+        {
+          "file": "02 O portão",
+          "status": "publicado",
+          "date": "2026-08-08",
+          "compile": true
+        },
+        {
+          "file": "03 A casa",
+          "status": "publicado",
+          "date": "2026-08-15",
+          "compile": true
+        },
+        {
+          "file": "04 A escada",
+          "status": "revisão",
+          "date": null,
+          "compile": true
+        },
+        {
+          "file": "05 A volta",
+          "status": "publicado",
+          "date": "2026-08-29",
+          "compile": true
+        }
+      ],
+      "expected": {
+        "sequence": [
+          "01 A chegada",
+          "02 O portão",
+          "03 A casa",
+          "04 A escada",
+          "05 A volta"
+        ],
+        "next": "04 A escada",
+        "last": {
+          "chapter": "05 A volta",
+          "date": "2026-08-29"
+        },
+        "gaps": [
+          "04 A escada"
+        ]
+      }
+    },
+    {
+      "name": "all-published",
+      "note": "Everything published: no next, no gaps.",
+      "chapters": [
+        {
+          "file": "01 A chegada",
+          "status": "publicado",
+          "date": "2026-08-01",
+          "compile": true
+        },
+        {
+          "file": "02 O portão",
+          "status": "publicado",
+          "date": "2026-08-08",
+          "compile": true
+        },
+        {
+          "file": "03 A casa",
+          "status": "publicado",
+          "date": "2026-08-15",
+          "compile": true
+        }
+      ],
+      "expected": {
+        "sequence": [
+          "01 A chegada",
+          "02 O portão",
+          "03 A casa"
+        ],
+        "next": null,
+        "last": {
+          "chapter": "03 A casa",
+          "date": "2026-08-15"
+        },
+        "gaps": []
+      }
+    },
+    {
+      "name": "compile-false-and-unnumbered",
+      "note": "Not in the sequence: 00 Prólogo (a 00 file is unnumbered, even published), Agradecimentos (no number; listed in unnumberedTitles) and 02 Rascunho (compile:false). An unpublished left-out chapter is neither next nor a gap.",
+      "unnumberedTitles": [
+        "Agradecimentos"
+      ],
+      "chapters": [
+        {
+          "file": "00 Prólogo",
+          "status": "publicado",
+          "date": "2026-07-20",
+          "compile": true
+        },
+        {
+          "file": "01 A chegada",
+          "status": "publicado",
+          "date": "2026-08-01",
+          "compile": true
+        },
+        {
+          "file": "02 Rascunho",
+          "status": "ideia",
+          "date": null,
+          "compile": false
+        },
+        {
+          "file": "03 A casa",
+          "status": "rascunho",
+          "date": null,
+          "compile": true
+        },
+        {
+          "file": "04 A escada",
+          "status": "publicado",
+          "date": "2026-08-22",
+          "compile": true
+        },
+        {
+          "file": "Agradecimentos",
+          "status": "rascunho",
+          "date": null,
+          "compile": true
+        }
+      ],
+      "expected": {
+        "sequence": [
+          "01 A chegada",
+          "03 A casa",
+          "04 A escada"
+        ],
+        "next": "03 A casa",
+        "last": {
+          "chapter": "04 A escada",
+          "date": "2026-08-22"
+        },
+        "gaps": [
+          "03 A casa"
+        ]
+      }
+    },
+    {
+      "name": "left-out-published",
+      "note": "A published chapter with compile:false is not in the sequence, so it is not the last published.",
+      "chapters": [
+        {
+          "file": "01 A chegada",
+          "status": "publicado",
+          "date": "2026-08-01",
+          "compile": true
+        },
+        {
+          "file": "02 O portão",
+          "status": "publicado",
+          "date": "2026-09-01",
+          "compile": false
+        },
+        {
+          "file": "03 A casa",
+          "status": "rascunho",
+          "date": null,
+          "compile": true
+        }
+      ],
+      "expected": {
+        "sequence": [
+          "01 A chegada",
+          "03 A casa"
+        ],
+        "next": "03 A casa",
+        "last": {
+          "chapter": "01 A chegada",
+          "date": "2026-08-01"
+        },
+        "gaps": []
+      }
+    },
+    {
+      "name": "future-date",
+      "note": "A future date is allowed (scheduling, N 4): the chapter counts as published and last is that date. The fixture's today is 2026-10-06; the model does not compare with today.",
+      "chapters": [
+        {
+          "file": "01 A chegada",
+          "status": "publicado",
+          "date": "2026-09-20",
+          "compile": true
+        },
+        {
+          "file": "02 O portão",
+          "status": "publicado",
+          "date": "2026-10-20",
+          "compile": true
+        },
+        {
+          "file": "03 A casa",
+          "status": "rascunho",
+          "date": null,
+          "compile": true
+        }
+      ],
+      "expected": {
+        "sequence": [
+          "01 A chegada",
+          "02 O portão",
+          "03 A casa"
+        ],
+        "next": "03 A casa",
+        "last": {
+          "chapter": "02 O portão",
+          "date": "2026-10-20"
+        },
+        "gaps": []
+      }
+    },
+    {
+      "name": "published-without-date",
+      "note": "Published with no date is still published (the status decides, Q10). last is the last published chapter of the sequence in order, with its own date: null here, and the header shows no date.",
+      "chapters": [
+        {
+          "file": "01 A chegada",
+          "status": "publicado",
+          "date": "2026-08-01",
+          "compile": true
+        },
+        {
+          "file": "02 O portão",
+          "status": "publicado",
+          "date": null,
+          "compile": true
+        },
+        {
+          "file": "03 A casa",
+          "status": "rascunho",
+          "date": null,
+          "compile": true
+        }
+      ],
+      "expected": {
+        "sequence": [
+          "01 A chegada",
+          "02 O portão",
+          "03 A casa"
+        ],
+        "next": "03 A casa",
+        "last": {
+          "chapter": "02 O portão",
+          "date": null
+        },
+        "gaps": []
+      }
+    },
+    {
+      "name": "unknown-status",
+      "note": "A status word that is not a known stage, or none, is not published.",
+      "chapters": [
+        {
+          "file": "01 A chegada",
+          "status": "publicado",
+          "date": "2026-08-01",
+          "compile": true
+        },
+        {
+          "file": "02 O portão",
+          "status": "enviado",
+          "date": "2026-08-08",
+          "compile": true
+        },
+        {
+          "file": "03 A casa",
+          "status": "publicado",
+          "date": "2026-08-15",
+          "compile": true
+        }
+      ],
+      "expected": {
+        "sequence": [
+          "01 A chegada",
+          "02 O portão",
+          "03 A casa"
+        ],
+        "next": "02 O portão",
+        "last": {
+          "chapter": "03 A casa",
+          "date": "2026-08-15"
+        },
+        "gaps": [
+          "02 O portão"
+        ]
+      }
+    }
+  ]
+}

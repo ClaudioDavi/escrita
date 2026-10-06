@@ -100,6 +100,12 @@ export interface EscritaSettings extends UniverseSettings {
   contactLines: string;
   /** chapter heading with {n} and {title}; empty = the preset's own (Q5) */
   chapterHeadingFormat: string;
+  /** book note property linking the EPUB cover image, JPEG or PNG (0.9, PLAN-0.9 Q8; no row until task 2.4) */
+  coverProperty: string;
+  /** the scene break line in an EPUB (0.9, Q6; no row until task 2.4) */
+  epubSceneBreak: string;
+  /** the property of a collection note listing its stories in reading order (0.9, SF 13, PLAN-0.9 Q24; no row yet) */
+  collectionProperty: string;
 
   // Submissions (0.8, SF 12; drawn by the submissions module's section, task 3.2)
   /** vault folder of submission notes; kept out of tracking (classify `submission`, task 1.6) */
@@ -155,6 +161,10 @@ export interface EscritaSettings extends UniverseSettings {
   lensLongSentence: number;
   /** rules turned off; an array so mergeDefaults copies it and a future rule starts on */
   lensRulesOff: string[];
+  /** opt-in rules turned on (0.9: `newName`, lens/types OPT_IN_RULES); they start off. No row until task 2.3 */
+  lensRulesOn: string[];
+  /** "Not names": words and runs the names rule never marks, one per line (0.9, Q4; no row until task 2.3) */
+  notNames: string;
   lensSkipQuotes: boolean;
   lensShowDialogue: boolean;
   lensShowReadability: boolean;
@@ -207,6 +217,9 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   authorSurname: "",
   contactLines: "",
   chapterHeadingFormat: "",
+  coverProperty: "cover",
+  epubSceneBreak: "* * *",
+  collectionProperty: "contents",
   submissionsFolder: "Escrita/Submissions",
   submissionResults: "pending, accepted, rejected, withdrawn",
   submissionWorkProperty: "work",
@@ -242,6 +255,8 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   lensEchoWindow: 40,
   lensLongSentence: 45,
   lensRulesOff: [],
+  lensRulesOn: [],
+  notNames: "",
   lensSkipQuotes: true,
   lensShowDialogue: true,
   lensShowReadability: true,
@@ -275,6 +290,10 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   s.lensEchoWindow = clampInt(s.lensEchoWindow, 10, 200, DEFAULT_SETTINGS.lensEchoWindow);
   s.lensLongSentence = clampInt(s.lensLongSentence, 15, 200, DEFAULT_SETTINGS.lensLongSentence);
   s.lensRulesOff = Array.isArray(s.lensRulesOff) ? s.lensRulesOff.filter((x): x is string => typeof x === "string") : [];
+  s.lensRulesOn = Array.isArray(s.lensRulesOn) ? s.lensRulesOn.filter((x): x is string => typeof x === "string") : [];
+  s.notNames = typeof s.notNames === "string" ? s.notNames : "";
+  // a blank scene break would vanish in the book: the default instead
+  s.epubSceneBreak = (typeof s.epubSceneBreak === "string" ? s.epubSceneBreak.trim() : "") || DEFAULT_SETTINGS.epubSceneBreak;
   s.templatesFolder = typeof s.templatesFolder === "string" ? s.templatesFolder.trim().replace(/^\/+|\/+$/g, "") : "";
   s.threadKeyword = (typeof s.threadKeyword === "string" ? s.threadKeyword.trim() : "") || DEFAULT_SETTINGS.threadKeyword;
   s.features = cleanFeatures(s.features);
@@ -288,7 +307,7 @@ function clampInt(v: unknown, min: number, max: number, fallback: number): numbe
 
 /** Frontmatter property names a piece or book is read from; normalizeSettings trims them and restores empty ones. */
 const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadlineProperty", "goalProperty", "povProperty", "chapterTargetProperty",
-  "compileProperty", "dedicationProperty", "epigraphProperty",
+  "compileProperty", "dedicationProperty", "epigraphProperty", "coverProperty", "collectionProperty",
   "submissionWorkProperty", "submissionMarketProperty", "submissionSentProperty", "submissionResultProperty", "submissionRespondedProperty"] as const;
 
 /**
@@ -317,6 +336,7 @@ export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "a
   exportFolder: "always", submissionsFolder: "always",
   compileProperty: ["export"], dedicationProperty: ["export"], epigraphProperty: ["export"], authorProperty: ["export"],
   authorName: ["export"], authorSurname: ["export"], contactLines: ["export"], chapterHeadingFormat: ["export"],
+  coverProperty: ["export"], epubSceneBreak: ["export"], collectionProperty: ["export"],
   submissionResults: ["submissions"],
   submissionWorkProperty: ["submissions"], submissionMarketProperty: ["submissions"], submissionSentProperty: ["submissions"],
   submissionResultProperty: ["submissions"], submissionRespondedProperty: ["submissions"],
@@ -329,6 +349,7 @@ export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "a
   paragraphStyle: ["typing", "dialogueFocus", "moveBlocks", "lens"],
   quoteStyle: ["typing", "dialogueFocus", "lens"],
   lensListsNote: ["lens"], lensEchoWindow: ["lens"], lensLongSentence: ["lens"], lensRulesOff: ["lens"],
+  lensRulesOn: ["lens"], notNames: ["lens"],
   lensSkipQuotes: ["lens"], lensShowDialogue: ["lens"], lensShowReadability: ["lens"],
 };
 

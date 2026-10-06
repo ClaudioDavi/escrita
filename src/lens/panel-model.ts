@@ -1,4 +1,4 @@
-import { LANG_RULES, RULES } from "./types";
+import { ALL_RULES, LANG_RULES, OPT_IN_RULES, RULES, isOptIn } from "./types";
 import type { LensLang, LensResult, Lists, Match, RuleId } from "./types";
 
 /** Matches per 1000 words, unrounded; 0 when there are no words. The view shows one decimal. */
@@ -16,7 +16,9 @@ export function withoutDismissed(r: LensResult, keep: (m: Match) => boolean): Le
   const matches = r.matches.filter(keep);
   const counts = {} as Record<RuleId, number>;
   for (const rule of RULES) counts[rule] = 0;
-  for (const m of matches) counts[m.rule]++;
+  // an opt-in rule keeps a count only when the pass had one (it was on)
+  for (const rule of OPT_IN_RULES) if (r.counts[rule] !== undefined) counts[rule] = 0;
+  for (const m of matches) counts[m.rule] = (counts[m.rule] ?? 0) + 1;
   return { ...r, matches, counts };
 }
 
@@ -53,7 +55,8 @@ export function stepTo(
 
 export interface RuleRow {
   rule: RuleId;
-  kind: "on" | "needsLists" | "needsLanguage";
+  /** `needsUniverse`: the `newName` rule while the universe is off (0.9, Q2) */
+  kind: "on" | "needsLists" | "needsLanguage" | "needsUniverse";
   count: number;
   rate: number;
 }
@@ -64,12 +67,14 @@ export function ruleRows(
   enabled: ReadonlySet<RuleId>,
   lists: Pick<Lists, "crutch" | "names">,
   lang: LensLang | null,
+  universeOn = true,
 ): RuleRow[] {
   const rows: RuleRow[] = [];
-  for (const rule of RULES) {
+  for (const rule of ALL_RULES) {
     if (!enabled.has(rule)) continue;
     let kind: RuleRow["kind"] = "on";
     if (LANG_RULES.has(rule) && lang === null) kind = "needsLanguage";
+    else if (rule === "newName" && !universeOn) kind = "needsUniverse";
     else if (rule === "crutch" && lists.crutch.length === 0) kind = "needsLists";
     else if (rule === "name" && lists.names.length === 0) kind = "needsLists";
     if (kind !== "on") {
@@ -82,8 +87,12 @@ export function ruleRows(
   return rows;
 }
 
-/** Every rule except the ones switched off in settings; unknown ids are ignored. */
-export function enabledRules(rulesOff: readonly string[]): Set<RuleId> {
+/**
+ * Every default rule except the ones switched off in settings, plus the opt-in rules
+ * switched on (0.9: `lensRulesOn`, `newName`); unknown ids are ignored.
+ */
+export function enabledRules(rulesOff: readonly string[], rulesOn: readonly string[] = []): Set<RuleId> {
   const off = new Set(rulesOff);
-  return new Set(RULES.filter((rule) => !off.has(rule)));
+  const on = new Set(rulesOn);
+  return new Set(ALL_RULES.filter((rule) => (isOptIn(rule) ? on.has(rule) && !off.has(rule) : !off.has(rule))));
 }

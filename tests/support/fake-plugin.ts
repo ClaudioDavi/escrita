@@ -104,7 +104,7 @@ export class FakeMetadataCache extends FakeEvents {
 export class FakePlugin extends Component {
   settings: EscritaSettings = structuredClone(DEFAULT_SETTINGS);
   data = {
-    version: 1, history: {}, publish: {}, leftOff: {}, lensDismissed: {}, threadSeen: {}, povColors: {},
+    version: 1, history: {}, publish: {}, leftOff: {}, lensDismissed: {}, threadSeen: {}, povColors: {}, readPosition: {},
   } as unknown as EscritaData;
   names = new NamesPort();
   app = { workspace: new FakeWorkspace(), vault: new FakeVault(), metadataCache: new FakeMetadataCache() };

@@ -7,6 +7,10 @@
 import { folderList } from "./lists";
 import { readPiece, type Piece, type PieceProperties } from "./measure";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, readStatus, stageOf, type Stage, type StageMapping } from "./stages";
+// one direction only: classify imports scope, scope never imports classify (no cycle at load)
+import { inFolder, NO_SCOPE, type Scope, type ScopeMode } from "./scope";
+// inFolder and NO_SCOPE live in core/scope.ts (0.9); re-exported so their callers keep importing them from here
+export { inFolder, NO_SCOPE };
 
 /** Anything with a vault path. TFile/TFolder satisfy it; test fakes are `{ path }` objects that keep their identity. */
 export interface Named { path: string }
@@ -25,6 +29,14 @@ export interface VaultTree<F extends Named, D extends Named> {
   folders(): Iterable<D>;
   /** the metadata cache's frontmatter; undefined right after creation */
   frontmatter(file: F): Record<string, unknown> | undefined;
+  /**
+   * The vault path a link points at, as seen from the note at `from` (0.9, IMPROVEMENTS 9):
+   * Obsidian's link resolution, so "Universo", "[[Universo]]" and "[[Universo|o mundo]]"
+   * all find Universo.md. null when it points at no file. The scope rule reads a
+   * `universe` property through it (core/scope.ts ScopeLookup.resolve). The adapter in
+   * core/books.ts: metadataCache.getFirstLinkpathDest(linkText(link) ?? link, from)?.path ?? null.
+   */
+  resolve(link: string, from: string): string | null;
 }
 
 /**
@@ -58,6 +70,17 @@ export interface ClassifySettings extends PieceProperties {
    * DEFAULT_EXPORT_FOLDER.
    */
   exportFolder?: string;
+  /**
+   * The scope keys (0.9, IMPROVEMENTS 9; PLAN-0.9 Q15): what `Placement.scope` reads.
+   * EscritaSettings has all four (UniverseSettings). Optional so the many hand-built test
+   * settings stay valid: a missing `universeMode` means "off" (every scope is none), and
+   * the others take UniverseSettings' defaults ("Universe.md", "", "universe").
+   */
+  universeMode?: ScopeMode;
+  universeNote?: string;
+  defaultUniverseFolders?: string;
+  /** the property on a work, chapter or entry that links its universe note */
+  universeProperty?: string;
 }
 
 /** The snapshots folder when the setting is empty or unusable. */
@@ -148,12 +171,15 @@ export interface Placement<F extends Named, D extends Named> {
    * book. Applies whether the export feature is on or off.
    */
   export: boolean;
-}
-
-/** Whether `path` is `folder` itself or inside it. Slashes at the folder's edges are ignored, "" means the whole vault, case-sensitive. */
-export function inFolder(path: string, folder: string): boolean {
-  const f = folder.replace(/^\/+|\/+$/g, "");
-  return f === "" || path === f || path.startsWith(`${f}/`);
+  /**
+   * Which world the path lives in (0.9, IMPROVEMENTS 9; PLAN-0.9 Q15): core/scope.ts
+   * `scopeFor` with the settings' scope keys and a lookup built on this tree (the book
+   * from this placement, the `universeProperty` from frontmatter, links through
+   * `VaultTree.resolve`). Set on every placement, folders and "none" included; NO_SCOPE
+   * when the universe mode is off or nothing applies. A field, never a new kind (the
+   * growth rule). Until task 1.1 it is NO_SCOPE everywhere.
+   */
+  scope: Scope;
 }
 
 /**
@@ -197,8 +223,8 @@ export function exportRoot(setting: unknown): string {
 /**
  * One fingerprint of every setting `classify` reads (IMPROVEMENTS 16): folders,
  * chapters folder, chapter template, snapshots, submissions and export folders (normalized,
- * so "" and the default key alike), status property, stages and the piece
- * properties. Every index spec whose values depend on classify composes it into
+ * so "" and the default key alike), status property, stages, the piece
+ * properties and the four scope keys (0.9, PLAN-0.9 Q16; a missing mode keys as "off"). Every index spec whose values depend on classify composes it into
  * its `settingsKey`, so a new classify input is added here once and every index
  * rebuilds on it. Stable for equal settings. The six specs move onto it in task 2.4.
  */
@@ -208,6 +234,7 @@ export function classifyKey(s: ClassifySettings): string {
     snapshotsRoot(s.snapshotsFolder), submissionsRoot(s.submissionsFolder), exportRoot(s.exportFolder),
     str(s.statusProperty), s.stages ?? null,
     str(s.targetProperty), str(s.limitProperty), str(s.unitProperty), str(s.deadlineProperty),
+    str(s.universeMode) || "off", str(s.universeNote), str(s.defaultUniverseFolders), str(s.universeProperty),
   ]);
 }
 
@@ -380,7 +407,7 @@ function stageFor(fm: Record<string, unknown> | undefined, tracked: boolean, set
 export function classify<F extends Named, D extends Named>(
   tree: VaultTree<F, D>, settings: ClassifySettings, path: string | null,
 ): Placement<F, D> {
-  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, snapshot: false, stage: null, submission: false, export: false };
+  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, snapshot: false, stage: null, submission: false, export: false, scope: NO_SCOPE };
   if (typeof path !== "string" || path === "") return none;
   if (path === "/") return { ...none, kind: "folder" };
   try {
@@ -408,14 +435,14 @@ export function classify<F extends Named, D extends Named>(
       const piece = markdown ? pieceOf(fm, settings) : null;
       // The book note comes first: a book note inside another book's folder belongs to its own book.
       const own = markdown ? bookAt(tree, path.slice(0, -3), ch) : null;
-      if (own) return { path, kind: "book-note", markdown, book: own, tracked, piece, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false };
+      if (own) return { path, kind: "book-note", markdown, book: own, tracked, piece, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false, scope: NO_SCOPE };
       const book = ancestorBook(tree, path, ch);
       if (book) {
         // compare against the handle's path, never the settings string
         const kind: Kind = markdown && parentOf(path) === book.chaptersFolder.path ? "chapter" : "book-file";
-        return { path, kind, markdown, book, tracked, piece, snapshot: false, stage: null, submission: false, export: false };
+        return { path, kind, markdown, book, tracked, piece, snapshot: false, stage: null, submission: false, export: false, scope: NO_SCOPE };
       }
-      return { path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false };
+      return { path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false, scope: NO_SCOPE };
     }
     if (tree.folder(path)) {
       const own = bookAt(tree, path, ch);
