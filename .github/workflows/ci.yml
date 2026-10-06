@@ -19,3 +19,31 @@ jobs:
       - run: npm run build
       # Scan the built main.js for network APIs (milestone 0 guard).
       - run: npm run test:bundle
+
+  # Builds the fixture book's EPUB through the real writer and validates it with
+  # EPUBCheck (PLAN-0.9 Q9, gate G0a). Java and EPUBCheck are CI tools only: the
+  # plugin itself never touches the network (rule 4).
+  epubcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: npm ci
+      - name: Build the fixture EPUB
+        run: ESCRITA_EPUB_OUT="$RUNNER_TEMP/fixture.epub" npx vitest run tests/export-epub.test.ts
+      - name: Download the latest EPUBCheck
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/epubcheck"
+          gh release download --repo w3c/epubcheck --pattern 'epubcheck-*.zip' --dir "$RUNNER_TEMP/epubcheck"
+          unzip -q "$RUNNER_TEMP/epubcheck"/epubcheck-*.zip -d "$RUNNER_TEMP/epubcheck"
+      - name: Run EPUBCheck
+        run: java -jar "$(ls "$RUNNER_TEMP"/epubcheck/epubcheck-*/epubcheck.jar)" "$RUNNER_TEMP/fixture.epub"
