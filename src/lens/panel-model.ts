@@ -1,3 +1,4 @@
+import { foldName } from "../core/names";
 import { ALL_RULES, LANG_RULES, OPT_IN_RULES, RULES, isOptIn } from "./types";
 import type { LensLang, LensResult, Lists, Match, RuleId } from "./types";
 
@@ -95,4 +96,24 @@ export function enabledRules(rulesOff: readonly string[], rulesOn: readonly stri
   const off = new Set(rulesOff);
   const on = new Set(rulesOn);
   return new Set(ALL_RULES.filter((rule) => (isOptIn(rule) ? on.has(rule) && !off.has(rule) : !off.has(rule))));
+}
+
+/** One name the `newName` rule marked, for the panel: its text as first written and how many times it is marked. */
+export interface NameGroup { key: string; text: string; count: number }
+
+/**
+ * The marked names of a result, grouped by foldName of the text (the rule's own key), most
+ * frequent first, then by first appearance. Dismissed ("Ignore here") matches are gone from
+ * `matches` already.
+ */
+export function newNameGroups(matches: readonly Match[]): NameGroup[] {
+  const by = new Map<string, NameGroup>();
+  for (const m of matches) {
+    if (m.rule !== "newName") continue;
+    const key = foldName(m.text);
+    const g = by.get(key);
+    if (g) g.count++;
+    else by.set(key, { key, text: m.text, count: 1 });
+  }
+  return [...by.values()].sort((a, b) => b.count - a.count);
 }

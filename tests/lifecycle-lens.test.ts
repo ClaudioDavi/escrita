@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FeatureRegistry } from "../src/core/feature-registry";
 import type { FeatureId } from "../src/core/features";
 import { LensModule } from "../src/lens";
+import { segment } from "../src/core/markdown";
+import { analyze, type AnalyzeOptions } from "../src/lens/analyze";
 import { LENS_VIEW } from "../src/lens/view";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
 
@@ -90,6 +92,31 @@ describe("lens lifecycle", () => {
     const withdraw = names.provide({ tableFor: () => ({ terms: [], lang: null, signature: "" }), entryFor: () => null, version: () => 0, onChange: () => () => {} });
     withdraw();
     expect(lensInvalidate).not.toHaveBeenCalled();
+  });
+
+  it("the names rule is off and asks nothing of the port until it is switched on (U 2.5)", () => {
+    reg.apply();
+    const wanted = vi.fn();
+    const known = vi.fn(() => false);
+    const withdraw = plugin.names.provide({
+      tableFor: () => ({ terms: [], lang: null, signature: "s" }), entryFor: () => null, version: () => 0, onChange: () => () => {},
+      isKnownName: known, workCount: () => 2, wantNameCounts: wanted,
+    });
+    const text = "Ele viu Zefa na praia. Ela chamou Zefa de novo.";
+    const run = (): number => {
+      const o = (lens as unknown as { options(p: string): AnalyzeOptions }).options("a.md");
+      return analyze(segment(text), { ...o, lang: "pt-BR" }, 1).matches.filter((m) => m.rule === "newName").length;
+    };
+    expect(run()).toBe(0);
+    expect(wanted).not.toHaveBeenCalled();
+    plugin.settings.lensRulesOn = ["newName"];
+    expect(run()).toBe(2);                       // marked: unknown, in two works
+    expect(wanted).toHaveBeenCalled();
+    plugin.settings.notNames = "Zefa";
+    expect(run()).toBe(0);                       // "Not names"
+    withdraw();
+    plugin.settings.notNames = "";
+    expect(run()).toBe(0);                       // the universe off: the rule finds nothing
   });
 
   it("clears a pending pass timer on unload", () => {

@@ -276,7 +276,7 @@ class NewEntryModal extends Modal {
  * on. `given` is a scope the caller already knows (the panel's); else it comes from the
  * file. Only called when the mode is not off.
  */
-export function createEntryFromSelection(plugin: EscritaPlugin, editor: Editor | null, file: TFile | null, kind?: EntryKind, given?: Scope): void {
+export function createEntryFromSelection(plugin: EscritaPlugin, editor: Editor | null, file: TFile | null, kind?: EntryKind, given?: Scope, named = ""): void {
   const src = file ?? plugin.app.workspace.getActiveFile();
   // a scope the caller already shows (the panel's hand-picked universe) wins over the file's own
   const scope = given && given.kind !== "none" ? given : src ? plugin.universe.scopeOf(src) : plugin.universe.scopeOfActive();
@@ -285,9 +285,10 @@ export function createEntryFromSelection(plugin: EscritaPlugin, editor: Editor |
     new Notice(t(plugin.universe.mode() === "perBook" ? "universe.create.notice.perBook" : "universe.create.notice.noUniverse", { name }));
     return;
   }
-  let name = "";
+  // `named`: a name the caller found (the lens's names rule), filled in whole and editable; no occurrence to link
+  let name = named.trim();
   let occurrence: Occurrence | null = null;
-  if (editor && src) {
+  if (editor && src && name === "") {
     const raw = editor.getSelection();
     const picked = nameFromSelection(raw);
     if (picked !== null) {

@@ -31,6 +31,7 @@ import { baseName } from "./appears-in-model";
 import { defaultLabels, openMention, type AppearsInLabels } from "./appears-in";
 import { MentionCtxFactory } from "./mention-ctx";
 import { MentionsIndex } from "./mentions-index";
+import { NamesIndex, type NoteRuns } from "./names-index";
 import { NameMarks, SPELLCHECK_MARKS_WORK } from "./name-marks";
 import { UniverseNamesProvider } from "./names-provider";
 import { registerAppearsStrings } from "./strings-appears";
@@ -40,7 +41,7 @@ import { inScope, type ThreadRef } from "./threads";
 import { formFor, type WorkInfo } from "./works-list";
 import { computeMentions, type NoteMentions } from "./mentions";
 import { segment } from "../core/markdown";
-import { findNames } from "../core/names";
+import { findNames, matchLang } from "../core/names";
 import { unlinkedIn } from "./unlinked";
 import { rowsOf, type UnlinkedRow } from "./unlinked-link";
 import { addUniverseEditorMenuItems, createEntryFromSelection, inSource } from "./create";
@@ -86,6 +87,8 @@ export class UniverseModule extends FeatureModule {
   private entriesIdx: VaultIndex<TFile, Entry> | null = null;
   private namesProvider: UniverseNamesProvider | null = null;
   private mentions: MentionsIndex<TFile> | null = null;
+  /** the on-demand index behind the names port's cross-work counts (0.9, the lens's names rule) */
+  private nameRuns: NamesIndex<TFile> | null = null;
   private ctxFactory: MentionCtxFactory | null = null;
   private marks: NameMarks | null = null;
   private source: AppearsInSource | null = null;
@@ -123,6 +126,11 @@ export class UniverseModule extends FeatureModule {
       locale: () => locale(),
       nameTitles: () => p.settings.nameTitles,
       timers,
+      counts: {
+        want: () => this.nameRuns?.want(),
+        ready: () => this.nameRuns?.isReady() ?? false,
+        count: (text, path) => this.nameRuns?.workCount(text, path) ?? 0,
+      },
     });
     this.namesProvider = names;
     this.register(p.names.provide(names));
@@ -162,6 +170,19 @@ export class UniverseModule extends FeatureModule {
     this.mentions = mentions;
     this.mentionsShown = false;
     this.register(() => mentions.dispose());
+
+    // the cross-work counts of the lens's names rule: added now, built only when the rule first runs
+    const nameRuns = new NamesIndex<TFile>({
+      add: (spec) => this.ctx.index<TFile, NoteRuns>(spec),
+      settings: () => p.settings,
+      lang: () => matchLang(p.settings.lensLanguage, locale()),
+      ctx: (path) => factory.ctx(path),
+      timers: { ...timers, yieldNow: macrotaskYield },
+    });
+    this.nameRuns = nameRuns;
+    this.register(() => nameRuns.dispose());
+    this.register(nameRuns.onChange(() => names.countsChanged()));
+    nameRuns.start();
     this.register(names.onChange(() => mentions.tableChanged()));
     // counts follow edits, but the panel redraws a second after they settle (finding 4); the first build shows at once
     this.register(mentions.onChange(() => {
@@ -224,6 +245,7 @@ export class UniverseModule extends FeatureModule {
     this.entriesIdx = null;   // the context disposes the indexes and empties the editor slots
     this.namesProvider = null;
     this.mentions = null;
+    this.nameRuns = null;
     this.ctxFactory = null;
     this.marks = null;
     this.source = null;
@@ -234,6 +256,7 @@ export class UniverseModule extends FeatureModule {
     this.namesProvider?.refresh();
     this.ctxFactory?.reset();
     this.mentions?.scopeChanged();
+    this.nameRuns?.scopeChanged();
     const underline = this.plugin.settings.underlineNames;
     if (underline !== this.lastUnderline) {
       this.lastUnderline = underline;
@@ -307,6 +330,15 @@ export class UniverseModule extends FeatureModule {
    * the indexes build, null for a note that is not an entry here) and the labels. Null while unloaded.
    */
   appearsInSource(): AppearsInSource | null { return this.source; }
+
+  /**
+   * "Create entry" from the lens's names rule (D8): opens the create-entry modal for the note's
+   * scope with the whole run filled in ("Dona Zefa"), editable. Nothing is linked or written
+   * into the note.
+   */
+  createEntryNamed(file: TFile, name: string): void {
+    createEntryFromSelection(this.plugin, null, file, undefined, undefined, name);
+  }
 
   /**
    * Starts the mentions index if nothing has yet (Q15). The panel calls it when its Works or

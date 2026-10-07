@@ -10,8 +10,10 @@
 // its object, so name marks and the lens can compare by version. A thread edit never
 // reaches it.
 
-import { compileTerms, EMPTY_TABLE, foldName, matchLang, type NameSource, type TermTable } from "../core/names";
+import { compileTerms, EMPTY_TABLE, findNames, foldName, matchLang, type NameSource, type TermTable } from "../core/names";
+import { NAME_TITLES } from "../core/name-titles";
 import type { NamesProvider } from "../core/names-source";
+import { normalizeWord } from "../core/stem";
 import type { Entry } from "./entries";
 import type { Scope } from "../core/scope";
 
@@ -27,6 +29,8 @@ export interface NamesProviderDeps {
   nameTitles(): string;
   /** quiet time for `refreshSoon` (the metadata cache fires on every save); without it `refreshSoon` refreshes at once */
   timers?: { set(cb: () => void, ms: number): unknown; clear(h: unknown): void };
+  /** the on-demand names index behind `workCount` and `wantNameCounts` (universe/names-index.ts); without it the counts are 0 */
+  counts?: { want(): void; count(text: string, path: string): number; ready(): boolean };
 }
 
 /** Quiet time before a metadata change refreshes the tables (finding 1). */
@@ -124,6 +128,42 @@ export class UniverseNamesProvider implements NamesProvider {
     if (want === "") return null;
     const r = this.rec(scope);
     return (r.lookup ??= lookupOf(r.entries)).get(want) ?? null;
+  }
+
+  /**
+   * The lens's names rule (0.9, Q18): is `text`, a run as written, already a name in the scope
+   * of the note: an occurrence of a term (name, alias, automatic first name) covering all of
+   * it, or a name title (built in, plus the "Name titles" setting).
+   */
+  isKnownName(text: string, path: string): boolean {
+    const run = text.trim();
+    if (run === "") return true;
+    const o = this.options();
+    const titles = new Set<string>();
+    for (const l of o.lang ? [o.lang] : (["pt", "en"] as const)) for (const t of NAME_TITLES[l]) titles.add(normalizeWord(t));
+    for (const t of o.extraTitles) titles.add(normalizeWord(t.replace(/\.+$/, "")).trim());
+    if (titles.has(normalizeWord(run))) return true;
+    const table = this.tableFor(path);
+    if (table === EMPTY_TABLE) return false;
+    return findNames(run, table).some((x) => x.from === 0 && x.to === run.length);
+  }
+
+  workCount(text: string, path: string): number {
+    return this.deps.counts?.count(text, path) ?? 0;
+  }
+
+  wantNameCounts(): void {
+    this.deps.counts?.want();
+  }
+
+  nameCountsReady(): boolean {
+    return this.deps.counts?.ready() ?? false;
+  }
+
+  /** The cross-work counts changed (the names index was built, or a note's runs changed): the version moves, so the lens runs its rule again. */
+  countsChanged(): void {
+    this.bump++;
+    for (const cb of [...this.listeners]) cb();
   }
 
   version(): number {

@@ -15,6 +15,7 @@ import type { VaultIndex } from "../core/vault-index";
 import { analyze, measuresFor, type AnalyzeOptions } from "./analyze";
 import { addDismissal, dismissalOf, mergeDismissals } from "./dismiss";
 import { lensLang } from "./lang";
+import { EMPTY_TABLE } from "../core/names";
 import { namesFor } from "./names";
 import { listsPath, parseLists, sameLists } from "./lists";
 import { LENS_SETTLE_MOBILE_MS, LENS_SETTLE_MS, LensSession } from "./session";
@@ -23,6 +24,7 @@ import { LensUi } from "./ui";
 import { LENS_VIEW } from "./view";
 import { type Dismissal, type Lists, type LensLang, type LensResult, type Match, type Measures, type RuleId } from "./types";
 import { enabledRules } from "./panel-model";
+import { addNotName, parseNotNames } from "./settings";
 import { lensOffNotice, lensSettingsSection } from "./settings-ui";
 
 /** What `Platform.isMobile` reads (the body class); index.ts has no runtime obsidian import, so tests can load it. */
@@ -220,10 +222,11 @@ export class LensModule extends FeatureModule {
   private options(path: string): AnalyzeOptions {
     const s = this.plugin.settings;
     const lists = this.lists();
+    const rules = enabledRules(s.lensRulesOff, s.lensRulesOn);
     return {
       lang: this.lensLanguage(),
-      // `newName` (opt-in) runs only with `newName` options; task 2.3 builds them from plugin.names
-      rules: enabledRules(s.lensRulesOff, s.lensRulesOn),
+      rules,
+      newName: rules.has("newName") ? this.newNameOptions(path) : undefined,
       echoWindow: s.lensEchoWindow,
       longSentence: s.lensLongSentence,
       lists: { ...lists, names: namesFor(lists.names, this.plugin.names.tableFor(path)) },
@@ -231,6 +234,33 @@ export class LensModule extends FeatureModule {
       quoteStyle: s.quoteStyle,
       paragraphStyle: s.paragraphStyle,
     };
+  }
+
+  /**
+   * The names rule's inputs (U 2.5, Q18), read through the names port: undefined while the
+   * universe is off or the note is in no universe (the rule finds nothing). Asking starts the
+   * cross-work index the first time; the index tells the port when it is built (a new pass).
+   */
+  private newNameOptions(path: string): AnalyzeOptions["newName"] {
+    const names = this.plugin.names;
+    if (!names.hasProvider() || names.tableFor(path) === EMPTY_TABLE) return undefined;
+    names.wantNameCounts();
+    return {
+      notNames: parseNotNames(this.plugin.settings.notNames),
+      query: {
+        known: (text) => names.isKnownName(text, path),
+        works: (text) => names.workCount(text, path),
+      },
+    };
+  }
+
+  /** "Dismiss" on a marked name: adds it to "Not names" for every note. False when it is already there. */
+  async dismissName(text: string): Promise<boolean> {
+    const next = addNotName(this.plugin.settings.notNames, text);
+    if (next === null) return false;
+    this.plugin.settings.notNames = next;
+    await this.plugin.saveSettings();
+    return true;
   }
 
   activeState(): {

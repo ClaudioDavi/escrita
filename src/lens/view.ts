@@ -3,10 +3,10 @@
 // ignoring and the settings tab are done by the module (task 5.1) through the
 // hooks below.
 
-import { ItemView, MarkdownView, Notice, Platform, setIcon, type WorkspaceLeaf } from "obsidian";
+import { ItemView, MarkdownView, Notice, Platform, TFile, setIcon, type WorkspaceLeaf } from "obsidian";
 import type EscritaPlugin from "../main";
 import { fmt, lang, plural, t } from "../i18n";
-import { enabledRules, ruleRows } from "./panel-model";
+import { enabledRules, newNameGroups, ruleRows } from "./panel-model";
 import { formatRate, noteName, positionOf, sharePercent } from "./panel-format";
 import { MIN_SENTENCES, MIN_WORDS } from "./readability";
 import type { LensLang, Measures, RuleId } from "./types";
@@ -104,15 +104,17 @@ export class LensView extends ItemView {
     this.measures(el, m, st.selection !== null, st.lang);
 
     const s = this.plugin.settings;
-    const rows = ruleRows(r, enabledRules(s.lensRulesOff), this.plugin.lens.lists(), st.lang)
+    const rows = ruleRows(r, enabledRules(s.lensRulesOff, s.lensRulesOn), this.plugin.lens.lists(), st.lang, this.plugin.names.hasProvider())
       .filter((row) => row.kind !== "needsLanguage");
     const list = el.createDiv({ cls: "escrita-lens-rules" });
     if (st.selection !== null) list.createDiv({ cls: "escrita-lens-muted escrita-lens-rules-note", text: t("lens.rules.heading") });
     else if (rows.some((row) => row.kind === "on")) list.createDiv({ cls: "escrita-lens-rate-header", text: t("lens.rate.header") });
     const cursor = this.cursorRange(path);
     for (const row of rows) {
-      if (row.kind === "on") this.ruleRow(list, row.rule, row.count, row.rate, st.lang, cursor, r.matches);
-      else this.needRow(list, row.rule, st.lang, st.listsState);
+      if (row.kind === "on") {
+        this.ruleRow(list, row.rule, row.count, row.rate, st.lang, cursor, r.matches);
+        if (row.rule === "newName") this.namesList(list, path, r.matches);
+      } else this.needRow(list, row.rule, st.lang, st.listsState);
     }
 
     const n = this.plugin.lens.dismissedCount(path);
@@ -225,7 +227,9 @@ export class LensView extends ItemView {
     row.createSpan({ cls: `escrita-lens-key escrita-lens-key-${rule} is-dim` });
     row.createSpan({ cls: "escrita-lens-rulename escrita-lens-rulename-dim", text: this.ruleName(rule, lensLang) });
     const hint = row.createDiv({ cls: "escrita-lens-hint" });
-    if (listsState === "missing") {
+    if (rule === "newName") {
+      hint.setText(t("lens.newName.needsUniverse"));
+    } else if (listsState === "missing") {
       hint.addClass("is-error");
       hint.setText(t("lens.lists.missing", { path: this.plugin.settings.lensListsNote }));
     } else {
@@ -234,6 +238,53 @@ export class LensView extends ItemView {
       b.setAttribute(FOCUS_KEY, `create-${rule}`);
       b.addEventListener("click", () => { void this.plugin.lens.createLists(); });
     }
+  }
+
+  /**
+   * The names the `newName` rule marked in this note, one item each: how often it is marked and
+   * in how many works, with "Create entry" and "Dismiss" (board 30). The cross-work count waits
+   * for the names index, which starts the first time the rule runs.
+   */
+  private namesList(list: HTMLElement, path: string, matches: readonly import("./types").Match[]): void {
+    const names = this.plugin.names;
+    const ready = names.nameCountsReady();
+    const groups = newNameGroups(matches);
+    if (ready && groups.length === 0) return;
+    const box = list.createDiv({ cls: "escrita-lens-names" });
+    box.setAttribute("role", "list");
+    box.setAttribute("aria-label", t("lens.newName.list"));
+    if (!ready) box.createDiv({ cls: "escrita-lens-muted escrita-lens-names-wait", text: t("lens.newName.counting") });
+    groups.forEach((g, i) => {
+      const item = box.createDiv({ cls: "escrita-lens-name-item" });
+      item.setAttribute("role", "listitem");
+      const head = item.createDiv({ cls: "escrita-lens-name-head" });
+      head.createSpan({ cls: "escrita-lens-name-text", text: g.text });
+      const meta = [plural("lens.newName.inNote", g.count)];
+      const works = ready ? names.workCount(g.text, path) : 0;
+      if (works > 0) meta.push(plural("lens.newName.inWorks", works));
+      head.createSpan({ cls: "escrita-lens-muted escrita-lens-name-meta", text: meta.join(" · ") });
+      const actions = item.createDiv({ cls: "escrita-lens-name-actions" });
+      const create = actions.createEl("button", { cls: "escrita-lens-btn", text: t("lens.newName.create") });
+      create.setAttribute("aria-label", t("lens.newName.create.label", { name: g.text }));
+      create.setAttribute(FOCUS_KEY, `create-name-${i}`);
+      create.addEventListener("click", () => this.createEntry(path, g.text));
+      const dismiss = actions.createEl("button", { cls: "escrita-lens-link escrita-lens-name-dismiss", text: t("lens.newName.dismiss") });
+      dismiss.setAttribute("aria-label", t("lens.newName.dismiss.label", { name: g.text }));
+      dismiss.setAttribute(FOCUS_KEY, `dismiss-name-${i}`);
+      dismiss.addEventListener("click", () => { void this.dismissName(g.text); });
+    });
+  }
+
+  /** "Create entry": the create-entry modal with the whole run filled in (D8). The note is not touched. */
+  private createEntry(path: string, name: string): void {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (file instanceof TFile) this.plugin.universe.createEntryNamed(file, name);
+  }
+
+  /** "Dismiss": the name goes to "Not names", in every note, with a notice. */
+  private async dismissName(name: string): Promise<void> {
+    const added = await this.plugin.lens.dismissName(name);
+    new Notice(t(added ? "lens.notice.notName" : "lens.notice.notNameAlready", { word: name }));
   }
 
   private confirm(el: HTMLElement, path: string, n: number): void {

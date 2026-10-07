@@ -45,6 +45,8 @@ export interface NamesProvider {
    * a writer who never turns the rule on never pays for it.
    */
   wantNameCounts?(): void;
+  /** Whether `workCount` can answer: the `universe-names` index finished building. The panel says "counting in the other works" until then. */
+  nameCountsReady?(): boolean;
 }
 
 /** plugin.names: empty until the universe provides; the provider withdraws on unload. */
@@ -90,6 +92,11 @@ export class NamesPort implements NamesProvider {
   /** A no-op when the universe is off (no provider). */
   wantNameCounts(): void {
     this.provider?.wantNameCounts?.();
+  }
+
+  /** False when the universe is off (no provider) or the index hasn't been built yet. */
+  nameCountsReady(): boolean {
+    return this.provider?.nameCountsReady?.() ?? false;
   }
 
   /** True while a provider is installed (the universe is on): the names rule needs it (Q2). */

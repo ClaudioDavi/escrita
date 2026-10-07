@@ -20,7 +20,7 @@ describe("lens settings section", () => {
     lensSettingsSection(document.createElement("div"), fakeUi().ui, plugin() as never);
     expect(settingLog.filter((r) => r.heading).map((r) => r.name)).toEqual([t("settings.lens"), t("settings.lens.rules"), t("settings.lens.measures")]);
     expect(settingLog.map((r) => r.name)).toContain(t("settings.lens.lists"));
-    expect(settingLog).toHaveLength(9 + RULES.length);   // 3 headings, lists, 2 numbers, skip quotes, rules, 2 measures
+    expect(settingLog).toHaveLength(11 + RULES.length);   // 3 headings, lists, 2 numbers, skip quotes, rules, the names rule and its Not names list, 2 measures
   });
 
   it("a committed lists path is saved once, and an unchanged one is not", () => {
@@ -39,6 +39,26 @@ describe("lens settings section", () => {
     lists.dispatchEvent(new Event("change"));
     lists.dispatchEvent(new Event("blur"));
     expect(p.settings.lensListsNote).toBe("Modelos/Revisão.md");
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  it("Not names is saved as trimmed lines, and only when it changed (U 2.5)", () => {
+    const inputs: HTMLInputElement[] = [];
+    const make = document.createElement.bind(document);
+    const spy = vi.spyOn(document, "createElement").mockImplementation(((tag: string) => {
+      const e = make(tag);
+      if (tag === "input") inputs.push(e as HTMLInputElement);
+      return e;
+    }) as never);
+    const p = plugin();
+    const { ui, save } = fakeUi();
+    try { lensSettingsSection(document.createElement("div"), ui, p as never); } finally { spy.mockRestore(); }
+    const field = inputs.find((i) => i.getAttribute("aria-label") === t("settings.lens.notNames"))!;
+    field.value = "  Zefa  ";   // (the stub field is an input, which has no line breaks)
+    field.dispatchEvent(new Event("change"));
+    expect(p.settings.notNames).toBe("Zefa");
+    expect(save).toHaveBeenCalledTimes(1);
+    field.dispatchEvent(new Event("change"));
     expect(save).toHaveBeenCalledTimes(1);
   });
 

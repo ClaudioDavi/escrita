@@ -45,7 +45,7 @@ describe("universe and threads load and unload", () => {
   it("both on: commands, indexes, menus and the view slots are there", () => {
     registry.apply();
     expect(names()).toEqual([...UNIVERSE_COMMANDS, ...THREAD_COMMANDS].sort());
-    expect(plugin.indexAdded.map((h) => h.spec.name)).toHaveLength(2);
+    expect(plugin.indexAdded.map((h) => h.spec.name).sort()).toEqual(["universe-entries", "universe-names", "universe-threads"]);   // the names index is on demand: added, never built
     expect(plugin.app.workspace.liveListeners("editor-menu")).toBe(2);
     expect(plugin.app.workspace.liveListeners("file-menu")).toBe(1);
     expect([...plugin.views.keys()].sort()).toEqual([THREADS_VIEW, UNIVERSE_VIEW].sort());
@@ -62,6 +62,7 @@ describe("universe and threads load and unload", () => {
     expect(plugin.app.workspace.detached).toContain(UNIVERSE_VIEW);
     expect(plugin.app.workspace.detached).not.toContain(THREADS_VIEW);
     expect(plugin.indexAdded.filter((h) => !h.disposed)).toHaveLength(1);
+    expect(plugin.indexAdded.find((h) => h.spec.name === "universe-names")?.disposed).toBe(true);
     expect(plugin.app.workspace.liveListeners("editor-menu")).toBe(1);
     expect(plugin.app.workspace.liveListeners("file-menu")).toBe(0);
     // the view type stays registered for the plugin's life (G0b)
@@ -75,7 +76,7 @@ describe("universe and threads load and unload", () => {
     expect(registry.isOn("threads")).toBe(false);
     expect(names()).toEqual(UNIVERSE_COMMANDS);
     expect(plugin.app.workspace.detached).toContain(THREADS_VIEW);
-    expect(plugin.indexAdded.filter((h) => !h.disposed)).toHaveLength(1);
+    expect(plugin.indexAdded.filter((h) => !h.disposed).map((h) => h.spec.name).sort()).toEqual(["universe-entries", "universe-names"]);
     expect(plugin.app.workspace.liveListeners("editor-menu")).toBe(1);
     const slot = plugin.extensions[THREADS_SLOT] as unknown[];
     expect(slot).toHaveLength(0);
@@ -182,6 +183,44 @@ describe("the names provider, the mentions index and the editor UI go with the u
     plugin.settings.universeMode = "off";
     registry.apply();
     expect(mentions!.disposed).toBe(true);
+  });
+
+  it("the names index is added, built only when the names rule asks, and told to the port once (U 2.5)", () => {
+    registry.apply();
+    entriesIdx().values.set(entry.path, entry);
+    vi.spyOn(universe, "scopeOf").mockReturnValue(U);
+    (plugin as unknown as Record<string, unknown>).works = {
+      list: () => [], onChange: () => () => {},
+      get: (path: string) => (path.startsWith("Contos/") ? { role: "note", stage: "draft", title: path } : undefined),
+    };
+    const idx = plugin.indexAdded.find((h) => h.spec.name === "universe-names")!;
+    expect(idx.demands).toBe(0);
+    expect(plugin.names.nameCountsReady()).toBe(false);
+    expect(plugin.names.workCount("Zefa", "Contos/a.md")).toBe(0);
+    plugin.names.wantNameCounts();
+    plugin.names.wantNameCounts();
+    expect(idx.demands).toBe(1);
+    let told = 0;
+    plugin.names.onChange(() => told++);
+    idx.becomeReady();
+    expect(told).toBe(1);
+    expect(plugin.names.nameCountsReady()).toBe(true);
+    // known: an entry, a name title; not a new name
+    expect(plugin.names.isKnownName("Mariana", "Contos/a.md")).toBe(true);
+    expect(plugin.names.isKnownName("Dr", "Contos/a.md")).toBe(true);
+    expect(plugin.names.isKnownName("Zefa", "Contos/a.md")).toBe(false);
+    // the count is in works of the scope: two contos, an entry note never counts
+    idx.values.set("Contos/a.md", ["zefa"]);
+    idx.values.set("Contos/b.md", ["zefa", "teo"]);
+    idx.values.set("Universo/Mariana.md", ["zefa"]);
+    expect(plugin.names.workCount("Zefa", "Contos/a.md")).toBe(2);
+    expect(plugin.names.workCount("Teo", "Contos/a.md")).toBe(1);
+    expect(plugin.names.workCount("Nobody", "Contos/a.md")).toBe(0);
+    plugin.settings.universeMode = "off";
+    registry.apply();
+    expect(idx.disposed).toBe(true);
+    expect(plugin.names.nameCountsReady()).toBe(false);
+    expect(plugin.names.workCount("Zefa", "Contos/a.md")).toBe(0);
   });
 
   it("the appears-in source answers counting until both indexes are ready, and null for a note that is no entry", () => {

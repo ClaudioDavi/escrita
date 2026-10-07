@@ -6,6 +6,7 @@
   --escrita-lens-c-gerund: rgba(var(--color-purple-rgb), 0.9);
   --escrita-lens-c-crutch: rgba(var(--color-pink-rgb), 0.85);
   --escrita-lens-c-name: rgba(var(--color-cyan-rgb), 0.85);
+  --escrita-lens-c-newName: rgba(var(--color-green-rgb), 0.9);
   --escrita-lens-c-long: rgba(var(--color-yellow-rgb), 0.22);
   --escrita-lens-target: 32px;
   position: relative;
@@ -64,6 +65,12 @@ body.is-phone .escrita-lens-row { min-height: 44px; padding-inline-start: 14px; 
 .escrita-lens-key-gerund { border-bottom: 2px dotted var(--escrita-lens-c-gerund); }
 .escrita-lens-key-crutch { border-bottom: 2px dashed var(--escrita-lens-c-crutch); }
 .escrita-lens-key-name { border-bottom: 3px double var(--escrita-lens-c-name); height: 5px; }
+.escrita-lens-key-newName {
+  height: 4px;
+  background:
+    linear-gradient(135deg, transparent 60%, var(--escrita-lens-c-newName) 60% 80%, transparent 80%) 0 0 / 6px 4px,
+    linear-gradient(225deg, transparent 60%, var(--escrita-lens-c-newName) 60% 80%, transparent 80%) 3px 0 / 6px 4px;
+}
 .escrita-lens-key-long { background: var(--escrita-lens-c-long); height: 10px; border-radius: 2px; }
 .theme-light .escrita-lens { --escrita-lens-c-long: rgba(var(--color-yellow-rgb), 0.3); }
 .escrita-lens-key.is-dim { opacity: 0.5; }
@@ -148,3 +155,18 @@ body.is-mobile .setting-item.escrita-lens-stack .setting-item-control { width: 1
 body.is-mobile .setting-item.escrita-lens-stack select,
 body.is-mobile .setting-item.escrita-lens-stack input[type="text"] { flex: 1 1 auto; width: auto; min-height: 40px; }
 body.is-mobile .setting-item.escrita-lens-stack button { min-height: 40px; padding: 0 14px; }
+
+/* Names without an entry (0.9, board 30): one item per marked name, under the rule's row. */
+.escrita-lens-names { display: flex; flex-direction: column; gap: 2px; padding: 4px 16px 10px 30px; }
+.escrita-lens-names-wait { padding: 4px 0; }
+.escrita-lens-name-item {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px;
+  min-height: var(--escrita-lens-target); padding: 4px 0;
+  border-bottom: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+}
+.escrita-lens-name-head { display: flex; flex-direction: column; min-width: 0; }
+.escrita-lens-name-text { color: var(--text-normal); overflow-wrap: anywhere; }
+.escrita-lens-name-meta { font-variant-numeric: tabular-nums; }
+.escrita-lens-name-actions { display: flex; align-items: center; gap: 4px; }
+.escrita-lens-name-actions .escrita-lens-btn,
+.escrita-lens-name-actions .escrita-lens-name-dismiss { min-height: var(--escrita-lens-target); }

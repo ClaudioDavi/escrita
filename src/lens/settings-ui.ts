@@ -2,7 +2,7 @@ import { Setting } from "obsidian";
 import { locale, t } from "../i18n";
 import type EscritaPlugin from "../main";
 import type { SettingsUi } from "../core/module-context";
-import { listsPath } from "./settings";
+import { listsPath, parseNotNames } from "./settings";
 import { listsTarget } from "./shown";
 import { lensLang } from "./lang";
 import { RULES } from "./types";
@@ -77,6 +77,31 @@ export function lensSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: Esc
       await ui.save();
     }));
   }
+
+  // the opt-in names rule (0.9, U 2.5): off until the writer turns it on, with its "Not names" list
+  new Setting(el)
+    .setName(t("lens.rule.newName"))
+    .setDesc(t("settings.lens.rule.newName.desc"))
+    .addToggle((c) => c.setValue(s.lensRulesOn.includes("newName")).onChange(async (v) => {
+      const on = s.lensRulesOn.filter((x) => x !== "newName");
+      if (v) on.push("newName");
+      s.lensRulesOn = on;
+      await ui.save();
+    }));
+  new Setting(el)
+    .setName(t("settings.lens.notNames"))
+    .setDesc(t("settings.lens.notNames.desc"))
+    .addTextArea((c) => {
+      c.setValue(s.notNames);
+      c.inputEl.setAttr("aria-label", t("settings.lens.notNames"));
+      c.inputEl.addEventListener("change", () => {
+        const next = parseNotNames(c.getValue()).join("\n");
+        c.setValue(next);
+        if (next === s.notNames) return;
+        s.notNames = next;
+        void ui.save();
+      });
+    });
 
   new Setting(el).setName(t("settings.lens.measures")).setHeading();
   new Setting(el)
