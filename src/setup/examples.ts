@@ -101,7 +101,8 @@ const TEXTS: Readonly<Record<DefaultsLanguage, Texts>> = {
       beats: ["Mara e o pai atravessam a baía antes do amanhecer", "A balsa para e nenhum dos dois diz por quê"],
       prose: [
         "O barco cheirava a corda molhada e diesel. Mara se sentou na proa, com a garrafa térmica do pai entre os joelhos, vendo a margem do outro lado se recusar a chegar mais perto.",
-        "\"Pode pegar o leme, se quiser\", ele disse. Ela balançou a cabeça. Pegar o leme era decidir para onde iam.",
+        "— Pode pegar o leme, se quiser — ele disse.",
+        "Ela balançou a cabeça. Pegar o leme era decidir para onde iam.",
       ],
       placeholder: "o nome da cidade que eles estão deixando",
     },

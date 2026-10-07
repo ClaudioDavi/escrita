@@ -70,8 +70,12 @@ export async function applyLayout(plugin: EscritaPlugin, layout: SetupLayout): P
   if (failed.length > 0) new Notice(t("setup.layout.panelsFailed"));
 }
 
-/** Brings the home note to the front; true when it is open now. */
-async function openHomeNote(plugin: EscritaPlugin): Promise<boolean> {
+/**
+ * Brings the home note to the front; true when it is open now. Never opens over a tab that
+ * holds something else (an open tab of it, else an empty one, else a new tab). The setup's run
+ * uses it too when the layout doesn't run (setup/apply.ts).
+ */
+export async function openHomeNote(plugin: EscritaPlugin): Promise<boolean> {
   const { workspace, vault } = plugin.app;
   const raw = plugin.settings.homeNote.trim();
   if (!raw) return false;

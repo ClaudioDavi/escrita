@@ -49,8 +49,7 @@ export class SetupModule extends CoreModule {
   /**
    * Opens the setup's modal at step 1 (the command, the first-run notice's "Set up…", and the
    * Features page's quiet link, task 2.5, all call this). Safe to call at any time.
-   *
-     */
+   */
   open(): void {
     this.markOffered();
     new SetupModal(this.plugin.app, this.plugin).open();

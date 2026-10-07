@@ -97,6 +97,12 @@ describe("planSetup: rules", () => {
     expect(home?.content).toContain("```escrita-works");
   });
 
+  it("mentions the examples in the home note only while their tick is on", () => {
+    const homeText = (ticks: { examples?: boolean }) => planSetup(base, empty, DEFAULT_SETTINGS, ticks).find((i) => i.kind === "home")?.content ?? "";
+    expect(homeText({})).toMatch(/Example ·|Exemplo ·/);
+    expect(homeText({ examples: false })).not.toMatch(/Example ·|Exemplo ·/);
+  });
+
   it("its copy of the plain defaults matches DEFAULT_SETTINGS", () => {
     for (const [k, v] of Object.entries(PLAIN_DEFAULTS)) expect(DEFAULT_SETTINGS[k as keyof typeof DEFAULT_SETTINGS], k).toEqual(v);
   });

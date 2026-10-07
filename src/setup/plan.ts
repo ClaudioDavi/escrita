@@ -174,7 +174,7 @@ function same(a: unknown, b: unknown): boolean {
 /**
  * The plan for `choices` in `vault`, given the live `settings`: every item the preview
  * shows, in run order (see the file comment). `ticks` are the writer's ticks so far; only the
- * language tick changes the plan's items (see `languageRuns`). Never throws; an empty vault and a second
+ * language tick changes the plan's items (see `languageRuns`), and the examples tick the home note's line about them. Never throws; an empty vault and a second
  * run in the same vault (board 36 b: every item `kept`, "Nothing to do") are ordinary
  * inputs.
  */
@@ -241,7 +241,7 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
   const home = place("", names.homeNote);
   items.push(home.exists
     ? { kind: "home", target: home.path, state: "kept", tick: null, ticked: false, reason: { key: "setup.reason.exists" } }
-    : { kind: "home", target: home.path, state: "new", tick: "home", ticked: true, reason: { key: "setup.reason.homeNew" }, content: homeNoteText({ language: choices.language, examples: items.some((i) => i.kind === "example" && i.state === "new") }) });
+    : { kind: "home", target: home.path, state: "new", tick: "home", ticked: true, reason: { key: "setup.reason.homeNew" }, content: homeNoteText({ language: choices.language, examples: (ticks.examples ?? !hasWorks) && items.some((i) => i.kind === "example" && i.state === "new") }) });
 
   // Settings, last. `ticked` of a tick's items follows the tick's default.
   const keep = (key: string, value: unknown, reason: "settingSame" | "settingOwn"): void => {

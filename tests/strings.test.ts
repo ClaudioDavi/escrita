@@ -17,6 +17,8 @@ import { universeStrings } from "../src/universe/strings";
 import { universeViewStrings } from "../src/universe/view-strings";
 import { universeCreateStrings } from "../src/universe/create-strings";
 import { universeMigrateStrings } from "../src/universe/migrate-strings";
+import { setupStrings } from "../src/setup/strings";
+import { setupLayoutStrings } from "../src/setup/layout-strings";
 
 const all: Record<string, Strings> = {
   core: coreStrings,
@@ -36,6 +38,8 @@ submissions: submissionsStrings,
   universeView: universeViewStrings,
   universeCreate: universeCreateStrings,
   universeMigrate: universeMigrateStrings,
+  setup: setupStrings,
+  setupLayout: setupLayoutStrings,
 };
 
 const vars = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();

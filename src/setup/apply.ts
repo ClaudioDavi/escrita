@@ -1,9 +1,8 @@
-import { Notice, TFile, normalizePath } from "obsidian";
+import { Notice } from "obsidian";
 import type EscritaPlugin from "../main";
 import { plural, t } from "../i18n";
-import { findPathIgnoringCase } from "../core/note-text";
 import { isMade } from "./model";
-import { applyLayout } from "./layout";
+import { applyLayout, openHomeNote } from "./layout";
 import { runSetup, type RunPorts, type RunResult, type SettingsPatch } from "./run";
 import type { SetupItem, SetupTicks } from "./plan";
 
@@ -25,18 +24,10 @@ async function saveSettings(plugin: EscritaPlugin, patch: SettingsPatch): Promis
   await plugin.saveSettings();
 }
 
-/** Opens the home note in the main area, when there is one (the layout does it when it runs). */
-async function openHomeNote(plugin: EscritaPlugin): Promise<boolean> {
+/** Opens the home note when the layout didn't run (the layout's own rule: never over a writer's tab). */
+async function openHome(plugin: EscritaPlugin): Promise<boolean> {
   try {
-    const raw = plugin.settings.homeNote.trim();
-    if (!raw) return false;
-    const norm = normalizePath(raw);
-    const want = /\.md$/i.test(norm) ? norm : `${norm}.md`;
-    const found = findPathIgnoringCase(want, plugin.app.vault.getFiles().map((f) => f.path));
-    const file = found === null ? null : plugin.app.vault.getAbstractFileByPath(found);
-    if (!(file instanceof TFile)) return false;
-    await plugin.app.workspace.getLeaf(false).openFile(file);
-    return true;
+    return await openHomeNote(plugin);
   } catch (e) {
     console.error("Escrita: could not open the home note", e);
     return false;
@@ -78,7 +69,7 @@ export async function performSetup(plugin: EscritaPlugin, plan: readonly SetupIt
   const layoutRan = result.made.some((i) => i.kind === "layout");
   const homeMade = result.made.some((i) => i.kind === "home" || (i.kind === "setting" && i.target === "homeNote"));
   // The layout opens the home note itself; without it the setup does, so "the home note is open" holds.
-  const homeOpen = layoutRan ? homeMade : homeMade && await openHomeNote(plugin);
+  const homeOpen = layoutRan ? homeMade : homeMade && await openHome(plugin);
   const failed = result.failed.length > 0;
   new Notice(outcomeMessage(result, homeOpen), failed ? 12000 : 6000);
   return result;

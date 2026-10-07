@@ -176,8 +176,11 @@ body.is-mobile .escrita-desk .escrita-desk-count {
 body.escrita-writing-mode .workspace-ribbon,
 body.escrita-writing-mode .status-bar,
 body.escrita-writing-mode .workspace-tab-header-container,
-body.escrita-writing-mode .mobile-navbar,
-body.escrita-writing-mode .view-header {
+body.escrita-writing-mode .mobile-navbar {
+  display: none;
+}
+/* Board 39: the desktop keeps the note's header (its title path); the phone drops it (39 e). */
+body.is-mobile.escrita-writing-mode .view-header {
   display: none;
 }
 body.escrita-writing-mode .workspace-split.mod-left-split,
