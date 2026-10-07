@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classify, classifyKey, NO_SCOPE, type ClassifySettings, type Named, type VaultTree } from "../src/core/classify";
+import { classify, classifyKey, NO_SCOPE, scopeKey, type ClassifySettings, type Named, type VaultTree } from "../src/core/classify";
 
 const base: ClassifySettings = {
   chaptersFolder: "Chapters", trackFolders: "", excludeFolders: "", chapterTemplate: "", snapshotsFolder: "Escrita/Snapshots",
@@ -100,13 +100,16 @@ describe("Placement.scope", () => {
   });
 });
 
-describe("classifyKey and the scope keys", () => {
-  it("changes with each of the four keys", () => {
-    const k = classifyKey(uni);
-    expect(classifyKey({ ...uni, universeMode: "perBook" })).not.toBe(k);
-    expect(classifyKey({ ...uni, universeNote: "Outro.md" })).not.toBe(k);
-    expect(classifyKey({ ...uni, defaultUniverseFolders: "X" })).not.toBe(k);
-    expect(classifyKey({ ...uni, universeProperty: "mundo" })).not.toBe(k);
-    expect(classifyKey({ ...uni })).toBe(k);
+describe("scopeKey and the scope keys", () => {
+  it("changes with each of the four keys, and classifyKey with none of them", () => {
+    const k = scopeKey(uni), c = classifyKey(uni);
+    const edits: Partial<ClassifySettings>[] = [
+      { universeMode: "perBook" }, { universeNote: "Outro.md" }, { defaultUniverseFolders: "X" }, { universeProperty: "mundo" },
+    ];
+    for (const e of edits) {
+      expect(scopeKey({ ...uni, ...e })).not.toBe(k);
+      expect(classifyKey({ ...uni, ...e })).toBe(c);
+    }
+    expect(scopeKey({ ...uni })).toBe(k);
   });
 });

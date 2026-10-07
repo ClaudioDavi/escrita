@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { applyChange } from "../src/core/note-text";
-import { excerptOf, isTableRow, linkFromGenerated, linkableText, linkMarkup, linkPlan, rowsOf } from "../src/universe/unlinked-link";
+import { segment } from "../src/core/markdown";
+import { isTableLine } from "../src/core/markers";
+import { excerptOf, linkFromGenerated, linkableText, linkMarkup, linkPlan, rowsOf } from "../src/universe/unlinked-link";
 
 const text = "Ontem o Capitão voltou.\n\nTeo riu. Teo saiu.";
 const teo = { from: text.indexOf("Teo"), to: text.indexOf("Teo") + 3, text: "Teo" };
@@ -23,9 +25,41 @@ describe("linkMarkup", () => {
   it("escapes the alias pipe in a table row, so the cell isn't split (release review)", () => {
     expect(linkMarkup("Teodoro", "Teo", true)).toBe("[[Teodoro\\|Teo]]");
     expect(linkMarkup("Teo", "Teo", true)).toBe("[[Teo]]");
-    expect(isTableRow("| Teo | capitão |")).toBe(true);
-    expect(isTableRow("  | Teo |")).toBe(true);
-    expect(isTableRow("Teo riu | e saiu")).toBe(false);
+  });
+});
+
+describe("isTableLine (GFM tables)", () => {
+  const rows = (t: string) => { const md = segment(t); return Array.from({ length: md.lineCount }, (_, i) => isTableLine(md, i)); };
+  it("finds the rows of a table with leading pipes", () => {
+    expect(rows("Antes.\n\n| Nome | Idade |\n| --- | :-: |\n| Teo | 3 |\n\nDepois.")).toEqual([false, false, true, true, true, false, false]);
+  });
+  it("finds the rows of a table written without leading pipes", () => {
+    expect(rows("Nome | Idade\n--- | ---\nTeo | 3\nBia | 4")).toEqual([true, true, true, true]);
+  });
+  it("leaves a pipe in plain prose, a lone pipe row and a bad delimiter alone", () => {
+    expect(rows("Teo riu | e saiu.\nE voltou.")).toEqual([false, false]);
+    expect(rows("| Teo |")).toEqual([false]);
+    expect(rows("a | b | c\n--- | ---\nTeo | 3")).toEqual([false, false, false]);
+    expect(rows("Teo | Bia\n\n--- | ---")).toEqual([false, false, false]);
+  });
+  it("ignores a table in a code block", () => {
+    expect(rows("```\na | b\n--- | ---\n```")).toEqual([false, false, false, false]);
+  });
+});
+
+describe("linkPlan with a markup builder", () => {
+  it("escapes the alias pipe when the mention sits in a table row, leading pipe or not", () => {
+    const build = (inTable: boolean) => linkMarkup("Teodoro", "Teo", inTable);
+    for (const t of ["Nome | Idade\n--- | ---\nTeo | 3", "| Nome | Idade |\n|---|---|\n| Teo | 3 |"]) {
+      const at = t.indexOf("Teo");
+      const c = linkPlan({ from: at, to: at + 3, text: "Teo" }, build)(t)!;
+      expect(c.insert).toBe("[[Teodoro\\|Teo]]");
+    }
+    const c = linkPlan(teo, build)(text)!;
+    expect(c.insert).toBe("[[Teodoro|Teo]]");
+  });
+  it("writes nothing when the builder answers null", () => {
+    expect(linkPlan(teo, () => null)(text)).toBeNull();
   });
 });
 

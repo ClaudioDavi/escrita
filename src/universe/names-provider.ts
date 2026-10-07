@@ -10,8 +10,7 @@
 // its object, so name marks and the lens can compare by version. A thread edit never
 // reaches it.
 
-import { compileTerms, EMPTY_TABLE, findNames, foldName, matchLang, type NameSource, type TermTable } from "../core/names";
-import { NAME_TITLES } from "../core/name-titles";
+import { compileTerms, EMPTY_TABLE, findNames, foldName, matchLang, titleSet, type NameSource, type TermTable } from "../core/names";
 import type { NamesProvider } from "../core/names-source";
 import { normalizeWord } from "../core/stem";
 import type { Entry } from "./entries";
@@ -63,6 +62,7 @@ export class UniverseNamesProvider implements NamesProvider {
   /** entries grouped by scope, valid until the next refresh() */
   private groups: Map<string, Entry[]> | null = null;
   private timer: unknown = null;
+  private titleCache: { sig: string; set: Set<string> } | null = null;
   /** how many times a table was compiled (tests read it) */
   compiled = 0;
 
@@ -74,6 +74,14 @@ export class UniverseNamesProvider implements NamesProvider {
       lang: matchLang(d.language(), d.locale()),
       extraTitles: d.nameTitles().split(/\r?\n/).map((x) => x.trim()).filter((x) => x !== ""),
     };
+  }
+
+  /** The name titles for the current options, rebuilt only when the language or the setting changes. */
+  private titles(): Set<string> {
+    const o = this.options();
+    const sig = JSON.stringify([o.lang, o.extraTitles]);
+    if (this.titleCache?.sig !== sig) this.titleCache = { sig, set: titleSet(o.lang, o.extraTitles) };
+    return this.titleCache.set;
   }
 
   private compile(sources: NameSource[], o: Opts): TermTable {
@@ -142,11 +150,7 @@ export class UniverseNamesProvider implements NamesProvider {
   isKnownName(text: string, path: string): boolean {
     const run = text.trim();
     if (run === "") return true;
-    const o = this.options();
-    const titles = new Set<string>();
-    for (const l of o.lang ? [o.lang] : (["pt", "en"] as const)) for (const t of NAME_TITLES[l]) titles.add(normalizeWord(t));
-    for (const t of o.extraTitles) titles.add(normalizeWord(t.replace(/\.+$/, "")).trim());
-    if (titles.has(normalizeWord(run))) return true;
+    if (this.titles().has(normalizeWord(run))) return true;
     const table = this.tableFor(path);
     if (table === EMPTY_TABLE) return false;
     return findNames(run, table).some((x) => x.from === 0 && x.to === run.length);

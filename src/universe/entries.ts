@@ -7,7 +7,7 @@
 // themselves, are never entries.
 
 import { foldName } from "../core/names";
-import { classifyKey, inExports, inFolder, inSubmissions, snapshotsRoot, type ClassifySettings } from "../core/classify";
+import { classifyKey, inExports, scopeKey, inFolder, inSubmissions, snapshotsRoot, type ClassifySettings } from "../core/classify";
 import type { IndexFile, IndexSpec } from "../core/vault-index";
 import { sameScope, type Scope } from "../core/scope";
 import { ENTRY_KINDS, type EntryKind, type UniverseSettings } from "./settings";
@@ -99,11 +99,12 @@ export type EntriesSettings = Pick<UniverseSettings,
 } & Pick<ClassifySettings, "chaptersFolder" | "snapshotsFolder" | "chapterTemplate"> & Partial<ClassifySettings>;
 
 /**
- * classifyKey of the settings an index reads. Real settings are whole; `classifyKey`
- * reads every field through `str()` and defaults, so a partial one (a test's) is safe.
+ * classifyKey and scopeKey of the settings a universe index reads (its values depend on
+ * scope). Real settings are whole; both read every field through `str()` and defaults, so a
+ * partial one (a test's) is safe.
  */
 export function classifyKeyOf(s: Partial<ClassifySettings>): string {
-  return classifyKey(s as ClassifySettings);
+  return JSON.stringify([classifyKey(s as ClassifySettings), scopeKey(s)]);
 }
 
 /** Whether the note is a template (the templates folder, an entry template or the chapter template). */

@@ -15,3 +15,20 @@ export function lineList(s: string | null | undefined): string[] {
 export function folderList(s: string): string[] {
   return s.split(/[\n,]/).map((x) => x.trim().replace(/^\/+|\/+$/g, "")).filter(Boolean);
 }
+
+const parsedFolders = new Map<string, readonly string[]>();
+
+/**
+ * folderList, parsed once per setting text: for the per-path rules (classify's tracked test,
+ * the scope's default-universe folders) that run on every file. Read-only; a few texts at most
+ * are live at once (the cache is dropped past 32).
+ */
+export function folderListOf(s: string): readonly string[] {
+  let hit = parsedFolders.get(s);
+  if (!hit) {
+    if (parsedFolders.size >= 32) parsedFolders.clear();
+    hit = Object.freeze(folderList(s));
+    parsedFolders.set(s, hit);
+  }
+  return hit;
+}

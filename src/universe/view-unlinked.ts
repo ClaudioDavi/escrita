@@ -5,7 +5,7 @@
 
 import { Notice, TFile } from "obsidian";
 import { fmt, t } from "../i18n";
-import { isTableRow, linkFromGenerated, linkableText, linkPlan, type UnlinkedRow } from "./unlinked-link";
+import { linkFromGenerated, linkableText, linkPlan, type UnlinkedRow } from "./unlinked-link";
 import { button, openNote, type PanelCtx } from "./view-parts";
 
 /** The section for the active note, filled when its rows are known. Draws nothing for a note outside any scope. */
@@ -68,11 +68,14 @@ async function createLink(ctx: PanelCtx, file: TFile, r: UnlinkedRow): Promise<v
       return;
     }
     let markup: string | null = null;
+    let build: ((inTable: boolean) => string | null) | null = null;
     if (to instanceof TFile) {
       const linktext = plugin.app.metadataCache.fileToLinktext(to, file.path, true);
-      markup = linkFromGenerated(plugin.app.fileManager.generateMarkdownLink(to, file.path, undefined, r.text), linktext, r.text, isTableRow(r.lineText));
+      const generated = plugin.app.fileManager.generateMarkdownLink(to, file.path, undefined, r.text);
+      // the plan decides the table escaping from the note's current text, then this keeps what it wrote
+      build = (inTable) => (markup = linkFromGenerated(generated, linktext, r.text, inTable));
     }
-    const done = markup === null ? null : await plugin.notes.text(file).apply(linkPlan(r, markup));
+    const done = build === null ? null : await plugin.notes.text(file).apply(linkPlan(r, build));
     if (done?.ok && markup !== null) new Notice(t("universe.unlinked.done", { n: fmt(r.line + 1), link: markup }));
     else new Notice(t("universe.unlinked.changed"));
   } catch (e) {

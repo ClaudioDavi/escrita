@@ -3,11 +3,10 @@
 // No Obsidian imports: the hub's `add`, `rebuild`, link resolution and time come in
 // through `MentionsDeps`, so it is tested on MemoryVault and ManualTimers.
 
-import { classifyKey, type ClassifySettings } from "../core/classify";
 import { segment } from "../core/markdown";
 import { findNames, type TermTable } from "../core/names";
 import type { IndexChange, IndexFile, IndexSpec, IndexTimers, VaultIndex } from "../core/vault-index";
-import { isUniverseNote, type EntriesSettings } from "./entries";
+import { classifyKeyOf, isUniverseNote, type EntriesSettings } from "./entries";
 import {
   appearsIn as appearsInOf,
   computeMentions,
@@ -42,7 +41,7 @@ export const MENTIONS_SETTLE_MS = 4000;
 /** What decides which notes the index scans, apart from the table. */
 function includeKey(s: EntriesSettings): string {
   return JSON.stringify([
-    classifyKey(s as ClassifySettings), s.universeMode, s.templatesFolder,
+    classifyKeyOf(s), s.universeMode, s.templatesFolder,
     Object.values(s.entryTypes).map((t) => t.template),
   ]);
 }

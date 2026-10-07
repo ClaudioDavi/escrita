@@ -15,6 +15,7 @@ The list comes from several reviews:
   the 0.7 code, added candidates 15–20, and ran a measured performance review that
   added candidates 21–23. The performance numbers come from benchmarks on a synthetic
   vault of 3,020 notes and on 3k- and 10k-word pt-BR notes. "Phone" means desktop × 5.
+- The simplify review of the 0.9 diff on 2026-10-07: candidates 24–32.
 
 Re-run the review (`/improve-codebase-architecture`) when this list runs low or after a
 big feature, and add what it finds here.
@@ -97,9 +98,15 @@ outside the universe; moved after screenwriting) · **Target:** 0.9
   `classifyKey` includes. `universe/scope.ts` is deleted, and the outline's copy of `linkText` is
   gone. Measured on the 3,020-file bench: `classify()` 7.23 ms before, 6.45 to 6.57 ms with the
   mode off (early return) and 7.76 ms with the mode on, about 7% more, under the 10% budget, so
-  `scope` stays a plain field (no lazy getter). Left as it was: `UniverseModule` still calls
-  `scopeFor` and `keptOut` itself rather than reading `classify(x).scope`, because a placement has
-  a scope whenever the mode is on, even with the universe feature off.
+  `scope` stays a plain field (no lazy getter). The 0.9 cleanup (simplify pass) finished it:
+  `UniverseModule.scopeOf` reads `classify(x).scope` (it computed the scope a second time with
+  its own lookup) and keeps `scopeFor` only for paths classify gives no scope by kind (a missing
+  path, the plugin folders), through `books.scopeLookup`, which `keptOut` reads too; classify
+  reuses the frontmatter it already read and parses folder settings once per text
+  (`folderListOf`); and `scopeKey` is split out of `classifyKey`, so a universe setting no longer
+  rebuilds the works, explorer and placeholders indexes. On the same bench, universe mode went
+  from 12.0–13.1 ms to 6.7–10.5 ms (a noisy machine; mode off unchanged). A lazy getter was tried
+  and measured slower (15–16.5 ms: `Object.defineProperty` per placement), so it was dropped.
 
 ### 13. Shared helpers out of module folders
 
@@ -117,6 +124,106 @@ outside the universe; moved after screenwriting) · **Target:** 0.9
 - **Change.** Move the pure ones to `core/` and the modals to a shared `ui/` folder.
 - **Wins.** Clear ownership; the module dependency table only lists runtime calls.
 - **Planned for 0.8, in part:** the publish checks move to core (candidate 19).
+
+### 24. One counts interface on the names port, and "create entry" as a universe port
+
+**Strength:** medium, small · **Pairs with:** U 2.5
+
+- **Problem.** The cross-work name counts are plumbed through three layers: `NamesIndex`, the
+  provider's `deps.counts` (`universe/names-provider.ts`), and the port's `workCount`,
+  `wantNameCounts`, `countsVersion` and `onCountsChange` (`core/names-source.ts`). "Create
+  entry" is forwarded through three too: the lens calls `names.createEntry`, the port calls the
+  provider, the provider calls back into `UniverseModule`. Neither is about names.
+- **Change.** One `NameCounts` interface implemented by `NamesIndex`; the provider exposes
+  `counts?`, and the port returns a null object while there is none. "Create entry" becomes a
+  universe port the lens reads through `features.get`, like the desk reads `pending`.
+- **Wins.** Fewer pass-through methods; the names port answers names only.
+
+### 25. Export "parts": one value for a book and a collection
+
+**Strength:** medium · **Pairs with:** SF 13, N 7
+
+- **Problem.** `export/index.ts` branches on book or collection in several places (the holder,
+  the title, the chapter list, the missing links). And the build key holds the format, so
+  switching to or from EPUB in the modal rebuilds the manuscript although only the writer changes.
+- **Change.** `targetOf` builds one `Parts` value `{ holder, title, kind: "book" | "collection",
+  chapters(), missing }`, and the callers read it. The build key leaves the format out.
+- **Wins.** The book and collection branches go; a format switch costs a write, not a build.
+
+### 26. "Read the book" renders per chapter, not per paragraph
+
+**Strength:** speculative until measured · **Pairs with:** G0d
+
+- **Problem.** `outline/reader-view.ts` calls `MarkdownRenderer.render` once per paragraph. A
+  long book makes thousands of render calls, each with its own setup.
+- **Change.** Render one chapter (or a chunk of paragraphs) per call and zip the rendered
+  children back to the blocks the click-to-line and scroll restore need. Measure against G0d
+  first: keep it only if it is faster in Obsidian.
+- **Cost.** The children-to-blocks zip must survive Markdown that renders to more or fewer
+  elements than it has blocks (lists, tables, callouts).
+
+### 27. One property-link parser and `books.resolveLink`
+
+**Strength:** medium · **Pairs with:** candidate 9, export
+
+- **Problem.** A link in a property is parsed in four places: `core/scope.ts` `linkText`,
+  `export/logic.ts` `linkTarget` and `coverLink`, and `core/markers.ts` `linkTarget`. It is
+  resolved by hand in `core/books.ts`, twice in `export/index.ts`, and in the universe. They
+  disagree at the edges: an unquoted `[[x]]` in YAML is a nested list, which some read and others
+  don't (the dedication and epigraph, for example).
+- **Change.** One core parser for a property's link value (string, quoted link, nested list) and
+  one `books.resolveLink(value, from)`; every caller goes through them.
+- **Wins.** Every property link reads the same way; one test file pins the YAML shapes.
+
+### 28. The names index shares the mentions index's segmentation
+
+**Strength:** speculative · **Pairs with:** candidate 12
+
+- **Problem.** The `universe-names` index reads and segments every universe note a second time,
+  next to the mentions index, which already did both for the same files in the same settle.
+- **Change.** Share one read and one `segment()` per file per settle between the two specs (the
+  hub hands the same `Markdown` to both), or merge them into one content spec.
+- **Cost.** Candidate 12 found segmentation cheap (under 1%); the read is the real saving.
+  Measure on the 3,020-file bench before building.
+
+### 29. Memoize the unlinked rows
+
+**Strength:** small
+
+- **Problem.** `UniverseModule.unlinkedFor` re-reads, re-segments and re-matches the note every
+  time the panel draws, even when nothing changed.
+- **Change.** Keep the rows per (path, text version, names version) and answer from them while
+  all three hold.
+- **Wins.** A panel redraw with no edit costs nothing.
+
+### 30. One Run-to-Markdown serializer in core
+
+**Strength:** small · **Pairs with:** N 7
+
+- **Problem.** Turning manuscript runs back into Markdown is written twice: in
+  `outline/reader-model.ts` and in `export/writers/markdown.ts`. A fix to one (escaping, a new
+  run kind) misses the other.
+- **Change.** Move it to core, next to the manuscript model, and have both call it.
+
+### 31. A core accessor for `vault.getConfig`
+
+**Strength:** small
+
+- **Problem.** `export/collection-menu.ts` (the file explorer's sort order) and
+  `universe/view-unlinked.ts` ("Use [[Wikilinks]]") both cast the vault to reach the untyped
+  `getConfig`.
+- **Change.** One typed helper in core (for example `vaultConfig(app, key)`), listed among the
+  exceptions in "Conventions" as the one place that reads it.
+
+### 32. The outline's serial line from the loaded chapter rows
+
+**Strength:** speculative, small · **Pairs with:** N 4
+
+- **Problem.** The outline builds its serial line (`core/serial.ts`, `outline/header.ts`) by
+  reading the chapters again, although it already loaded every chapter row (`outline/rows.ts`).
+- **Change.** Build it from the rows. They lack the include flag, the number and the date the
+  serial model reads, so the rows would gain those fields first.
+- **Cost.** Wider rows for one line; only worth it if the second read shows up in a profile.
 
 ## Measured and set aside
 

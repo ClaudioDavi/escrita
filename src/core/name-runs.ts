@@ -30,7 +30,7 @@ import type { Sentence } from "./sentences";
 import { normalizeWord, type StemLang } from "./stem";
 import { isStopWord } from "./stem/stopwords";
 import type { Token } from "./tokens";
-import { readerMask } from "./wordcount";
+import { readMask } from "./wordcount";
 
 /** One candidate name, as written, with its document offsets. */
 export interface NameRun {
@@ -49,7 +49,6 @@ export const NAME_JOINERS: Record<StemLang, readonly string[]> = {
 };
 
 const GAP = /^[ \t]+$/;
-const HEADING = /^#{1,6} /;
 /** English "I" and its contractions ("I'm", "I'll"): capitalized everywhere, never a name's first word. */
 const PRONOUN_I = /^I(?:['’]\p{Ll}+)?$/u;
 /** A contraction of "I" never joins a run either ("Maria I'm"); a bare "I" may end one ("Pedro I"). */
@@ -112,26 +111,7 @@ export function nameRuns(
   return out;
 }
 
-/**
- * The mask the `universe-names` index reads: core/wordcount readerMask with heading
- * lines and `$$` blocks blanked, the same text the lens reads with "Skip quotations"
- * off (lens/analyze readMask). Frontmatter, code, comments and markup are blank already.
- */
+/** The mask the `universe-names` index reads: core/wordcount readMask with "Skip quotations" off, the same text the lens reads then. */
 export function namesMask(md: Markdown): string {
-  const s = readerMask(md);
-  const masked = md.masked();
-  const parts: string[] = [];
-  let at = 0;
-  for (let i = md.bodyLine; i < md.lineCount; i++) {
-    const a = md.lineStart(i);
-    const b = md.lineEnd(i);
-    const prose = md.startsIn(i) === "prose";
-    if ((prose && HEADING.test(md.text.slice(a, b))) || md.inMath(i) || masked.slice(a, b).includes("$$")) {
-      parts.push(s.slice(at, a), " ".repeat(b - a));
-      at = b;
-    }
-  }
-  if (at === 0) return s;
-  parts.push(s.slice(at));
-  return parts.join("");
+  return readMask(md, { skipQuotes: false });
 }

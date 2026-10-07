@@ -10,6 +10,7 @@
 // mentions leave in (the text of a Markdown link to a web page): Link would write a link
 // inside a link and break it (rule 1).
 
+import type { Markdown } from "../core/markdown";
 import { pickEntry } from "../core/names";
 import type { NoteMentions } from "./mentions";
 
@@ -45,30 +46,25 @@ export interface UnlinkedMention {
  *   already leave out the text inside links (computeMentions).
  * - `linkedEntries`: the entry paths the note links anywhere, resolved by the caller
  *   from `mentions.links` (MentionCtx.resolve). An entry in this set lists nothing.
- * - `note.text`: the text the mentions were computed from, for `line`.
+ * - `note.md`: the segmented text the mentions were computed from (its `lineOf` gives `line`).
  * - `note.inScope`: which candidates count, as in Appears in (pickEntry, Q26). An
  *   occurrence whose entry is still ambiguous after it is left out. Default: every candidate.
  */
 export function unlinkedIn(
   mentions: NoteMentions,
   linkedEntries: ReadonlySet<string>,
-  note: { text: string; inScope?: (id: string) => boolean },
+  note: { md: Markdown; inScope?: (id: string) => boolean },
 ): UnlinkedMention[] {
   const inScope = note.inScope ?? (() => true);
+  const { md } = note;
   const out: UnlinkedMention[] = [];
   const occ = [...mentions.occurrences].sort((x, y) => x.from - y.from);
-  const spans = occ.length ? linkSpans(note.text) : [];
-  let line = 0;
-  let at = 0;
+  const spans = occ.length ? linkSpans(md.text) : [];
   for (const o of occ) {
     const entry = pickEntry(o, inScope);
     if (entry === null || linkedEntries.has(entry)) continue;
     if (spans.some((l) => o.from < l.to && o.to > l.from)) continue;
-    for (let i = note.text.indexOf("\n", at); i !== -1 && i < o.from; i = note.text.indexOf("\n", at)) {
-      line++;
-      at = i + 1;
-    }
-    out.push({ entry, from: o.from, to: o.to, line, text: note.text.slice(o.from, o.to) });
+    out.push({ entry, from: o.from, to: o.to, line: md.lineOf(o.from), text: md.text.slice(o.from, o.to) });
   }
   return out;
 }

@@ -8,6 +8,7 @@ import { ThreadsFeature } from "../src/universe/threads-feature";
 import { THREADS_VIEW, UNIVERSE_VIEW } from "../src/universe/view";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
 import { EMPTY_TABLE } from "../src/core/names";
+import { scopeFor, type ScopeLookup } from "../src/core/scope";
 import { vi } from "vitest";
 
 let plugin: FakePlugin;
@@ -20,8 +21,22 @@ const file = (path: string): TFile => Object.assign(new FakeTFile(), { path, bas
 beforeEach(() => {
   plugin = fakePlugin();
   plugin.settings.universeMode = "universe";
+  // a note outside any book; its scope by the real rule, read through the fake vault and cache
+  const lookup = (): ScopeLookup => ({
+    book: () => null,
+    universe: (q) => {
+      const f = plugin.app.vault.getAbstractFileByPath(q) as { path: string } | null;
+      return (plugin.app.metadataCache.getFileCache(f) as { frontmatter?: Record<string, unknown> } | null)?.frontmatter?.[plugin.settings.universeProperty];
+    },
+    resolve: (l, from) => (plugin.app.metadataCache as unknown as { getFirstLinkpathDest?: (l: string, f: string) => { path: string } | null })
+      .getFirstLinkpathDest?.(l, from)?.path ?? null,
+  });
   plugin.books = {
-    classify: () => ({ kind: "note", book: null, tracked: true }),
+    classify: (x: { path: string } | string) => {
+      const path = typeof x === "string" ? x : x.path;
+      return { path, kind: "note", book: null, tracked: true, snapshot: false, submission: false, export: false, scope: scopeFor({ path }, plugin.settings, lookup()) };
+    },
+    scopeLookup: lookup,
     frontmatter: () => ({}),
   };
   plugin.works = { list: () => [], get: () => undefined, onChange: () => () => {} };

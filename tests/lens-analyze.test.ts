@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { segment } from "../src/core/markdown";
-import { analyze, measuresFor, readMask, visible, type AnalyzeOptions } from "../src/lens/analyze";
+import { analyze, measuresFor, visible, type AnalyzeOptions } from "../src/lens/analyze";
+import { readMask } from "../src/core/wordcount";
 import { parseLists } from "../src/lens/lists";
 import { ALL_RULES, RULES, type Lists, type LensLang, type RuleId } from "../src/lens/types";
 

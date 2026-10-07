@@ -96,8 +96,9 @@ export class LensModule extends FeatureModule {
       this.invalidate();
     }));
 
-    // the cross-work name counts changed: only the names rule reads them
+    // the cross-work name counts changed: only the names rule reads them, so nothing to redo while it is off
     this.register(p.names.onCountsChange(() => {
+      if (!this.newNameOn()) return;
       this.lastPassKey = this.passKey();
       this.invalidate();
     }));
@@ -158,12 +159,19 @@ export class LensModule extends FeatureModule {
     this.lastPassKey = null;
   }
 
-  /** The settings that change a pass; display-only ones (panel measures) do not need a new one. */
+  /** Whether the names rule is among the enabled rules (the only reader of the cross-work counts). */
+  private newNameOn(): boolean {
+    const s = this.plugin.settings;
+    return enabledRules(s.lensRulesOff, s.lensRulesOn).has("newName");
+  }
+
+  /** The settings that change a pass; display-only ones (panel measures) do not need a new one. The counts only while the names rule is on. */
   private passKey(): string {
     const s = this.plugin.settings;
     return JSON.stringify([
       s.lensLanguage, s.lensRulesOff, s.lensRulesOn, s.notNames, s.lensEchoWindow, s.lensLongSentence,
-      s.lensSkipQuotes, s.quoteStyle, s.paragraphStyle, listsPath(s.lensListsNote), this.plugin.names.version(), this.plugin.names.countsVersion(),
+      s.lensSkipQuotes, s.quoteStyle, s.paragraphStyle, listsPath(s.lensListsNote), this.plugin.names.version(),
+      this.newNameOn() ? this.plugin.names.countsVersion() : null,
     ]);
   }
 
@@ -249,7 +257,7 @@ export class LensModule extends FeatureModule {
    */
   private newNameOptions(path: string): AnalyzeOptions["newName"] {
     const names = this.plugin.names;
-    if (!names.hasProvider() || names.tableFor(path) === EMPTY_TABLE) return undefined;
+    if (names.tableFor(path) === EMPTY_TABLE) return undefined;   // no provider (universe off) gives EMPTY_TABLE too
     names.wantNameCounts();
     return {
       notNames: parseNotNames(this.plugin.settings.notNames),

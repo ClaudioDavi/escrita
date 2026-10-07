@@ -105,6 +105,36 @@ export function isSceneBreakLine(md: Markdown, i: number): boolean {
   return parts.length === 1 && parts[0].span.kind === "prose" && SCENE_BREAK.test(parts[0].text);
 }
 
+/** A GFM table delimiter row: cells of `---`, `:--`, `--:` or `:-:` between pipes, leading and trailing pipes optional, at least one pipe. */
+const TABLE_DELIMITER = /^[ \t]*\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$/;
+
+/** The cells of a table row: split on unescaped pipes, one leading and one trailing pipe dropped. */
+function tableCells(line: string): number {
+  const t = line.trim().replace(/^\|/, "").replace(/(?<!\\)\|$/, "");
+  return t.split(/(?<!\\)\|/).length;
+}
+
+/**
+ * Whether line `i` is a row of a GFM table (its header, delimiter or a body row): the line is
+ * prose in a run of non-blank prose lines that holds a header row followed by a delimiter row
+ * (`---|---`, leading pipe optional) with as many cells, and `i` is at or after that header.
+ * Rows run to the next blank line. A pipe in plain prose ("Teo riu | e saiu") is no table.
+ * Needs the lines around `i`, so it takes the segmented document.
+ */
+export function isTableLine(md: Markdown, i: number): boolean {
+  const raw = (j: number) => md.text.slice(md.lineStart(j), md.lineEnd(j)).replace(/\r$/, "");
+  const inRun = (j: number) => j >= md.bodyLine && j < md.lineCount && md.startsIn(j) === "prose" && raw(j).trim() !== "";
+  if (!inRun(i)) return false;
+  let start = i;
+  while (inRun(start - 1)) start--;
+  for (let d = start + 1; d <= i + 1 && inRun(d); d++) {
+    const delim = raw(d);
+    const head = raw(d - 1);
+    if (delim.includes("|") && TABLE_DELIMITER.test(delim) && /(?<!\\)\|/.test(head) && tableCells(head) === tableCells(delim)) return true;
+  }
+  return false;
+}
+
 /** Whether line `i` is a beat line (a lone closed `%% beat: … %%` comment). */
 export function isBeatLine(md: Markdown, i: number): boolean {
   return beatAt(md, i) !== null;

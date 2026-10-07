@@ -4,11 +4,11 @@
 // read-only port, `VaultTree`, the way core/chapter-engine reaches a chapters
 // folder through `ChapterFs`; core/books.ts adapts the real vault to it.
 
-import { folderList } from "./lists";
+import { folderList, folderListOf } from "./lists";
 import { readPiece, type Piece, type PieceProperties } from "./measure";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, readStatus, stageOf, type Stage, type StageMapping } from "./stages";
 // one direction only: classify imports scope, scope never imports classify (no cycle at load)
-import { inFolder, NO_SCOPE, scopeFor, type Scope, type ScopeLookup, type ScopeMode } from "./scope";
+import { inFolder, NO_SCOPE, scopeFor, type Scope, type ScopeLookup, type ScopeMode, type ScopeSettings } from "./scope";
 // inFolder and NO_SCOPE live in core/scope.ts (0.9); re-exported so their callers keep importing them from here
 export { inFolder, NO_SCOPE };
 
@@ -177,7 +177,7 @@ export interface Placement<F extends Named, D extends Named> {
    * from this placement, the `universeProperty` from frontmatter, links through
    * `VaultTree.resolve`). Set on every placement, folders and "none" included; NO_SCOPE
    * when the universe mode is off or nothing applies. A field, never a new kind (the
-   * growth rule).
+   * growth rule). The frontmatter read is shared with `piece` and `stage`.
    */
   scope: Scope;
 }
@@ -221,12 +221,12 @@ export function exportRoot(setting: unknown): string {
 }
 
 /**
- * One fingerprint of every setting `classify` reads (IMPROVEMENTS 16): folders,
- * chapters folder, chapter template, snapshots, submissions and export folders (normalized,
- * so "" and the default key alike), status property, stages, the piece
- * properties and the four scope keys (0.9, PLAN-0.9 Q16; a missing mode keys as "off"). Every index spec whose values depend on classify composes it into
- * its `settingsKey`, so a new classify input is added here once and every index
- * rebuilds on it. Stable for equal settings. The six specs move onto it in task 2.4.
+ * One fingerprint of every setting `classify` reads except the scope keys (IMPROVEMENTS 16):
+ * folders, chapters folder, chapter template, snapshots, submissions and export folders
+ * (normalized, so "" and the default key alike), status property, stages, the piece
+ * properties. Every index spec whose values depend on classify composes it into its
+ * `settingsKey`, so a new classify input is added here once and every index rebuilds on it.
+ * A spec that also reads `Placement.scope` composes scopeKey too. Stable for equal settings.
  */
 export function classifyKey(s: ClassifySettings): string {
   return JSON.stringify([
@@ -234,8 +234,16 @@ export function classifyKey(s: ClassifySettings): string {
     snapshotsRoot(s.snapshotsFolder), submissionsRoot(s.submissionsFolder), exportRoot(s.exportFolder),
     str(s.statusProperty), s.stages ?? null,
     str(s.targetProperty), str(s.limitProperty), str(s.unitProperty), str(s.deadlineProperty),
-    str(s.universeMode) || "off", str(s.universeNote), str(s.defaultUniverseFolders), str(s.universeProperty),
   ]);
+}
+
+/**
+ * The four scope keys `Placement.scope` reads (0.9, PLAN-0.9 Q16; a missing mode keys as
+ * "off"), apart from classifyKey so a universe setting change rebuilds only the specs whose
+ * values depend on scope (the universe's entries, threads, mentions and names indexes).
+ */
+export function scopeKey(s: Pick<ClassifySettings, "universeMode" | "universeNote" | "defaultUniverseFolders" | "universeProperty">): string {
+  return JSON.stringify([str(s.universeMode) || "off", str(s.universeNote), str(s.defaultUniverseFolders), str(s.universeProperty)]);
 }
 
 /** Whether `path` is the submissions folder or inside it. */
@@ -364,9 +372,9 @@ function ancestorBook<F extends Named, D extends Named>(tree: VaultTree<F, D>, p
 }
 
 function isTracked(path: string, settings: ClassifySettings): boolean {
-  const track = folderList(str(settings.trackFolders));
+  const track = folderListOf(str(settings.trackFolders));
   if (track.length > 0 && !track.some((f) => inFolder(path, f))) return false;
-  if (folderList(str(settings.excludeFolders)).some((f) => inFolder(path, f))) return false;
+  if (folderListOf(str(settings.excludeFolders)).some((f) => inFolder(path, f))) return false;
   const tpl = str(settings.chapterTemplate).trim().replace(/^\/+/, "");
   if (tpl && path === (/\.md$/i.test(tpl) ? tpl : `${tpl}.md`)) return false;
   return true;
@@ -399,30 +407,55 @@ function stageFor(fm: Record<string, unknown> | undefined, tracked: boolean, set
   }
 }
 
-/** The scope of `path`, given the book classify already found for it (never throws; none when the mode is off). */
-function scopeOf<F extends Named, D extends Named>(
+/**
+ * The tree-backed ScopeLookup for `path` (core/scope.ts): its book as classify found it (the
+ * lookup answers for `path` only), the `universeProperty` from frontmatter (`own.fm` when
+ * classify already read it for `path`), links through `VaultTree.resolve`. keptOut reads it
+ * too (books.scopeLookup), so the scope and `universe: false` agree.
+ */
+export function scopeLookup<F extends Named, D extends Named>(
   tree: VaultTree<F, D>, settings: ClassifySettings, path: string, book: BookOf<F, D> | null,
-): Scope {
-  const mode = settings.universeMode ?? "off";
-  if (mode === "off") return NO_SCOPE;
+  own?: { fm: Record<string, unknown> | undefined },
+): ScopeLookup {
   const prop = settings.universeProperty ?? "universe";
-  const lookup: ScopeLookup = {
+  return {
     book: (p) => (book && p === path ? { note: book.note.path, folder: book.folder.path } : null),
     universe: (p) => {
+      if (own && p === path) return own.fm?.[prop];
       const f = tree.file(p);
       return f ? frontmatterOf(tree, f)?.[prop] : undefined;
     },
     resolve: (link, from) => tree.resolve(link, from),
   };
-  try {
-    return scopeFor({ path }, {
-      universeMode: mode,
-      universeNote: settings.universeNote ?? "Universe.md",
-      defaultUniverseFolders: settings.defaultUniverseFolders ?? "",
-    }, lookup);
-  } catch {
-    return NO_SCOPE;
+}
+
+/** The settings' scope keys as ScopeSettings, with UniverseSettings' defaults for the missing ones. */
+export function scopeSettings(settings: ClassifySettings): ScopeSettings {
+  return {
+    universeMode: settings.universeMode ?? "off",
+    universeNote: settings.universeNote ?? "Universe.md",
+    defaultUniverseFolders: settings.defaultUniverseFolders ?? "",
+  };
+}
+
+/**
+ * `p` with its `scope` (never throws; none when the mode is off). Computed at once: a lazy
+ * getter (Object.defineProperty per placement) measured slower on the bench than the
+ * scope itself, once its frontmatter read is shared with classify's (`own`).
+ */
+function withScope<F extends Named, D extends Named>(
+  p: Omit<Placement<F, D>, "scope">, tree: VaultTree<F, D>, settings: ClassifySettings,
+  own?: { fm: Record<string, unknown> | undefined },
+): Placement<F, D> {
+  let scope: Scope = NO_SCOPE;
+  if ((settings.universeMode ?? "off") !== "off") {
+    try {
+      scope = scopeFor({ path: p.path }, scopeSettings(settings), scopeLookup(tree, settings, p.path, p.book, own));
+    } catch {
+      // a failing lookup reads as no scope
+    }
   }
+  return { ...p, scope };
 }
 
 /**
@@ -461,21 +494,22 @@ export function classify<F extends Named, D extends Named>(
       const piece = markdown ? pieceOf(fm, settings) : null;
       // The book note comes first: a book note inside another book's folder belongs to its own book.
       const own = markdown ? bookAt(tree, path.slice(0, -3), ch) : null;
-      if (own) return { path, kind: "book-note", markdown, book: own, tracked, piece, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false, scope: scopeOf(tree, settings, path, own) };
+      const read = markdown ? { fm } : undefined;
+      if (own) return withScope({ path, kind: "book-note", markdown, book: own, tracked, piece, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false }, tree, settings, read);
       const book = ancestorBook(tree, path, ch);
       if (book) {
         // compare against the handle's path, never the settings string
         const kind: Kind = markdown && parentOf(path) === book.chaptersFolder.path ? "chapter" : "book-file";
-        return { path, kind, markdown, book, tracked, piece, snapshot: false, stage: null, submission: false, export: false, scope: scopeOf(tree, settings, path, book) };
+        return withScope({ path, kind, markdown, book, tracked, piece, snapshot: false, stage: null, submission: false, export: false }, tree, settings, read);
       }
-      return { path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false, scope: scopeOf(tree, settings, path, null) };
+      return withScope({ path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false }, tree, settings, read);
     }
     if (tree.folder(path)) {
       const own = bookAt(tree, path, ch);
-      if (own) return { ...none, path, kind: "book-folder", book: own, scope: scopeOf(tree, settings, path, own) };
+      if (own) return withScope({ ...none, path, kind: "book-folder", book: own }, tree, settings);
       const book = ancestorBook(tree, path, ch);
       const kind: Kind = book && book.chaptersFolder.path === path ? "chapters-folder" : "folder";
-      return { ...none, path, kind, book, scope: scopeOf(tree, settings, path, book) };
+      return withScope({ ...none, path, kind, book }, tree, settings);
     }
   } catch {
     // a failing lookup reads as "nothing here"

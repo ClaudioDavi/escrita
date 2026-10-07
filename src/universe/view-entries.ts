@@ -34,7 +34,7 @@ function newEntry(ctx: PanelCtx, kind: EntryKind | undefined): void {
   const { plugin, scope } = ctx;
   const named = scope.note ? plugin.app.vault.getAbstractFileByPath(scope.note) : null;
   const file = named instanceof TFile ? named : plugin.app.workspace.getActiveFile();
-  createEntryFromSelection(plugin, null, file, kind, scope);
+  createEntryFromSelection(plugin, null, file, { kind, given: scope });
 }
 
 export function renderEntries(el: HTMLElement, ctx: PanelCtx, entries: Entry[]): void {

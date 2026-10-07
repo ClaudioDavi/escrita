@@ -6,8 +6,7 @@ import type { Markdown } from "../core/markdown";
 import { isSceneBreakLine } from "../core/markers";
 import { sentences } from "../core/sentences";
 import { tokens } from "../core/tokens";
-import { readerMask } from "../core/wordcount";
-import { blockStateIn } from "../editor/context";
+import { readMask } from "../core/wordcount";
 import { stemLang } from "./lang";
 import { LEXICON } from "./lexicon";
 import { measures, passExtras } from "./measures";
@@ -19,42 +18,7 @@ import { ALL_RULES, LANG_RULES, OPT_IN_RULES, RULES, type LensPass, type LensRes
 export interface AnalyzeOptions extends RuleOptions, ReadOptions {}
 
 const HEADING = /^#{1,6} /;
-const QUOTE = /^[ \t]*>/;
 const RULE_ORDER: Record<RuleId, number> = Object.fromEntries(ALL_RULES.map((r, i) => [r, i])) as Record<RuleId, number>;
-
-/** Lines the lens never reads: headings, `$$` blocks and, with skipQuotes, `>` lines. */
-function blankedLines(md: Markdown, o: ReadOptions): { line: number; heading: boolean }[] {
-  const out: { line: number; heading: boolean }[] = [];
-  const mask = md.masked();
-  for (let i = md.bodyLine; i < md.lineCount; i++) {
-    const a = md.lineStart(i);
-    const b = md.lineEnd(i);
-    const raw = md.text.slice(a, b);
-    const prose = md.startsIn(i) === "prose";
-    if (prose && HEADING.test(raw)) out.push({ line: i, heading: true });
-    else if (blockStateIn(md, i).math || mask.slice(a, b).includes("$$")) out.push({ line: i, heading: false });
-    else if (o.skipQuotes && prose && QUOTE.test(raw)) out.push({ line: i, heading: false });
-  }
-  return out;
-}
-
-/** The reader mask with headings, `$$` blocks and (skipQuotes) `>` lines blanked; offsets kept. */
-export function readMask(md: Markdown, o: ReadOptions): string {
-  let s = readerMask(md);
-  const lines = blankedLines(md, o);
-  if (lines.length === 0) return s;
-  const parts: string[] = [];
-  let at = 0;
-  for (const { line } of lines) {
-    const a = md.lineStart(line);
-    const b = md.lineEnd(line);
-    parts.push(s.slice(at, a), " ".repeat(b - a));
-    at = b;
-  }
-  parts.push(s.slice(at));
-  s = parts.join("");
-  return s;
-}
 
 /** Offsets that reset the echo window: scene breaks and headings. */
 function windowBreaks(md: Markdown): number[] {

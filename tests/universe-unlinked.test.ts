@@ -34,7 +34,7 @@ const byName = (linkpath: string): string | null => sources.find((s) => s.name =
 function run(text: string, inScope?: (id: string) => boolean) {
   const mentions = computeMentions(segment(text), (mask) => findNames(mask, table));
   const linked = new Set(mentions.links.map((l) => byName(l.linkpath)).filter((x): x is string => !!x));
-  return unlinkedIn(mentions, linked, { text, inScope });
+  return unlinkedIn(mentions, linked, { md: segment(text), inScope });
 }
 
 describe("unlinkedIn on the fixtures", () => {
@@ -65,23 +65,23 @@ describe("unlinkedIn rules", () => {
 
   it("is empty with no occurrences", () => {
     const m: NoteMentions = { occurrences: [], links: [] };
-    expect(unlinkedIn(m, new Set(), { text: "" })).toEqual([]);
+    expect(unlinkedIn(m, new Set(), { md: segment("") })).toEqual([]);
   });
 
   it("leaves out an occurrence that is still ambiguous, and honours the scope", () => {
     const other = "Universo/Personagens/Outro.md";
     const m: NoteMentions = { occurrences: [occ(0, 3, "Teo", [entry, other]), occ(4, 7, "Teo", [entry])], links: [] };
     const text = "Teo Teo";
-    expect(unlinkedIn(m, new Set(), { text }).map((u) => u.from)).toEqual([4]);
-    expect(unlinkedIn(m, new Set(), { text, inScope: (id) => id === entry }).map((u) => u.from)).toEqual([0, 4]);
-    expect(unlinkedIn(m, new Set(), { text, inScope: () => false })).toEqual([]);
+    expect(unlinkedIn(m, new Set(), { md: segment(text) }).map((u) => u.from)).toEqual([4]);
+    expect(unlinkedIn(m, new Set(), { md: segment(text), inScope: (id) => id === entry }).map((u) => u.from)).toEqual([0, 4]);
+    expect(unlinkedIn(m, new Set(), { md: segment(text), inScope: () => false })).toEqual([]);
   });
 
   it("never lists an occurrence inside a link or embed, such as a web link's text", () => {
     const text = "Leia [Teo](https://x.org/t) e ![[Teo.png]], depois Teo.";
     const a = text.indexOf("Teo"), b = text.indexOf("Teo", a + 3), c = text.lastIndexOf("Teo");
     const m: NoteMentions = { occurrences: [occ(a, a + 3, "Teo", [entry]), occ(b, b + 3, "Teo", [entry]), occ(c, c + 3, "Teo", [entry])], links: [] };
-    expect(unlinkedIn(m, new Set(), { text }).map((u) => u.from)).toEqual([c]);
+    expect(unlinkedIn(m, new Set(), { md: segment(text) }).map((u) => u.from)).toEqual([c]);
   });
 
   it("counts lines from the start of the text, frontmatter included", () => {

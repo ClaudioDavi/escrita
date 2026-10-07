@@ -97,6 +97,34 @@ export function readerMask(md: Markdown): string {
   return s;
 }
 
+const HEADING = /^#{1,6} /;
+const QUOTE = /^[ \t]*>/;
+
+/**
+ * What the lens and the `universe-names` index read (moved from lens/analyze in 0.9): the
+ * reader mask with heading lines and `$$` blocks blanked and, with `skipQuotes`, prose `>`
+ * lines; offsets kept. Frontmatter, code, comments and markup are blank already.
+ */
+export function readMask(md: Markdown, o: { skipQuotes: boolean }): string {
+  const s = readerMask(md);
+  const masked = md.masked();
+  const parts: string[] = [];
+  let at = 0;
+  for (let i = md.bodyLine; i < md.lineCount; i++) {
+    const a = md.lineStart(i);
+    const b = md.lineEnd(i);
+    const prose = md.startsIn(i) === "prose";
+    const raw = md.text.slice(a, b);
+    if ((prose && HEADING.test(raw)) || md.inMath(i) || masked.slice(a, b).includes("$$") || (o.skipQuotes && prose && QUOTE.test(raw))) {
+      parts.push(s.slice(at, a), " ".repeat(b - a));
+      at = b;
+    }
+  }
+  if (at === 0) return s;
+  parts.push(s.slice(at));
+  return parts.join("");
+}
+
 /** Number of words in text already passed through proseOnly. */
 export function wordsIn(prose: string): number {
   const m = prose.match(WORD);

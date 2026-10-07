@@ -278,7 +278,8 @@ export class LensView extends ItemView {
       const create = actions.createEl("button", { cls: "escrita-lens-btn", text: t("lens.newName.create") });
       create.setAttribute("aria-label", t("lens.newName.create.label", { name: g.text }));
       create.setAttribute(FOCUS_KEY, `create-name-${i}`);
-      create.addEventListener("click", () => this.createEntry(path, g.text));
+      // "Create entry": the create-entry modal with the whole run filled in (D8); the note is not touched
+      create.addEventListener("click", () => this.plugin.names.createEntry(g.text, path));
       const dismiss = actions.createEl("button", { cls: "escrita-lens-link escrita-lens-name-dismiss", text: t("lens.newName.dismiss") });
       dismiss.setAttribute("aria-label", t("lens.newName.dismiss.label", { name: g.text }));
       dismiss.setAttribute(FOCUS_KEY, `dismiss-name-${i}`);
@@ -286,10 +287,6 @@ export class LensView extends ItemView {
     });
   }
 
-  /** "Create entry": the create-entry modal with the whole run filled in (D8). The note is not touched. */
-  private createEntry(path: string, name: string): void {
-    this.plugin.names.createEntry(name, path);
-  }
 
   /** "Dismiss": the name goes to "Not names", in every note, with a notice. */
   private async dismissName(name: string): Promise<void> {

@@ -35,7 +35,7 @@ import { NamesIndex, type NoteRuns } from "./names-index";
 import { NameMarks, SPELLCHECK_MARKS_WORK } from "./name-marks";
 import { UniverseNamesProvider } from "./names-provider";
 import { registerAppearsStrings } from "./strings-appears";
-import { keptOut, linkText, scopeFor, universeNotePath, universeRootOf, type Scope, type ScopeLookup } from "../core/scope";
+import { keptOut, scopeFor, universeNotePath, universeRootOf, type Scope } from "../core/scope";
 import type { EntryKind, UniverseMode } from "./settings";
 import { inScope, type ThreadRef } from "./threads";
 import { formFor, type WorkInfo } from "./works-list";
@@ -126,7 +126,8 @@ export class UniverseModule extends FeatureModule {
       timers,
       createEntry: (name, from) => {
         const file = p.app.vault.getAbstractFileByPath(from);
-        if (file instanceof TFile) this.createEntryNamed(file, name);
+        // the lens's names rule (D8): the modal for the note's scope with the whole run filled in; nothing written into the note
+        if (file instanceof TFile) createEntryFromSelection(p, null, file, { named: name });
       },
       counts: {
         want: () => this.nameRuns?.want(),
@@ -292,8 +293,11 @@ export class UniverseModule extends FeatureModule {
 
   /** The scope of a note (kind none / book / universe, with its root folder and naming note), per scopeFor and the current mode. */
   scopeOf(file: TFile | string): Scope {
-    const path = typeof file === "string" ? file : file.path;
-    return scopeFor({ path }, this.plugin.settings, this.lookup());
+    const place = this.plugin.books.classify(file);
+    if (place.kind !== "none" && !place.snapshot && !place.submission && !place.export) return place.scope;
+    // classify gives a missing path and the plugin's own folders no scope; the universe answers
+    // them by the rule alone, as it always has (the universe note before it exists is the universe)
+    return scopeFor({ path: place.path }, this.plugin.settings, this.plugin.books.scopeLookup(place));
   }
 
   /** The scope of the active markdown note, or null when none is open. The panel keeps showing its last scope on null. */
@@ -334,15 +338,6 @@ export class UniverseModule extends FeatureModule {
   appearsInSource(): AppearsInSource | null { return this.source; }
 
   /**
-   * "Create entry" from the lens's names rule (D8): opens the create-entry modal for the note's
-   * scope with the whole run filled in ("Dona Zefa"), editable. Nothing is linked or written
-   * into the note.
-   */
-  createEntryNamed(file: TFile, name: string): void {
-    createEntryFromSelection(this.plugin, null, file, undefined, undefined, name);
-  }
-
-  /**
    * Starts the mentions index if nothing has yet (Q15). The panel calls it when its Works or
    * Entries tab draws; surfaces read "counting" until the first build is done. No-op while unloaded.
    */
@@ -365,14 +360,15 @@ export class UniverseModule extends FeatureModule {
     m.demand();
     if (!m.isReady() || !idx.isReady()) return "counting";
     const text = await this.plugin.notes.text(file).read();
-    const nm = computeMentions(segment(text), (mask) => findNames(mask, names.globalTable()));
+    const md = segment(text);
+    const nm = computeMentions(md, (mask) => findNames(mask, names.globalTable()));
     const linked = new Set<string>();
     for (const l of nm.links) {
       const to = this.plugin.app.metadataCache.getFirstLinkpathDest(l.linkpath, file.path)?.path;
       if (to) linked.add(to);
     }
     const ctx = f.ctx(file.path);
-    const found = unlinkedIn(nm, linked, { text, inScope: (id) => ctx.candidateInScope(file.path, id) });
+    const found = unlinkedIn(nm, linked, { md, inScope: (id) => ctx.candidateInScope(file.path, id) });
     return rowsOf(found, text, (id) => idx.get(id)?.name ?? baseName(id));
   }
 
@@ -410,8 +406,8 @@ export class UniverseModule extends FeatureModule {
 
   /** Whether `universe: false` keeps this note out of the universe (its own, or its book note's), by the same rules as scopeOf. */
   keptOut(file: TFile | string): boolean {
-    const path = typeof file === "string" ? file : file.path;
-    return keptOut(path, this.lookup(), this.plugin.settings);
+    const place = this.plugin.books.classify(file);
+    return keptOut(place.path, this.plugin.books.scopeLookup(place), this.plugin.settings);
   }
 
   /**
@@ -598,22 +594,6 @@ export class UniverseModule extends FeatureModule {
       this.later_.delete(name);
       fn();
     }, ms));
-  }
-
-  private lookup(): ScopeLookup {
-    const { metadataCache, vault } = this.plugin.app;
-    const prop = this.plugin.settings.universeProperty;
-    return {
-      book: (path) => {
-        const b = this.plugin.books.classify(path).book;
-        return b ? { note: b.note.path, folder: b.folder.path } : null;
-      },
-      universe: (path) => {
-        const f = vault.getAbstractFileByPath(path);
-        return f instanceof TFile ? metadataCache.getFileCache(f)?.frontmatter?.[prop] : undefined;
-      },
-      resolve: (link, from) => metadataCache.getFirstLinkpathDest(linkText(link) ?? link, from)?.path ?? null,
-    };
   }
 
   /** Tells the panel and the threads view that something they show changed. */

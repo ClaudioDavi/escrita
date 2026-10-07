@@ -21,6 +21,7 @@ for (let b = 0; b < 20; b++) {
 }
 const tree: VaultTree<N, N> = { file: (p) => files.get(p) ?? null, folder: (p) => folders.get(p) ?? null, folders: () => [...folders.values()], frontmatter: (f) => fm.get(f.path), resolve: () => null };
 const s = { ...DEFAULT_SETTINGS, trackFolders: "Notas, Livros", excludeFolders: "Notas/Sub3" };
+const u = { ...s, universeMode: "universe" as const, universeNote: "Universo.md", defaultUniverseFolders: "Notas/Sub1" };
 const paths = [...files.keys()];
 const spec = worksSpec<{ path: string; extension: string }>({ settings: () => s, placement: (f) => classify(tree, s, f.path) as never, frontmatter: (f) => fm.get(f.path), bookGoal: () => undefined });
 const fs = paths.map((p) => ({ path: p, extension: "md" }));
@@ -28,6 +29,8 @@ const opts = { iterations: 20, warmupIterations: 5, time: 0, warmupTime: 0 };
 
 describe(`classify, ${paths.length} files, ${folders.size} folders`, () => {
   bench("classify() every file once", () => { for (const p of paths) classify(tree, s, p); }, opts);
+  bench("classify() every file once, universe mode", () => { for (const p of paths) classify(tree, u, p); }, opts);
+  bench("classify() every file once, universe mode, scope read", () => { for (const p of paths) void classify(tree, u, p).scope; }, opts);
   bench("listBooks() once", () => { listBooks(tree, s); }, opts);
   bench("works index structural recompute (compute per file, sync)", () => { for (const f of fs) if (spec.include(f)) spec.compute(f, null); }, opts);
 });

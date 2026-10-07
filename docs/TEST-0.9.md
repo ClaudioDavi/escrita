@@ -719,7 +719,7 @@ lives. Some were already settled by the follow-ups; they are listed so you know.
 | Clicking the excerpt | Goes to the line, selects nothing | Select the word | `src/universe/view-unlinked.ts` |
 | What "changed" means | The whole line must be as listed, not only the word | Check only the word | `src/universe/unlinked-link.ts` (`linkPlan`) |
 | Text that can't be linked | Brackets or a line break, or a pipe with wikilinks: its own notice, "Este texto não pode ser vinculado aqui." (fixed in `763f532`). A pipe in a Markdown link is allowed | Refuse a pipe in both forms | `src/universe/unlinked-link.ts` (`linkableText`), `src/universe/view-unlinked.ts` |
-| In a table row | A wikilink's alias pipe is written `\|`; so is every pipe in a Markdown link's text | — (Obsidian requires it) | `src/universe/unlinked-link.ts` |
+| In a table row | A wikilink's alias pipe is written `\|`; so is every pipe in a Markdown link's text. A table row is found by the GFM rule (a header and a `---\|---` delimiter row, leading pipe optional), on the note's text at write time | — (Obsidian requires it) | `src/universe/unlinked-link.ts` (`linkPlan`), `src/core/markers.ts` (`isTableLine`) |
 | Per-book mode | The section sits at the bottom of Entradas (D1) | A tab of its own | `src/universe/view.ts` |
 
 ### Names without an entry

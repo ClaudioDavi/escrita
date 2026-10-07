@@ -3,6 +3,8 @@
 // the link target exactly; in a vault set to Markdown links, `[text](Entry.md)`. The plan checks the text is still there before it replaces
 // anything (rule 1): if it moved or changed, it answers null and nothing is written.
 
+import { segment } from "../core/markdown";
+import { isTableLine } from "../core/markers";
 import type { Change } from "../core/note-text";
 import { insideLink, type UnlinkedMention } from "./unlinked";
 
@@ -87,22 +89,27 @@ export function linkableText(text: string, wiki: boolean): boolean {
   return text !== "" && !/[[\]\n\r]/.test(text) && !(wiki && text.includes("|"));
 }
 
-/** Whether a line is a Markdown table row: it starts with a pipe (Obsidian's tables do). */
-export function isTableRow(line: string): boolean {
-  return /^\s*\|/.test(line);
-}
-
 /**
  * The write plan for one mention: the change that turns `[from, to)` into the link, only
  * while exactly `text` is still there, its whole line is the one listed (`lineText`, when
  * given: board 29c, "the line changed") and it is not part of a link now. Null otherwise
- * (nothing is written; the caller says so and refreshes the row).
+ * (nothing is written; the caller says so and refreshes the row). `markup` is the link, or
+ * a builder told whether the mention sits in a table row of the current text (core/markers
+ * isTableLine), so the alias pipe can be escaped there; a null from it writes nothing.
  */
-export function linkPlan(m: Pick<UnlinkedMention, "from" | "to" | "text"> & { lineText?: string }, markup: string): (current: string) => Change | null {
+export function linkPlan(
+  m: Pick<UnlinkedMention, "from" | "to" | "text"> & { lineText?: string },
+  markup: string | ((inTable: boolean) => string | null),
+): (current: string) => Change | null {
   return (current) => {
     if (m.from < 0 || m.to > current.length || current.slice(m.from, m.to) !== m.text) return null;
     if (m.lineText !== undefined && lineAt(current, m.from) !== m.lineText) return null;
     if (insideLink(current, m.from, m.to)) return null;
-    return { from: m.from, to: m.to, insert: markup };
+    let insert: string | null = typeof markup === "string" ? markup : null;
+    if (typeof markup !== "string") {
+      const md = segment(current);
+      insert = markup(isTableLine(md, md.lineOf(m.from)));
+    }
+    return insert === null ? null : { from: m.from, to: m.to, insert };
   };
 }

@@ -87,7 +87,8 @@ function splitHyphen(w: string): string[] {
 /** Letters without accents, case kept: the comparison of a case-sensitive term (Q23). */
 const stripAccents = (s: string): string => s.normalize("NFD").replace(/\p{M}/gu, "").normalize("NFC").replace(/’/g, "'");
 
-function titleSet(lang: StemLang | null, extra: readonly string[]): Set<string> {
+/** The name titles ("Dona", "Dr"), normalized: the built-in tables for `lang` (both when null) plus the writer's extras (trailing dots dropped, blanks skipped). */
+export function titleSet(lang: StemLang | null, extra: readonly string[]): Set<string> {
   const out = new Set<string>();
   const langs: StemLang[] = lang ? [lang] : ["pt", "en"];
   for (const l of langs) for (const t of NAME_TITLES[l]) out.add(normalizeWord(t));

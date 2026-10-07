@@ -60,7 +60,7 @@ export function worksSpec<F extends IndexFile>(deps: WorksDeps<F>): IndexSpec<F,
         : p.kind === "chapter" ? chapterTitle(basename(f.path))
         : basename(f.path);
       return deskEntry(
-        { ...p, title, bookNotePath: p.book?.note.path },
+        { kind: p.kind, tracked: p.tracked, snapshot: p.snapshot, piece: p.piece, stage: p.stage, title, bookNotePath: p.book?.note.path },
         status,
         (v) => stageOf(v, s.stages),
         p.kind === "book-note" ? deps.bookGoal(f, p) : undefined,

@@ -26,7 +26,7 @@
 
 // core/classify.ts imports this file at runtime (Placement.scope), so this file never
 // imports classify: inFolder and NO_SCOPE live here, and classify re-exports them.
-import { folderList } from "./lists";
+import { folderListOf } from "./lists";
 
 export type ScopeKind = "none" | "book" | "universe";
 
@@ -157,7 +157,7 @@ export function scopeFor(file: { path: string }, settings: ScopeSettings, lookup
   const own = defaultUniverse(settings);
   if (inFolder(file.path, own.root)) return own;
   if (own.note === file.path) return own;
-  if (folderList(settings.defaultUniverseFolders).some((f) => inFolder(file.path, f))) return own;
+  if (folderListOf(settings.defaultUniverseFolders).some((f) => inFolder(file.path, f))) return own;
   return bookScope;
 }
 

@@ -4,8 +4,8 @@ import { includeChapter, type BookSource } from "./book-source";
 import { collectionOf, type Collection } from "./collection";
 import type { NoteService } from "./notes";
 import { chapterTitle, compareChapters, chapterNumber } from "./book";
-import { linkText } from "./scope";
-import { classify, listBooks, lookupPath, placementPath, type BookOf, type Placement, type VaultTree } from "./classify";
+import { linkText, type ScopeLookup } from "./scope";
+import { classify, listBooks, lookupPath, placementPath, scopeLookup, type BookOf, type Placement, type VaultTree } from "./classify";
 
 /** A book: its note (Novels/A Casa.md), folder (Novels/A Casa), chapters folder (Novels/A Casa/Chapters) and title. */
 export type Book = BookOf<TFile, TFolder>;
@@ -50,6 +50,15 @@ export class BookService {
   classify(x: TAbstractFile | string | null): FilePlacement {
     const path = placementPath(x, normalizePath, (p) => this.app.vault.getAbstractFileByPath(p) !== null);
     return classify(this.tree, this.settings(), path);
+  }
+
+  /**
+   * The scope lookup classify reads for a placement's path (core/classify.ts scopeLookup): its
+   * book, the vault's frontmatter and link resolution. For keptOut and the scope of a path
+   * classify gives none, so they read the vault exactly as `Placement.scope` does.
+   */
+  scopeLookup(place: FilePlacement): ScopeLookup {
+    return scopeLookup(this.tree, this.settings(), place.path, place.book);
   }
 
   chapters(book: Book): Chapter[] {

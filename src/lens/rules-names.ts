@@ -14,7 +14,7 @@
 //   While the universe-names index builds, `works` answers 0 and only the in-note
 //   count applies.
 // Frontmatter, code, comments and headings are never read: the lens's read mask
-// (analyze.ts readMask) blanks them. A sentence-start occurrence of a marked name is
+// (core/wordcount readMask) blanks them. A sentence-start occurrence of a marked name is
 // not marked.
 //
 // Match shape: `rule: "newName"`, `kind: "base"`, one match per occurrence, `text` the

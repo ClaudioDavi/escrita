@@ -296,13 +296,16 @@ empty → the default). They are checked before saving through one validation, s
 "Plugin folders". `snapshotsFolderProblem` is its first step: not `..`, not the config
 folder, not inside (or holding) a track folder, not a folder that already has `.md` notes.
 
-**`classifyKey(settings)`** (0.8) is one string for every setting classify reads: the
-track, exclude, chapters and chapter template folders, the three plugin folders
+**`classifyKey(settings)`** (0.8) is one string for every setting classify reads except the
+scope keys: the track, exclude, chapters and chapter template folders, the three plugin folders
 (normalized, so an empty value and the default give the same key), the status property,
-the stages, the four piece properties and (0.9) the four scope keys (`universeMode`,
-`universeNote`, `defaultUniverseFolders`, `universeProperty`; a missing mode keys as "off"). Every index spec whose values depend on classify
-puts it in its `settingsKey` (works, explorer, placeholders, entries, threads, mentions),
+the stages and the four piece properties. Every index spec whose values depend on classify
+puts it in its `settingsKey` (works, explorer, placeholders, entries, threads, mentions, names),
 so a new classify input is added to the key once and every index rebuilds on it.
+**`scopeKey(settings)`** (0.9) is the four scope keys (`universeMode`, `universeNote`,
+`defaultUniverseFolders`, `universeProperty`; a missing mode keys as "off"); only the specs
+whose values depend on scope compose it too (the universe's, through `entries.classifyKeyOf`),
+so a universe setting change doesn't rebuild the works, explorer or placeholders indexes.
 
 It reads the live vault and the settings passed in every time: no cache, so
 renames and settings changes need no invalidation. Don't add one. It never throws.
@@ -342,8 +345,10 @@ that the classifier can answer it (IMPROVEMENTS 9). Pure, no Obsidian imports.
 - **Classify imports scope, never the reverse** (no cycle at load). `ScopeSettings`, `ScopeMode`
   (`off`, `perBook`, `universe`) and `ScopeLookup` are declared in core, so core never imports
   the universe. `ScopeLookup.resolve` is answered by `VaultTree.resolve`.
-- **`Placement.scope`**: `classify` builds the lookup on its own tree and calls `scopeFor` for a
-  file, a book note, a chapter, a book folder and a folder. Snapshots, submissions, exports and
+- **`Placement.scope`**: `classify` builds the lookup on its own tree (`scopeLookup`, which reuses
+  the frontmatter classify already read for the path) and calls `scopeFor` for a
+  file, a book note, a chapter, a book folder and a folder. Folder settings are parsed once per
+  text (`lists.folderListOf`). Snapshots, submissions, exports and
   `none` keep `NO_SCOPE`. With the mode off or missing, classify returns at once and reads
   nothing more (the cost on the 3,020-file bench: about 7% with the mode on, none with it off;
   `PLAN-0.9.md`, G0c). A missing `universeNote` reads as `Universe.md` and a missing
@@ -528,7 +533,8 @@ matches as its parts.
   being `foldName(text)`. A run that starts a sentence loses a leading stop word ("A Joana"
   gives "Joana") and is skipped otherwise; English "I" and its contractions never start or
   join a run; with no language every run at a sentence start is skipped. The rule errs toward
-  silence. `namesMask(md)` is `readerMask` with heading lines and `$$` blocks blanked. The
+  silence. `namesMask(md)` is `core/wordcount.readMask` with "Skip quotations" off: `readerMask`
+  with heading lines and `$$` blocks blanked, the lens's own mask. The
   lens's rule and the universe's `universe-names` index both call these two functions, so
   the in-note count and the cross-work count agree, and neither module imports the other.
 - **Names index** (`universe/names-index.ts`, 0.9). The `universe-names` index: for each note
@@ -541,7 +547,8 @@ matches as its parts.
   quotes" on, the cross-work count can include runs from quote lines that the lens never marks.
 - **Unlinked mentions** (`universe/unlinked.ts`, `unlinked-link.ts`, `view-unlinked.ts`, 0.9).
   `unlinkedIn(mentions, linkedEntries, note)` is pure: from one note's `NoteMentions`, the
-  entries its links resolve to and its text, the occurrences of entries the note never links.
+  entries its links resolve to and its segmented text (`note.md`; `line` is `md.lineOf`), the
+  occurrences of entries the note never links.
   `note.inScope` picks the entry as Appears in does, and an occurrence still ambiguous is
   skipped. `line` is 0-based. An occurrence inside a link or embed already in the text is never
   listed (the mentions index drops it from the text of a Markdown link to a web page, and Link
@@ -553,6 +560,8 @@ matches as its parts.
   `rowsOf`, `excerptOf`, `linkMarkup` (`[[Entry|text]]`, or `[[text]]` when the text is the
   entry's name) and `linkPlan`, a check-then-replace over the whole line the row listed: a
   word that grew ("Teo" to "Teodoro") or a changed line writes nothing, and the row refreshes.
+  In a table row (`core/markers.isTableLine`, the GFM rule, leading pipe optional, read on the
+  text at write time) the plan asks for the link with its pipes escaped `\|`.
   The write goes through `plugin.notes` on an explicit click: one mention, never "link all".
   The section draws under the active work in the Works tab, and at the bottom of the Entries
   tab in per-book mode (which has no Works tab); for a book it lists the **active chapter's**
@@ -1773,8 +1782,8 @@ writes is a new word lists note, on an explicit command. No network (`tests/no-n
 scans its files).
 
 - **What it reads** (the reader mask). `core/wordcount.readerMask(md)`, then
-  `analyze.readMask` blanks whole heading lines, `$$` math blocks (through
-  `editor/context.blockStateIn`; math is an editor overlay, not a segmenter span) and,
+  `core/wordcount.readMask` (shared with the names index's `namesMask`) blanks whole heading
+  lines, `$$` math blocks (through `Markdown.inMath`; math is not a segmenter span) and,
   with "Skip quotes" on (the default), `>` lines. Offsets never move, so every match
   position is a document offset. Frontmatter, code and comments are blank by `segment`.
   One token list over that mask (`core/tokens`) feeds every rule and every number, so
@@ -2044,8 +2053,10 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   in a book (per-book rules), else none. The universe folder is not a setting: it is the
   folder beside the universe note with the same basename (`universeRootOf`;
   `universeNotePath` is the one place the note path is built). A link that resolves to no
-  note joins nothing. The module feeds it a `ScopeLookup` built on `books.classify` and
-  the metadata cache; `books.classify(x).scope` is the same answer, computed in the classifier's pass.
+  note joins nothing. The module's `scopeOf` reads `books.classify(x).scope`; only for a path
+  classify gives no scope by kind (a missing path, such as the universe note before it exists,
+  and the plugin's own folders) does it call `scopeFor` itself, with `books.scopeLookup(placement)`,
+  the classifier's lookup, which `keptOut` reads too.
 - **Settings** (`settings.ts`, pure). `UniverseSettings` extends the plugin settings;
   `normalizeUniverse` fills any missing or wrong-typed value with the English default.
   Five fixed entry types (`ENTRY_KINDS`), each `{ value, folder, template, label }`;
@@ -2085,7 +2096,7 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   the mentions and names indexes; their pure parts, rules and the write are in "Names matcher"
   (unlinked mentions, name runs, the names index). `UniverseModule` adds `unlinkedFor(file)`
   ("counting" while the mentions index builds, null for a note outside any scope or an entry),
-  `createEntryNamed(file, name)` (behind the port's `createEntry`) and the `universe-names` index
+  the port's `createEntry` (`createEntryFromSelection` with `{ named }`) and the `universe-names` index
   registration, which the module owns (`universe/index.ts`) while `names-provider.ts` answers
   `isKnownName`, `workCount`, `wantNameCounts` and `nameCountsReady` through the port.
 - **Name marks** (`name-marks.ts`, `name-marks-model.ts`). A CodeMirror `ViewPlugin` that

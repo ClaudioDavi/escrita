@@ -7,7 +7,6 @@
 // Same notes as the mentions index. No Obsidian imports: the hub's `add`, the scope and
 // work lookups and time come in through `NamesIndexDeps`, so it is tested on MemoryVault.
 
-import { classifyKey, type ClassifySettings } from "../core/classify";
 import { segment } from "../core/markdown";
 import { nameRuns, namesMask } from "../core/name-runs";
 import { foldName } from "../core/names";
@@ -15,7 +14,7 @@ import { sentences } from "../core/sentences";
 import type { StemLang } from "../core/stem";
 import { tokens } from "../core/tokens";
 import type { IndexChange, IndexFile, IndexSpec, IndexTimers, VaultIndex } from "../core/vault-index";
-import { isUniverseNote, type EntriesSettings } from "./entries";
+import { classifyKeyOf, isUniverseNote, type EntriesSettings } from "./entries";
 import type { MentionCtx } from "./mentions";
 
 export const NAMES_INDEX_NAME = "universe-names";
@@ -149,7 +148,7 @@ export class NamesIndex<F extends IndexFile> {
       same: sameRuns,
       settingsKey: () => {
         const s = this.deps.settings();
-        return JSON.stringify([classifyKey(s as ClassifySettings), s.universeMode, s.templatesFolder, this.deps.lang()]);
+        return JSON.stringify([classifyKeyOf(s), s.universeMode, s.templatesFolder, this.deps.lang()]);
       },
       start: "demand",
       settleMs: NAMES_SETTLE_MS,

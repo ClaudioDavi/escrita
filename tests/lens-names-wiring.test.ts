@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { segment } from "../src/core/markdown";
 import { namesMask } from "../src/core/name-runs";
-import { readMask } from "../src/lens/analyze";
+import { readMask } from "../src/core/wordcount";
 import { enabledRules, newNameGroups, ruleRows } from "../src/lens/panel-model";
 import { addNotName, parseNotNames } from "../src/lens/settings";
 import type { LensResult, Match } from "../src/lens/types";
@@ -21,12 +21,12 @@ const EXTRA = [
 describe("the lens mask and the names index's mask agree (counts agree)", () => {
   it.each([...fixtures, ...EXTRA].map((t, i) => [i, t] as const))("text %i: what the lens reads is what namesMask reads", (_i, text) => {
     const md = segment(text);
-    expect(readMask(md, { skipQuotes: false, quoteStyle: "curly", paragraphStyle: "blank" })).toBe(namesMask(md));
+    expect(readMask(md, { skipQuotes: false })).toBe(namesMask(md));
   });
 
   it("skipQuotes is the one difference: quote lines the lens never reads, the index does", () => {
     const md = segment(EXTRA[3]);
-    const lens = readMask(md, { skipQuotes: true, quoteStyle: "curly", paragraphStyle: "blank" });
+    const lens = readMask(md, { skipQuotes: true });
     expect(lens).not.toBe(namesMask(md));
     expect(lens.length).toBe(namesMask(md).length);
   });
