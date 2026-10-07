@@ -92,6 +92,13 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   - `index`: the vault index hub (`core/index-hub.ts`): add a spec for a per-file
     index, or `follow` renames and deletes for path-keyed data. `works`: the live
     list of works, built on it.
+- **1.0 additions.** The setup is a core module (`src/setup/`, `CoreModule`), not a feature:
+  it has no switch and is always in the palette. `core/feature-presets.ts` holds the three
+  presets (never touching the universe); `core/defaults.ts` holds the default sets per
+  language (`defaultsLanguage`, `defaultsFor`); writing mode is part of the desk, read
+  through `core/writing-mode.ts`, and the goal counter through `core/daily-progress.ts`.
+  Shared modal and leaf helpers are in `src/ui/`, never importing a module folder. View ids
+  are in `core/view-types.ts`; they never change (they live in the writer's workspace file).
 - **Markdown questions** (frontmatter, code, comments, what a line is) go through
   `segment(text)` / `segmentDoc(doc)` in `core/markdown.ts`. Line predicates live next
   to `isSceneBreakLine` in `core/markers.ts`.

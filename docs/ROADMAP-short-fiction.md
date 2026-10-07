@@ -54,7 +54,7 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 0.7.0 | Feature switches (10, the Features page) | M | Shipped |
 | 0.8.0 | Submissions (12), with export (novel roadmap, 7) | S | Shipped |
 | 0.9.0 | Collections of contos, exported as one file (13) | M | Shipped |
-| 1.0 | Set up a writing vault and presets (10) | S | Planned |
+| 1.0 | Set up a writing vault and presets (10) | S | Shipped |
 
 Sections keep their original numbers so references from the other roadmaps stay valid.
 
@@ -554,7 +554,37 @@ chapter's properties, and undoes in one step.
 
 ---
 
-## 10. Set up a writing vault (v1.0; feature switches shipped in 0.7.0)
+## 10. Set up a writing vault (v1.0, shipped in 1.0.0; feature switches shipped in 0.7.0)
+
+**Shipped in 1.0 (the setup in `src/setup/`, a core module; presets in `core/feature-presets.ts`;
+defaults in `core/defaults.ts`; writing mode in `desk/writing-mode.ts`).** The spec below is the
+plan; where the build differs, the deviations are:
+
+- **The preset lists** (rebalanced by the author on 2026-10-07, so they differ from the
+  bullets under "Presets"): Essentials is 9 features (goals, outline, placeholders, typing,
+  revision lens, darlings, snapshots, export, the desk); Writer is 16 (Essentials plus
+  dialogue focus, moving blocks, templates, explorer counts, the stage snapshot, the publish
+  check and submissions); Everything is 18 here, 19 counting the universe. No preset
+  touches the universe: its switch is the universe mode, a separate answer ("Shared world",
+  asked with Everything), because it moves folders.
+- **Writing mode** is new and not in the spec: a layout choice ("focus") next to the writing
+  desk. Only the note, a quiet exit button and, with goals on, a small counter. It is part of
+  the desk (no switch of its own), has two commands (enter, exit), a setting to open in it,
+  and hides nothing it did not collapse. The setup's "focus" layout enters it through
+  `core/writing-mode.ts`.
+- **Defaults in the writer's language** are built as the setting `defaultsLanguage` (Q1),
+  not as a lookup at each start: a 0.9 install without the key is "en" and keeps every English
+  default; a fresh install takes Obsidian's language once and saves it, so the set never moves
+  when Obsidian's language changes. The pt-BR snapshots folder (`Escrita/Versões`) and the
+  excluded `Modelos` come from the set on a fresh install but are never listed or moved by the
+  setup.
+- **The ticks.** The preview is the list the run executes, and six rows can be unticked:
+  examples, home note, language, features, layout, and "open the home note on startup" as its
+  own row. In a vault that already has works, the examples, language, startup, features and
+  layout rows come unticked. Folders have no tick (they are only created when missing and an
+  existing one is used as it is). A saved setting changes only under a tick.
+- **The first-run notice** is a Notice with a button, shown once whatever the answer
+  (`data.setupOffered`); an install from before 1.0 is not offered it.
 
 **Why.** Escrita has many settings, and a new user meets them before writing a word.
 Tris gives his readers a ready-made vault; Escrita can build one.

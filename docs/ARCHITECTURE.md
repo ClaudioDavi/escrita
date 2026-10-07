@@ -1289,11 +1289,57 @@ a fresh install takes them from its set (pt-BR: `Escrita/Versões`, `Modelos`) a
 snapshots folder comes back from it (`snapshotsRoot(setting, defaultsLanguage)`), but the
 setup never lists or moves them, because they name where things already are.
 
+## Feature presets (`core/feature-presets.ts`, 1.0)
+
+Three starting points for the Features page and the setup: `PRESET_IDS` (`essentials`,
+`writer`, `everything`) and `PRESETS`, the list of features each switches on. Pure; not to be
+confused with `core/presets.ts`, the manuscript presets of the export. Essentials is 9
+features, Writer 16, Everything 18 (19 with the universe, which no preset touches: its switch
+is `universeMode`, the writer's separate answer, because it moves folders). Each list is
+closed under `requires`.
+
+- `presetSwitches(id, current)` returns the switches after the preset, a new object. It
+  writes an explicit boolean for every feature, so `data.json` says what the preset chose,
+  and copies `universeMode` from `current`.
+- `matchingPreset(switches)` returns the preset whose lists equal the switches, or null:
+  the Features page then says "Custom". Nothing records which preset was picked; a preset is
+  a starting point, never a mode.
+- `presetChanges(current, id)` returns `{ off, on }`, what applying it would change, for the
+  confirm step on the Features page and the setup's features row.
+
+A fresh install with no setup run starts on Writer; an existing install keeps its switches.
+
+## The setup (`src/setup/`, 1.0)
+
+`SetupModule` (a core module, see above) registers the command "Set up a writing vault" and
+the first-run notice. The work is split so the Obsidian side stays thin:
+
+- `plan.ts` (pure): `planSetup(choices, vault, settings, ticks)` returns one list of
+  `SetupItem`s in run order (folders, examples, the home note, settings, layout). The preview
+  draws this list and the run executes it, so what the writer saw is what happens. Rules: an
+  existing path (in any letter case) is `kept`, never written; a saved setting changes only
+  under a tick (the ticks are `examples`, `home`, `startup`, `language`, `features`,
+  `layout`); a track folder is added, never swapped.
+- `run.ts` (pure, over `RunPorts`): executes the ticked items. Every note goes through
+  `notes.create` with `exists: "return"`; settings are saved once, after the files, and
+  skipped if a folder failed; a failure is reported and nothing is undone.
+- `examples.ts` and `home-text.ts` hold the example texts and the home note's text, in the
+  setup's chosen language (`en` or `pt-BR`), not the interface's.
+- `layout.ts` (with the pure `layout-plan.ts`): `applyLayout(plugin, layout)`, public
+  workspace calls only, never closes a leaf. `desk` puts the home note in front, the outline
+  and the lens on the right; `focus` enters writing mode. Panel ids come from `VIEW_TYPES`.
+- `modal.ts`: the two steps (what you write, language and preset; then the preview with its
+  ticks). `src/ui/` holds the shared modal and leaf helpers (`confirm.ts`, `open-work.ts`).
+
 ## Wave 2 ports and view ids (1.0)
 
 - **Writing mode** (`core/writing-mode.ts`): the desk provides `writingMode`
   (`WritingModePort`); others read it through `writingModeOf(plugin.features)`, null while
-  the desk is off. The setup's "focus" layout enters it.
+  the desk is off. The setup's "focus" layout enters it. The mode itself is
+  `desk/writing-mode.ts`: the body class `escrita-writing-mode` plus public calls that
+  collapse the sidebars; `exit` reopens only the ones it collapsed. A quiet exit button, the
+  goal counter only while goals are on, two commands (enter, exit), the setting
+  `openInWritingMode`. It writes nothing to the vault.
 - **Daily progress** (`core/daily-progress.ts`): the goals module provides `dailyProgress`
   (today's words and the daily goal, notified whenever the status bar redraws); writing
   mode's counter reads it through `dailyProgressOf(plugin.features)`, null while goals are off.
@@ -2091,7 +2137,7 @@ logic lives in core (`stages`, `works`, `left-off`); the desk draws and records.
   linking to its note. The block follows the submissions feature (`features.onChange`, then it
   rebinds `onChange` of the port) and redraws when the list changes. With submissions off the
   count and its trace are gone.
-- **Opening a work** (`open.ts`). A note opens at its left-off spot, else the first
+- **Opening a work** (`ui/open-work.ts`, was `desk/open.ts`; with writing mode on it stays in the same tab). A note opens at its left-off spot, else the first
   unwritten beat, else the end (`noteSpot`). A book opens the chapter edited last, else the
   first chapter with an unwritten beat, else the last chapter at its end (`bookTarget`).
   Reading view scrolls to the line instead of moving a cursor.
