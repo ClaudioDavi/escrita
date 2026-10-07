@@ -32,6 +32,7 @@ starting point, after which each switch is theirs.
 |---|---|---|
 | "Set up a writing vault": a notice on first run, the command, a preview of what it creates, then folders, examples, settings, a home note and a layout | SF 10 | M |
 | Presets: Essentials, Writer, Everything, in the setup and as three buttons on the Features page, with "Custom" | SF 10 | S |
+| Writing mode: only the note and a small goal counter, a command and a layout choice in the setup | SF 10 | S |
 | Defaults in the writer's language: the pt-BR default set when Obsidian runs in Portuguese | SF 10 | S |
 | Mobile pass: Obsidian's mobile emulation on desktop, plus an audit of the code (Q8) | 1.0 | S |
 | Guidelines audit for the community submission: `eslint-plugin-obsidianmd`, the manifest, the documented exceptions | 1.0 | S |
@@ -95,15 +96,29 @@ Before any setup or preset UI is built, mockups on the design canvas
 
 This is gate **G1**; Wave 2 doesn't start without it.
 
-**Drawn on 2026-10-07**, boards 35–38 ("1.0 · Preparar o cofre para escrever"), waiting for
+**Drawn on 2026-10-07**, boards 35–39 ("1.0 · Preparar o cofre para escrever"; 39 is the writing mode), waiting for
 approval. Decisions the boards propose, beyond the questions above:
 
-- **What each preset turns on.** SF 10 predates export, submissions and the stage snapshot,
-  and names "Enter and typography" in no preset. Proposed: **Essentials** (7): goals, outline,
-  placeholders, typing, darlings, snapshots, the home block. **Writer** (16): Essentials plus
-  the lens, dialogue focus, moving blocks, templates, explorer counts, the stage snapshot, the
-  publish check, export and submissions. **Everything** (19) adds spellcheck on demand,
-  threads and the universe. The universe mode never changes through a preset.
+- **What each preset turns on** (rebalanced by the author on 2026-10-07: the lens and export
+  are essentials). **Essentials** (9): goals, outline, placeholders, typing, the lens,
+  darlings, snapshots, export, the home block. **Writer** (16): Essentials plus dialogue focus,
+  moving blocks, templates, explorer counts, the stage snapshot, the publish check and
+  submissions. **Everything** (19) adds spellcheck on demand, threads and the universe. The
+  universe mode never changes through a preset. SF 10 predates export, submissions and the
+  stage snapshot, so this is a deviation written back at the release.
+- **Two layouts in the setup** (asked by the author on 2026-10-07):
+  - **Writing desk**: the home note in front; the right sidebar split in half, the outline
+    (chapters and their beats) on top and the lens panel below, with placeholders as a
+    second tab behind it. On a phone the drawers don't split: outline and lens are two tabs.
+  - **Writing mode**: only the note. The sidebars, tab bar, ribbon and status bar hide; a small
+    "today 312 / 500" goal counter stays at the bottom when goals are on (nothing else). A
+    quiet "Exit writing mode" button stays visible (no hover on phones). "Continue" in the
+    home block opens the work in the same tab, still in the mode. One command enters and
+    exits, no default hotkey. One new setting, "Open in writing mode", beside "Open the home
+    note on startup"; the setup turns it on when the writer picks this layout. Part of the
+    home block feature, no switch of its own. Hiding is a body class
+    (`escrita-writing-mode`) plus public workspace calls to collapse and restore the
+    sidebars; nothing is written to the vault.
 - **The setup never changes a saved setting without a tick.** In a vault with settings,
   values the writer saved are listed as kept; the features row and the layout come unticked.
   A track folder is added to the list, never swapped.
