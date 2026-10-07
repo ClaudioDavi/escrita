@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { segment } from "../src/core/markdown";
-import { bodyLineIn } from "../src/editor/context";
+import { bodyLineIn } from "../src/core/block-context";
 import { decideEnter, isProseLine } from "../src/editor/enter-flow";
-import { typographyFor, type TypographyOptions } from "../src/editor/typography";
+import { typographyFor, type TypographyOptions } from "../src/core/typography";
 
 const D = (s: string) => segment(s);
 /** The editor guard in insertSceneBreak: the line is in the properties block. */

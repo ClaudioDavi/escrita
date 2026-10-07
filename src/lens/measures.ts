@@ -8,7 +8,7 @@
 import type { Markdown } from "../core/markdown";
 import { isSceneBreakAt } from "../core/markers";
 import type { Token } from "../core/tokens";
-import { dialogueInDoc } from "../editor/dialogue";
+import { dialogueInDoc } from "../core/dialogue";
 import { readability } from "./readability";
 import { syllables } from "./syllables";
 import type { LensLang, LensPass, Measures, ReadOptions, SceneShare } from "./types";

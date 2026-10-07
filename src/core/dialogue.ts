@@ -7,10 +7,10 @@
 // code and comments are never speech and offsets stay 1:1 with the document.
 
 import type { ParagraphStyle, QuoteStyle } from "../settings";
-import type { Markdown } from "../core/markdown";
-import { isSceneBreakLine } from "../core/markers";
+import type { Markdown } from "./markdown";
+import { isSceneBreakLine } from "./markers";
 import { QUOTES } from "./typography";
-import { blockStateIn, bodyLineIn, inBlock } from "./context";
+import { blockStateIn, bodyLineIn, inBlock } from "./block-context";
 
 /** [from, to) UTF-16 offsets. Never empty, never contains "\r" or "\n". */
 export interface Range {

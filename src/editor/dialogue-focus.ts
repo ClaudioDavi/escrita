@@ -4,7 +4,7 @@
 import { RangeSetBuilder, StateEffect, type EditorState, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 import { segmentDoc } from "../core/markdown";
-import { dimPlan, type DialogueOptions } from "./dialogue";
+import { dimPlan, type DialogueOptions } from "../core/dialogue";
 
 /** Dispatched to every editor to re-read the on/off state and options. */
 const refreshEffect = StateEffect.define<null>();

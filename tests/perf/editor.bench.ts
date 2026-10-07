@@ -9,7 +9,7 @@ import { readerMask, countSelection } from "../../src/core/wordcount";
 import { findNames } from "../../src/core/names";
 import { scanBeats } from "../../src/outline/model";
 import { placeholderSpans, placeholderValue } from "../../src/placeholders/logic";
-import { dimPlan } from "../../src/editor/dialogue";
+import { dimPlan } from "../../src/core/dialogue";
 import { analyze } from "../../src/lens/analyze";
 import { RULES } from "../../src/lens/types";
 import { computeMentions } from "../../src/universe/mentions";

@@ -13,6 +13,18 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   `src/core/chapter-ops.ts` with its pure helpers `src/core/chapter-engine.ts` and `src/core/chapter-plan.ts`). If you need a change there, say so in your final
   report instead. `src/core/classify.ts` and `src/core/books.ts` are shared core
   that every module reads; change them only as a deliberate core-level refactor.
+- **Shared helpers** (1.0, IMPROVEMENTS 13). A helper that more than one module uses is not
+  in any module's folder. Pure ones are in `src/core/`: `block-context.ts` (`blockStateIn`,
+  `bodyLineIn`, `inBlock`, `inlineProtected`; from the editor), `dialogue.ts` (`dialogueInDoc`,
+  `dimPlan`; from the editor) with `typography.ts` (the quote tables `dialogue.ts` reads;
+  from the editor), and `piece-bar.ts` (`pieceBar`, `paceInUnit`; was `goals/piece.ts`).
+  Helpers that open a modal or a leaf are in `src/ui/`: `confirm.ts` (`confirmAction`; was
+  `outline/modals.ts`) and `open-work.ts` (`openWork`; was `desk/open.ts`). `src/ui/` may
+  import `obsidian` and `core/*`, never a module folder. So the module dependency list holds
+  only runtime calls (ports, `features.isOn`), not imports. `export` does not import
+  `publish/checks`: the shared readiness checks are `core/readiness.ts`. `ui/confirm.ts`
+  reads the string `outline.cancel`; all string files are registered at load, so it resolves
+  with the outline off.
 - **Entry point.** A feature is a `FeatureModule` (`core/module-context.ts`) built in
   `main.ts` and loaded and unloaded by the `FeatureRegistry` from the writer's switches.
 - **Plugin services** (on `this.plugin`): `settings` (see `src/settings.ts` —
@@ -157,7 +169,7 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
       `@typescript-eslint/no-deprecated` (`display()`). The declarative settings API
       (`getSettingDefinitions`) needs Obsidian 1.13 and `minAppVersion` is 1.7.2, and the
       tab draws module sections that load and unload at runtime.
-    - `src/outline/modals.ts`: `no-deprecated` for `ButtonComponent.setWarning`;
+    - `src/ui/confirm.ts`: `no-deprecated` for `ButtonComponent.setWarning`;
       `setDestructive` is newer than `minAppVersion`.
     - `src/snapshots/fs.ts`: `prefer-file-manager-trash-file`, the empty snapshot folder
       removal listed above.
@@ -397,7 +409,7 @@ caches per immutable document object (a CodeMirror `Text` is one per version).
 The consumers take either a text or a `Markdown` (`parseBeats`, `parsePlaceholders`,
 `outline/model.scanBeats`, `placeholders/logic.placeholderSpans`,
 `editor/enter-flow.decideEnter`/`trailingBreakKeep`, `publish/checks.unclosedComment`,
-`editor/context.blockStateIn`, `wordcount.countSelection`), and every editor
+`core/block-context.blockStateIn`, `wordcount.countSelection`), and every editor
 feature passes `segmentDoc(state.doc)`, so ghost beats, placeholder pills,
 typography, the Enter flow and the selection count share one pass per document
 version. `runChecks` segments once and hands the result to each check. `segment`
@@ -414,7 +426,7 @@ closer matters; each rule has a test in `tests/markdown.test.ts`):
 1. **Frontmatter** only when line 0 is `---` and a later line is `---` or `...`
    (trailing blanks allowed). No closer → no span (counts and markers read it as
    body) and `unclosedFrontmatter` is set; the editor alone treats that as "all
-   properties" (`editor/context.bodyLineIn`).
+   properties" (`core/block-context.bodyLineIn`).
 2. **Fences** at the start of a line that starts in prose: ≤3 spaces, then 3+
    backticks or tildes (a backtick info string can't contain a backtick). Closer:
    ≤3 spaces, same char, at least as long, only blanks after. Unclosed → to the end.
@@ -442,13 +454,13 @@ closer matters; each rule has a test in `tests/markdown.test.ts`):
    comment, code or frontmatter, or after other text on a line, opens nothing.
    `Markdown.inMath(line)` says whether a line starts inside a math block (the line after
    the opener up to and including the one with the closing `$$`; false for the opener
-   line and out of range). The editor reads it (`editor/context.ts`) and keeps no math rule
+   line and out of range). The editor reads it (`core/block-context.ts`) and keeps no math rule
    of its own.
 
 Block spans end at the end of their closer's line; the line break after is prose.
 Not segmented: 4-space indented code, fences inside quotes or lists, multi-line inline
 code.
-`editor/context.inlineProtected` keeps its own backtick loop on purpose: it
+`core/block-context.inlineProtected` keeps its own backtick loop on purpose: it
 predicts a span that is still being typed, which is not a parse.
 
 Parity with Obsidian's Reading view was checked by hand on 2026-10-05 (gate G0c), and
@@ -1211,7 +1223,7 @@ measurer, the vault index and the notes service are core and always on.
 - **Soft dependencies.** A module that can work without another asks
   `plugin.features.isOn(id)` at the point of use and degrades: publish takes no snapshot
   when snapshots is off; the outline shows no placeholder count when placeholders is off;
-  the desk's `open` ignores "where you left off" when the desk is off; the desk shows the pending
+  the desk's `openWork` (`ui/open-work.ts`) ignores "where you left off" when the desk is off; the desk shows the pending
   submissions count only while submissions is on; the universe's Works
   tab and the threads command read the threads and universe switches. A hard dependency is
   `requires` in the spec (the stage snapshot needs snapshots) and `wanted` drops the
@@ -1257,8 +1269,8 @@ SF 10). It has no `FeatureId`: it is not on the Features page, in a preset, in
   needs a view gets `ModuleSlots` registered at plugin load, as the registry does, in a
   deliberate change to this seam.
 - **Other features.** A core module reads features only as soft dependencies
-  (`plugin.features.isOn`, `features.get`) and imports no module folder (IMPROVEMENTS 13
-  moves the helpers it needs to `core/` and `src/ui/`).
+  (`plugin.features.isOn`, `features.get`) and imports no module folder (IMPROVEMENTS 13,
+  done in 1.0: the helpers it needs are in `core/` and `src/ui/`).
 - **Its data.** The setup keeps one flag, `data.setupOffered` (`cleanSetupOffered` in
   `data.ts`): saved booleans win; absent, it is true for an install from before 1.0 (saved
   settings exist) and false for a fresh install. Not a setting.
@@ -1316,7 +1328,7 @@ the names the setup gives what it creates (home note, folders, examples).
   since start (tracked files); ticks every second via `registerInterval` updating the status bar;
   target reached → Notice once; time up → Notice with words, minutes, words/hour; stop
   early from the status bar or command. Sprint state is not persisted across reloads.
-- **Targets per piece** (`core/measure.ts`, display helpers in `src/goals/piece.ts`):
+- **Targets per piece** (`core/measure.ts`, display helpers in `src/core/piece-bar.ts`):
   any note can have `target`, `limit`, `unit` (`words` | `characters` |
   `characters-no-spaces`; names from `targetProperty`/`limitProperty`/`unitProperty`)
   and `deadline`. `readPiece` returns null when none is set. `pieceProgress` gives the
@@ -1552,7 +1564,7 @@ the names the setup gives what it creates (home note, folders, examples).
   in the same leaf with the cursor at the end. Everything else → return false (normal
   Enter). Decision logic as a pure, tested function over `(lines, cursorLine,
   paragraphStyle)` returning `"normal" | "break" | "chapter"`.
-- **Smart typography** (`src/editor/typography.ts`, when `smartTypography` and the scope
+- **Smart typography** (`src/core/typography.ts`, when `smartTypography` and the scope
   matches): `EditorView.inputHandler`, skipping code (inline/fenced), frontmatter, math
   and link targets (use `syntaxTree` from `@codemirror/language`, which Obsidian
   provides): `--` → `—`, except at the start of a line (could become `---`); with
@@ -1855,7 +1867,7 @@ scans its files).
   One token list over that mask (`core/tokens`) feeds every rule and every number, so
   rates, the dialogue share and readability share one denominator ("words the lens
   read"); a small difference from the status bar count is expected. The lens imports the
-  editor's pure `editor/dialogue.dialogueInDoc` and `editor/context` (`blockStateIn`,
+  editor's pure `core/dialogue.dialogueInDoc` and `core/block-context` (`blockStateIn`,
   `inBlock`, `bodyLineIn`) read-only; they are pure, the universe won't need them, and
   their signatures must not change for the lens's sake.
 - **Rules and kinds** (`rules-stem.ts`, `rules-words.ts`, `types.ts`). Six rules, ids
@@ -1980,7 +1992,7 @@ scans its files).
   includes `plugin.names.version()`, and a change calls `invalidate()`. The lens never
   imports the universe.
 - **Boundaries.** `lens` imports `core/*` and, read-only, `editor/dialogue` and
-  `editor/context`; core never imports the lens. The pure files import neither `obsidian`
+  `core/block-context`; core never imports the lens. The pure files import neither `obsidian`
   nor `i18n`: `types`, `syllables`, `readability`, `lists`, `lang`, `dismiss`, `lexicon`,
   `rules-words`, `rules-stem`, `measures`, `panel-model`, `session`, `analyze`,
   `marks-model`, `lists-edit`.

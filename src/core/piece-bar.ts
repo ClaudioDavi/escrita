@@ -3,7 +3,7 @@
 // pace in the piece's own unit. The counting, the target/limit rules and the
 // status bar's Progress live in core/measure.ts.
 
-import type { Piece, PieceUnit } from "../core/measure";
+import type { Piece, PieceUnit } from "./measure";
 
 export interface PieceBar {
   /** 0–1: how much of the bar is filled */

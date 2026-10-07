@@ -8,7 +8,7 @@ import type { GoalsModule } from "./index";
 import { chartGeometry } from "./chart";
 import { fmtDay, fmtShortDay } from "./format";
 import { pacing, readNumberField, type Pacing } from "./pacing";
-import { paceInUnit, pieceBar } from "./piece";
+import { paceInUnit, pieceBar } from "../core/piece-bar";
 import { setWidth } from "./status-bar";
 import {
   addedOn, bookTotalSeries, dailyAverage, dailySeries, dayStates, deletedOn, goalMetSummary, streak, sumAdded,
