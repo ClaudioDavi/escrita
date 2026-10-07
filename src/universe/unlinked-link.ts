@@ -60,11 +60,17 @@ export function lineAt(text: string, at: number): string {
 /**
  * The markup that replaces the mention: `[[target]]` when the text is the target,
  * else `[[target|text]]`. Null when the text can't sit inside a wikilink (brackets,
- * a line break).
+ * a pipe, a line break). In a table row (`inTable`) the alias pipe is written `\|`, as
+ * Obsidian asks, so the link doesn't split the cell.
  */
-export function linkMarkup(target: string, text: string): string | null {
-  if (target === "" || text === "" || /[[\]\n\r]/.test(text) || /[[\]|\n\r]/.test(target)) return null;
-  return text === target ? `[[${target}]]` : `[[${target}|${text}]]`;
+export function linkMarkup(target: string, text: string, inTable = false): string | null {
+  if (target === "" || text === "" || /[[\]|\n\r]/.test(text) || /[[\]|\n\r]/.test(target)) return null;
+  return text === target ? `[[${target}]]` : `[[${target}${inTable ? "\\|" : "|"}${text}]]`;
+}
+
+/** Whether a line is a Markdown table row: it starts with a pipe (Obsidian's tables do). */
+export function isTableRow(line: string): boolean {
+  return /^\s*\|/.test(line);
 }
 
 /**

@@ -144,7 +144,9 @@ export class ReaderView extends ItemView {
     for (const path of paths) {
       const c = this.chapters.find((x) => x.chapter.path === path);
       if (!c) continue;
-      if (c.state !== "done") { c.done = null; continue; }   // not drawn yet: it reads the new text when it scrolls in
+      // being drawn: its text may predate the save, so try again once that draw is in
+      if (c.state === "loading") { this.dirty.add(path); this.refreshSoon(); continue; }
+      if (c.state !== "done") continue;   // not drawn yet: it reads the new text when it scrolls in
       const scroller = this.contentEl;
       const before = c.section.getBoundingClientRect();
       const above = before.bottom <= scroller.getBoundingClientRect().top;
@@ -261,6 +263,9 @@ export class ReaderView extends ItemView {
     c.state = "loading";
     c.done = this.draw(c).catch(() => {
       if (c.state === "loading") {
+        // settled, so a later save draws it again (and a refresh never waits on it)
+        c.state = "done";
+        c.blocks = [];
         c.body.empty();
         c.body.createDiv({ cls: "escrita-reader-loading", text: t("outline.reader.failed") });
       }

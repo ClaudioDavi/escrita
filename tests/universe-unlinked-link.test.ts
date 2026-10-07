@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyChange } from "../src/core/note-text";
-import { excerptOf, linkMarkup, linkPlan, rowsOf } from "../src/universe/unlinked-link";
+import { excerptOf, isTableRow, linkMarkup, linkPlan, rowsOf } from "../src/universe/unlinked-link";
 
 const text = "Ontem o Capitão voltou.\n\nTeo riu. Teo saiu.";
 const teo = { from: text.indexOf("Teo"), to: text.indexOf("Teo") + 3, text: "Teo" };
@@ -18,6 +18,14 @@ describe("linkMarkup", () => {
     expect(linkMarkup("Teo", "a]]b")).toBeNull();
     expect(linkMarkup("Teo", "a\nb")).toBeNull();
     expect(linkMarkup("", "Teo")).toBeNull();
+    expect(linkMarkup("Teo", "a|b")).toBeNull();
+  });
+  it("escapes the alias pipe in a table row, so the cell isn't split (release review)", () => {
+    expect(linkMarkup("Teodoro", "Teo", true)).toBe("[[Teodoro\\|Teo]]");
+    expect(linkMarkup("Teo", "Teo", true)).toBe("[[Teo]]");
+    expect(isTableRow("| Teo | capitão |")).toBe(true);
+    expect(isTableRow("  | Teo |")).toBe(true);
+    expect(isTableRow("Teo riu | e saiu")).toBe(false);
   });
 });
 

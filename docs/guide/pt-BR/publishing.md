@@ -320,7 +320,7 @@ Não pede mais nada de você.
 
 **A linha no esboço.** Quando um capítulo está publicado, o cabeçalho do esboço mostra uma linha:
 
-> Lacuna: 04 · Próximo: 05 A escada · último publicado em 30 set
+> Lacuna: 04 · Próximo: 04 A escada · último publicado em 30 set
 
 - **Próximo** é o primeiro capítulo que não está publicado, na ordem do livro.
 - **último publicado** é a data do último capítulo publicado, como está escrita na propriedade de

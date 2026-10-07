@@ -131,3 +131,24 @@ describe("the preview writer (Q16)", () => {
     paper.dispatchEvent(new MouseEvent("mouseleave"));
   });
 });
+
+describe("the EPUB preview (0.9, release review)", () => {
+  it("puts the contents after the dedication and epigraph, before the first chapter, as the file does (Q6)", () => {
+    const { paper } = draw(exportDocOf(bookSource(PTBR), OPTS), PTBR, {
+      epub: { sceneBreak: "* * *", contentsLabel: "Sumário", coverUrl: null, cover: true },
+      zone: (k: string) => k,
+    });
+    expect([...paper.querySelectorAll(".escrita-export-zone")].map(text)).toEqual(["cover", "dedication", "epigraph", "contents"]);
+    const kids = [...paper.children].map((c) => c.className);
+    const contents = kids.indexOf("escrita-export-contents");
+    expect(contents).toBeGreaterThan(-1);
+    expect(kids.findIndex((c) => c.includes("escrita-export-chapter"))).toBeGreaterThan(contents);
+  });
+
+  it("still draws the contents for a note with no chapter heading", () => {
+    const { paper } = draw(exportDocOf(contoSource(), OPTS), PTBR, {
+      epub: { sceneBreak: "* * *", contentsLabel: "Sumário", coverUrl: null, cover: false },
+    });
+    expect([...paper.querySelectorAll(".escrita-export-contents li")].map(text)).toEqual(["A visita"]);
+  });
+});

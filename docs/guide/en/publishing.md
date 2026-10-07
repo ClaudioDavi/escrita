@@ -314,7 +314,7 @@ asks nothing more of you.
 
 **The line in the outline.** Once one chapter is published, the outline header shows a line:
 
-> Gap: 04 · Next: 05 The stairs · last published 30 Sep
+> Gap: 04 · Next: 04 The stairs · last published 30 Sep
 
 - **Next** is the first chapter that isn't published, in book order.
 - **last published** is the date of the last published chapter, as written in its date property

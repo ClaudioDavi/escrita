@@ -85,9 +85,17 @@ export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
     const book = isBookDoc(doc);
     let firstBody = true;
     let wrote = false;
+    // the EPUB's table of contents comes after the dedication and epigraph, as in the file (Q6)
+    let contents = epub === undefined;
+    const drawContents = (): void => {
+      if (contents || !epub) return;
+      contents = true;
+      this.epubContents(paper, doc, epub);
+    };
     doc.parts.forEach((part, index) => {
       const blocks = part.manuscript.blocks;
       if (part.role !== "body" && blocks.length === 0) return;
+      if (part.role === "body") drawContents();
       wrote = true;
       // bands only where a book's file starts a page for its front matter and its text
       if (book && !epub) {
@@ -99,13 +107,14 @@ export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
       if (part.role === "body" && part.heading !== null) paper.createDiv({ cls: epub ? "escrita-export-chapter is-opener" : "escrita-export-chapter", text: part.heading });
       for (const b of blocks) this.block(paper, b, index, part.role !== "body", preset);
     });
+    drawContents();
     if (wrote && preset.endMark && !epub) paper.createDiv({ cls: "escrita-export-end", text: preset.endMark });
 
     this.wire(paper, tip);
     return "";
   }
 
-  /** The EPUB's first pages: the cover, the title page and the table of contents (Q6, board 31). */
+  /** The EPUB's first pages: the cover and the title page (Q6, board 31). */
   private epubFront(paper: HTMLElement, doc: ExportDoc, preset: Preset, epub: NonNullable<PreviewHooks["epub"]>): void {
     if (epub.cover) {
       this.zone(paper, "cover");
@@ -115,6 +124,10 @@ export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
     paper.createDiv({ cls: "escrita-export-title is-epub", text: doc.title });
     const name = doc.author.name.trim();
     if (name !== "") paper.createDiv({ cls: "escrita-export-byline", text: fillTemplate(preset.byline, { name }) });
+  }
+
+  /** The EPUB's table of contents: after the front matter pages, before the first chapter (Q6). */
+  private epubContents(paper: HTMLElement, doc: ExportDoc, epub: NonNullable<PreviewHooks["epub"]>): void {
     this.zone(paper, "contents");
     paper.createDiv({ cls: "escrita-export-contents-title", text: epub.contentsLabel });
     const list = paper.createEl("ol", { cls: "escrita-export-contents" });

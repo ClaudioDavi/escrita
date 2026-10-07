@@ -5,7 +5,7 @@
 
 import { Notice, TFile } from "obsidian";
 import { fmt, t } from "../i18n";
-import { linkMarkup, linkPlan, type UnlinkedRow } from "./unlinked-link";
+import { isTableRow, linkMarkup, linkPlan, type UnlinkedRow } from "./unlinked-link";
 import { button, openNote, type PanelCtx } from "./view-parts";
 
 /** The section for the active note, filled when its rows are known. Draws nothing for a note outside any scope. */
@@ -60,7 +60,7 @@ async function createLink(ctx: PanelCtx, file: TFile, r: UnlinkedRow): Promise<v
   const { plugin } = ctx;
   try {
     const to = plugin.app.vault.getAbstractFileByPath(r.entry);
-    const markup = to instanceof TFile ? linkMarkup(plugin.app.metadataCache.fileToLinktext(to, file.path, true), r.text) : null;
+    const markup = to instanceof TFile ? linkMarkup(plugin.app.metadataCache.fileToLinktext(to, file.path, true), r.text, isTableRow(r.lineText)) : null;
     const done = markup === null ? null : await plugin.notes.text(file).apply(linkPlan(r, markup));
     if (done?.ok && markup !== null) new Notice(t("universe.unlinked.done", { n: fmt(r.line + 1), link: markup }));
     else new Notice(t("universe.unlinked.changed"));
