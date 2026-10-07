@@ -1,11 +1,9 @@
 import { Plugin, TFile, debounce, setTooltip } from "obsidian";
-import { DEFAULT_SETTINGS, EscritaSettingTab, normalizeSettings, type EscritaSettings } from "./settings";
+import { EscritaSettingTab, loadSettings, type EscritaSettings } from "./settings";
 import type { EscritaData } from "./data";
 import { cleanExportChoices, cleanReadPositions, cleanSetupOffered } from "./data";
-import { mergeDefaults } from "./core/merge";
-import { migrateSettings } from "./core/migrate";
 import { cleanLeftOff } from "./core/left-off";
-import { registerStrings } from "./i18n";
+import { locale, registerStrings } from "./i18n";
 import { coreStrings } from "./strings";
 import { BookService } from "./core/books";
 import { Measurer } from "./core/measurer";
@@ -221,7 +219,8 @@ export default class EscritaPlugin extends Plugin {
 
   private async loadAll(): Promise<void> {
     const raw = ((await this.loadData()) ?? {}) as Partial<EscritaData>;
-    this.settings = normalizeSettings(mergeDefaults(DEFAULT_SETTINGS, migrateSettings(raw.settings)));
+    const { settings, fresh } = loadSettings(raw.settings, locale());
+    this.settings = settings;
     this.data = {
       version: 1,
       settings: this.settings,
@@ -235,6 +234,8 @@ export default class EscritaPlugin extends Plugin {
       readPosition: cleanReadPositions(raw.readPosition),
       setupOffered: cleanSetupOffered(raw),
     };
+    // A fresh install saves once, so its default set never follows Obsidian's language later.
+    if (fresh) await this.persist();
   }
 
   private async persist(): Promise<void> {

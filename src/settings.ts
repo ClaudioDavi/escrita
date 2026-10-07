@@ -2,7 +2,9 @@ import { App, Notice, PluginSettingTab, Setting, type ColorComponent, type TextA
 import type EscritaPlugin from "./main";
 import { lang, t } from "./i18n";
 import { listsPath } from "./lens/settings";
-import { cleanWeekdays } from "./core/merge";
+import { cleanWeekdays, mergeDefaults } from "./core/merge";
+import { migrateSettings } from "./core/migrate";
+import { presetSwitches } from "./core/feature-presets";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, STAGES, hexColor, normalizeStages, stageConflicts, writtenWord, type Stage, type StageMapping } from "./core/stages";
 import { FEATURE_IDS, FEATURE_PAGE, FEATURE_SPECS, cleanFeatures, wanted, type FeatureId } from "./core/features";
 import { switchesOf } from "./core/feature-registry";
@@ -12,7 +14,7 @@ import { defaultUniverseSettings, normalizeUniverse, type UniverseMode, type Uni
 import { DEFAULT_SNAPSHOTS_FOLDER, exportRoot, snapshotsRoot, submissionsRoot } from "./core/classify";
 import { holdsOwnNotes, pluginFolderProblem, type BookPaths } from "./core/folder-problem";
 import { addFolderField } from "./core/folder-setting";
-import { isDefaultsLanguage, overlayDefaults, type DefaultsLanguage } from "./core/defaults";
+import { isDefaultsLanguage, languageOf, overlayDefaults, type DefaultsLanguage } from "./core/defaults";
 
 export type ParagraphStyle = "single" | "blank";
 export type Scope = "books" | "all";
@@ -299,9 +301,12 @@ export function defaultsFor(lang: DefaultsLanguage): EscritaSettings {
 
 /** Settings as saved, with defaults filled in and list fields cleaned (used by loadAll). */
 export function normalizeSettings(s: EscritaSettings): EscritaSettings {
+  // 1.0 (Q1): an unknown language is the English set. Blank fields below come back from the install's set.
+  s.defaultsLanguage = isDefaultsLanguage(s.defaultsLanguage) ? s.defaultsLanguage : "en";
+  const d = defaultsFor(s.defaultsLanguage);
   s.weekdaysOff = cleanWeekdays(s.weekdaysOff);
   // Always a fresh copy: never share the frozen defaults with the live settings.
-  s.stages = normalizeStages(s.stages);
+  s.stages = normalizeStages(s.stages, d.stages);
   s.statusProperty = (typeof s.statusProperty === "string" ? s.statusProperty.trim() : "") || DEFAULT_STATUS_PROPERTY;
   s.homeNote = typeof s.homeNote === "string" ? s.homeNote.trim() : DEFAULT_SETTINGS.homeNote;
   if (typeof s.otherStatusColors !== "string") s.otherStatusColors = DEFAULT_SETTINGS.otherStatusColors;
@@ -310,13 +315,13 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   s.snapshotsFolder = snapshotsRoot(s.snapshotsFolder);
   // 0.8 folders: trimmed here; task 1.6 routes them through classify's exportRoot / submissionsRoot
   for (const k of ["exportFolder", "submissionsFolder"] as const) {
-    s[k] = (typeof s[k] === "string" ? s[k].trim().replace(/^\/+|\/+$/g, "") : "") || DEFAULT_SETTINGS[k];
+    s[k] = (typeof s[k] === "string" ? s[k].trim().replace(/^\/+|\/+$/g, "") : "") || d[k];
   }
-  s.submissionResults = (typeof s.submissionResults === "string" ? s.submissionResults.trim() : "") || DEFAULT_SETTINGS.submissionResults;
+  s.submissionResults = (typeof s.submissionResults === "string" ? s.submissionResults.trim() : "") || d.submissionResults;
   for (const k of ["authorName", "authorSurname", "contactLines", "chapterHeadingFormat"] as const) {
     s[k] = typeof s[k] === "string" ? s[k].trim() : "";
   }
-  s.unnumberedTitles = typeof s.unnumberedTitles === "string" ? s.unnumberedTitles.trim() : DEFAULT_SETTINGS.unnumberedTitles;
+  s.unnumberedTitles = typeof s.unnumberedTitles === "string" ? s.unnumberedTitles.trim() : d.unnumberedTitles;
   s.snapshotsKeepAuto = Number.isFinite(s.snapshotsKeepAuto) ? Math.max(1, Math.round(s.snapshotsKeepAuto)) : DEFAULT_SETTINGS.snapshotsKeepAuto;
   s.lensLanguage = s.lensLanguage === "pt-BR" || s.lensLanguage === "en" ? s.lensLanguage : "auto";
   s.lensListsNote = typeof s.lensListsNote === "string" ? listsPath(s.lensListsNote) : DEFAULT_SETTINGS.lensListsNote;
@@ -328,13 +333,32 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   // a blank scene break would vanish in the book: the default instead
   s.epubSceneBreak = (typeof s.epubSceneBreak === "string" ? s.epubSceneBreak.trim() : "") || DEFAULT_SETTINGS.epubSceneBreak;
   s.templatesFolder = typeof s.templatesFolder === "string" ? s.templatesFolder.trim().replace(/^\/+|\/+$/g, "") : "";
-  s.threadKeyword = (typeof s.threadKeyword === "string" ? s.threadKeyword.trim() : "") || DEFAULT_SETTINGS.threadKeyword;
+  s.threadKeyword = (typeof s.threadKeyword === "string" ? s.threadKeyword.trim() : "") || d.threadKeyword;
   s.features = cleanFeatures(s.features);
-  Object.assign(s, normalizeUniverse(s));
-  // 1.0, no rows yet: an unknown language is the English set; the mode is on only when saved as true
-  s.defaultsLanguage = isDefaultsLanguage(s.defaultsLanguage) ? s.defaultsLanguage : "en";
+  Object.assign(s, normalizeUniverse(s, d));
+  // the mode is on only when saved as true
   s.openInWritingMode = s.openInWritingMode === true;
   return s;
+}
+
+/**
+ * Settings as `loadAll` loads them (PLAN-1.0 "Q1 as built", Q7). A saved settings object
+ * keeps its set: `migrateSettings` gives one without `defaultsLanguage` "en", so a 0.9
+ * install loads unchanged. No saved settings is a fresh install: it takes the set of
+ * `obsidianLocale` (`languageOf`) and the Writer features, and `fresh` tells the caller
+ * to save once, so the set never moves when Obsidian's language changes later.
+ */
+export function loadSettings(saved: unknown, obsidianLocale: string): { settings: EscritaSettings; fresh: boolean } {
+  const fresh = !saved || typeof saved !== "object" || Array.isArray(saved);
+  if (!fresh) {
+    const migrated = migrateSettings(saved);
+    const lang = (migrated as { defaultsLanguage: DefaultsLanguage }).defaultsLanguage;
+    return { settings: normalizeSettings(mergeDefaults(defaultsFor(lang), migrated)), fresh };
+  }
+  const lang = languageOf(obsidianLocale);
+  const settings = normalizeSettings(mergeDefaults(defaultsFor(lang), { defaultsLanguage: lang }));
+  Object.assign(settings, presetSwitches("writer", switchesOf(settings)));
+  return { settings: normalizeSettings(settings), fresh };
 }
 
 function clampInt(v: unknown, min: number, max: number, fallback: number): number {
@@ -431,10 +455,10 @@ export function pluginFolderRows(el: HTMLElement, ui: SettingsUi, s: EscritaSett
       placeholder: DEFAULT_SETTINGS.exportFolder,
       value: s.exportFolder,
       problemOf: (v) => pluginFolderProblem(
-        exportRoot(v), [submissionsRoot(s.submissionsFolder), snapshotsRoot(s.snapshotsFolder)],
-        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, exportRoot(s.exportFolder), s), books(),
+        exportRoot(v, s.defaultsLanguage), [submissionsRoot(s.submissionsFolder, s.defaultsLanguage), snapshotsRoot(s.snapshotsFolder)],
+        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, exportRoot(s.exportFolder, s.defaultsLanguage), s), books(),
       ),
-      save: (v) => { s.exportFolder = exportRoot(v); },
+      save: (v) => { s.exportFolder = exportRoot(v, s.defaultsLanguage); },
     },
   );
   addFolderField(
@@ -443,10 +467,10 @@ export function pluginFolderRows(el: HTMLElement, ui: SettingsUi, s: EscritaSett
       placeholder: DEFAULT_SETTINGS.submissionsFolder,
       value: s.submissionsFolder,
       problemOf: (v) => pluginFolderProblem(
-        submissionsRoot(v), [exportRoot(s.exportFolder), snapshotsRoot(s.snapshotsFolder)],
-        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, submissionsRoot(s.submissionsFolder), s), books(),
+        submissionsRoot(v, s.defaultsLanguage), [exportRoot(s.exportFolder, s.defaultsLanguage), snapshotsRoot(s.snapshotsFolder)],
+        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, submissionsRoot(s.submissionsFolder, s.defaultsLanguage), s), books(),
       ),
-      save: (v) => { s.submissionsFolder = submissionsRoot(v); },
+      save: (v) => { s.submissionsFolder = submissionsRoot(v, s.defaultsLanguage); },
     },
   );
 }

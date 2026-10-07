@@ -6,6 +6,7 @@
 
 import { folderList, folderListOf } from "./lists";
 import { effectivePiece, parseUnit, readChapterDefault, readPiece, type Piece, type PieceProperties, type PieceUnit } from "./measure";
+import { LANGUAGE_DEFAULTS, isDefaultsLanguage } from "./defaults";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, readStatus, stageOf, type Stage, type StageMapping } from "./stages";
 // one direction only: classify imports scope, scope never imports classify (no cycle at load)
 import { inFolder, NO_SCOPE, scopeFor, type Scope, type ScopeLookup, type ScopeMode, type ScopeSettings } from "./scope";
@@ -86,6 +87,8 @@ export interface ClassifySettings extends PieceProperties {
   defaultUniverseFolders?: string;
   /** the property on a work, chapter or entry that links its universe note */
   universeProperty?: string;
+  /** the install's default set (1.0 task 1.4): a blank export or submissions folder falls back to its words; missing is "en" */
+  defaultsLanguage?: string;
 }
 
 /** The snapshots folder when the setting is empty or unusable. */
@@ -214,8 +217,15 @@ export interface Placement<F extends Named, D extends Named> {
  * never means the whole vault. The one place this normalization lives: settings,
  * classify and the snapshots module all go through it.
  */
-export function snapshotsRoot(setting: unknown): string {
+export function snapshotsRoot(setting: unknown, defaultsLanguage?: unknown): string {
+  // `Escrita/Snapshots` in every set (core/defaults.ts leaves snapshotsFolder out on purpose)
+  void defaultsLanguage;
   return folderRoot(setting, DEFAULT_SNAPSHOTS_FOLDER);
+}
+
+/** The install's default set for a blank folder setting (1.0 task 1.4); an unknown or missing language is "en". */
+function languageSet(defaultsLanguage: unknown): { exportFolder: string; submissionsFolder: string } {
+  return LANGUAGE_DEFAULTS[isDefaultsLanguage(defaultsLanguage) ? defaultsLanguage : "en"];
 }
 
 function folderRoot(setting: unknown, fallback: string): string {
@@ -236,13 +246,13 @@ export function followFolderSetting(current: string, oldPath: string, newPath: s
 }
 
 /** The submissions folder setting as a vault path, normalized like snapshotsRoot; never "" (DEFAULT_SUBMISSIONS_FOLDER). */
-export function submissionsRoot(setting: unknown): string {
-  return folderRoot(setting, DEFAULT_SUBMISSIONS_FOLDER);
+export function submissionsRoot(setting: unknown, defaultsLanguage?: unknown): string {
+  return folderRoot(setting, languageSet(defaultsLanguage).submissionsFolder);
 }
 
 /** The export folder setting as a vault path, normalized like snapshotsRoot; never "" (DEFAULT_EXPORT_FOLDER). */
-export function exportRoot(setting: unknown): string {
-  return folderRoot(setting, DEFAULT_EXPORT_FOLDER);
+export function exportRoot(setting: unknown, defaultsLanguage?: unknown): string {
+  return folderRoot(setting, languageSet(defaultsLanguage).exportFolder);
 }
 
 /**
@@ -256,7 +266,7 @@ export function exportRoot(setting: unknown): string {
 export function classifyKey(s: ClassifySettings): string {
   return JSON.stringify([
     str(s.trackFolders), str(s.excludeFolders), str(s.chaptersFolder), str(s.chapterTemplate),
-    snapshotsRoot(s.snapshotsFolder), submissionsRoot(s.submissionsFolder), exportRoot(s.exportFolder),
+    snapshotsRoot(s.snapshotsFolder), submissionsRoot(s.submissionsFolder, s.defaultsLanguage), exportRoot(s.exportFolder, s.defaultsLanguage),
     str(s.statusProperty), s.stages ?? null,
     str(s.targetProperty), str(s.limitProperty), str(s.unitProperty), str(s.deadlineProperty), str(s.chapterTargetProperty),
   ]);
@@ -272,13 +282,13 @@ export function scopeKey(s: Pick<ClassifySettings, "universeMode" | "universeNot
 }
 
 /** Whether `path` is the submissions folder or inside it. */
-export function inSubmissions(path: string, settings: Pick<ClassifySettings, "submissionsFolder">): boolean {
-  return inFolder(path, submissionsRoot(settings.submissionsFolder));
+export function inSubmissions(path: string, settings: Pick<ClassifySettings, "submissionsFolder" | "defaultsLanguage">): boolean {
+  return inFolder(path, submissionsRoot(settings.submissionsFolder, settings.defaultsLanguage));
 }
 
 /** Whether `path` is the export folder or inside it. */
-export function inExports(path: string, settings: Pick<ClassifySettings, "exportFolder">): boolean {
-  return inFolder(path, exportRoot(settings.exportFolder));
+export function inExports(path: string, settings: Pick<ClassifySettings, "exportFolder" | "defaultsLanguage">): boolean {
+  return inFolder(path, exportRoot(settings.exportFolder, settings.defaultsLanguage));
 }
 
 /** Whether `path` is the snapshots folder or inside it. */
