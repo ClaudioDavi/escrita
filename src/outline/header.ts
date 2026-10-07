@@ -322,14 +322,22 @@ export function renderSerialLine(host: HTMLElement, line: SerialLine | null): vo
   });
 }
 
-/** The header's action row: "Publish next" when there is a chapter to publish. 2.6 adds "Read the book" here. */
-export function renderHeaderActions(host: HTMLElement, a: { publishNext: (() => void) | null }): void {
+/** The header's action row: "Publish next" when there is a chapter to publish, and "Read the book" (0.9, N 8). */
+export function renderHeaderActions(host: HTMLElement, a: { publishNext: (() => void) | null; readBook?: (() => void) | null }): void {
   host.empty();
-  host.toggleClass("is-hidden", !a.publishNext);
-  if (!a.publishNext) return;
-  const go = a.publishNext;
-  const b = host.createEl("button", { cls: "escrita-outline-action", attr: { "aria-label": t("outline.serial.publishNextTip") } });
-  setIcon(b.createSpan({ cls: "escrita-outline-action-icon", attr: { "aria-hidden": "true" } }), "send");
-  b.createSpan({ text: t("outline.serial.publishNext") });
-  b.addEventListener("click", go);
+  const read = a.readBook ?? null;
+  host.toggleClass("is-hidden", !a.publishNext && !read);
+  if (a.publishNext) {
+    const go = a.publishNext;
+    const b = host.createEl("button", { cls: "escrita-outline-action", attr: { "aria-label": t("outline.serial.publishNextTip") } });
+    setIcon(b.createSpan({ cls: "escrita-outline-action-icon", attr: { "aria-hidden": "true" } }), "send");
+    b.createSpan({ text: t("outline.serial.publishNext") });
+    b.addEventListener("click", go);
+  }
+  if (read) {
+    const b = host.createEl("button", { cls: "escrita-outline-action", attr: { "aria-label": t("outline.reader.readBookTip") } });
+    setIcon(b.createSpan({ cls: "escrita-outline-action-icon", attr: { "aria-hidden": "true" } }), "book-open");
+    b.createSpan({ text: t("outline.reader.readBook") });
+    b.addEventListener("click", read);
+  }
 }

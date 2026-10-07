@@ -180,7 +180,7 @@ describe("OutlineModule data followers and colorsFor", () => {
   });
   it("keeps the colour when the note is deleted", () => {
     const { plugin, f, save } = setup({ "a.md": "blue" });
-    expect(f.deleted).toBeUndefined();
+    f.deleted!("a.md");   // 0.9: the follower now also drops "Read the book" positions, never colours
     expect(plugin.data.povColors).toEqual({ "a.md": "blue" });
     expect(save).not.toHaveBeenCalled();
   });

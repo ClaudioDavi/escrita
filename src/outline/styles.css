@@ -743,3 +743,88 @@ body.is-mobile .escrita-outline-chip {
 .escrita-outline-actions.is-hidden {
   display: none;
 }
+
+/* Read the book (0.9, N 8): a quiet page in the main area, in the reader's own font */
+.escrita-reader {
+  padding: 0;
+  overflow-anchor: auto;
+}
+
+.escrita-reader-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  min-height: 40px;
+  padding: var(--size-2-2) var(--size-4-4);
+  background: var(--background-primary);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.escrita-reader-book {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+}
+
+.escrita-reader-count {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+}
+
+.escrita-reader-tool {
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.escrita-reader-page {
+  max-width: var(--file-line-width, 700px);
+  margin: 0 auto;
+  padding: var(--size-4-8) var(--size-4-4) 40vh;
+}
+
+.escrita-reader-chapter + .escrita-reader-chapter {
+  margin-top: var(--size-4-12);
+}
+
+.escrita-reader-heading {
+  margin: 0 0 var(--size-4-6);
+  text-align: center;
+}
+
+/* a chapter not drawn yet keeps room, so the observer wakes only the ones near the screen */
+.escrita-reader-body.is-pending {
+  min-height: 60vh;
+}
+
+.escrita-reader-loading {
+  color: var(--text-faint);
+  font-size: var(--font-ui-small);
+  text-align: center;
+}
+
+.escrita-reader-block {
+  cursor: text;
+}
+
+.escrita-reader-block > :first-child { margin-top: 0; }
+.escrita-reader-block > :last-child { margin-bottom: var(--size-4-3); }
+
+/* a scene break is drawn by the renderer as <hr>; keep it light */
+.escrita-reader-block hr {
+  margin: var(--size-4-4) auto;
+  width: 30%;
+}
+
+.escrita-reader-empty {
+  padding: var(--size-4-12) var(--size-4-4);
+  color: var(--text-muted);
+  text-align: center;
+}

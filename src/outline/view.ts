@@ -673,6 +673,7 @@ export class OutlineView extends ItemView {
     const notePath = book.note.path;
     renderHeaderActions(this.actionsEl, {
       publishNext: port && state.next ? () => { void port.publishNext(notePath); } : null,
+      readBook: () => { if (this.book) void this.plugin.outline.openReader(this.book); },
     });
   }
 

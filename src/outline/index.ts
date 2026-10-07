@@ -21,6 +21,8 @@ import { readChapterDefault } from "../core/measure";
 import { assignColors, povValue, renamePovKey, type PovColor } from "./pov";
 import { CreateBookModal, confirmAction } from "./modals";
 import { OUTLINE_VIEW, OutlineView, str } from "./view";
+import { READER_VIEW, ReaderView } from "./reader-view";
+import { dropPositions, movePositions } from "./reader-plan";
 import { outlineSettingsSection } from "./settings-ui";
 
 /** Default goal written into a new book's note. */
@@ -31,18 +33,27 @@ import { outlineSettingsSection } from "./settings-ui";
  */
 export class OutlineModule extends FeatureModule {
   readonly id = "outline" as const;
-  readonly slots: FeatureSlots = { views: [OUTLINE_VIEW], editors: 1 };
+  readonly slots: FeatureSlots = { views: [OUTLINE_VIEW, READER_VIEW], editors: 1 };
   /** the ghost beats' extension slot, refilled when the setting changes */
   private editorSlot: EditorSlot | null = null;
 
   constructor(private plugin: EscritaPlugin) { super(); }
 
-  /** Q8: the POV colours follow a renamed note while the outline is off. A deleted note keeps its colour (never pruned). */
+  /**
+   * Q8: the POV colours follow a renamed note while the outline is off. A deleted note keeps
+   * its colour (never pruned). 0.9 (Q14): so do the "Read the book" positions, which are
+   * keyed by the book note and name a chapter; a deleted book or chapter drops its entry.
+   */
   dataFollowers(): Follower[] {
     const p = this.plugin;
     return [{
       moved: (oldPath, newPath) => {
-        if (renamePovKey(p.data.povColors, oldPath, newPath)) p.requestSave();
+        const pov = renamePovKey(p.data.povColors, oldPath, newPath);
+        const read = movePositions(p.data.readPosition, oldPath, newPath);
+        if (pov || read) p.requestSave();
+      },
+      deleted: (path) => {
+        if (dropPositions(p.data.readPosition, path)) p.requestSave();
       },
     }];
   }
@@ -89,6 +100,7 @@ export class OutlineModule extends FeatureModule {
     const plugin = this.plugin;
     const ctx = this.ctx;
     ctx.view(OUTLINE_VIEW, (leaf) => new OutlineView(leaf, plugin));
+    ctx.view(READER_VIEW, (leaf) => new ReaderView(leaf, plugin));
     ctx.ribbon("list-tree", t("outline.command.open"), () => { void this.openOutline(); });
 
     ctx.command({
@@ -103,6 +115,16 @@ export class OutlineModule extends FeatureModule {
         const book = this.currentBook();
         if (!book) return false;
         if (!checking) void this.openBoard(book);
+        return true;
+      },
+    });
+    ctx.command({
+      id: "read-book",
+      name: t("outline.command.readBook"),
+      checkCallback: (checking) => {
+        const book = plugin.books.classify(plugin.app.workspace.getActiveFile()).book;
+        if (!book) return false;
+        if (!checking) void this.openReader(book);
         return true;
       },
     });
@@ -185,6 +207,15 @@ export class OutlineModule extends FeatureModule {
     }
     await workspace.revealLeaf(leaf);
     if (bookNotePath && leaf.view instanceof OutlineView) leaf.view.showBook(bookNotePath);
+  }
+
+  /** "Read the book": the reader view in the main area, on this book (a reader already open is reused). */
+  async openReader(book: Book): Promise<void> {
+    const { workspace } = this.plugin.app;
+    const state = { type: READER_VIEW, active: true, state: { book: book.note.path } };
+    const leaf = workspace.getLeavesOfType(READER_VIEW)[0] ?? workspace.getLeaf("tab");
+    await leaf.setViewState(state);
+    await workspace.revealLeaf(leaf);
   }
 
   // ---------------------------------------------------------------- beats in the editor
