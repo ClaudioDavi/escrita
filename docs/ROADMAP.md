@@ -44,6 +44,8 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 
 ## Next: 1.0, the full release
 
+Plan (draft, questions open): [PLAN-1.0.md](PLAN-1.0.md).
+
 Stabilization and setup: a mobile pass, the user guide complete in English and pt-BR (see
 "Documentation"), migrations tested on the author's vault, and the community plugin
 submission. Serves every stage: a new writer sits down and writes. Upkeep: none; the setup
@@ -56,8 +58,9 @@ runs once.
 | Stabilization: mobile pass, the user guide complete, migrations tested on the author's vault | Docs | M | Phone gates stay waived (no phone to test on) |
 | Community plugin submission | — | S | |
 
-**Improvement:** to be picked from IMPROVEMENTS.md when 1.0 is planned in detail; the
-0.9 simplify review added candidates 24–32.
+**Improvements (proposed):** candidate 8, one rule for a note's effective piece (a
+chapter's book-default target agrees on every surface), and candidate 13, shared helpers
+out of module folders (the setup module needs two of them).
 
 The timeline, dates, facts over time, continuity checks and canon (U 2.1–2.4) were
 planned for 0.9 and moved after screenwriting on 2026-10-06: bloat at this stage.
