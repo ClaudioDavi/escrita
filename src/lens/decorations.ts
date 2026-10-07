@@ -47,10 +47,11 @@ export class LensMarks {
     private session: LensSession,
     private shown: (path: string) => LensResult | undefined,
   ) {
-    const self = this;
+    const { views, selectionCbs } = this;
+    const adopt = (state: EditorState, value: LensField): LensField => this.adopt(state, value);
 
     const field = StateField.define<LensField>({
-      create: (state) => self.adopt(state, EMPTY),
+      create: (state) => adopt(state, EMPTY),
       update(value, tr) {
         let next = value;
         if (tr.docChanged && (next.matches.length > 0 || next.current)) {
@@ -61,7 +62,7 @@ export class LensMarks {
         for (const e of tr.effects) {
           if (e.is(currentEffect)) next = { ...next, current: e.value };
         }
-        return self.adopt(tr.state, next);
+        return adopt(tr.state, next);
       },
     });
     this.field = field;
@@ -69,31 +70,31 @@ export class LensMarks {
     const plugin = ViewPlugin.fromClass(class {
       decorations: DecorationSet = Decoration.none;
       constructor(private readonly view: EditorView) {
-        self.views.add(view);
+        views.add(view);
         // The note may have changed while no editor showed it (sync, a vault.process
         // edit): the session's old result is not trusted until a pass runs on this text.
-        const path = self.pathOf(view.state);
-        if (path !== null && self.session.isOn(path)) {
-          self.session.changed(path, () => view.state.doc.toString());
+        const path = pathOf(view.state);
+        if (path !== null && session.isOn(path)) {
+          session.changed(path, () => view.state.doc.toString());
         }
         this.decorations = this.build(view);
       }
       update(u: ViewUpdate): void {
-        const path = self.pathOf(u.state);
-        if (path !== null && u.docChanged && self.session.isOn(path)) {
+        const path = pathOf(u.state);
+        if (path !== null && u.docChanged && session.isOn(path)) {
           const state = u.state;
-          self.session.changed(path, () => state.doc.toString());
+          session.changed(path, () => state.doc.toString());
         }
-        if (path !== null && u.selectionSet && self.session.isOn(path)) {
+        if (path !== null && u.selectionSet && session.isOn(path)) {
           const ranges = u.state.selection.ranges.map((r) => ({ from: r.from, to: r.to }));
-          for (const cb of [...self.selectionCbs]) cb(path, ranges);
+          for (const cb of [...selectionCbs]) cb(path, ranges);
         }
         if (u.docChanged || u.viewportChanged
           || u.state.field(field) !== u.startState.field(field)) {
           this.decorations = this.build(u.view);
         }
       }
-      destroy(): void { self.views.delete(this.view); }
+      destroy(): void { views.delete(this.view); }
       private build(view: EditorView): DecorationSet {
         const f = view.state.field(field);
         if (f.matches.length === 0) return Decoration.none;

@@ -4,7 +4,7 @@
 
 import {
   MarkdownView, Notice, Platform, TFile, editorInfoField, normalizePath,
-  type Component, type Editor, type MarkdownFileInfo, type Menu, type TAbstractFile, type WorkspaceLeaf,
+  type Component, type Editor, type MarkdownFileInfo, type Menu, type WorkspaceLeaf,
 } from "obsidian";
 import type { EditorState } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";

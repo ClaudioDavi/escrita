@@ -12,14 +12,14 @@ export function publishSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: 
     .setName(t("settings.dateProperty"))
     .setDesc(t("settings.dateProperty.desc"))
     .addText((c) => {
-      c.setPlaceholder("date").setValue(s.dateProperty);
+      c.setPlaceholder(DEFAULT_SETTINGS.dateProperty).setValue(s.dateProperty);
       ui.saveOnCommit(c, () => DEFAULT_SETTINGS.dateProperty, (v) => { s.dateProperty = v; });
     });
   new Setting(el)
     .setName(t("settings.recommendedProperties"))
     .setDesc(t("settings.recommendedProperties.desc"))
     .addTextArea((c) => {
-      c.setPlaceholder("description").setValue(s.recommendedProperties);
+      c.setPlaceholder(DEFAULT_SETTINGS.recommendedProperties).setValue(s.recommendedProperties);
       ui.saveOnCommit(c, () => "", (v) => { s.recommendedProperties = v; });
     });
 }

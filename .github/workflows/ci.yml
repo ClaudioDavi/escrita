@@ -15,6 +15,9 @@ jobs:
           node-version: "20"
           cache: npm
       - run: npm ci
+      # The Obsidian community guidelines (eslint-plugin-obsidianmd, PLAN-1.0 Q9).
+      - run: npm run lint
+      - run: npm run typecheck
       - run: npm test
       - run: npm run build
       # Scan the built main.js for network APIs (milestone 0 guard).

@@ -18,7 +18,7 @@ import type { NoteMentions } from "./mentions";
 const LINKS = /!?\[\[[^\]\n]*\]\]|!?\[[^\]\n]*\]\([^)\n]*\)/g;
 
 function linkSpans(text: string): { from: number; to: number }[] {
-  return [...text.matchAll(LINKS)].map((m) => ({ from: m.index!, to: m.index! + m[0].length }));
+  return [...text.matchAll(LINKS)].map((m) => ({ from: m.index, to: m.index + m[0].length }));
 }
 
 /** Whether `[from, to)` touches a link or embed written in `text`. */

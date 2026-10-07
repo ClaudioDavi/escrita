@@ -51,7 +51,7 @@ export function universeSettingsSection(containerEl: HTMLElement, ui: SettingsUi
       .setName(t("universe.settings.folders"))
       .setDesc(t("universe.settings.folders.desc"))
       .addTextArea((c) => {
-        c.setPlaceholder("Short stories\nNovels").setValue(s.defaultUniverseFolders);
+        c.setPlaceholder(t("universe.settings.defaultFolders.example")).setValue(s.defaultUniverseFolders);
         c.inputEl.setAttr("aria-label", t("universe.settings.folders"));
         c.inputEl.addEventListener("change", () => { s.defaultUniverseFolders = c.getValue(); void ui.save(); });
       });
@@ -82,7 +82,7 @@ export function universeSettingsSection(containerEl: HTMLElement, ui: SettingsUi
         .setName(t("universe.settings.formFolders"))
         .setDesc(t("universe.settings.formFolders.desc"))
         .addTextArea((c) => {
-          c.setPlaceholder("Short stories: short story\nEssays: essay").setValue(s.formFolders);
+          c.setPlaceholder(t("universe.settings.formFolders.example")).setValue(s.formFolders);
           c.inputEl.setAttr("aria-label", t("universe.settings.formFolders"));
           c.inputEl.addEventListener("change", () => { s.formFolders = c.getValue(); void ui.save(); });
         });

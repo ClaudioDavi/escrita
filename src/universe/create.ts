@@ -27,7 +27,7 @@ const LAST_KIND_KEY = "escrita-universe-last-kind";
 
 function lastKind(app: App): EntryKind {
   try {
-    const v = app.loadLocalStorage(LAST_KIND_KEY);
+    const v: unknown = app.loadLocalStorage(LAST_KIND_KEY);
     if (typeof v === "string" && (ENTRY_KINDS as readonly string[]).includes(v)) return v as EntryKind;
   } catch { /* storage may be unavailable: fall back to the first type */ }
   return ENTRY_KINDS[0];

@@ -62,7 +62,7 @@ export function sentences(mask: string, md: Markdown, lang: StemLang | null, fro
   const hi = Math.max(lo, Math.min(to ?? mask.length, mask.length));
 
   const n = md.lineCount;
-  const kind: ("blank" | "heading" | "break" | "text")[] = new Array(n);
+  const kind: ("blank" | "heading" | "break" | "text")[] = new Array<"blank" | "heading" | "break" | "text">(n);
   const classify = (i: number) => {
     const a = md.lineStart(i);
     const b = md.lineEnd(i);

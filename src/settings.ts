@@ -565,7 +565,7 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setName(t("settings.trackFolders"))
       .setDesc(t("settings.trackFolders.desc"))
       .addTextArea((c) => {
-        c.setPlaceholder("Fiction\nNovels").setValue(s.trackFolders);
+        c.setPlaceholder(t("settings.trackFolders.example")).setValue(s.trackFolders);
         ui.saveOnCommit(c, () => "", (v) => { s.trackFolders = v; });
       });
     new Setting(el)
@@ -614,18 +614,18 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setName(t("settings.unnumberedTitles"))
       .setDesc(t("settings.unnumberedTitles.desc"))
       .addTextArea((c) => {
-        c.setPlaceholder("Prologue, Interlude, Epilogue").setValue(s.unnumberedTitles);
+        c.setPlaceholder(t("settings.unnumberedTitles.example")).setValue(s.unnumberedTitles);
         ui.saveOnCommit(c, () => "", (v) => { s.unnumberedTitles = v; });
       });
     new Setting(el)
       .setName(t("settings.statusProperty"))
       .setDesc(t("settings.statusProperty.desc"))
       .addText((c) => {
-        c.setPlaceholder("status").setValue(s.statusProperty);
+        c.setPlaceholder(DEFAULT_SETTINGS.statusProperty).setValue(s.statusProperty);
         ui.saveOnCommit(c, () => DEFAULT_STATUS_PROPERTY, (v) => { s.statusProperty = v; });
       })
       .addText((c) => {
-        c.setPlaceholder("summary").setValue(s.summaryProperty);
+        c.setPlaceholder(DEFAULT_SETTINGS.summaryProperty).setValue(s.summaryProperty);
         ui.saveOnCommit(c, () => "summary", (v) => { s.summaryProperty = v; });
       });
   }
@@ -828,7 +828,7 @@ export class EscritaSettingTab extends PluginSettingTab {
           s.stages[k].color = "";
           // Reset the input too, so picking the same color again fires a change.
           // The empty state is the dashed swatch; the input holds a neutral grey so black can still be picked.
-          (picker as ColorComponent | null)?.setValue(EMPTY_SWATCH);
+          (picker)?.setValue(EMPTY_SWATCH);
           paint();
           await ui.save();
         });
@@ -847,7 +847,7 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setName(t("settings.otherStatusColors"))
       .setDesc(t("settings.otherStatusColors.desc"))
       .addTextArea((c) => {
-        c.setPlaceholder("paused: #6e6b66").setValue(s.otherStatusColors);
+        c.setPlaceholder(t("settings.otherStatusColors.example")).setValue(s.otherStatusColors);
         c.inputEl.addClass("escrita-mono");
         c.inputEl.setAttr("aria-label", t("settings.otherStatusColors"));
         ui.saveOnCommit(c, () => "", (v) => { s.otherStatusColors = v; });

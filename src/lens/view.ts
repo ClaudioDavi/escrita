@@ -3,7 +3,7 @@
 // ignoring and the settings tab are done by the module (task 5.1) through the
 // hooks below.
 
-import { ItemView, MarkdownView, Notice, Platform, TFile, setIcon, type WorkspaceLeaf } from "obsidian";
+import { ItemView, MarkdownView, Notice, Platform, setIcon, type WorkspaceLeaf } from "obsidian";
 import type EscritaPlugin from "../main";
 import { fmt, lang, plural, t } from "../i18n";
 import { EMPTY_TABLE } from "../core/names";

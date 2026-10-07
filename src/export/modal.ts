@@ -199,7 +199,7 @@ export class ExportModal extends Modal {
     if (!btn || btn.disabled) return;
     const a = document.activeElement;
     const typing = a instanceof HTMLElement && this.contentEl.contains(a) &&
-      (a instanceof HTMLSelectElement || (a instanceof HTMLInputElement && ["text", "number", "range"].includes(a.type)) || a instanceof HTMLTextAreaElement);
+      (a.instanceOf(HTMLSelectElement) || (a.instanceOf(HTMLInputElement) && ["text", "number", "range"].includes(a.type)) || a.instanceOf(HTMLTextAreaElement));
     if (typing) return;
     btn.focus();
   }
@@ -288,7 +288,7 @@ export class ExportModal extends Modal {
     const group = parent.createDiv({ cls: "escrita-export-radios", attr: { role: "radiogroup", "aria-label": t("export.chapters") } });
     const radio = (parentEl: HTMLElement, on: boolean, label: string, pick: () => void): HTMLElement => {
       const row = parentEl.createEl("label", { cls: "escrita-export-radio" });
-      const input = row.createEl("input", { attr: { type: "radio", name: "escrita-export-chapters" } }) as HTMLInputElement;
+      const input = row.createEl("input", { attr: { type: "radio", name: "escrita-export-chapters" } });
       input.checked = on;
       input.addEventListener("change", () => { if (input.checked) pick(); });
       row.createSpan({ text: label });
@@ -309,7 +309,7 @@ export class ExportModal extends Modal {
       this.changed();
     });
     const num = (value: number, label: string): HTMLInputElement => {
-      const i = rangeRow.createEl("input", { cls: "escrita-export-num", attr: { type: "number", "aria-label": label, min: "1", max: String(Math.max(1, total)) } }) as HTMLInputElement;
+      const i = rangeRow.createEl("input", { cls: "escrita-export-num", attr: { type: "number", "aria-label": label, min: "1", max: String(Math.max(1, total)) } });
       i.value = String(value);
       return i;
     };
@@ -613,7 +613,7 @@ export class ChaptersModal extends Modal {
     for (const ref of this.chapters) {
       const left = !ref.include;
       const row = list.createEl("label", { cls: "escrita-export-pick" });
-      const input = row.createEl("input", { attr: { type: "checkbox" } }) as HTMLInputElement;
+      const input = row.createEl("input", { attr: { type: "checkbox" } });
       input.checked = !left && this.checked.has(ref.path);
       input.disabled = left;
       if (left) row.addClass("is-left");

@@ -35,7 +35,7 @@ export interface IndexTimers {
 export function macrotaskYield(): Promise<void> {
   return new Promise<void>((resolve) => {
     if (typeof MessageChannel === "undefined") {
-      setTimeout(resolve, 0);
+      window.setTimeout(resolve, 0);
       return;
     }
     const ch = new MessageChannel();

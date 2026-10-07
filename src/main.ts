@@ -1,6 +1,6 @@
 import { Plugin, TFile, debounce, setTooltip } from "obsidian";
 import { DEFAULT_SETTINGS, EscritaSettingTab, normalizeSettings, type EscritaSettings } from "./settings";
-import type { EscritaData, PublishRecord } from "./data";
+import type { EscritaData } from "./data";
 import { cleanExportChoices, cleanReadPositions, cleanSetupOffered } from "./data";
 import { mergeDefaults } from "./core/merge";
 import { migrateSettings } from "./core/migrate";
@@ -226,7 +226,7 @@ export default class EscritaPlugin extends Plugin {
       version: 1,
       settings: this.settings,
       history: isRecord(raw.history) ? raw.history : {},
-      publish: isRecord(raw.publish) ? (raw.publish as Record<string, PublishRecord>) : {},
+      publish: isRecord(raw.publish) ? (raw.publish) : {},
       leftOff: cleanLeftOff(raw.leftOff),
       lensDismissed: cleanDismissed(raw.lensDismissed),
       threadSeen: cleanSeen(raw.threadSeen),

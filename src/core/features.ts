@@ -99,7 +99,7 @@ export function cleanFeatures(raw: unknown): Partial<Record<FeatureId, boolean>>
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
   const src = raw as Record<string, unknown>;
   for (const id of FEATURE_IDS) {
-    if (Object.prototype.hasOwnProperty.call(src, id) && typeof src[id] === "boolean") out[id] = src[id] as boolean;
+    if (Object.prototype.hasOwnProperty.call(src, id) && typeof src[id] === "boolean") out[id] = src[id];
   }
   return out;
 }

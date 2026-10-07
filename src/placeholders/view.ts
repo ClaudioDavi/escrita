@@ -92,7 +92,7 @@ export class PlaceholdersView extends ItemView {
   private restoreFocus(key: string): void {
     const find = (k: string): HTMLElement | null => {
       for (const node of Array.from(this.contentEl.querySelectorAll(`[${FOCUS_KEY}]`))) {
-        if (node instanceof HTMLElement && node.getAttribute(FOCUS_KEY) === k) return node;
+        if (node.instanceOf(HTMLElement) && node.getAttribute(FOCUS_KEY) === k) return node;
       }
       return null;
     };

@@ -19,7 +19,7 @@ import { confirmAction } from "./modals";
 import { errorMessage } from "./errors";
 import { loadRows, type ChapterRow as LoadedRow } from "./rows";
 import {
-  canReorder, filterActive, hiddenByFilter, povValue, rowMatches, type PovColor, type RowFilter,
+  canReorder, filterActive, hiddenByFilter, rowMatches, type PovColor, type RowFilter,
 } from "./pov";
 import {
   headerModel, povCss, pruneFilter, renderChips, renderColorToggle, renderHeaderActions, renderSerialLine,
@@ -106,7 +106,9 @@ interface NoteState {
 export function str(v: unknown): string {
   if (v === null || v === undefined) return "";
   if (Array.isArray(v)) return v.map(str).join(", ");
-  return String(v);
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  return JSON.stringify(v) ?? ""; // a YAML map: its JSON, not "[object Object]"
 }
 
 function oneLine(s: string): string {

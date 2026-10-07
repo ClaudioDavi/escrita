@@ -2,7 +2,7 @@ import { Setting } from "obsidian";
 import { t } from "../i18n";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
-import type { EscritaSettings } from "../settings";
+import { DEFAULT_SETTINGS, type EscritaSettings } from "../settings";
 import { defaultUniverseSettings } from "./settings";
 
 /**
@@ -26,7 +26,7 @@ export function threadWordRows(el: HTMLElement, ui: SettingsUi, s: EscritaSettin
     .setName(t("universe.settings.threadWord"))
     .setDesc(off ? "" : t("universe.settings.threadWord.desc", { example: `%% ${s.threadKeyword}: … %%` }))
     .addText((c) => {
-      c.setPlaceholder("thread").setValue(s.threadKeyword);
+      c.setPlaceholder(DEFAULT_SETTINGS.threadKeyword).setValue(s.threadKeyword);
       c.inputEl.addClass("escrita-universe-narrow");
       c.inputEl.setAttr("aria-label", t("universe.settings.threadWord"));
       ui.saveOnCommit(c, () => "thread", (v) => { s.threadKeyword = v; });

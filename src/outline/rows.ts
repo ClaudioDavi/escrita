@@ -48,7 +48,9 @@ export interface RowsPort<B> extends BookSource<B> {
 function str(v: unknown): string {
   if (v === null || v === undefined) return "";
   if (Array.isArray(v)) return v.map(str).join(", ");
-  return String(v);
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  return JSON.stringify(v) ?? ""; // a YAML map: its JSON, not "[object Object]"
 }
 
 function oneLine(s: string): string {

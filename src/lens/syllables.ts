@@ -96,8 +96,6 @@ function ptClosed(w: string, pos: number): boolean {
 
 // ---------------------------------------------------------------- en
 
-const EN_VOWELS = "aeiouy";
-const isEnVowel = (c: string | undefined): boolean => c !== undefined && EN_VOWELS.includes(c);
 
 /** Irregular words the rules get wrong, with their dictionary counts. */
 const EN_IRREGULAR: Readonly<Record<string, number>> = {

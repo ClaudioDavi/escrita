@@ -56,7 +56,7 @@ class SectionWidget extends WidgetType {
   }
 
   toDOM(view: EditorView): HTMLElement {
-    const wrap = view.dom.ownerDocument.createElement("div");
+    const wrap = createDiv();
     wrap.className = "escrita-ai-wrap";
     const redraw = () => view.dispatch({ effects: refresh.of(null) });
     renderAppearsInSection(wrap, this.answer === "counting" ? null : this.answer, {

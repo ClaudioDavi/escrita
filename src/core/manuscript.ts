@@ -104,6 +104,7 @@ export interface ManuscriptOptions {
 
 // Private-use sentinels: a removed stretch (comment, embed) and a protected code text.
 const GONE = "\u0001";
+const GONE_RUN = new RegExp("[ \\t]*" + GONE, "g"); // built from a string: no-control-regex
 const CODE_OPEN = "\u0002";
 const CODE_CLOSE = "\u0003";
 
@@ -207,7 +208,7 @@ function hasGone(s: string): boolean {
 }
 
 function stripGone(s: string): string {
-  return s.replace(/[ \t]*\u0001/g, "");
+  return s.replace(GONE_RUN, "");
 }
 
 function applyLinks(s: string): string {

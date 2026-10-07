@@ -216,7 +216,7 @@ export function bookTotalSeries(history: History, days: string[], bookPath: stri
   let i = 0;
   let last = before;
   const sortedDays = days.map((d, idx) => ({ d, idx })).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
-  const out: number[] = new Array(days.length).fill(0);
+  const out: number[] = new Array<number>(days.length).fill(0);
   for (const { d, idx } of sortedDays) {
     while (i < recorded.length && recorded[i] <= d) {
       last = num(history[recorded[i]].books[bookPath].total);

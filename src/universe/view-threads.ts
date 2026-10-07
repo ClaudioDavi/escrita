@@ -4,7 +4,6 @@
 
 import { Notice, TFile, setIcon } from "obsidian";
 import { lang, plural, t } from "../i18n";
-import type { ThreadMarker } from "../core/markers";
 import { closedPreview, groupThreads, countThreads, seenDate, type WorkOf } from "./panel-model";
 import type { ThreadRef } from "./threads";
 import { answerChoices, resolveAnswerLink } from "./create";
@@ -153,7 +152,7 @@ function closeForm(list: HTMLElement, ctx: PanelCtx, r: ThreadRef): void {
   });
   if (ctx.closing?.focus) {
     ctx.closing.focus = false;
-    activeWindow.setTimeout(() => input.focus(), 0);
+    window.setTimeout(() => input.focus(), 0);
   }
 }
 
@@ -163,7 +162,7 @@ async function close(ctx: PanelCtx, r: ThreadRef, typed: string): Promise<void> 
   if (!(file instanceof TFile)) { new Notice(t("universe.view.notice.missing", { path: r.path })); ctx.refresh(); return; }
   const { link: answer, unknown } = resolveAnswerLink(plugin, file, answerChoices(plugin, file), typed);
   const name = unknown ?? "";
-  const ok = await plugin.universe.closeThread(file, r.thread as ThreadMarker, answer);
+  const ok = await plugin.universe.closeThread(file, r.thread, answer);
   ctx.openClose(null);
   if (!ok) { new Notice(t("universe.view.notice.stale")); ctx.refresh(); return; }
   new Notice(t("universe.view.notice.closed", { note: r.title }));

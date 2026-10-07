@@ -270,10 +270,12 @@ export class CompareView extends ItemView {
     const shown = this.shown;
     if (!change || !this.canRevert() || shown === undefined) return;
     const b = el.createEl("button", { cls: "escrita-compare-useold", text: t("snapshots.compare.useOld") });
-    b.addEventListener("click", async () => {
+    b.addEventListener("click", () => {
       b.disabled = true;
-      await this.module.revertBlock(file, change, shown, [this.state.a]);
-      await this.refresh();
+      void (async () => {
+        await this.module.revertBlock(file, change, shown, [this.state.a]);
+        await this.refresh();
+      })();
     });
   }
 

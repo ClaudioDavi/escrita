@@ -20,7 +20,7 @@ class GhostBeatWidget extends WidgetType {
   }
 
   toDOM(view: EditorView): HTMLElement {
-    const wrap = view.dom.ownerDocument.createElement("span");
+    const wrap = createSpan();
     wrap.className = "escrita-ghost-beat";
     wrap.createSpan({ cls: "escrita-ghost-label", text: t("outline.ghostLabel", { letter: this.letter }) });
     wrap.createSpan({ cls: "escrita-ghost-text", text: this.text || "…" });

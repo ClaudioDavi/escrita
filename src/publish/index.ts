@@ -128,7 +128,7 @@ export class PublishModule extends FeatureModule implements PublishNextPort {
   }
 
   private frontmatter(file: TFile): Frontmatter {
-    return (this.plugin.app.metadataCache.getFileCache(file)?.frontmatter ?? {}) as Frontmatter;
+    return (this.plugin.app.metadataCache.getFileCache(file)?.frontmatter ?? {});
   }
 
   private published(file: TFile, fm = this.frontmatter(file)): boolean {

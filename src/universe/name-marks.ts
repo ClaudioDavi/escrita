@@ -7,7 +7,7 @@
 import { StateEffect, type EditorState, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 import { Keymap, Platform, editorInfoField } from "obsidian";
-import { findNames, type TermTable } from "../core/names";
+import { findNames } from "../core/names";
 import { segmentDoc } from "../core/markdown";
 import type { NamesProvider } from "../core/names-source";
 import { readerMask } from "../core/wordcount";
@@ -59,7 +59,7 @@ export class NameMarks {
   private off: () => void;
 
   constructor(private deps: NameMarksDeps) {
-    const self = this;
+    const { views, deps: markDeps } = this;
     const pathOf = deps.pathOf ?? defaultPathOf;
 
     const plugin = ViewPlugin.fromClass(class {
@@ -73,7 +73,7 @@ export class NameMarks {
       private timer: number | null = null;
 
       constructor(private readonly view: EditorView) {
-        self.views.add(view);
+        views.add(view);
         this.pass();
         this.decorations = this.build();
       }
@@ -104,7 +104,7 @@ export class NameMarks {
       markAt(pos: number): { from: number; to: number } | null { return markAt(this.marks, pos); }
 
       destroy(): void {
-        self.views.delete(this.view);
+        views.delete(this.view);
         if (this.timer !== null) window.clearTimeout(this.timer);
       }
 
@@ -121,7 +121,7 @@ export class NameMarks {
       private pass(): void {
         const state = this.view.state;
         const path = pathOf(state);
-        const names = self.deps.names;
+        const names = markDeps.names;
         const version = names.version();
         const table = path === null ? null : markableTable(names.tableFor(path));
         const live = table !== null && hasMarks(table);
@@ -149,7 +149,7 @@ export class NameMarks {
       }
 
       private build(): DecorationSet {
-        const d = deco(self.deps.spellcheckWorks?.() ?? true, self.deps.underline());
+        const d = deco(markDeps.spellcheckWorks?.() ?? true, markDeps.underline());
         if (d === null || this.marks.length === 0) return Decoration.none;
         const windows = this.view.visibleRanges.map((r) => ({ from: r.from, to: r.to }));
         return Decoration.set(visibleMarks(this.marks, windows).map((m) => d.range(m.from, m.to)), true);
@@ -158,7 +158,7 @@ export class NameMarks {
 
     const click = EditorView.domEventHandlers({
       mousedown(evt, view) {
-        if (!self.deps.open || !Keymap.isModEvent(evt)) return false;
+        if (!markDeps.open || !Keymap.isModEvent(evt)) return false;
         const target = evt.target;
         if (!(target instanceof HTMLElement)) return false;
         const el = target.closest(".escrita-name-mark");
@@ -168,10 +168,10 @@ export class NameMarks {
         if (!inst || path === null) return false;
         const mark = inst.markAt(view.posAtDOM(el, 0));
         if (!mark) return false;
-        const entry = entryAt(view.state.sliceDoc(mark.from, mark.to), self.deps.names.tableFor(path));
+        const entry = entryAt(view.state.sliceDoc(mark.from, mark.to), markDeps.names.tableFor(path));
         if (!entry) return false;
         evt.preventDefault();
-        self.deps.open(entry, evt);
+        markDeps.open(entry, evt);
         return true;
       },
     });

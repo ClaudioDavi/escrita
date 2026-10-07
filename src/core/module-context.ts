@@ -199,7 +199,7 @@ export class ModuleSlots {
       });
     }
     if (this.declared.postProcessor) {
-      p.registerMarkdownPostProcessor((el, ctx) => { this.post?.(el, ctx); });
+      p.registerMarkdownPostProcessor((el, ctx) => { void this.post?.(el, ctx); });
     }
     for (let i = 0; i < (this.declared.editors ?? 0); i++) {
       const arr: Extension[] = [];

@@ -5,7 +5,7 @@
 import { segment, type Markdown } from "./markdown";
 
 // Combining marks (\p{M}) belong to the word, so a decomposed "ninguém" is one word.
-const WORD = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:['’\-][\p{L}\p{M}\p{N}]+)*/gu;
+const WORD = /[\p{L}\p{N}][\p{L}\p{M}\p{N}]*(?:['’-][\p{L}\p{M}\p{N}]+)*/gu;
 
 /** A fresh copy of the word rule (global, unicode), for tokenizers that need their own lastIndex. */
 export function wordRegex(): RegExp {

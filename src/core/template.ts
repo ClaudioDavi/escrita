@@ -74,10 +74,10 @@ function propsOf(lines: string[]): TemplateProp[] {
 
 function frontmatterLines(text: string): { lines: string[]; closeLine: number; bodyLine: number; lineStart: (l: number) => number } {
   const md = segment(text);
-  if (md.bodyLine === 0) return { lines: [], closeLine: -1, bodyLine: 0, lineStart: md.lineStart };
+  if (md.bodyLine === 0) return { lines: [], closeLine: -1, bodyLine: 0, lineStart: (l) => md.lineStart(l) };
   const lines: string[] = [];
   for (let l = 1; l < md.bodyLine - 1; l++) lines.push(text.slice(md.lineStart(l), md.lineEnd(l)));
-  return { lines, closeLine: md.bodyLine - 1, bodyLine: md.bodyLine, lineStart: md.lineStart };
+  return { lines, closeLine: md.bodyLine - 1, bodyLine: md.bodyLine, lineStart: (l) => md.lineStart(l) };
 }
 
 /** Offset where the body starts (the text's end when the closing --- is the last line). */

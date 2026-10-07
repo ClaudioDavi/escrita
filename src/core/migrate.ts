@@ -13,7 +13,7 @@ const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v =
 export function migrateStages(legacy: unknown): { stages: StageMapping; otherStatusColors: string } {
   const src = isRecord(legacy) ? legacy : {};
   const stages = cloneDefaultStages();
-  const str = (k: string): string => (typeof src[k] === "string" ? (src[k] as string).trim() : "");
+  const str = (k: string): string => (typeof src[k] === "string" ? (src[k]).trim() : "");
 
   const published = str("publishedValue");
   const unpublished = str("unpublishedValue");

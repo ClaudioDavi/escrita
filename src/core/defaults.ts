@@ -157,7 +157,7 @@ export function overlayDefaults(base: EscritaSettings, lang: DefaultsLanguage): 
   const out = { ...base } as Record<string, unknown>;
   // copy every nested value of the base first (stages may be the frozen DEFAULT_STAGES)
   for (const [k, v] of Object.entries(out)) {
-    if (Array.isArray(v)) out[k] = [...v];
+    if (Array.isArray(v)) out[k] = [...(v as unknown[])];
     else if (v && typeof v === "object") out[k] = cloneRecord(v as Record<string, unknown>);
   }
   for (const k of WORD_KEYS) {
@@ -171,7 +171,7 @@ export function overlayDefaults(base: EscritaSettings, lang: DefaultsLanguage): 
 function cloneRecord(r: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(r)) {
-    out[k] = Array.isArray(v) ? [...v] : v && typeof v === "object" ? { ...(v as Record<string, unknown>) } : v;
+    out[k] = Array.isArray(v) ? [...(v as unknown[])] : v && typeof v === "object" ? { ...(v as Record<string, unknown>) } : v;
   }
   return out;
 }

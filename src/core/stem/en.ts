@@ -44,7 +44,7 @@ const DOUBLES = ["bb", "dd", "ff", "gg", "mm", "nn", "pp", "rr", "tt"];
 function vowelFlags(w: string): boolean[] {
   const v: boolean[] = [];
   for (let i = 0; i < w.length; i++) {
-    const c = w[i]!;
+    const c = w[i];
     if (c === "y") v.push(i > 0 && !v[i - 1]);
     else v.push(VOWELS.includes(c));
   }
@@ -53,7 +53,7 @@ function vowelFlags(w: string): boolean[] {
 
 /** Index where the region after the first non-vowel that follows a vowel starts, from `start`. */
 function regionStart(v: readonly boolean[], start: number, len: number): number {
-  for (let i = start + 1; i < len; i++) if (!v[i]! && v[i - 1]!) return i + 1;
+  for (let i = start + 1; i < len; i++) if (!v[i] && v[i - 1]) return i + 1;
   return len;
 }
 
@@ -65,10 +65,10 @@ function r1Of(w: string, v: readonly boolean[]): number {
 /** Ends in a short syllable (Porter2). */
 function endsShort(w: string, v: readonly boolean[]): boolean {
   const n = w.length;
-  if (n === 2) return v[0]! && !v[1]!;
+  if (n === 2) return v[0] && !v[1];
   if (n < 3) return false;
-  const last = w[n - 1]!;
-  return !v[n - 3]! && v[n - 2]! && !v[n - 1]! && last !== "w" && last !== "x" && last !== "y";
+  const last = w[n - 1];
+  return !v[n - 3] && v[n - 2] && !v[n - 1] && last !== "w" && last !== "x" && last !== "y";
 }
 
 function hasVowel(w: string, upTo: number): boolean {
@@ -99,7 +99,7 @@ function step1b(w: string): string {
   else if (w.endsWith("ing")) stem = w.slice(0, -3);
   if (stem === null || !hasVowel(stem, stem.length)) return w;
   if (/(?:at|bl|iz)$/.test(stem)) return stem + "e";
-  if (DOUBLES.some((d) => stem!.endsWith(d))) return stem.slice(0, -1);
+  if (DOUBLES.some((d) => stem.endsWith(d))) return stem.slice(0, -1);
   v = vowelFlags(stem);
   if (r1Of(stem, v) >= stem.length && endsShort(stem, v)) return stem + "e";
   return stem;
@@ -109,7 +109,7 @@ function step1c(w: string): string {
   const n = w.length;
   if (n > 2 && w.endsWith("y")) {
     const v = vowelFlags(w);
-    if (!v[n - 2]! && !(w[n - 2] === "y") && n - 2 > 0) return w.slice(0, -1) + "i";
+    if (!v[n - 2] && !(w[n - 2] === "y") && n - 2 > 0) return w.slice(0, -1) + "i";
   }
   return w;
 }

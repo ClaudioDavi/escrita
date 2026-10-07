@@ -164,12 +164,12 @@ function augDim(w: string): string {
   if (NOT_INFLECTED.has(w)) return w;
   const n = len(w);
   let m: RegExpExecArray | null;
-  if ((m = /^(.+)inh([oa])$/u.exec(w)) && Z_FINAL.has(m[1]!)) return m[1]! + m[2]!;
-  if ((m = /^(.+)z(?:inh|it)([oa])$/u.exec(w)) && len(m[1]!) >= 2) return m[1]!;
-  if ((m = /^(.+)quinh([oa])$/u.exec(w)) && len(m[1]!) >= 2) return m[1]! + (m[2] === "o" ? "co" : "ca");
-  if ((m = /^(.+)guinh([oa])$/u.exec(w)) && len(m[1]!) >= 2) return m[1]! + (m[2] === "o" ? "go" : "ga");
-  if ((m = /^(.+)inh([oa])$/u.exec(w)) && len(m[1]!) >= 3 && endsConsonant(m[1]!)) return m[1]! + m[2]!;
-  if ((m = /^(.+)it([oa])$/u.exec(w)) && len(m[1]!) >= 4 && endsConsonant(m[1]!)) return m[1]! + m[2]!;
+  if ((m = /^(.+)inh([oa])$/u.exec(w)) && Z_FINAL.has(m[1])) return m[1] + m[2];
+  if ((m = /^(.+)z(?:inh|it)([oa])$/u.exec(w)) && len(m[1]) >= 2) return m[1];
+  if ((m = /^(.+)quinh([oa])$/u.exec(w)) && len(m[1]) >= 2) return m[1] + (m[2] === "o" ? "co" : "ca");
+  if ((m = /^(.+)guinh([oa])$/u.exec(w)) && len(m[1]) >= 2) return m[1] + (m[2] === "o" ? "go" : "ga");
+  if ((m = /^(.+)inh([oa])$/u.exec(w)) && len(m[1]) >= 3 && endsConsonant(m[1])) return m[1] + m[2];
+  if ((m = /^(.+)it([oa])$/u.exec(w)) && len(m[1]) >= 4 && endsConsonant(m[1])) return m[1] + m[2];
   if (w.endsWith("ão") && !/(?:ç|s)ão$/.test(w) && n - 2 >= 4) return w.slice(0, -2);
   if (w.endsWith("ona") && n - 3 >= 4) return w.slice(0, -3);
   return w;
@@ -179,11 +179,11 @@ function augDim(w: string): string {
 function augDimName(w: string): string {
   if (NOT_INFLECTED.has(w)) return w;
   let m: RegExpExecArray | null;
-  if ((m = /^(.+)inh[oa]$/u.exec(w)) && Z_FINAL.has(m[1]!)) return m[1]!;
-  if ((m = /^(.+)z(?:inh|it)[oa]$/u.exec(w)) && len(m[1]!) >= 2) return m[1]!;
-  if ((m = /^(.+)z(?:ão|ona)$/u.exec(w)) && len(m[1]!) >= 2) return m[1]!;
-  if ((m = /^(.+)inh([oa])$/u.exec(w)) && len(m[1]!) >= 2 && endsConsonant(m[1]!)) {
-    return m[1]!.endsWith("z") ? m[1]! : m[1]! + m[2]!;
+  if ((m = /^(.+)inh[oa]$/u.exec(w)) && Z_FINAL.has(m[1])) return m[1];
+  if ((m = /^(.+)z(?:inh|it)[oa]$/u.exec(w)) && len(m[1]) >= 2) return m[1];
+  if ((m = /^(.+)z(?:ão|ona)$/u.exec(w)) && len(m[1]) >= 2) return m[1];
+  if ((m = /^(.+)inh([oa])$/u.exec(w)) && len(m[1]) >= 2 && endsConsonant(m[1])) {
+    return m[1].endsWith("z") ? m[1] : m[1] + m[2];
   }
   return w;
 }

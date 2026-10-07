@@ -72,7 +72,7 @@ export function sameScope(a: Scope, b: Scope): boolean {
  * The scope of a path outside every universe and book. Frozen and shared: every
  * placement without a scope of its own carries this one object.
  */
-export const NO_SCOPE: Scope = Object.freeze({ kind: "none", root: "", note: null }) as Scope;
+export const NO_SCOPE: Scope = Object.freeze({ kind: "none", root: "", note: null });
 
 /** Whether `path` is `folder` itself or inside it. Slashes at the folder's edges are ignored, "" means the whole vault, case-sensitive. */
 export function inFolder(path: string, folder: string): boolean {

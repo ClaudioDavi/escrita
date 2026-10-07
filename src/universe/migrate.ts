@@ -42,7 +42,7 @@ function bookOf(plugin: EscritaPlugin, file: TAbstractFile | null): BookCtx | nu
   if (!file) return null;
   const book = plugin.books.classify(file).book;
   if (!book) return null;
-  return { folder: book.folder.path, note: book.note as TFile, title: book.title };
+  return { folder: book.folder.path, note: book.note, title: book.title };
 }
 
 /**

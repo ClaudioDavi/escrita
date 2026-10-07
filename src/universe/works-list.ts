@@ -24,7 +24,7 @@ const norm = (s: string) => s.normalize("NFC").trim().toLowerCase();
 
 /** The form a property value names (case and spacing forgiven; a first list item counts), or null. */
 export function formOf(value: unknown, values: UniverseSettings["formValues"]): FormKind | null {
-  const v = Array.isArray(value) ? value[0] : value;
+  const v = Array.isArray(value) ? (value as unknown[])[0] : value;
   if (typeof v !== "string" && typeof v !== "number") return null;
   const word = norm(String(v));
   if (word === "") return null;
