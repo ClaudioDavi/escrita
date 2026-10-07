@@ -12,6 +12,7 @@ import { defaultUniverseSettings, normalizeUniverse, type UniverseMode, type Uni
 import { DEFAULT_SNAPSHOTS_FOLDER, exportRoot, snapshotsRoot, submissionsRoot } from "./core/classify";
 import { holdsOwnNotes, pluginFolderProblem, type BookPaths } from "./core/folder-problem";
 import { addFolderField } from "./core/folder-setting";
+import { isDefaultsLanguage, overlayDefaults, type DefaultsLanguage } from "./core/defaults";
 
 export type ParagraphStyle = "single" | "blank";
 export type Scope = "books" | "all";
@@ -36,6 +37,13 @@ export interface EscritaSettings extends UniverseSettings {
   /** path of the home note; empty = none */
   homeNote: string;
   openHomeOnStartup: boolean;
+  /**
+   * Enter writing mode when Obsidian starts (1.0, SF 10, board 39): only the note and the
+   * small goal counter. Beside `openHomeOnStartup`, part of the home block feature (`desk`,
+   * no switch of its own); the setup turns it on when the writer picks the writing mode
+   * layout. False by default; read only while the desk is on.
+   */
+  openInWritingMode: boolean;
   summaryProperty: string;
 
   // Goals
@@ -168,6 +176,17 @@ export interface EscritaSettings extends UniverseSettings {
   lensSkipQuotes: boolean;
   lensShowDialogue: boolean;
   lensShowReadability: boolean;
+
+  // Language (1.0, PLAN-1.0 "Q1 as built"; no settings row in 1.0)
+  /**
+   * The default set this install uses (core/defaults.ts): every word-bearing setting the
+   * writer never saved takes its value from this set, and a blank one is restored from
+   * it. "en" for a saved settings object without the key (any install from before 1.0),
+   * so a 0.9 writer keeps every English default they rely on. A fresh install takes
+   * Obsidian's language once (`languageOf`) and saves it on its first load (task 1.4);
+   * after that only the setup changes it. Never follows Obsidian's language by itself.
+   */
+  defaultsLanguage: DefaultsLanguage;
 }
 
 export const DEFAULT_SETTINGS: EscritaSettings = {
@@ -182,6 +201,7 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   draftNewNotes: true,
   homeNote: "",
   openHomeOnStartup: false,
+  openInWritingMode: false,
   summaryProperty: "summary",
 
   dailyGoal: 1000,
@@ -261,8 +281,21 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   lensShowDialogue: true,
   lensShowReadability: true,
 
+  defaultsLanguage: "en",
+
   ...defaultUniverseSettings(),
 };
+
+/**
+ * DEFAULT_SETTINGS with one language's default set laid over it (core/defaults.ts): what
+ * an install whose `defaultsLanguage` is `lang` falls back to for every key it never saved.
+ * A fresh object each call, sharing nothing with DEFAULT_SETTINGS. `defaultsFor("en")`
+ * equals DEFAULT_SETTINGS. Lives here, not in core/defaults.ts, so that file needs no
+ * value import from this one (see `overlayDefaults`).
+ */
+export function defaultsFor(lang: DefaultsLanguage): EscritaSettings {
+  return overlayDefaults(DEFAULT_SETTINGS, lang);
+}
 
 /** Settings as saved, with defaults filled in and list fields cleaned (used by loadAll). */
 export function normalizeSettings(s: EscritaSettings): EscritaSettings {
@@ -298,6 +331,9 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   s.threadKeyword = (typeof s.threadKeyword === "string" ? s.threadKeyword.trim() : "") || DEFAULT_SETTINGS.threadKeyword;
   s.features = cleanFeatures(s.features);
   Object.assign(s, normalizeUniverse(s));
+  // 1.0, no rows yet: an unknown language is the English set; the mode is on only when saved as true
+  s.defaultsLanguage = isDefaultsLanguage(s.defaultsLanguage) ? s.defaultsLanguage : "en";
+  s.openInWritingMode = s.openInWritingMode === true;
   return s;
 }
 
@@ -325,7 +361,9 @@ export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "a
   goalProperty: "always", povProperty: "always", chapterTargetProperty: "always",
   trackFolders: "always", excludeFolders: "always",
   templatesFolder: ["templates", "universe"],
-  homeNote: ["desk"], openHomeOnStartup: ["desk"],
+  homeNote: ["desk"], openHomeOnStartup: ["desk"], openInWritingMode: ["desk"],
+  // shared core (it picks the fallback of every word-bearing setting); no row in 1.0
+  defaultsLanguage: "always",
   dailyGoal: ["goals"], dayEndsAt: ["goals", "darlings", "snapshots", "publish"],
   ignoreJumpsOver: ["goals"], sprintMinutes: ["goals"], sprintTarget: ["goals"], showStatusBar: ["goals"],
   weekdaysOff: ["goals"], datesOff: ["goals"],

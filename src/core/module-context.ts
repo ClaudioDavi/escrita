@@ -114,6 +114,44 @@ export abstract class FeatureModule extends Component {
   offNotice?(): Promise<string | null>;
 }
 
+/**
+ * A part of Escrita that is not one of the 19 features and never switches off (1.0: the
+ * setup, "Set up a writing vault"). It has no `FeatureId`, so it is not on the Features
+ * page, in a preset or in `settings.features`, and the registry never sees it.
+ *
+ * The seam (PLAN-1.0 0.1, ARCHITECTURE.md "Core modules"): main.ts constructs it after
+ * the registry has applied the switches and hands it to `startCoreModule`, which gives it
+ * its own `ModuleContext` (the same door every feature registers through, rule 8) and
+ * adds it as a child of the plugin, so it loads once now and unloads with the plugin.
+ * Subclasses implement `onload`/`onunload` and register only through `this.ctx`.
+ * A core module declares no slots: `ctx.view`, `ctx.editor`, `ctx.codeBlock` and
+ * `ctx.postProcessor` throw for it. One that ever needs a view gets `ModuleSlots`
+ * registered at plugin load, as the registry does, in a deliberate change to this seam.
+ * It reads other features only as soft dependencies (`plugin.features.isOn`).
+ */
+export abstract class CoreModule extends Component {
+  protected ctx!: ModuleContext;
+
+  /** Called once by `startCoreModule`, before load. */
+  attach(ctx: ModuleContext): void {
+    this.ctx = ctx;
+  }
+}
+
+/**
+ * Loads a core module for the plugin's life (main.ts, once per module, at the end of
+ * onload). The context is begun before the module loads; the plugin's unload unloads the
+ * module (a child) and then ends the context without its afterUnload callbacks, as
+ * `FeatureRegistry.unloadAll` does for the features.
+ */
+export function startCoreModule(plugin: EscritaPlugin, module: CoreModule): void {
+  const ctx = new ModuleContextImpl(plugin);
+  ctx.begin();
+  module.attach(ctx);
+  plugin.register(() => ctx.end(false));
+  plugin.addChild(module);
+}
+
 /** What a restored leaf of an off feature's view type shows until the layout is ready and it is detached (Q3). */
 class PlaceholderView extends ItemView {
   constructor(leaf: WorkspaceLeaf, private readonly type: string) { super(leaf); }

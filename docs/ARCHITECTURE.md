@@ -275,6 +275,12 @@ drives it with an in-memory tree. The result:
   kind: a chapter in an excluded folder is still a chapter.
 - `piece`: `readPiece` of the frontmatter for any markdown file, chapters included.
   A standalone piece is `kind === "note" && piece`.
+- `pieceSource` (1.0, IMPROVEMENTS 8): where the piece's target comes from, `"own"`,
+  `"book"` (a chapter's book default, `chapterTargetProperty` on the book note) or null
+  (no target). The rule is `effectivePiece` in `core/measure.ts`, per field: the note's own
+  target wins, `limit` and `deadline` are only its own. In 1.0 Wave 0 the field is set
+  from today's `piece`; task 1.1 computes the book default in classify and makes `piece`
+  the effective piece, so the outline, the explorer and the goals modal agree.
 - `snapshot`: the path is the snapshots folder or inside it (`inSnapshots`). Such a
   path is never a book, a chapter or tracked, even when the folder sits inside a book
   (a snapshot folder is named like its note, `x.md/`). The outline and the explorer
@@ -1210,6 +1216,48 @@ measurer, the vault index and the notes service are core and always on.
   module's `offNotice()` text saying what stays (the saved snapshots and where, the word
   lists note, the days of history, the cut passages, the submission notes). Each module draws
   its own section; see "Settings tab".
+
+## Core modules (`core/module-context.ts` `CoreModule`, 1.0)
+
+A part of Escrita that is not one of the 19 features and never switches off is a
+`CoreModule` (a `Component`). The first is the setup ("Set up a writing vault", `src/setup/`,
+SF 10). It has no `FeatureId`: it is not on the Features page, in a preset, in
+`settings.features` or in the registry.
+
+- **The seam.** `main.ts` constructs it at the end of `onload`, after
+  `features.apply()`, and calls `startCoreModule(plugin, module)`. That gives the module its
+  own `ModuleContextImpl` (no slots), begins it, registers `ctx.end(false)` on the plugin
+  and adds the module as a child of the plugin, so it loads once, right away, and unloads
+  with the plugin before its context ends. Rule 8 holds: the module registers its command,
+  its first-run notice (`ctx.onLayoutReady`) and anything else through `this.ctx`, the same
+  door the features use, and never calls the plugin's `register*` or `addCommand` itself.
+- **Why not a feature.** A feature can be switched off, and the setup must always be in the
+  palette (Q5); a twentieth id would also show a switch, count in the presets and need a
+  data follower story it doesn't have.
+- **No slots.** `ctx.view`, `ctx.editor`, `ctx.codeBlock` and `ctx.postProcessor` throw for a
+  core module. The setup needs a modal and a notice, not a view. A core module that ever
+  needs a view gets `ModuleSlots` registered at plugin load, as the registry does, in a
+  deliberate change to this seam.
+- **Other features.** A core module reads features only as soft dependencies
+  (`plugin.features.isOn`, `features.get`) and imports no module folder (IMPROVEMENTS 13
+  moves the helpers it needs to `core/` and `src/ui/`).
+- **Its data.** The setup keeps one flag, `data.setupOffered` (`cleanSetupOffered` in
+  `data.ts`): saved booleans win; absent, it is true for an install from before 1.0 (saved
+  settings exist) and false for a fresh install. Not a setting.
+
+## Default sets (`core/defaults.ts`, 1.0)
+
+The word-bearing settings (stage words, folders, unnumbered titles, submission results,
+the universe's words: `WORD_KEYS`) have one default set per language, `en` and `pt-BR`
+(`LANGUAGE_DEFAULTS`). Property names are never in a set: they stay English. Every other key
+comes from `DEFAULT_SETTINGS`, which stays English and equals the `en` set.
+`defaultsFor(lang)` (in `settings.ts`, over the pure `overlayDefaults`) is `DEFAULT_SETTINGS`
+with the set laid over it, a fresh object each call. The setting `defaultsLanguage` names
+the set an install uses: "en" for any install from before 1.0, Obsidian's language
+(`languageOf(locale())`) for a fresh install, saved on its first load and changed only by
+the setup. Loading merges the saved settings over `defaultsFor(defaultsLanguage)`, and
+`normalizeSettings` restores a blank field from the same set (task 1.4). `SETUP_NAMES` holds
+the names the setup gives what it creates (home note, folders, examples).
 
 ## Module specs
 

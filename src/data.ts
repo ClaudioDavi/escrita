@@ -139,6 +139,21 @@ export function cleanReadPositions(raw: unknown): Record<string, ReadPosition> {
   return out;
 }
 
+/**
+ * Whether the first-run notice ("Set up a writing vault", board 35 a) has had its one
+ * chance (PLAN-1.0 Q5). A saved boolean wins. Absent, it is derived: true when the data
+ * holds a saved `settings` object (an install from before 1.0, which never sees the
+ * notice), false otherwise (a fresh install). Every 1.0 save writes the field, so after
+ * the first save the derivation never runs again; a fresh install's first-load save
+ * (task 1.4) writes `false`, and the notice sets it true when it shows, whatever the
+ * answer. Running the setup command also sets it. Not a setting: no row, no reset.
+ */
+export function cleanSetupOffered(raw: { setupOffered?: unknown; settings?: unknown } | null | undefined): boolean {
+  if (!raw || typeof raw !== "object") return false;
+  if (typeof raw.setupOffered === "boolean") return raw.setupOffered;
+  return !!raw.settings && typeof raw.settings === "object" && !Array.isArray(raw.settings);
+}
+
 /** What Escrita remembers about a note it published (see the publish module). */
 export interface PublishRecord {
   /** the status value the note had before "Publish this note"; "Unpublish" restores it */
@@ -166,4 +181,6 @@ export interface EscritaData {
   /** "Read the book" positions, keyed by book note path; absent before 0.9 (loaded as {}).
    *  Path-keyed, book and chapter both: kept current through plugin.index.follow (task 2.6) */
   readPosition: Record<string, ReadPosition>;
+  /** the first-run notice has been shown, or never will be (1.0, Q5); see cleanSetupOffered. A flag, not a setting */
+  setupOffered: boolean;
 }

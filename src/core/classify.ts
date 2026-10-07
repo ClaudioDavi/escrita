@@ -147,6 +147,24 @@ export interface Placement<F extends Named, D extends Named> {
   /** readPiece(frontmatter) for any markdown file, chapters included; null otherwise. A standalone piece is `kind === "note" && piece`. */
   piece: Piece | null;
   /**
+   * Where the piece's target comes from (1.0, IMPROVEMENTS 8). The rule, one for every
+   * surface (outline, explorer, goals modal, measurer): per field, a note's own target
+   * wins; a chapter without one takes its book's default (`chapterTargetProperty` on the
+   * book note, with the book's `unit` when the chapter sets none); `limit` and `deadline`
+   * are only ever the note's own. That is `effectivePiece` in core/measure.ts, applied here.
+   * - "own": the target is the note's own frontmatter.
+   * - "book": a chapter's target is its book's default (only `kind === "chapter"`).
+   * - null: no target (no piece, or a piece with only a limit, unit or deadline).
+   *
+   * Wave 0: set from today's `piece` ("own" when it has a target, else null) and read by
+   * nobody. Task 1.1 computes the book default here and makes `piece` the effective piece
+   * (a chapter with only a book default then has a piece, with source "book"); until then
+   * `piece` keeps today's value, the note's own (readPiece). A standalone piece stays
+   * `kind === "note" && piece`: book defaults reach chapters only. Cached counts keyed by
+   * the chapter's mtime must also drop when the book note changes (task 1.1's call).
+   */
+  pieceSource: "own" | "book" | null;
+  /**
    * The path is the snapshots folder or inside it (see snapshotsRoot). Such a
    * path is never tracked, never a piece and never part of a book: a file there
    * is a "note" or a "file", a folder there is a "folder".
@@ -466,7 +484,7 @@ function withScope<F extends Named, D extends Named>(
 export function classify<F extends Named, D extends Named>(
   tree: VaultTree<F, D>, settings: ClassifySettings, path: string | null,
 ): Placement<F, D> {
-  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, snapshot: false, stage: null, submission: false, export: false, scope: NO_SCOPE };
+  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, pieceSource: null, snapshot: false, stage: null, submission: false, export: false, scope: NO_SCOPE };
   if (typeof path !== "string" || path === "") return none;
   if (path === "/") return { ...none, kind: "folder" };
   try {
@@ -492,17 +510,18 @@ export function classify<F extends Named, D extends Named>(
       const tracked = markdown && isTracked(path, settings);
       const fm = markdown ? frontmatterOf(tree, file) : undefined;
       const piece = markdown ? pieceOf(fm, settings) : null;
+      const pieceSource = piece?.target !== undefined ? "own" as const : null;
       // The book note comes first: a book note inside another book's folder belongs to its own book.
       const own = markdown ? bookAt(tree, path.slice(0, -3), ch) : null;
       const read = markdown ? { fm } : undefined;
-      if (own) return withScope({ path, kind: "book-note", markdown, book: own, tracked, piece, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false }, tree, settings, read);
+      if (own) return withScope({ path, kind: "book-note", markdown, book: own, tracked, piece, pieceSource, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false }, tree, settings, read);
       const book = ancestorBook(tree, path, ch);
       if (book) {
         // compare against the handle's path, never the settings string
         const kind: Kind = markdown && parentOf(path) === book.chaptersFolder.path ? "chapter" : "book-file";
-        return withScope({ path, kind, markdown, book, tracked, piece, snapshot: false, stage: null, submission: false, export: false }, tree, settings, read);
+        return withScope({ path, kind, markdown, book, tracked, piece, pieceSource, snapshot: false, stage: null, submission: false, export: false }, tree, settings, read);
       }
-      return withScope({ path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false }, tree, settings, read);
+      return withScope({ path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, pieceSource, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false }, tree, settings, read);
     }
     if (tree.folder(path)) {
       const own = bookAt(tree, path, ch);
