@@ -5,8 +5,9 @@ covers the stages a work moves through, the snapshot Escrita takes when a work c
 stage, the home note with its works block, how Escrita remembers where you left off, and
 writing mode, which hides everything but the note.
 
-Other pages: [Writing](writing.md), [Publishing](publishing.md), [The world](the-world.md)
-and [Features and settings](features-and-settings.md).
+Other pages: [Getting started](getting-started.md), [Writing](writing.md),
+[Revision](revision.md), [Publishing](publishing.md), [The world](the-world.md) and
+[Features and settings](features-and-settings.md).
 
 ## Say where a work stands: stages and status words
 
@@ -39,9 +40,11 @@ and `publicado`.
 
 ### New notes start as draft
 
-With **New notes start as draft** on (it is on by default), a new chapter, and a note you
-create in a tracked folder, gets your first draft word as its `status`, unless it already has
-one. Only the properties change. See [Writing](writing.md) for the details.
+With **New notes start as draft** on (it is on by default), a new book or chapter, and a note
+you create in a tracked folder (from Obsidian's *New note* or from a template), gets your first
+draft word as its `status`, unless it already has one. Escrita waits a moment after the note is
+created, so a template's own status wins. Templates, universe entries and Escrita's own notes
+(home, word lists, universe note) are left alone. Only the properties change.
 
 ## Keep a version at each stage: the stage snapshot
 
@@ -159,7 +162,7 @@ sidebar you had already closed stays closed.
 **Open in writing mode.** The setting **Open in writing mode**, next to **Open on startup**,
 starts Obsidian in writing mode. If **Open on startup** is on too, the home note opens first
 and then the mode starts. The setup's "Writing mode" layout turns it on for you
-(see [Features and settings](features-and-settings.md)).
+(see [Getting started](getting-started.md#two-layouts-the-writing-desk-and-writing-mode)).
 
 **Open a work from the home note.** Click a work: it opens in the same tab, where you left
 off, and you stay in writing mode.

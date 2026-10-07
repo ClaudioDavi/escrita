@@ -305,7 +305,7 @@ drives it with an in-memory tree. The result:
   (no target). The rule is `effectivePiece` in `core/measure.ts`, per field: the note's own
   target wins, `limit` and `deadline` are only its own. In 1.0 Wave 0 the field is set
   from today's `piece`; task 1.1 computes the book default in classify and makes `piece`
-  the effective piece, so the outline, the explorer and the goals modal agree.
+  the effective piece, so the outline, the explorer and the goals status bar agree.
 - `snapshot`: the path is the snapshots folder or inside it (`inSnapshots`). Such a
   path is never a book, a chapter or tracked, even when the folder sits inside a book
   (a snapshot folder is named like its note, `x.md/`). The outline and the explorer

@@ -74,7 +74,7 @@ desligar, use **Beats fantasmas** na seção Esboço das configurações.
 
 ### Veja o livro como um quadro
 
-**Abrir como quadro (Canvas)** (um comando, e um botão no esboço) escreve um arquivo Canvas com um
+**Abrir esboço como quadro** (um comando; no esboço, o botão **Abrir como quadro (Canvas)**) escreve um arquivo Canvas com um
 cartão por capítulo, colorido pelo status. Se já existe um arquivo com esse nome que o Escrita não
 fez, o Escrita pergunta antes de substituir.
 
@@ -478,7 +478,3 @@ e **Pastas ignoradas**.
 | As aspas não se curvam | **Aspas** está em "Não mexer nas aspas", ou a nota não é um capítulo | Mude a configuração, ou use **Em todas as notas** |
 | Minhas palavras não contaram | A nota está fora de **Pastas acompanhadas**, ou a mudança passou de **Ignorar saltos acima de** | Veja as pastas e o tamanho |
 | Um movimento não fez nada | O cursor está num beat, comentário, código ou matemática, ou a nota está na ponta | Ponha o cursor num parágrafo |
-
-## Notas novas começam como rascunho
-
-Um livro ou capítulo novo, e uma nota que você cria numa pasta contada (pelo *Nova nota* do Obsidian ou a partir de um modelo), recebe a sua primeira palavra de rascunho como `status`, a menos que já tenha um. O Escrita espera um instante depois que a nota é criada, para que o status do modelo valha. Modelos, entradas do universo e as notas do próprio Escrita (nota inicial, listas de palavras, nota do universo) ficam como estão. Só as propriedades mudam. Para desligar: Configurações → Estágios, "Notas novas começam como rascunho".

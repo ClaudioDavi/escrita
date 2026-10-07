@@ -466,7 +466,3 @@ and **Folders to ignore**.
 | Quotes don't curl | **Quotes** is on "Leave quotes alone", or the note isn't a chapter | Change the setting, or use **In every note** |
 | My words didn't count | The note is outside **Folders to track**, or the change was bigger than **Ignore jumps over** | Check the folders and the size |
 | A move did nothing | The cursor is in a beat, comment, code or math, or the note is at its edge | Put the cursor in a paragraph |
-
-## New notes start as draft
-
-A new book or chapter, and a note you create in a tracked folder (from Obsidian's *New note* or from a template), gets your first draft word as its `status`, unless it already has one. Escrita waits a moment after the note is created, so a template's own status wins. Templates, universe entries and Escrita's own notes (home, word lists, universe note) are left alone. Only the properties change. Turn it off in Settings → Stages, "New notes start as draft".

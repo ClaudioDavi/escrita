@@ -9,7 +9,7 @@ your text without a click from you:
 - **darlings**, passages you cut but can't bear to lose.
 
 Other pages: [Features and settings](features-and-settings.md), [Writing](writing.md),
-[Publishing](publishing.md) and [The world](the-world.md). Each part has its own switch in
+[Tracking](tracking.md), [Publishing](publishing.md) and [The world](the-world.md). Each part has its own switch in
 Features, under Revision: **Revision lens**, **Snapshots** and **Darlings**. Turn one off and
 its commands, panel and menu items go away. Your data stays (the word lists note, the
 snapshot files, the darlings note).
@@ -149,7 +149,7 @@ Escrita also takes snapshots by itself. Each one is labelled with its kind:
 | **Before publishing** | You run Publish on the note (see [Publishing](publishing.md)). |
 | **Before restoring** | Every time you restore, so a restore can always be undone. |
 | **Before the day's first edit** | The first change to a tracked note on a writing day. Off by default. |
-| **Stage change** | A work moves to another stage, such as draft to revision. This one belongs to the **Snapshot at each stage** switch, which has its own page of the guide. |
+| **Stage change** | A work moves to another stage, such as draft to revision. This one belongs to the **Snapshot at each stage** switch, described in [Tracking](tracking.md#keep-a-version-at-each-stage-the-stage-snapshot). |
 
 Automatic snapshots are trimmed: only the newest ones are kept for each note, and older ones
 go to the trash. Snapshots you take yourself, and stage-change ones, are never removed.

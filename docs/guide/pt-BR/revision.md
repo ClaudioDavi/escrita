@@ -9,7 +9,7 @@ sem um clique seu:
 - os **darlings**, trechos que você cortou mas não quer perder.
 
 Outras páginas: [Recursos e configurações](features-and-settings.md), [Escrita](writing.md),
-[Publicação](publishing.md) e [O mundo](the-world.md). Cada parte tem o seu interruptor em
+[Acompanhamento](tracking.md), [Publicação](publishing.md) e [O mundo](the-world.md). Cada parte tem o seu interruptor em
 Recursos, no grupo Revisão: **Lente de revisão**, **Versões** e **Darlings**. Desligue um e os
 comandos, o painel e os itens de menu dele somem. Os seus dados ficam (a nota de listas de
 palavras, os arquivos de versões, a nota de darlings).
@@ -156,7 +156,7 @@ O Escrita também salva versões sozinho. Cada uma recebe o rótulo do seu tipo:
 | **Antes de publicar** | Você executa Publicar na nota (veja [Publicação](publishing.md)). |
 | **Antes de restaurar** | A cada restauração, para que uma restauração sempre possa ser desfeita. |
 | **Antes da primeira edição do dia** | A primeira mudança numa nota acompanhada num dia de escrita. Desligado por padrão. |
-| **Mudança de estágio** | Uma obra passa para outro estágio, como de rascunho para revisão. Esta pertence ao interruptor **Versão a cada estágio**, que tem a sua própria página do guia. |
+| **Mudança de estágio** | Uma obra passa para outro estágio, como de rascunho para revisão. Esta pertence ao interruptor **Versão a cada estágio**, descrita em [Acompanhamento](tracking.md#guarde-uma-versão-a-cada-estágio-a-versão-de-estágio). |
 
 As versões automáticas são aparadas: só as mais novas ficam para cada nota, e as mais antigas
 vão para a lixeira. As versões que você salva e as de mudança de estágio nunca são removidas.

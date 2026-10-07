@@ -6,7 +6,8 @@ anything. Or you can skip the command and do it by hand: the last two parts of t
 show how.
 
 Other pages: [Features and settings](features-and-settings.md), [Writing](writing.md),
-[Publishing](publishing.md) and [The world](the-world.md).
+[Revision](revision.md), [Tracking](tracking.md), [Publishing](publishing.md) and
+[The world](the-world.md).
 
 - [Install Escrita](#install-escrita)
 - [The first-run notice](#the-first-run-notice)
@@ -179,23 +180,20 @@ nothing else depends on them.
 ## The home note
 
 The home note is a note you own. It holds one code block, ` ```escrita-works `, and Escrita
-draws it: what to write today, each work with its length against its target or deadline, and
-**Continue**, which opens a work where you left off. Escrita draws the block and never writes
-to it. Add whatever you like around it.
+draws it: what to write today, and each work with its length against its target or deadline.
+Click a work and it opens where you left off. Escrita draws the block and never writes to it.
+Add whatever you like around it.
 
 The setup creates it as `Home.md` (`Início.md` in Portuguese) at the root of your vault, starts
 it with one line saying the note is yours, and sets it as your **Home note**. If a note with that
 name exists in another letter case (`home.md`), the setup uses it as it is.
 
-- **Open the home note** opens it. If it does not exist yet, the command offers to create
-  one. With no home note set, it looks for an existing `Home.md` or `Inicio.md`.
-- **Home note** (Settings › Escrita, the Home note section) is the path to the note.
-- **Open on startup** opens the home note in the active tab when Obsidian starts. It is off
-  by default, and the setup has a row for it, **Open the home note on startup**.
+The setup's row **Open the home note on startup** turns on the setting **Open on startup**.
 
 A work is a book, or a tracked note, whose status is one of your stage words. The block lists
 the works you are writing and revising, and counts the ones that are only ideas, ready or
-published. Each work opens where you last edited it.
+published. The block, the **Open the home note** command and the home note settings are in
+[Tracking](tracking.md#start-from-one-note-the-home-note).
 
 If the block shows as plain code, the **Works block and where you left off** switch is off. Turn
 it on in Features.
@@ -229,26 +227,10 @@ note's header). Two things stay:
 - A small counter at the bottom, "today 312 / 500", your words today against your daily goal.
   It shows only while **Goals and sprints** is on, and nothing else is shown.
 
-**Continue** in the home block opens the work in the same tab, still in writing mode.
-
-Commands: **Enter writing mode** and **Exit writing mode**. You see one or the other,
-according to the state. Neither has a hotkey; bind the one you use in Settings › Hotkeys.
-Entering shows a notice once per session: "Writing mode. To leave: the button in the corner or
-the command."
-
-The setting **Open in writing mode** (in the Home note section, beside **Open on startup**)
-starts Obsidian in writing mode, after the home note opens. The setup turns it on when you pick
-the writing mode card.
-
-Writing mode writes nothing to your vault. It adds a style class and collapses the sidebars that
-were open. Leaving it reopens only the sidebars it closed, and only what it hid comes back.
-It also leaves by itself if you turn the desk off or disable Escrita. Writing mode is a part of
-**Works block and where you left off**; there is no separate switch.
-
-It is deliberately small. If you want more (typewriter scrolling, fading, a wider text column),
-the Zen Mode, Ultra Zen Mode and Easy View plugins do that, and your theme sets the reading
-column. Escrita's only extra is the goal counter and **Continue**. Avoid running two of these at
-once: both hide the same bars.
+The setup turns on the setting **Open in writing mode** when you pick this card, so Obsidian
+starts in the mode. Writing mode writes nothing to your vault, and leaving it brings back only
+what it hid. Its commands, its setting and how it sits next to a zen plugin are in
+[Tracking](tracking.md#write-with-only-the-note-writing-mode).
 
 ## Your first conto, by hand
 
@@ -317,10 +299,7 @@ The outline, chapter targets and the rest are in [Writing](writing.md).
 | Name | What it does |
 |---|---|
 | **Set up a writing vault** (command) | Opens the two-step window. Also reachable from the Features page when there is no home note. |
-| **Open the home note** (command) | Opens the home note. |
-| **Enter writing mode**, **Exit writing mode** (commands) | Hide and show everything but the note. |
-| **Home note** (setting) | The path to the home note. |
-| **Open on startup** (setting) | Opens the home note when Obsidian starts. |
-| **Open in writing mode** (setting) | Starts Obsidian in writing mode. |
 
-**Create a book** is a command of the outline; its page is [Writing](writing.md).
+**Create a book** is a command of the outline; its page is [Writing](writing.md). **Open the
+home note**, **Enter writing mode**, **Exit writing mode** and the settings **Home note**,
+**Open on startup** and **Open in writing mode** are on [Tracking](tracking.md).

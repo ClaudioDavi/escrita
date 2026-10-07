@@ -225,7 +225,7 @@ zen plugin (**Zen Mode** or **Ultra Zen Mode**).
 6. Palette: type "writing mode".
    Expected: exactly one of **Enter writing mode** / **Exit writing mode**, by state. Under
    **Settings › Hotkeys**, neither has a key.
-7. In the mode, from the home block click **Continue** on a work.
+7. In the mode, from the home block click a work (the boards call this "Continue"; the block has no separate button, a click on the row opens the work).
    Expected: the work opens in the same tab, at the left-off spot, and the mode stays.
 8. Turn **Goals** off on the Features page while in the mode (use the command to exit and
    enter around the settings if needed).

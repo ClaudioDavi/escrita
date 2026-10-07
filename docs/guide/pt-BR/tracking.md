@@ -5,7 +5,8 @@ por onde uma obra passa, a versão que o Escrita guarda quando a obra muda de es
 inicial com o seu bloco de obras, como o Escrita lembra onde você parou e o modo escrita, que
 esconde tudo menos a nota.
 
-Outras páginas: [Escrita](writing.md), [Publicação](publishing.md), [O mundo](the-world.md) e
+Outras páginas: [Primeiros passos](getting-started.md), [Escrita](writing.md),
+[Revisão](revision.md), [Publicação](publishing.md), [O mundo](the-world.md) e
 [Recursos e configurações](features-and-settings.md).
 
 ## Diga em que pé está uma obra: estágios e palavras de status
@@ -40,9 +41,12 @@ escreve contos em português costuma usar `ideia`, `rascunho`, `revisão`, `pron
 
 ### Notas novas começam como rascunho
 
-Com **Notas novas começam como rascunho** ligado (vem ligado), um capítulo novo, e uma nota que
-você cria numa pasta acompanhada, recebe a sua primeira palavra de rascunho como `status`, a
-menos que já tenha um. Só as propriedades mudam. Veja [Escrita](writing.md) para os detalhes.
+Com **Notas novas começam como rascunho** ligado (vem ligado), um livro ou capítulo novo, e uma
+nota que você cria numa pasta acompanhada (pelo *Nova nota* do Obsidian ou a partir de um modelo),
+recebe a sua primeira palavra de rascunho como `status`, a menos que já tenha um. O Escrita espera
+um instante depois que a nota é criada, para que o status do modelo valha. Modelos, entradas do
+universo e as notas do próprio Escrita (nota inicial, listas de palavras, nota do universo) ficam
+como estão. Só as propriedades mudam.
 
 ## Guarde uma versão a cada estágio: a versão de estágio
 
@@ -163,7 +167,7 @@ uma barra que você já tinha fechado continua fechada.
 iniciar**, abre o Obsidian já no modo escrita. Se **Abrir ao iniciar** também estiver ligado,
 a nota inicial abre primeiro e depois o modo começa. O layout "Modo escrita" da preparação do
 cofre liga essa configuração para você (veja
-[Recursos e configurações](features-and-settings.md)).
+[Primeiros passos](getting-started.md#dois-layouts-a-mesa-de-escrita-e-o-modo-escrita)).
 
 **Abrir uma obra pela nota inicial.** Clique numa obra: ela abre na mesma aba, onde você
 parou, e você continua no modo escrita.

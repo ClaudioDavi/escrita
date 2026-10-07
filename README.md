@@ -71,18 +71,18 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 The full release. Everything from 0.9 is still here; 1.0 adds a way in and finishes the guides.
 
 - **Set up a writing vault**: a first-run notice and a command that show everything before they create anything. You choose the starting point, the layout, the folders and the examples. It never overwrites or moves a note.
-- **Presets**: **Essentials**, **Writer** and **Everything** on the Features page set the switches in one click. A fresh install starts with Writer.
+- **Presets**: **Essentials**, **Writer** and **Everything** on the Features page set the switches at once, after a step that lists what will change. A fresh install starts with Writer.
 - **Writing mode**: write with only the note on screen. See [Tracking](docs/guide/en/tracking.md).
 - **Defaults in your language**: a fresh install takes its status words, folder names and examples from Obsidian's language (any Portuguese gives Portuguese, anything else gives English). They are saved once and never change after that.
-- **The effective piece**: a chapter that takes its book's `chapterTarget` now shows the same target everywhere: the outline, the file explorer and the progress window. Before, the outline showed it and the others did not.
+- **The effective piece**: a chapter that takes its book's `chapterTarget` now shows the same target everywhere: the outline, the file explorer and the status bar. Before, the outline showed it and the others did not.
 - **Mobile pass**: the views, modals and menus were checked at phone width, with touch targets of at least 32 px and no hover-only control. A regex lookbehind that stopped Escrita from loading on older iPhones (Safari before 16.4) is gone, and a test keeps it out.
 - **Universe "⋯" button**: each entry row in the universe panel has a visible more button for its actions, so a phone or tablet doesn't need a right-click.
 - **Guides complete**: all seven pages, in English and Brazilian Portuguese: [Getting started](docs/guide/en/getting-started.md), [Features and settings](docs/guide/en/features-and-settings.md), [Writing](docs/guide/en/writing.md), [Tracking](docs/guide/en/tracking.md), [Revision](docs/guide/en/revision.md), [Publishing](docs/guide/en/publishing.md) and [The world](docs/guide/en/the-world.md). Every command and setting appears in a guide, and this README is now the front door to them.
 - Upgrade notes:
   - Escrita now needs Obsidian 1.8.7 or later (`minAppVersion`).
-  - Your existing settings are unchanged, and the setup notice does not show on an update.
+  - Your existing settings are unchanged, and the setup notice does not show on an update. An existing install keeps the English defaults it was using, even when Obsidian runs in Portuguese, so no folder or status word changes under you.
   - Every feature stays as it was, and every switch keeps its state.
-- Internal: shared helpers moved out of module folders, and the guidelines lint runs in the tests.
+- Internal: shared helpers moved out of module folders (`core/` and `ui/`), and the Obsidian guidelines lint (`eslint-plugin-obsidianmd`) runs in CI.
 
 ### 0.9.0
 

@@ -6,7 +6,8 @@ criar qualquer coisa. Ou você pode pular o comando e fazer à mão: as duas úl
 página mostram como.
 
 Outras páginas: [Recursos e configurações](features-and-settings.md), [Escrita](writing.md),
-[Publicação](publishing.md) e [O mundo](the-world.md).
+[Revisão](revision.md), [Acompanhamento](tracking.md), [Publicação](publishing.md) e
+[O mundo](the-world.md).
 
 - [Instalar o Escrita](#instalar-o-escrita)
 - [O aviso da primeira vez](#o-aviso-da-primeira-vez)
@@ -181,23 +182,20 @@ deles.
 ## A nota inicial
 
 A nota inicial é uma nota sua. Ela tem um bloco de código, ` ```escrita-works `, e o Escrita o
-desenha: o que escrever hoje, cada obra com o tamanho dela contra a meta ou o prazo, e
-**Continuar**, que abre uma obra onde você parou. O Escrita desenha o bloco e nunca escreve nele.
-Acrescente em volta o que quiser.
+desenha: o que escrever hoje e cada obra com o tamanho dela contra a meta ou o prazo. Clique
+numa obra e ela abre onde você parou. O Escrita desenha o bloco e nunca escreve nele. Acrescente
+em volta o que quiser.
 
 O preparo a cria como `Início.md` (`Home.md` em inglês) na raiz do cofre, começa com uma linha
 dizendo que a nota é sua e a define como a sua **Nota inicial**. Se já existir uma nota com esse
 nome em outra caixa de letras (`início.md`), o preparo a usa como está.
 
-- **Abrir a nota inicial** abre a nota. Se ela ainda não existir, o comando oferece criar uma.
-  Sem nota inicial definida, ele procura um `Início.md` ou `Home.md` que já exista.
-- **Nota inicial** (Configurações › Escrita, seção Nota inicial) é o caminho da nota.
-- **Abrir ao iniciar** abre a nota inicial na aba ativa quando o Obsidian inicia. Vem desligado, e
-  o preparo tem uma linha para isso, **Abrir a nota inicial ao iniciar**.
+A linha do preparo **Abrir a nota inicial ao iniciar** liga a configuração **Abrir ao iniciar**.
 
 Uma obra é um livro, ou uma nota acompanhada, cujo status é uma das suas palavras de estágio. O
 bloco lista as obras que você está escrevendo e revisando, e conta as que são só ideia, prontas ou
-publicadas. Cada obra abre onde você editou por último.
+publicadas. O bloco, o comando **Abrir a nota inicial** e as configurações da nota inicial estão em
+[Acompanhamento](tracking.md#comece-por-uma-nota-a-nota-inicial).
 
 Se o bloco aparecer como código simples, o interruptor **Bloco de obras e onde você parou** está
 desligado. Ligue-o em Recursos.
@@ -230,25 +228,10 @@ escondem (no celular, também o cabeçalho da nota). Duas coisas ficam:
 - Um contador pequeno embaixo, "hoje 312 / 500": suas palavras de hoje contra a meta diária. Só
   aparece enquanto **Metas e sprints** estiver ligado, e nada mais é mostrado.
 
-**Continuar** no bloco de obras abre a obra na mesma aba, ainda no modo escrita.
-
-Comandos: **Entrar no modo escrita** e **Sair do modo escrita**. Você vê um ou o outro, conforme o
-estado. Nenhum tem atalho; atribua o que você usa em Configurações › Atalhos. Ao entrar, aparece um
-aviso uma vez por sessão: "Modo escrita. Para sair: o botão no canto ou o comando."
-
-A configuração **Abrir no modo escrita** (na seção Nota inicial, ao lado de **Abrir ao iniciar**)
-abre o Obsidian no modo escrita, depois que a nota inicial abre. O preparo a liga quando você
-escolhe o cartão do modo escrita.
-
-O modo escrita não grava nada no seu cofre. Ele acrescenta uma classe de estilo e recolhe as
-barras laterais que estavam abertas. Ao sair, reabre só as barras que fechou, e só volta o que ele
-escondeu. Também sai sozinho se você desligar o acompanhamento ou desativar o Escrita. O modo
-escrita faz parte de **Bloco de obras e onde você parou**; não há um interruptor separado.
-
-Ele é pequeno de propósito. Se você quer mais (rolagem de máquina de escrever, esmaecimento, uma
-coluna de texto mais larga), os plugins Zen Mode, Ultra Zen Mode e Easy View fazem isso, e o seu tema
-define a coluna de leitura. O único extra do Escrita é o contador da meta e o **Continuar**. Evite
-rodar dois desses ao mesmo tempo: os dois escondem as mesmas barras.
+O preparo liga a configuração **Abrir no modo escrita** quando você escolhe este cartão, e o
+Obsidian passa a abrir no modo. O modo escrita não grava nada no seu cofre, e ao sair volta só o
+que ele escondeu. Os comandos, a configuração e como ele convive com um plugin zen estão em
+[Acompanhamento](tracking.md#escreva-só-com-a-nota-o-modo-escrita).
 
 ## Seu primeiro conto, à mão
 
@@ -318,10 +301,8 @@ O esboço, as metas por capítulo e o resto estão em [Escrita](writing.md).
 | Nome | O que faz |
 |---|---|
 | **Preparar o cofre para escrever** (comando) | Abre a janela de dois passos. Também se chega a ele pela página Recursos quando não há nota inicial. |
-| **Abrir a nota inicial** (comando) | Abre a nota inicial. |
-| **Entrar no modo escrita**, **Sair do modo escrita** (comandos) | Escondem e mostram tudo o que não é a nota. |
-| **Nota inicial** (configuração) | O caminho da nota inicial. |
-| **Abrir ao iniciar** (configuração) | Abre a nota inicial quando o Obsidian inicia. |
-| **Abrir no modo escrita** (configuração) | Abre o Obsidian no modo escrita. |
 
-**Criar um livro** é um comando do esboço; a página dele é [Escrita](writing.md).
+**Criar um livro** é um comando do esboço; a página dele é [Escrita](writing.md). **Abrir a nota
+inicial**, **Entrar no modo escrita**, **Sair do modo escrita** e as configurações **Nota
+inicial**, **Abrir ao iniciar** e **Abrir no modo escrita** estão em
+[Acompanhamento](tracking.md).
