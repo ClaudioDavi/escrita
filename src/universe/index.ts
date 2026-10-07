@@ -38,7 +38,11 @@ import { keptOut, linkText, scopeFor, universeNotePath, universeRootOf, type Sco
 import type { EntryKind, UniverseMode } from "./settings";
 import { inScope, type ThreadRef } from "./threads";
 import { formFor, type WorkInfo } from "./works-list";
-import type { NoteMentions } from "./mentions";
+import { computeMentions, type NoteMentions } from "./mentions";
+import { segment } from "../core/markdown";
+import { findNames } from "../core/names";
+import { unlinkedIn } from "./unlinked";
+import { rowsOf, type UnlinkedRow } from "./unlinked-link";
 import { addUniverseEditorMenuItems, createEntryFromSelection, inSource } from "./create";
 import { addMigrateFileMenuItem, migrateActiveBook } from "./migrate";
 import { UNIVERSE_VIEW, UniverseView, activateThreadsView, activateUniverseView } from "./view";
@@ -309,6 +313,34 @@ export class UniverseModule extends FeatureModule {
    * Entries tab draws; surfaces read "counting" until the first build is done. No-op while unloaded.
    */
   demandMentions(): void { this.mentions?.demand(); }
+
+  /**
+   * The unlinked mentions of one note (U 2.5, Q1, Q17), for the panel's section: the places an
+   * entry is named and the note links it nowhere. "counting" while the mentions index builds
+   * (it is started here); null when the note has no scope here or is an entry itself. The
+   * index says when it is safe to answer; the occurrences come from the note's live text with
+   * the same matcher the index uses, so a row never points at stale offsets (a write shows at once).
+   */
+  async unlinkedFor(file: TFile): Promise<UnlinkedRow[] | "counting" | null> {
+    const m = this.mentions;
+    const f = this.ctxFactory;
+    const names = this.namesProvider;
+    const idx = this.entriesIdx;
+    if (!m || !f || !names || !idx || file.extension !== "md") return null;
+    if (this.scopeOf(file).kind === "none" || idx.get(file.path)) return null;
+    m.demand();
+    if (!m.isReady() || !idx.isReady()) return "counting";
+    const text = await this.plugin.notes.text(file).read();
+    const nm = computeMentions(segment(text), (mask) => findNames(mask, names.globalTable()));
+    const linked = new Set<string>();
+    for (const l of nm.links) {
+      const to = this.plugin.app.metadataCache.getFirstLinkpathDest(l.linkpath, file.path)?.path;
+      if (to) linked.add(to);
+    }
+    const ctx = f.ctx(file.path);
+    const found = unlinkedIn(nm, linked, { text, inScope: (id) => ctx.candidateInScope(file.path, id) });
+    return rowsOf(found, text, (id) => idx.get(id)?.name ?? baseName(id));
+  }
 
   /** The names provider while loaded (the mentions index reads `globalTable()` and the entries' readiness from here). */
   names(): UniverseNamesProvider | null { return this.namesProvider; }

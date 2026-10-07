@@ -401,3 +401,58 @@ a.escrita-universe-answer {
 .escrita-universe-view button.escrita-universe-icon-btn:focus-visible {
   box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
 }
+
+/* unlinked mentions (board 29) */
+.escrita-unlinked {
+  margin-top: var(--size-4-3);
+  border-top: 1px solid var(--background-modifier-border);
+}
+.escrita-unlinked-note,
+.escrita-unlinked-state {
+  padding: var(--size-4-1) var(--size-4-4);
+}
+.escrita-unlinked-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+  padding: var(--size-4-2) var(--size-4-4);
+  border-radius: var(--radius-s);
+}
+.escrita-unlinked-row:hover {
+  background: var(--background-modifier-hover);
+}
+.escrita-unlinked-side {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+}
+.escrita-unlinked-entry {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.escrita-unlinked-side .escrita-universe-btn {
+  flex-shrink: 0;
+}
+.escrita-universe-view button.escrita-unlinked-excerpt {
+  min-height: 32px;
+  height: auto;
+  padding: 0;
+  text-align: left;
+  white-space: normal;
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+.escrita-unlinked-match {
+  padding: 0 2px;
+  border-radius: var(--radius-s);
+  background: var(--text-highlight-bg);
+  color: inherit;
+}
+.escrita-universe-view button.escrita-unlinked-excerpt:focus-visible {
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}

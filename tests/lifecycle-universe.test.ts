@@ -197,6 +197,28 @@ describe("the names provider, the mentions index and the editor UI go with the u
     expect(src.appearsIn(entry.path)).not.toBe("counting");
   });
 
+  it("unlinkedFor: counting until both indexes are ready, then the unlinked rows; null once unloaded (U 2.5)", async () => {
+    registry.apply();
+    entriesIdx().values.set(entry.path, entry);
+    vi.spyOn(universe, "scopeOf").mockReturnValue(U);
+    let body = "Mariana chegou. Depois [[Mariana]] saiu.";
+    (plugin as unknown as Record<string, unknown>).notes = { text: () => ({ read: async () => body }) };
+    const note = file("Contos/a.md");
+    Object.assign(plugin.app.metadataCache, { getFirstLinkpathDest: (l: string) => (l === "Mariana" ? { path: entry.path } : null) });
+    expect(await universe.unlinkedFor(note)).toBe("counting");
+    entriesIdx().becomeReady();
+    plugin.indexAdded.find((h) => h.spec.name === "universe-mentions")!.becomeReady();
+    universe.names()?.refresh();
+    // the note links the entry anywhere: nothing is listed
+    expect(await universe.unlinkedFor(note)).toEqual([]);
+    body = "Mariana chegou.";
+    const rows = await universe.unlinkedFor(note);
+    expect(rows).toMatchObject([{ entry: entry.path, name: "Mariana", text: "Mariana", line: 0 }]);
+    plugin.settings.universeMode = "off";
+    registry.apply();
+    expect(await universe.unlinkedFor(note)).toBeNull();
+  });
+
   it("registers the two editor slots on load and empties them on unload", () => {
     registry.apply();
     expect((plugin.extensions[0] as unknown[]).length).toBe(1);

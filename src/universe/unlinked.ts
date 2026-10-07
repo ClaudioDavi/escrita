@@ -20,6 +20,11 @@ function linkSpans(text: string): { from: number; to: number }[] {
   return [...text.matchAll(LINKS)].map((m) => ({ from: m.index!, to: m.index! + m[0].length }));
 }
 
+/** Whether `[from, to)` touches a link or embed written in `text`. */
+export function insideLink(text: string, from: number, to: number): boolean {
+  return linkSpans(text).some((l) => from < l.to && to > l.from);
+}
+
 /** One place where an entry is named and not linked. */
 export interface UnlinkedMention {
   /** the entry's path */

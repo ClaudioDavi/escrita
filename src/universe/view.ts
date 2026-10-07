@@ -18,6 +18,7 @@ import { FOCUS_ATTR, button, messageBlock, type ClosingForm, type PanelCtx } fro
 import { renderEntries } from "./view-entries";
 import type { AppearsInSource } from "./appears-in-widget";
 import { renderThreads, workResolver } from "./view-threads";
+import { renderUnlinked } from "./view-unlinked";
 import { countMissing, renderWorks, totalWords, wordsLabel } from "./view-works";
 
 export const UNIVERSE_VIEW = "escrita-universe";
@@ -279,10 +280,12 @@ export class UniverseView extends PanelBase {
       if (!perBook) this.addToUniverse(body, info);
       else this.notInBook(body);
       renderEntries(body, ctx, entries);
+      if (perBook) renderUnlinked(body, ctx);   // D1: no Works tab in per-book mode
     } else if (tab === "threads") {
       renderThreads(body, ctx, threads);
     } else {
       renderWorks(body, ctx, works);
+      renderUnlinked(body, ctx);
       this.countThen(works, ctx);
     }
   }
