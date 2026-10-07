@@ -708,3 +708,38 @@ body.is-mobile .escrita-outline-chip {
 .escrita-outline-chip.is-fit-hidden {
   display: none;
 }
+
+/* The serial line and the header's action row (0.9, N 4). */
+.escrita-outline-serial {
+  padding: 0 var(--size-4-2);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.escrita-outline-serial-gap {
+  color: var(--text-warning, var(--color-orange));
+  font-weight: var(--font-semibold);
+}
+
+.escrita-outline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-2-2);
+  padding: var(--size-2-1) var(--size-4-2) 0;
+}
+
+.escrita-outline-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  min-height: 32px;
+}
+
+.escrita-outline-action-icon {
+  display: inline-flex;
+}
+
+.escrita-outline-serial.is-hidden,
+.escrita-outline-actions.is-hidden {
+  display: none;
+}

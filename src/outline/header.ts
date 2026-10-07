@@ -2,8 +2,9 @@
 // summary, the stage and POV chips, the filtered line and the POV colour menu. The model
 // functions are pure; the render functions draw into a host element the view owns.
 
-import { Component } from "obsidian";
-import { fmt, plural, t } from "../i18n";
+import { Component, moment, setIcon } from "obsidian";
+import { fmt, lang, plural, t } from "../i18n";
+import type { SerialLine } from "../publish/serial";
 import type { StageMapping } from "../core/stages";
 import { POV_PALETTE, statusTally, type PovColor, type RowFilter, type TallyItem } from "./pov";
 import type { ChapterRow } from "./rows";
@@ -280,4 +281,55 @@ export function showPovMenu(
   scope.registerDomEvent(doc, "keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); close(); } });
   first?.focus();
   return close;
+}
+
+// ------------------------------------------------------------------ serial line (0.9, N 4)
+
+/** "30 set" / "Sep 30" for a YYYY-MM-DD date; anything else as written (D5: a future date too). */
+export function serialDateText(date: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+  const m = moment(date, "YYYY-MM-DD", true);
+  return m.isValid() ? m.format(lang() === "pt-BR" ? "D MMM" : "MMM D") : date;
+}
+
+/** The serial line's parts, as text: "Next: 04 A escada", "last published 30 Sep", "Gap: 04". */
+export function serialParts(line: SerialLine): { text: string; gap: boolean }[] {
+  const parts = [{
+    text: line.next ? t("outline.serial.next", { chapter: line.next }) : t("outline.serial.allDone"),
+    gap: false,
+  }];
+  parts.push({
+    text: line.last.date !== null
+      ? t("outline.serial.lastDate", { date: serialDateText(line.last.date) })
+      : t("outline.serial.lastTitle", { chapter: line.last.label }),
+    gap: false,
+  });
+  if (line.gaps.length) {
+    parts.push({ text: plural("outline.serial.gap", line.gaps.length, { chapters: line.gaps.join(", ") }), gap: true });
+  }
+  return parts;
+}
+
+/** One line under the summary; drawn only when a chapter is published (the line is null otherwise). */
+export function renderSerialLine(host: HTMLElement, line: SerialLine | null): void {
+  host.empty();
+  host.toggleClass("is-hidden", !line);
+  if (!line) return;
+  host.setAttr("aria-label", t("outline.serial.line"));
+  serialParts(line).forEach((p, i) => {
+    if (i > 0) host.createSpan({ cls: "escrita-outline-serial-sep", text: " · ", attr: { "aria-hidden": "true" } });
+    host.createSpan({ cls: p.gap ? "escrita-outline-serial-gap" : "escrita-outline-serial-part", text: p.text });
+  });
+}
+
+/** The header's action row: "Publish next" when there is a chapter to publish. 2.6 adds "Read the book" here. */
+export function renderHeaderActions(host: HTMLElement, a: { publishNext: (() => void) | null }): void {
+  host.empty();
+  host.toggleClass("is-hidden", !a.publishNext);
+  if (!a.publishNext) return;
+  const go = a.publishNext;
+  const b = host.createEl("button", { cls: "escrita-outline-action", attr: { "aria-label": t("outline.serial.publishNextTip") } });
+  setIcon(b.createSpan({ cls: "escrita-outline-action-icon", attr: { "aria-hidden": "true" } }), "send");
+  b.createSpan({ text: t("outline.serial.publishNext") });
+  b.addEventListener("click", go);
 }

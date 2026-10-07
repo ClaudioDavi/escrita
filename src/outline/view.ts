@@ -22,10 +22,12 @@ import {
   canReorder, filterActive, hiddenByFilter, povValue, rowMatches, type PovColor, type RowFilter,
 } from "./pov";
 import {
-  headerModel, povCss, pruneFilter, renderChips, renderColorToggle, showPovMenu, summaryText,
+  headerModel, povCss, pruneFilter, renderChips, renderColorToggle, renderHeaderActions, renderSerialLine,
+  showPovMenu, summaryText,
   type ChipModel, type ColorBy,
 } from "./header";
 import { renderPieceBar } from "./bar";
+import { serialChapters, serialLine, serialState, type PublishNextPort } from "../publish/serial";
 
 export const OUTLINE_VIEW = "escrita-outline";
 
@@ -153,6 +155,8 @@ export class OutlineView extends ItemView {
   private statsEl: HTMLElement | null = null;
   private progressEl: HTMLElement | null = null;
   private chipsEl: HTMLElement | null = null;
+  private serialEl: HTMLElement | null = null;
+  private actionsEl: HTMLElement | null = null;
   /** Q43: what the stripe follows; kept in the view's state, so Obsidian saves it with the layout */
   private colorBy: ColorBy = "status";
   /** Q44: session only */
@@ -481,6 +485,8 @@ export class OutlineView extends ItemView {
     this.statsEl = header.createDiv({ cls: "escrita-outline-stats escrita-outline-sumr" });
     this.progressEl = header.createDiv({ cls: "escrita-outline-progress" });
     this.chipsEl = header.createDiv({ cls: "escrita-outline-chipbox" });
+    this.serialEl = header.createDiv({ cls: "escrita-outline-serial", attr: { role: "status" } });
+    this.actionsEl = header.createDiv({ cls: "escrita-outline-actions" });
     this.observeChips(this.chipsEl);
     this.renderStats();
 
@@ -649,6 +655,25 @@ export class OutlineView extends ItemView {
       total.setText(unitAmount("words", words));
     }
     this.renderChips(model);
+    this.renderSerial();
+  }
+
+  /** The serial line and "Publish next" (0.9, N 4): read from the chapters' status and date, never stored. */
+  private renderSerial(): void {
+    const book = this.book;
+    if (!book || !this.serialEl || !this.actionsEl) return;
+    const { statusProperty, dateProperty, stages, unnumberedTitles } = this.plugin.settings;
+    const port = this.plugin.features.get<PublishNextPort>("publish");
+    const source = this.plugin.outline.rowsPort();
+    const state = serialState(
+      serialChapters(source.chapters(book), (p) => source.frontmatter(p), statusProperty, dateProperty),
+      stages, unnumberedTitles,
+    );
+    renderSerialLine(this.serialEl, serialLine(state));
+    const notePath = book.note.path;
+    renderHeaderActions(this.actionsEl, {
+      publishNext: port && state.next ? () => { void port.publishNext(notePath); } : null,
+    });
   }
 
   private observeChips(el: HTMLElement): void {

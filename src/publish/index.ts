@@ -1,8 +1,10 @@
 import { MarkdownView, Notice, TFile } from "obsidian";
 import type EscritaPlugin from "../main";
+import { bookSource } from "../core/books";
 import { FeatureModule } from "../core/module-context";
 import type { SettingsUi } from "../core/module-context";
 import type { FeatureId } from "../core/features";
+import type { Book } from "../core/books";
 import type { Follower } from "../core/vault-index";
 import { lineList } from "../core/lists";
 import { writtenWord } from "../core/stages";
@@ -12,12 +14,13 @@ import { t } from "../i18n";
 import { isPublished, runChecks } from "./checks";
 import { dateText, initialDate, shouldWriteDate } from "./date";
 import { PublishModal } from "./modal";
+import { earlierUnpublished, serialChapters, serialState, type PublishNextPort, type SerialState } from "./serial";
 import { publishSettingsSection } from "./settings-ui";
 
 type Frontmatter = Record<string, unknown>;
 
 /** Publish check: "Publish this note" / "Unpublish this note" (see docs/ROADMAP-short-fiction.md §1). */
-export class PublishModule extends FeatureModule {
+export class PublishModule extends FeatureModule implements PublishNextPort {
   readonly id: FeatureId = "publish";
 
   constructor(private plugin: EscritaPlugin) { super(); }
@@ -56,6 +59,17 @@ export class PublishModule extends FeatureModule {
       },
     });
 
+    ctx.command({
+      id: "publish-next-chapter",
+      name: t("publish.nextCommand"),
+      checkCallback: (checking) => {
+        const book = this.activeBook();
+        if (!book) return false;
+        if (!checking) void this.publishNext(book.note.path);
+        return true;
+      },
+    });
+
     this.registerEvent(p.app.workspace.on("file-menu", (menu, file) => {
       if (!(file instanceof TFile) || !this.publishable(file)) return;
       menu.addItem((item) => item
@@ -81,6 +95,36 @@ export class PublishModule extends FeatureModule {
   private activeNote(): TFile | null {
     const file = this.plugin.app.workspace.getActiveFile();
     return file && this.publishable(file) ? file : null;
+  }
+
+  /** The book of the active note; else the vault's only book. */
+  private activeBook(): Book | null {
+    const { books, app } = this.plugin;
+    const book = books.classify(app.workspace.getActiveFile()).book;
+    if (book) return book;
+    const all = books.allBooks();
+    return all.length === 1 ? all[0] : null;
+  }
+
+  /** The book's serial state, from the chapters' status and date in the metadata cache. */
+  private serialOf(book: Book): SerialState {
+    const { books, app, settings: s } = this.plugin;
+    const source = bookSource(app, books, this.plugin.notes, () => s);
+    return serialState(
+      serialChapters(source.chapters(book), (path) => source.frontmatter(path), s.statusProperty, s.dateProperty),
+      s.stages, s.unnumberedTitles,
+    );
+  }
+
+  /** Q11: the publish check of the book's first unpublished chapter, the same modal as a single note. */
+  async publishNext(bookNotePath: string): Promise<void> {
+    const book = this.plugin.books.classify(bookNotePath).book;
+    if (!book) { new Notice(t("publish.nextNoBook")); return; }
+    const next = this.serialOf(book).next;
+    if (!next) { new Notice(t("publish.nextNone")); return; }
+    const file = this.plugin.app.vault.getAbstractFileByPath(next.path);
+    if (!(file instanceof TFile)) return;
+    await this.openPublish(file);
   }
 
   private frontmatter(file: TFile): Frontmatter {
@@ -118,7 +162,13 @@ export class PublishModule extends FeatureModule {
       return;
     }
     const fm = this.frontmatter(file);
+    const place = this.plugin.books.classify(file);
+    // a chapter of a book: warn about earlier chapters not yet published (Q13)
+    const earlier = place.kind === "chapter" && place.book
+      ? earlierUnpublished(this.serialOf(place.book), file.path, s.stages)
+      : null;
     const checks = runChecks(text, fm, {
+      earlierUnpublished: earlier,
       placeholderMarker: s.placeholderMarker,
       recommendedProperties: lineList(s.recommendedProperties),
       piece: s,

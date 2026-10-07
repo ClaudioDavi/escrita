@@ -16,7 +16,8 @@ export type CheckId =
   | "unwrittenBeats"
   | "emptyBody"
   | "recommended"
-  | "overLimit";
+  | "overLimit"
+  | "earlierChapter";
 
 export interface CheckItem {
   /** raw text from the note (a placeholder's note, a beat); "" = nothing to show */
@@ -40,6 +41,12 @@ export interface CheckContext {
   recommendedProperties: readonly string[];
   /** where the target/limit/unit live; omitted = no limit check */
   piece?: PieceProperties;
+  /**
+   * Serial publishing (0.9, Q13): the labels of the earlier chapters of the book's sequence
+   * that aren't published (publish/serial.ts earlierUnpublished). Omitted or null = the note
+   * isn't a counted chapter, no check. A warning, never a blocker.
+   */
+  earlierUnpublished?: readonly string[] | null;
 }
 
 export const BLOCKER_FIRST: Record<CheckLevel, number> = { blocker: 0, warning: 1, passed: 2 };
@@ -106,6 +113,16 @@ export function runChecks(
       level: p.state === "over" ? "warning" : "passed",
       items: [],
       vars: { count, limit: piece.limit, over: p.over, unit: piece.unit },
+    });
+  }
+
+  if (ctx.earlierUnpublished) {
+    const early = ctx.earlierUnpublished;
+    out.push({
+      id: "earlierChapter",
+      level: early.length ? "warning" : "passed",
+      items: [],
+      vars: { chapters: early.join(", "), n: early.length },
     });
   }
 

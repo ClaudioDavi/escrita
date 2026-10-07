@@ -27,7 +27,7 @@ describe("publish lifecycle", () => {
   it("loads with its commands and file menu", () => {
     registry.apply();
     expect(registry.isOn("publish")).toBe(true);
-    expect([...plugin.commands.keys()].sort()).toEqual(["escrita:publish-note", "escrita:unpublish-note"]);
+    expect([...plugin.commands.keys()].sort()).toEqual(["escrita:publish-next-chapter", "escrita:publish-note", "escrita:unpublish-note"]);
     expect(plugin.app.workspace.liveListeners("file-menu")).toBe(1);
   });
 
@@ -47,7 +47,7 @@ describe("publish lifecycle", () => {
     registry.apply();
     turn(false);
     turn(true);
-    expect([...plugin.commands.keys()]).toHaveLength(2);
+    expect([...plugin.commands.keys()]).toHaveLength(3);
     expect(plugin.app.workspace.liveListeners("file-menu")).toBe(1);
     expect(plugin.followers.size).toBe(1);
   });

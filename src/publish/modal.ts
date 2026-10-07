@@ -146,5 +146,6 @@ export function checkText(check: Check): string {
     vars.limit = unitAmount(parseUnit(check.vars.unit), Number(check.vars.limit));
     delete vars.unit;
   }
-  return t(`publish.check.${check.id}.${check.level === "passed" ? "ok" : "bad"}`, vars);
+  const many = check.id === "earlierChapter" && Number(check.vars.n) > 1 ? ".many" : "";
+  return t(`publish.check.${check.id}.${check.level === "passed" ? "ok" : "bad"}${many}`, vars);
 }

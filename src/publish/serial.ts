@@ -17,6 +17,7 @@
 import type { ChapterRef } from "../core/book-source";
 import { countedNumbers } from "../core/book";
 import { stageOf, type StageMapping } from "../core/stages";
+import { dateText, hasDate } from "./date";
 
 /** One chapter as the serial model reads it: the book source's ref plus two properties. */
 export interface SerialChapter extends ChapterRef {
@@ -56,4 +57,82 @@ export function serialState(
   const last = lastIndex < 0 ? null : { chapter: sequence[lastIndex], date: sequence[lastIndex].date ?? null };
   const gaps = sequence.filter((_, i) => i < lastIndex && !published[i]);
   return { sequence, next, last, gaps };
+}
+
+// ------------------------------------------------------------------ labels, line and gap (task 2.5)
+
+/** The chapters of a book as the serial model reads them: the source's refs with status and date. */
+export function serialChapters(
+  chapters: readonly ChapterRef[],
+  frontmatter: (path: string) => Record<string, unknown>,
+  statusProperty: string,
+  dateProperty: string,
+): SerialChapter[] {
+  return chapters.map((c) => {
+    const fm = frontmatter(c.path) ?? {};
+    const status = fm[statusProperty];
+    return {
+      ...c,
+      status: typeof status === "string" || typeof status === "number" ? String(status) : null,
+      date: fm[dateProperty] ?? null,
+    };
+  });
+}
+
+/** The number as written in the file name ("04" for "04 A escada.md"); "" when there is none. */
+export function chapterDigits(c: Pick<ChapterRef, "path">): string {
+  const base = c.path.slice(c.path.lastIndexOf("/") + 1);
+  return /^\d+/.exec(base)?.[0] ?? "";
+}
+
+/** "04 A escada": the number as written, then the title. */
+export function chapterLabel(c: Pick<ChapterRef, "path" | "title">): string {
+  const digits = chapterDigits(c);
+  return digits ? `${digits} ${c.title}` : c.title;
+}
+
+/** What the outline header says (Q12, Q13, Q23, D5). Null when no chapter is published: no line. */
+export interface SerialLine {
+  /** the next chapter's label; null when every chapter is published */
+  next: string | null;
+  /** the last published chapter: its label and its date as the header shows it (null = none, so the title is shown, Q23) */
+  last: { label: string; date: string | null };
+  /** the numbers of the unpublished chapters before the last published one */
+  gaps: string[];
+}
+
+export function serialLine(state: SerialState): SerialLine | null {
+  if (!state.last) return null;
+  return {
+    next: state.next ? chapterLabel(state.next) : null,
+    last: {
+      label: chapterLabel(state.last.chapter),
+      // as written, a future date included (D5); a date that doesn't parse is shown as it is
+      date: hasDate(state.last.date) ? dateText(state.last.date) : null,
+    },
+    gaps: state.gaps.map((g) => chapterDigits(g) || g.title),
+  };
+}
+
+/**
+ * The labels of the chapters before `path` in the sequence that aren't published (Q13).
+ * Null when `path` isn't in the sequence (not a chapter, left out, or unnumbered): no check.
+ */
+export function earlierUnpublished(
+  state: SerialState, path: string, stages: StageMapping,
+): string[] | null {
+  const i = state.sequence.findIndex((c) => c.path === path);
+  if (i < 0) return null;
+  return state.sequence.slice(0, i)
+    .filter((c) => stageOf(c.status, stages) !== "published")
+    .map(chapterLabel);
+}
+
+/**
+ * What the publish module offers the outline (read through `features.get("publish")`, so
+ * the outline never imports the module; the module is absent when the feature is off).
+ */
+export interface PublishNextPort {
+  /** Open the publish check of the book's first unpublished chapter. */
+  publishNext(bookNotePath: string): Promise<void>;
 }
