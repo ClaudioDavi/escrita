@@ -565,6 +565,47 @@ For the author to decide:
 - **3.3 Opus release review:** `/code-review high` over the branch; rules 1 and 2 on
   Link; the EPUB against EPUBCheck; the bench against G0c and G0d.
 
+**Release review (3.3) result (2026-10-06).** An Opus read of `65458e0..HEAD`, module by
+module, with the follow-ups (`a96a68d`), the guides (`5d242be`) and the write-backs
+(`eb0a2fa`). Four defects, fixed in `2e63576` with tests where the code allows:
+- **Create link in a table row.** `[[Entry|text]]` split the table cell. In a row that
+  starts with a pipe, the alias pipe is now written `\|`, as Obsidian asks. A mention whose
+  text holds a pipe is refused.
+- **Read the book, a save during the first draw.** A chapter saved while it was still
+  being drawn kept the old text. It is now drawn again once that draw is in. A failed draw
+  settles, so a later save redraws it and the refresh never waits on it. Still no DOM test.
+- **The EPUB preview's order.** The contents came before the dedication and epigraph. The
+  file puts them after (Q6), and the preview now matches.
+- **The guides' serial line example** showed "Next: 05" with a gap at 04. Next is the
+  first unpublished chapter, so it is "Next: 04", in both languages.
+
+Checked and clean:
+- **Rules 1 and 2.** Create link is check-then-replace through `plugin.notes`: the text, its
+  line and "not inside a link" are checked at write time, and it writes one mention per
+  click. A collection note goes through `notes.create` with `exists: "unique"` and never
+  overwrites. Create entry from the lens writes nothing into the note.
+- **Leaks and unload.** The events, the intersection observer, the renderer components,
+  the debounces, the cover's object URL, the names index timer and the counts listeners are
+  all disposed. The read positions follow renames and deletes through the outline's data
+  follower.
+- **Strings and guidelines.** Every English key has a pt-BR twin with the same
+  placeholders (1,212 keys). No `innerHTML`, `console.log`, network, Node or Electron API,
+  or default hotkey in the changed code. The new CSS uses theme variables; the export
+  preview's page is light in both themes on purpose.
+- **EPUB.** EPUBCheck 5.4.0 on six builds: `ptbr` and `shunn`, each with and without a
+  cover; a conto in each preset, one with a cover; and a scene break of `<&> ❦`. Every
+  build had 0 errors and 0 warnings.
+- **G0c** stands as measured in Wave 1. G0d still needs Obsidian, so it stays in the manual
+  verification.
+
+Left as they are, for the author:
+- `outline/view.ts` imports the pure `publish/serial.ts`, so it is a module import. There is
+  precedent: `outline/bar.ts` imports goals, and `universe/view-works.ts` imports desk.
+- A collection note made in `Contos/` is a note like any other. In a default-universe
+  folder it can show in the Works tab with 0 words.
+- A rename during reading can bring back a position up to 0.6 s old, because the
+  debounced save is cancelled by the rebuild.
+
 ## Manual verification on `~/projects/website/escrita/`
 
 - A conto in `Contos/` names a character without a link: the Works tab lists it.
