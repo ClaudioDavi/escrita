@@ -1,6 +1,7 @@
 import { Component, ItemView, MarkdownRenderer, Notice, TFile, debounce, setIcon, setTooltip, type ViewStateResult, type WorkspaceLeaf } from "obsidian";
 import type EscritaPlugin from "../main";
 import { bookSource, type Book } from "../core/books";
+import { movedPath } from "../core/path-keys";
 import type { BookSource } from "../core/book-source";
 import { lang, plural, t } from "../i18n";
 import { readerBlocks, type ReaderBlock } from "./reader-model";
@@ -85,7 +86,18 @@ export class ReaderView extends ItemView {
     const { vault } = this.app;
     this.registerEvent(vault.on("create", touched));
     this.registerEvent(vault.on("delete", touched));
-    this.registerEvent(vault.on("rename", (f, old) => { touched(f); touched({ path: old }); }));
+    this.registerEvent(vault.on("rename", (f, old) => {
+      // the book itself moved (its note or a folder holding it): follow it, so the tab keeps reading it
+      const moved = this.bookPath === null ? null : movedPath(this.bookPath, old, f.path);
+      if (moved !== null) {
+        this.bookPath = moved;
+        this.app.workspace.requestSaveLayout();
+        this.rebuildSoon();
+        return;
+      }
+      touched(f);
+      touched({ path: old });
+    }));
     this.register(() => this.teardown());
     await this.build();
   }

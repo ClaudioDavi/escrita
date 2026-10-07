@@ -552,7 +552,8 @@ export class ExportModal extends Modal {
     else {
       const epub = this.state.format === "epub";
       const layout = epubLayout(presetById(this.state.preset), this.o.epubSceneBreak ?? "");
-      this.coverUrl = null;
+      // the last preview's cover URL goes with its image (the preview is drawn anew)
+      this.dropCoverUrl();
       if (epub && built.cover) {
         try {
           this.coverUrl = URL.createObjectURL(new Blob([built.cover.data as BlobPart], { type: built.cover.mediaType }));

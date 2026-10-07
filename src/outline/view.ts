@@ -235,7 +235,8 @@ export class OutlineView extends ItemView {
     // Placeholder badges: the index only notifies when some file's markers change.
     this.register(this.plugin.placeholders.onChange(() => { if (this.book) this.requestRefresh(); }));
     // Switching placeholders on or off changes every row's badge: the badges count 0 while it is off.
-    this.register(this.plugin.features.onChange((id) => { if (id === "placeholders" && this.book) this.requestRefresh(); }));
+    // placeholders: the counts per chapter; publish: the serial line and "Publish next" (0.9)
+    this.register(this.plugin.features.onChange((id) => { if ((id === "placeholders" || id === "publish") && this.book) this.requestRefresh(); }));
     this.registerDomEvent(this.contentEl, "focusout", () => {
       this.contentEl.win.setTimeout(() => {
         if ((this.book || this.note) && this.dirty && !this.fieldFocused() && !this.busy) void this.refresh(true);
@@ -669,7 +670,8 @@ export class OutlineView extends ItemView {
       serialChapters(source.chapters(book), (p) => source.frontmatter(p), statusProperty, dateProperty),
       stages, unnumberedTitles,
     );
-    renderSerialLine(this.serialEl, serialLine(state));
+    // the line is part of "Publish next chapter": with the publish feature off, the header shows neither
+    renderSerialLine(this.serialEl, port ? serialLine(state) : null);
     const notePath = book.note.path;
     renderHeaderActions(this.actionsEl, {
       // board 32d: no line and no button until a chapter is published (the palette command still works)
