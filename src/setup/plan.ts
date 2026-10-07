@@ -41,11 +41,10 @@
 //   wasn't, and undoes nothing. The preview groups items by `kind` in its own order
 //   (folders, examples, settings, home note, layout: board 37).
 //
-// `planSetup` is a stub until task 1.5.
 
 import type { EscritaSettings } from "../settings";
-import type { DefaultsLanguage } from "../core/defaults";
-import type { PresetId } from "../core/feature-presets";
+import { LANGUAGE_DEFAULTS, SETUP_NAMES, WORD_KEYS, type DefaultsLanguage, type WordKey } from "../core/defaults";
+import { presetChanges, presetSwitches, type PresetId } from "../core/feature-presets";
 import type { UniverseMode } from "../universe/settings";
 
 /** "What do you write?" (board 37): short fiction (contos and essays), a novel, or both. */
@@ -150,17 +149,162 @@ export interface SetupOutcome {
   skipped: SetupItem[];
 }
 
+/** The install's value of the non-word settings the plan writes (DEFAULT_SETTINGS; the word-bearing ones come from the language sets). */
+const PLAIN_DEFAULTS = { trackFolders: "", lensLanguage: "auto", homeNote: "", openHomeOnStartup: false, openInWritingMode: false } as const;
+
+/** The example chapters' file names per language: placeholders until task 2.1 (PLAN-1.0, Wave 0 result). */
+const EXAMPLE_CHAPTERS: Record<DefaultsLanguage, readonly string[]> = {
+  en: ["01 Arrival.md", "02 The storm.md"],
+  "pt-BR": ["01 Chegada.md", "02 A tempestade.md"],
+};
+
+const keyOf = (path: string): string => path.normalize("NFC").toLowerCase();
+
+function same(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== "object" || typeof b !== "object") return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  if (ka.length !== kb.length) return false;
+  return ka.every((k) => same((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]));
+}
+
 /**
  * The plan for `choices` in `vault`, given the live `settings`: every item the preview
  * shows, in run order (see the file comment). Never throws; an empty vault and a second
  * run in the same vault (board 36 b: every item `kept`, "Nothing to do") are ordinary
- * inputs. Task 1.5.
+ * inputs.
  */
 export function planSetup(choices: SetupChoices, vault: SetupVault, settings: EscritaSettings): SetupItem[] {
-  void choices;
-  void vault;
-  void settings;
-  return [];
+  const { hasWorks, openLeaves } = vault;
+  const names = SETUP_NAMES[choices.language];
+  const target = LANGUAGE_DEFAULTS[choices.language];
+  const install = LANGUAGE_DEFAULTS[settings.defaultsLanguage];
+  const items: SetupItem[] = [];
+
+  // What exists, by folded path: the existing spelling wins, and what goes inside follows it.
+  const existing = new Map<string, string>();
+  for (const p of vault.folders) existing.set(keyOf(p), p);
+  for (const p of vault.files) existing.set(keyOf(p), p);
+  const place = (parent: string, name: string): { path: string; exists: boolean } => {
+    const wanted = parent ? `${parent}/${name}` : name;
+    const found = existing.get(keyOf(wanted));
+    return found === undefined ? { path: wanted, exists: false } : { path: found, exists: true };
+  };
+
+  // Folders
+  const folderPaths: string[] = [];
+  const addFolder = (name: string): void => {
+    const f = place("", name);
+    folderPaths.push(f.path);
+    items.push(f.exists
+      ? { kind: "folder", target: f.path, state: "kept", tick: null, ticked: false, reason: { key: "setup.reason.folderExists", vars: { count: vault.noteCounts[f.path] ?? 0 } } }
+      : { kind: "folder", target: f.path, state: "new", tick: null, ticked: true, reason: { key: "setup.reason.folderNew" } });
+  };
+  const stories = choices.writes !== "books";
+  const books = choices.writes !== "stories";
+  if (stories) addFolder(names.storiesFolder);
+  if (books) addFolder(names.booksFolder);
+
+  // Examples: the chapters folder follows the writer's own name when they have one.
+  const ownChapters = !same(settings.chaptersFolder, install.chaptersFolder);
+  const chaptersName = ownChapters ? settings.chaptersFolder : target.chaptersFolder;
+  const addExample = (parent: string, name: string): string => {
+    const e = place(parent, name);
+    items.push(e.exists
+      ? { kind: "example", target: e.path, state: "kept", tick: null, ticked: false, reason: { key: "setup.reason.exists" } }
+      : { kind: "example", target: e.path, state: "new", tick: "examples", ticked: !hasWorks, reason: { key: hasWorks ? "setup.reason.exampleHasWorks" : "setup.reason.exampleNew" } });
+    return e.path;
+  };
+  if (stories) addExample(folderPaths[0], `${names.exampleStory}.md`);
+  if (books) {
+    const book = addExample(folderPaths[folderPaths.length - 1], names.exampleBook);
+    addExample(book, `${names.exampleBook}.md`);
+    const chapters = addExample(book, chaptersName);
+    for (const c of EXAMPLE_CHAPTERS[choices.language]) addExample(chapters, c);
+  }
+
+  // The home note
+  const home = place("", names.homeNote);
+  items.push(home.exists
+    ? { kind: "home", target: home.path, state: "kept", tick: null, ticked: false, reason: { key: "setup.reason.exists" } }
+    : { kind: "home", target: home.path, state: "new", tick: "home", ticked: true, reason: { key: "setup.reason.homeNew" } });
+
+  // Settings, last. `ticked` of a tick's items follows the tick's default.
+  const keep = (key: string, value: unknown, reason: "settingSame" | "settingOwn"): void => {
+    items.push({ kind: "setting", target: key, state: "kept", tick: null, ticked: false, reason: { key: `setup.reason.${reason}` }, value });
+  };
+  const change = (key: string, value: unknown, tick: SetupTick | null, ticked: boolean, reasonKey = "settingChange"): void => {
+    items.push({ kind: "setting", target: key, state: "change", tick, ticked, reason: { key: `setup.reason.${reasonKey}` }, value });
+  };
+  const langTicked = !hasWorks;
+  const langChange = (key: string, value: unknown): void =>
+    change(key, value, "language", langTicked, langTicked ? "settingChange" : "settingHasWorks");
+  const word = (key: WordKey, always: boolean): void => {
+    const cur: unknown = settings[key];
+    const wanted: unknown = target[key];
+    const own = !same(cur, install[key]);
+    if (own) keep(key, cur, "settingOwn");
+    else if (same(cur, wanted)) { if (always) keep(key, cur, "settingSame"); }
+    else langChange(key, wanted);
+  };
+
+  if (same(settings.defaultsLanguage, choices.language)) keep("defaultsLanguage", settings.defaultsLanguage, "settingSame");
+  else langChange("defaultsLanguage", choices.language);
+  for (const key of WORD_KEYS) if (key !== "chaptersFolder") word(key, false);
+
+  // The track folder is added to the list, never swapped; an empty list tracks the whole vault.
+  const tracked = settings.trackFolders.split("\n").map((l) => l.trim()).filter((l) => l !== "");
+  if (tracked.length === 0) {
+    items.push({ kind: "setting", target: "trackFolders", state: "kept", tick: null, ticked: false, reason: { key: "setup.reason.trackAll" }, value: settings.trackFolders });
+  } else {
+    const have = new Set(tracked.map(keyOf));
+    const added = folderPaths.filter((f) => !have.has(keyOf(f)));
+    if (added.length === 0) keep("trackFolders", settings.trackFolders, "settingSame");
+    else items.push({
+      kind: "setting", target: "trackFolders", state: "change", tick: null, ticked: true,
+      reason: { key: "setup.reason.trackAdd", vars: { folders: added.join(", ") } }, value: [...tracked, ...added].join("\n"),
+    });
+  }
+
+  word("chaptersFolder", true);
+  if (same(settings.lensLanguage, choices.language)) keep("lensLanguage", settings.lensLanguage, "settingSame");
+  else if (settings.lensLanguage !== PLAIN_DEFAULTS.lensLanguage) keep("lensLanguage", settings.lensLanguage, "settingOwn");
+  else langChange("lensLanguage", choices.language);
+
+  if (choices.universeMode !== null) {
+    if (settings.universeMode === choices.universeMode) keep("universeMode", settings.universeMode, "settingSame");
+    else change("universeMode", choices.universeMode, null, true);
+  }
+
+  if (settings.homeNote === home.path) keep("homeNote", settings.homeNote, "settingSame");
+  else if (settings.homeNote !== PLAIN_DEFAULTS.homeNote) keep("homeNote", settings.homeNote, "settingOwn");
+  else change("homeNote", home.path, "home", true);
+  if (settings.openHomeOnStartup) keep("openHomeOnStartup", true, "settingSame");
+  else change("openHomeOnStartup", true, "home", true);
+
+  const layoutTicked = openLeaves <= 1 && !hasWorks;
+  if (choices.layout === "focus") {
+    if (settings.openInWritingMode) keep("openInWritingMode", true, "settingSame");
+    else change("openInWritingMode", true, "layout", layoutTicked);
+  }
+
+  // The features row
+  const switches = presetSwitches(choices.preset, settings);
+  const diff = presetChanges(settings, choices.preset);
+  const featuresSame = diff.on.length === 0 && diff.off.length === 0;
+  items.push(featuresSame
+    ? { kind: "features", target: "features", state: "kept", tick: null, ticked: false, reason: { key: "setup.reason.featuresSame", vars: { preset: choices.preset } }, value: switches }
+    : { kind: "features", target: "features", state: "change", tick: "features", ticked: !hasWorks, reason: { key: hasWorks ? "setup.reason.featuresHasWorks" : "setup.reason.featuresChange", vars: { preset: choices.preset } }, value: switches });
+
+  // The layout: writes nothing itself, so it is always a new row.
+  items.push({
+    kind: "layout", target: "layout", state: "new", tick: "layout", ticked: layoutTicked, value: choices.layout,
+    reason: openLeaves > 1 ? { key: "setup.reason.layoutTabs", vars: { leaves: openLeaves } }
+      : hasWorks ? { key: "setup.reason.layoutHasWorks" } : { key: "setup.reason.layoutNew" },
+  });
+  return items;
 }
 
 /** The items a run executes: not `kept`, and ticked (the writer's tick, else the item's default). */
