@@ -343,6 +343,64 @@ Open for the author:
   not checked for it. The judge accepts this until `minAppVersion` allows the declarative
   settings API.
 
+**Wave 1b result (2026-10-07).** Tasks 1.1 to 1.5 ran again from the head of `1.0` and all
+landed: 1.3 presets `6521e2d`, 1.2 shared helpers `1775f36`, 1.1 effective piece `5792138`,
+1.4 language defaults `3854356`, 1.5 setup plan `5dfb090`, the merge fix `ddc7024` (1.3's
+`presetSwitches` spread every setting into the features row), then the judge's `a7b0e75`.
+The four checks and `npm run lint` pass.
+- **1.1.** The classifier fills a chapter's `piece` and `pieceSource` from its book note
+  (`effectivePiece`, the outline's rule), and `Measurer.unit` reads it, so the explorer, the
+  goals modal, the status bar and the outline's note view agree. The status bar now shows a
+  chapter's book-default target too, as IMPROVEMENTS 8 wants. A chapter's cached counts drop
+  when its book note's default changes (not on every save of the book note).
+  `outline/rows.ts` still computes the piece itself, through the same function; a new
+  `tests/piece-agreement.test.ts` pins that it gives the classifier's piece and source.
+- **1.2.** Moved, not rewritten: `core/block-context.ts`, `core/dialogue.ts`,
+  `core/typography.ts`, `core/piece-bar.ts`, `ui/confirm.ts`, `ui/open-work.ts`.
+  `publish/checks` stays (export uses `core/readiness.ts`). `ui/confirm.ts` reads the
+  `outline.cancel` string, which resolves with the outline off.
+- **1.3.** As the board. The real 0.9 fixture has spellcheck on demand saved on, so the
+  author's install reads **Everything**, not "Custom" as Wave 0 said; the presets test's
+  "author" case was an invented one and is renamed.
+- **1.4.** `loadSettings(saved, locale)` in `settings.ts`: a saved object keeps its set
+  (`"en"` when missing), a fresh install takes Obsidian's language and Writer and saves
+  once. `normalizeStages` and `normalizeUniverse` take a `base` set (a language argument
+  would make an import cycle). Blank `chaptersFolder` and darlings notes still aren't
+  restored, as in 0.9.
+- **1.5.** As the fixtures. Decisions the plan didn't settle, accepted: the example book's
+  chapters folder is the writer's own `chaptersFolder` when they have one; an own
+  `homeNote` or `lensLanguage` is `kept`; the plain defaults are a copy in `plan.ts`
+  (now pinned to `DEFAULT_SETTINGS` by a test).
+- **Judge.** No architecture decision was made in code outside the plan. Fixes:
+  `tests/fixtures/settings-0.9/data.json` was git-ignored, so CI and every fresh worktree
+  failed G3; it is tracked now (scrubbed, as its README says). `tests/settings-g3.test.ts`
+  now loads through `loadSettings` in English and Portuguese, the real load path, and still
+  passes: a 0.9 install's effective settings are unchanged. A fresh install reads Writer
+  through `matchingPreset`, universe off. `planSetup` never plans an item over an existing
+  path (any case) and changes a saved setting only under a tick, except `trackFolders`
+  (added to) and `universeMode` (the writer's own "Shared world" answer), both as the
+  fixtures settled.
+
+Plan changes for Wave 2:
+- **2.2 applies the features row without its `universeMode`.** The row's value carries the
+  current mode (no preset changes it), and the `universeMode` item comes before it, so
+  applying the whole value would undo the writer's "Shared world" answer.
+- **2.2 re-plans when a tick changes**, or at least when the language tick does: the
+  example book's chapters folder is the target language's `chaptersFolder` only when the
+  language group runs. With examples ticked and language unticked, the example chapters
+  must go in the install's `chaptersFolder`, or the example isn't a book. Simplest: the run
+  calls `planSetup` with the language that will be in effect.
+- 2.1 replaces `EXAMPLE_CHAPTERS` in `plan.ts` (owns those lines).
+
+Open for the author:
+- With an own `homeNote` and `openHomeOnStartup` off, the setup offers to turn it on under
+  the home tick, ticked by default even in a vault with works. Keep, or untick with works?
+- Still open from Wave 0: `Versões`/`Modelos` in pt-BR, and pointing `homeNote` at an
+  existing `home.md` in another case.
+- Lint covers `src/` only; `eslint package.json` still reports `depend/ban-dependencies`
+  for `builtin-modules` (esbuild's externals). Harmless for the review bot, which lints
+  sources; replace it with `node:module`'s `builtinModules` in 1.7's follow-up if wanted.
+
 ## Wave 2: features (parallel, Sonnet, after G1)
 
 | Task | Owns | Done when |
