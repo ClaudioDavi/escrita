@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("obsidian", () => ({ moment: { locale: () => "en" }, Notice: class { constructor(public m: string) { notices.push(m); } } }));
+vi.mock("obsidian", () => ({ getLanguage: () => "en", moment: { locale: () => "en" }, Notice: class { constructor(public m: string) { notices.push(m); } } }));
 const notices: string[] = [];
 
 // A tiny stand-in for the DOM (no jsdom here): a body with classes and appended elements.

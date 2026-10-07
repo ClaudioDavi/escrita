@@ -28,8 +28,4 @@ export default defineConfig([
   },
   { files: ["src/ui/confirm.ts"], rules: { "@typescript-eslint/no-deprecated": "off" } },
   { files: ["src/snapshots/fs.ts"], rules: { "obsidianmd/prefer-file-manager-trash-file": "off" } },
-  {
-    files: ["src/editor/template-insert.ts", "src/universe/create.ts"],
-    rules: { "obsidianmd/no-unsupported-api": "off" },
-  },
 ]);

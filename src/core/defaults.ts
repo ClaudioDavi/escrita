@@ -37,12 +37,9 @@ export function isDefaultsLanguage(v: unknown): v is DefaultsLanguage {
  * i18n.ts does for the interface strings, so the defaults and the interface always
  * agree; Escrita has no European set (and its words are Brazilian on purpose).
  *
- * Where the language is read (the contract's call): from `locale()` in i18n.ts, that is
- * `moment.locale()`, which Obsidian sets to its interface language at startup on every
- * version Escrita supports. `getLanguage()` is the official call but needs Obsidian
- * 1.8.7, and `minAppVersion` is 1.7.2; when the minimum reaches 1.8.7, the call site
- * switches to `getLanguage()` and this function stays as it is. An empty or missing
- * value (moment not set yet, a test) gives "en", the fallback.
+ * Where the language is read: from `locale()` in i18n.ts, that is Obsidian's
+ * `getLanguage()` (since 1.0, `minAppVersion` is 1.8.7). An empty or missing value
+ * (a test) gives "en", the fallback.
  */
 export function languageOf(obsidianLanguage: string | null | undefined): DefaultsLanguage {
   const l = typeof obsidianLanguage === "string" ? obsidianLanguage.trim().toLowerCase().replace(/_/g, "-") : "";

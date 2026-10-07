@@ -19,7 +19,7 @@ Step-by-step guides, in English and Brazilian Portuguese (they grow with each ve
 
 ### Features page
 
-Turn off what you don't use. The **Features** section at the top of the settings has a switch for each of 19 features, in five groups. A feature that is off isn't loaded: no commands, panels, menu items or background work. Its data stays and comes back when you turn it on again, and its settings hide. The universe's switch is its mode (off, per book, universe). It needs Obsidian 1.7.2 or later. The ribbon icon of a feature you turn off stays until you restart Obsidian. See [Features and settings](docs/guide/en/features-and-settings.md) ([Português](docs/guide/pt-BR/features-and-settings.md)).
+Turn off what you don't use. The **Features** section at the top of the settings has a switch for each of 19 features, in five groups. A feature that is off isn't loaded: no commands, panels, menu items or background work. Its data stays and comes back when you turn it on again, and its settings hide. The universe's switch is its mode (off, per book, universe). It needs Obsidian 1.8.7 or later. The ribbon icon of a feature you turn off stays until you restart Obsidian. See [Features and settings](docs/guide/en/features-and-settings.md) ([Português](docs/guide/pt-BR/features-and-settings.md)).
 
 ### Outline and ghost beats
 
@@ -273,7 +273,7 @@ Escrita sets no hotkeys. Bind the ones you use often in Settings → Hotkeys. Fo
 
 **Manually**: download `main.js`, `manifest.json` and `styles.css` from the latest [release](https://github.com/ClaudioDavi/escrita/releases), put them in `<your vault>/.obsidian/plugins/escrita/`, reload Obsidian, and enable Escrita in Settings → Community plugins.
 
-Escrita works on desktop and mobile. From 0.7 it needs Obsidian 1.7.2 or later.
+Escrita works on desktop and mobile. From 1.0 it needs Obsidian 1.8.7 or later.
 
 ## Privacy
 

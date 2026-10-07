@@ -220,6 +220,8 @@ export function debounce<A extends unknown[]>(cb: (...args: A) => unknown, timeo
   return fn;
 }
 
+export const getLanguage = (): string => "en";
+
 export const moment = Object.assign(
   (..._args: unknown[]) => ({ isValid: () => false, format: () => "", localeData: () => ({ longDateFormat: () => "" }) }),
   {

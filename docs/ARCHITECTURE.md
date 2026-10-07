@@ -167,17 +167,12 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
     The bot's own run may still report these:
     - `src/settings.ts`: `settings-tab/prefer-setting-definitions` and
       `@typescript-eslint/no-deprecated` (`display()`). The declarative settings API
-      (`getSettingDefinitions`) needs Obsidian 1.13 and `minAppVersion` is 1.7.2, and the
+      (`getSettingDefinitions`) needs Obsidian 1.13 and `minAppVersion` is 1.8.7, and the
       tab draws module sections that load and unload at runtime.
     - `src/ui/confirm.ts`: `no-deprecated` for `ButtonComponent.setWarning`;
       `setDestructive` is newer than `minAppVersion`.
     - `src/snapshots/fs.ts`: `prefer-file-manager-trash-file`, the empty snapshot folder
       removal listed above.
-    - `src/editor/template-insert.ts` (`Notice.messageEl`) and `src/universe/create.ts`
-      (`loadLocalStorage`, `saveLocalStorage`): `no-unsupported-api`, typed from 1.8.7 while
-      `minAppVersion` is 1.7.2. Both are guarded (the notice returns without its button when
-      `messageEl` is missing; the storage calls sit in try/catch). Raising `minAppVersion`
-      to 1.8.7, which PLAN-1.0 expects for `getLanguage()`, removes these exceptions.
   - **Writes into a note's text go through `plugin.notes`** (the editor when the note is
     open in source or Live Preview, else `vault.process`), never straight to
     `vault.process`. **The editor-writes rule (0.8):** an edit at the cursor of the editor

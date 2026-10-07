@@ -496,6 +496,12 @@ A test plan (`TEST-1.0.md`), as in 0.9: the setup in a scratch vault and in the 
 the presets, writing mode next to the Minimal theme and a zen plugin, the emulated phone
 (G4).
 
+**minAppVersion 1.8.7 (author, 2026-10-07).** Raised from 1.7.2: Obsidian's language is read
+with `getLanguage()` (`i18n.ts`, `locale()`), and the `no-unsupported-api` lint exception
+(`Notice.messageEl`, `loadLocalStorage`) is gone. `setDestructive` needs 1.13, so the
+`ui/confirm.ts` exception stays. The 1.0 changelog's upgrade notes say so; `versions.json`
+gets `"1.0.0": "1.8.7"` at release.
+
 ## Release checklist (CONTEXT.md, "Working process")
 
 - **ROADMAP.md:** move 1.0 to "Shipped"; plan what comes after (screenwriting).
