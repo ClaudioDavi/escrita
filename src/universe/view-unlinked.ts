@@ -39,7 +39,13 @@ export function renderUnlinked(el: HTMLElement, ctx: PanelCtx): void {
 }
 
 function drawRow(el: HTMLElement, ctx: PanelCtx, file: TFile, r: UnlinkedRow): void {
+  // board 29a: the entry and its line on top with the button, the excerpt below
   const row = el.createDiv({ cls: "escrita-unlinked-row" });
+  const side = row.createDiv({ cls: "escrita-unlinked-side" });
+  const who = side.createDiv({ cls: "escrita-unlinked-who" });
+  who.createSpan({ cls: "escrita-unlinked-entry", text: r.name });
+  who.createSpan({ cls: "escrita-universe-muted escrita-unlinked-line", text: t("universe.unlinked.line", { n: fmt(r.line + 1) }) });
+  button(side, t("universe.unlinked.create"), false, () => { void createLink(ctx, file, r); });
   const text = row.createEl("button", { cls: "escrita-unlinked-excerpt" });
   text.setAttribute("type", "button");
   text.setAttribute("aria-label", t("universe.unlinked.goTo", { name: r.name }));
@@ -47,9 +53,6 @@ function drawRow(el: HTMLElement, ctx: PanelCtx, file: TFile, r: UnlinkedRow): v
   text.createEl("mark", { cls: "escrita-unlinked-match", text: r.excerpt.match });
   text.createSpan({ text: r.excerpt.after });
   text.addEventListener("click", (evt) => { void openNote(ctx.plugin, file.path, evt, r.line); });
-  const side = row.createDiv({ cls: "escrita-unlinked-side" });
-  side.createSpan({ cls: "escrita-universe-muted escrita-unlinked-entry", text: r.name });
-  button(side, t("universe.unlinked.create"), false, () => { void createLink(ctx, file, r); });
 }
 
 /** Writes one link. If the text there changed, writes nothing, says so quietly and refreshes. */
@@ -59,7 +62,8 @@ async function createLink(ctx: PanelCtx, file: TFile, r: UnlinkedRow): Promise<v
     const to = plugin.app.vault.getAbstractFileByPath(r.entry);
     const markup = to instanceof TFile ? linkMarkup(plugin.app.metadataCache.fileToLinktext(to, file.path, true), r.text) : null;
     const done = markup === null ? null : await plugin.notes.text(file).apply(linkPlan(r, markup));
-    if (!done?.ok) new Notice(t("universe.unlinked.changed"));
+    if (done?.ok && markup !== null) new Notice(t("universe.unlinked.done", { n: fmt(r.line + 1), link: markup }));
+    else new Notice(t("universe.unlinked.changed"));
   } catch (e) {
     console.error("Escrita: couldn't write the link", e);
     new Notice(t("universe.unlinked.failed"));

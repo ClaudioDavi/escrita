@@ -209,11 +209,13 @@ export class OutlineModule extends FeatureModule {
     if (bookNotePath && leaf.view instanceof OutlineView) leaf.view.showBook(bookNotePath);
   }
 
-  /** "Read the book": the reader view in the main area, on this book (a reader already open is reused). */
+  /** "Read the book": the reader view in the main area, on this book (a reader already open on it is reused). */
   async openReader(book: Book): Promise<void> {
     const { workspace } = this.plugin.app;
     const state = { type: READER_VIEW, active: true, state: { book: book.note.path } };
-    const leaf = workspace.getLeavesOfType(READER_VIEW)[0] ?? workspace.getLeaf("tab");
+    // board 33d: back to the tab already reading this book, else a new tab
+    const open = workspace.getLeavesOfType(READER_VIEW).find((l) => (l.view.getState() as { book?: unknown }).book === book.note.path);
+    const leaf = open ?? workspace.getLeaf("tab");
     await leaf.setViewState(state);
     await workspace.revealLeaf(leaf);
   }

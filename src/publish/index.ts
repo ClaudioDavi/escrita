@@ -124,6 +124,9 @@ export class PublishModule extends FeatureModule implements PublishNextPort {
     if (!next) { new Notice(t("publish.nextNone")); return; }
     const file = this.plugin.app.vault.getAbstractFileByPath(next.path);
     if (!(file instanceof TFile)) return;
+    // Q11: it opens that chapter first, then the same check as a single note
+    const { workspace } = this.plugin.app;
+    if (workspace.getActiveFile()?.path !== file.path) await workspace.getLeaf(false).openFile(file, { active: true });
     await this.openPublish(file);
   }
 

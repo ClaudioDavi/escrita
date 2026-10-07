@@ -672,7 +672,8 @@ export class OutlineView extends ItemView {
     renderSerialLine(this.serialEl, serialLine(state));
     const notePath = book.note.path;
     renderHeaderActions(this.actionsEl, {
-      publishNext: port && state.next ? () => { void port.publishNext(notePath); } : null,
+      // board 32d: no line and no button until a chapter is published (the palette command still works)
+      publishNext: port && state.next && state.last ? () => { void port.publishNext(notePath); } : null,
       readBook: () => { if (this.book) void this.plugin.outline.openReader(this.book); },
     });
   }

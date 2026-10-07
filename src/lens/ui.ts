@@ -11,6 +11,7 @@ import type { EditorView } from "@codemirror/view";
 import type EscritaPlugin from "../main";
 import { t } from "../i18n";
 import type { ModuleContext } from "../core/module-context";
+import { foldName } from "../core/names";
 import { minimalChange } from "../core/note-text";
 import { LensMarks } from "./decorations";
 import { listsPath, starterNote } from "./lists";
@@ -223,7 +224,7 @@ export class LensUi {
    * Selects the next or previous match of a rule in the active note. `fromPanel` closes the
    * phone drawer afterwards. Returns the position, or null when there is nothing to step to.
    */
-  step(rule: RuleId, dir: 1 | -1, fromPanel: boolean): { index: number; of: number } | null {
+  step(rule: RuleId, dir: 1 | -1, fromPanel: boolean, key?: string): { index: number; of: number } | null {
     const v = this.activeView();
     const path = v?.file?.path;
     if (!v || !path || !this.host.session.isOn(path)) return null;
@@ -233,7 +234,9 @@ export class LensUi {
       return null;
     }
     const sel = cm.state.selection.main;
-    const hit = stepTo(this.marks.matchesFor(cm.state), rule, dir === 1 ? sel.to : sel.from, dir);
+    const all = this.marks.matchesFor(cm.state);
+    const matches = key === undefined ? all : all.filter((m) => m.rule === rule && foldName(m.text) === key);
+    const hit = stepTo(matches, rule, dir === 1 ? sel.to : sel.from, dir);
     if (!hit) return null;
     const { match } = hit;
     const ed = v.editor;

@@ -286,8 +286,9 @@ export class LensModule extends FeatureModule {
     this.ui?.turnOn(path);
   }
 
-  step(rule: RuleId, dir: 1 | -1): void {
-    this.ui?.step(rule, dir, true);
+  /** `key`: only the matches whose text folds to it (a name of the names rule, from the panel). */
+  step(rule: RuleId, dir: 1 | -1, key?: string): void {
+    this.ui?.step(rule, dir, true, key);
   }
 
   clearDismissed(path: string): void {

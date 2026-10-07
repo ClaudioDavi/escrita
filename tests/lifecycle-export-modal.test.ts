@@ -167,7 +167,7 @@ describe("the export modal: a book (board 26 a)", () => {
       const { el } = open({ host, state: { whole: true, selection: { mode: "all" }, format: "epub", preset: "ptbr" } });
       await settle();
       const rows = [...el.querySelectorAll(".escrita-export-wl")].map((r) => r.querySelector(".escrita-export-wtext")!.textContent);
-      expect(rows).toContain("The cover “capa.png” is missing, can’t be read or isn’t a JPEG or PNG: the EPUB goes without a cover");
+      expect(rows).toContain("Cover not found or unreadable: [[capa.png]]. The EPUB goes without a cover");
       expect(btn(el, "Export anyway")).toBeDefined();
       expect(exportStrings["pt-BR"]["export.buttonAnyway"]).toBe("Exportar mesmo assim");
     });

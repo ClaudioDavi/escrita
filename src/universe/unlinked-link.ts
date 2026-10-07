@@ -14,6 +14,8 @@ export interface UnlinkedRow extends UnlinkedMention {
   /** the entry's name */
   name: string;
   excerpt: Excerpt;
+  /** the whole line the mention sits on, as listed: Link writes only while it is unchanged */
+  lineText: string;
 }
 
 const SIDE = 36;
@@ -45,7 +47,14 @@ export function excerptOf(text: string, from: number, to: number, side = SIDE): 
 
 /** The rows for a note, from its unlinked mentions and its text. `nameOf` is the entry's name. */
 export function rowsOf(mentions: readonly UnlinkedMention[], text: string, nameOf: (entry: string) => string): UnlinkedRow[] {
-  return mentions.map((m) => ({ ...m, name: nameOf(m.entry), excerpt: excerptOf(text, m.from, m.to) }));
+  return mentions.map((m) => ({ ...m, name: nameOf(m.entry), excerpt: excerptOf(text, m.from, m.to), lineText: lineAt(text, m.from) }));
+}
+
+/** The line of `text` that holds offset `at`, without its line break. */
+export function lineAt(text: string, at: number): string {
+  const start = text.lastIndexOf("\n", at - 1) + 1;
+  const nl = text.indexOf("\n", at);
+  return text.slice(start, nl === -1 ? text.length : nl).replace(/\r$/, "");
 }
 
 /**
@@ -60,12 +69,14 @@ export function linkMarkup(target: string, text: string): string | null {
 
 /**
  * The write plan for one mention: the change that turns `[from, to)` into the link, only
- * while exactly `text` is still there and it is not part of a link now. Null otherwise
+ * while exactly `text` is still there, its whole line is the one listed (`lineText`, when
+ * given: board 29c, "the line changed") and it is not part of a link now. Null otherwise
  * (nothing is written; the caller says so and refreshes the row).
  */
-export function linkPlan(m: Pick<UnlinkedMention, "from" | "to" | "text">, markup: string): (current: string) => Change | null {
+export function linkPlan(m: Pick<UnlinkedMention, "from" | "to" | "text"> & { lineText?: string }, markup: string): (current: string) => Change | null {
   return (current) => {
     if (m.from < 0 || m.to > current.length || current.slice(m.from, m.to) !== m.text) return null;
+    if (m.lineText !== undefined && lineAt(current, m.from) !== m.lineText) return null;
     if (insideLink(current, m.from, m.to)) return null;
     return { from: m.from, to: m.to, insert: markup };
   };

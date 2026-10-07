@@ -103,7 +103,9 @@ export const universeViewStrings: Strings = {
     "universe.unlinked.empty": "No unlinked mentions in this note.",
     "universe.unlinked.create": "Create link",
     "universe.unlinked.goTo": "Go to the mention of {name}",
-    "universe.unlinked.changed": "The text changed there, so no link was written.",
+    "universe.unlinked.changed": "The line changed since the list was made. Nothing was written; the list is up to date.",
+    "universe.unlinked.done": "Link created on line {n}: {link}",
+    "universe.unlinked.line": "line {n}",
     "universe.unlinked.failed": "Couldn't write the link.",
 
     "universe.appears.title": "Appears in",
@@ -217,7 +219,9 @@ export const universeViewStrings: Strings = {
     "universe.unlinked.empty": "Nenhuma menção sem link nesta nota.",
     "universe.unlinked.create": "Criar link",
     "universe.unlinked.goTo": "Ir para a menção de {name}",
-    "universe.unlinked.changed": "O texto mudou ali, então nenhum link foi escrito.",
+    "universe.unlinked.changed": "A linha mudou desde que a lista foi feita. Nada foi escrito; a lista foi atualizada.",
+    "universe.unlinked.done": "Link criado na linha {n}: {link}",
+    "universe.unlinked.line": "linha {n}",
     "universe.unlinked.failed": "Não foi possível escrever o link.",
 
     "universe.appears.title": "Aparece em",

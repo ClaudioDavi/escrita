@@ -1,4 +1,4 @@
-import { Component, ItemView, MarkdownRenderer, TFile, debounce, setIcon, setTooltip, type ViewStateResult, type WorkspaceLeaf } from "obsidian";
+import { Component, ItemView, MarkdownRenderer, Notice, TFile, debounce, setIcon, setTooltip, type ViewStateResult, type WorkspaceLeaf } from "obsidian";
 import type EscritaPlugin from "../main";
 import { bookSource, type Book } from "../core/books";
 import type { BookSource } from "../core/book-source";
@@ -136,7 +136,15 @@ export class ReaderView extends ItemView {
     outline.addEventListener("click", () => { void this.plugin.outline.openOutline(book.note.path); });
 
     if (list.length === 0) {
-      this.message(el, t("outline.reader.empty"));
+      const box = el.createDiv({ cls: "escrita-reader-empty" });
+      box.createDiv({ cls: "escrita-reader-empty-title", text: t("outline.reader.empty") });
+      // board 33e: a book with no chapter at all offers the first one (one whose chapters are all left out doesn't:
+      // creating at the top would renumber them)
+      if (source.chapters(book).length === 0) {
+        box.createDiv({ cls: "escrita-reader-empty-hint", text: t("outline.reader.emptyHint") });
+        const b = box.createEl("button", { cls: "mod-cta", text: t("outline.reader.createFirst") });
+        b.addEventListener("click", () => { void this.createFirst(book); });
+      }
       return;
     }
     const page = el.createDiv({ cls: "escrita-reader-page" });
@@ -160,6 +168,17 @@ export class ReaderView extends ItemView {
     } finally {
       // let the scroll event of the jump pass before saving resumes
       this.contentEl.win.setTimeout(() => { if (token === this.token) this.restoring = false; }, 150);
+    }
+  }
+
+  /** Creates the book's first chapter the way the outline does, and opens it in the editor. */
+  private async createFirst(book: Book): Promise<void> {
+    try {
+      const file = await this.plugin.chapterOps.createChapterAt(book, 0, t("common.untitled"));
+      await this.app.workspace.getLeaf("tab").openFile(file, { active: true });
+    } catch (e) {
+      console.error("Escrita: couldn't create the first chapter", e);
+      new Notice(t("outline.reader.createFailed"));
     }
   }
 

@@ -6,6 +6,7 @@
 import { ItemView, MarkdownView, Notice, Platform, TFile, setIcon, type WorkspaceLeaf } from "obsidian";
 import type EscritaPlugin from "../main";
 import { fmt, lang, plural, t } from "../i18n";
+import { EMPTY_TABLE } from "../core/names";
 import { enabledRules, newNameGroups, ruleRows } from "./panel-model";
 import { formatRate, noteName, positionOf, sharePercent } from "./panel-format";
 import { MIN_SENTENCES, MIN_WORDS } from "./readability";
@@ -228,7 +229,11 @@ export class LensView extends ItemView {
     row.createSpan({ cls: "escrita-lens-rulename escrita-lens-rulename-dim", text: this.ruleName(rule, lensLang) });
     const hint = row.createDiv({ cls: "escrita-lens-hint" });
     if (rule === "newName") {
-      hint.setText(t("lens.newName.needsUniverse"));
+      // board 30d: the rule is on but the universe isn't; the link opens Escrita's settings (the Features page)
+      hint.createSpan({ text: t("lens.newName.needsUniverse") + " " });
+      const b = hint.createEl("button", { cls: "escrita-lens-link", text: t("lens.newName.openFeatures") });
+      b.setAttribute(FOCUS_KEY, "features-newName");
+      b.addEventListener("click", () => this.hooks.openSettings?.());
     } else if (listsState === "missing") {
       hint.addClass("is-error");
       hint.setText(t("lens.lists.missing", { path: this.plugin.settings.lensListsNote }));
@@ -247,6 +252,8 @@ export class LensView extends ItemView {
    */
   private namesList(list: HTMLElement, path: string, matches: readonly import("./types").Match[]): void {
     const names = this.plugin.names;
+    // a note in no universe gets no options (lens/index.ts): nothing marked, nothing counting
+    if (names.tableFor(path) === EMPTY_TABLE) return;
     const ready = names.nameCountsReady();
     const groups = newNameGroups(matches);
     if (ready && groups.length === 0) return;
@@ -258,7 +265,11 @@ export class LensView extends ItemView {
       const item = box.createDiv({ cls: "escrita-lens-name-item" });
       item.setAttribute("role", "listitem");
       const head = item.createDiv({ cls: "escrita-lens-name-head" });
-      head.createSpan({ cls: "escrita-lens-name-text", text: g.text });
+      // board 30c: a click on the name goes to its next occurrence
+      const name = head.createEl("button", { cls: "escrita-lens-name-text", text: g.text });
+      name.setAttribute("aria-label", t("lens.newName.next.label", { name: g.text }));
+      name.setAttribute(FOCUS_KEY, `next-name-${i}`);
+      name.addEventListener("click", () => { this.stepped = "newName"; this.plugin.lens.step("newName", 1, g.key); this.render(); });
       const meta = [plural("lens.newName.inNote", g.count)];
       const works = ready ? names.workCount(g.text, path) : 0;
       if (works > 0) meta.push(plural("lens.newName.inWorks", works));

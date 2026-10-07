@@ -165,7 +165,12 @@ body.is-mobile .setting-item.escrita-lens-stack button { min-height: 40px; paddi
   border-bottom: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
 }
 .escrita-lens-name-head { display: flex; flex-direction: column; min-width: 0; }
-.escrita-lens-name-text { color: var(--text-normal); overflow-wrap: anywhere; }
+.escrita-lens .escrita-lens-name-text {
+  color: var(--text-normal); overflow-wrap: anywhere; text-align: start;
+  background: none; box-shadow: none; border: 0; padding: 0; height: auto;
+  min-height: var(--escrita-lens-target); cursor: pointer; font-size: inherit;
+}
+.escrita-lens .escrita-lens-name-text:hover { color: var(--text-accent); }
 .escrita-lens-name-meta { font-variant-numeric: tabular-nums; }
 .escrita-lens-name-actions { display: flex; align-items: center; gap: 4px; }
 .escrita-lens-name-actions .escrita-lens-btn,

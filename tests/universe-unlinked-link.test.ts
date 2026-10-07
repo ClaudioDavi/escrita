@@ -42,6 +42,17 @@ describe("linkPlan", () => {
   });
 });
 
+describe("linkPlan with the listed line", () => {
+  const listed = { ...teo, lineText: "Teo riu. Teo saiu." };
+  it("writes while the line is the one listed", () => {
+    expect(linkPlan(listed, "[[Teo]]")(text)).not.toBeNull();
+  });
+  it("writes nothing when the word grew or the line changed around it", () => {
+    expect(linkPlan(listed, "[[Teo]]")(text.replace("Teo riu", "Teodoro riu"))).toBeNull();
+    expect(linkPlan(listed, "[[Teo]]")(text.replace("Teo saiu", "Teo ficou"))).toBeNull();
+  });
+});
+
 describe("excerptOf", () => {
   it("stays on the mention's line", () => {
     const e = excerptOf(text, teo.from, teo.to);
@@ -61,6 +72,6 @@ describe("excerptOf", () => {
 describe("rowsOf", () => {
   it("adds the entry name and the excerpt", () => {
     const rows = rowsOf([{ entry: "U/Teo.md", from: teo.from, to: teo.to, line: 2, text: "Teo" }], text, () => "Teo");
-    expect(rows[0]).toMatchObject({ name: "Teo", line: 2, excerpt: { match: "Teo" } });
+    expect(rows[0]).toMatchObject({ name: "Teo", line: 2, excerpt: { match: "Teo" }, lineText: "Teo riu. Teo saiu." });
   });
 });

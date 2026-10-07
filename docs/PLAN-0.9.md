@@ -451,6 +451,50 @@ unlinked mention; turn on the names rule, create an entry and dismiss a word; ex
 book to EPUB with a cover and repeat it; publish the next chapter across a gap; read a
 book and come back to the same place after renaming a chapter.
 
+**Wave 2 result (2026-10-06).** Done. The four checks pass (179 test files, 3,097 tests).
+The mockups were not on disk during the wave, so every task built from this plan's text;
+the judge read boards 29–34 from the design canvas and fixed what differed.
+
+Decisions taken in code (the judge keeps them):
+- 2.1: `universe/index.ts` keeps calling `scopeFor` and `keptOut` from `core/scope`, not
+  `books.classify(x).scope`. A placement has a scope whenever the mode is on, even with the
+  universe off, so swapping would need a feature check in each caller.
+- 2.2: the rows come from the note's live text with the mentions index's matcher. The
+  index only says when the answer is ready (Q17 said "no new read"). The index settles
+  4 s after an edit, so its offsets would be stale and a row would come back right after
+  Link.
+- 2.3: the names index stores each note's distinct run keys and notifies 3 s after a
+  change. With "Skip quotes" on, the cross-work count can include quote lines that the
+  lens never marks. The panel lists the names under the rule's row, by count.
+- 2.4: the cover is read in `export/index.ts` with `vault.readBinary`, not through the book
+  source (Q19). It reaches the writer as `Built.cover`.
+- 2.5: a chapter's label is the digits in its file name plus its title ("04 A escada").
+  The header date is "D MMM" in pt-BR and "MMM D" in English.
+- 2.6: when the chapter-heading setting is empty, the reader uses the language's preset
+  heading (a copy of the two literals; the outline doesn't import the export). A click
+  opens the chapter in a new tab.
+- 2.7: the stories are listed in the order Obsidian passes them to `files-menu`. A
+  story whose name another note shares is linked by its path.
+
+The judge's fixes (`0.9: Wave 2 fixups`):
+- Link checks the whole line it listed, not only the word (board 29c): a word that grew
+  ("Teo" to "Teodoro") or a changed line writes nothing. The row shows the entry and its
+  line above the excerpt. A notice says where the link was made, and the "changed" notice
+  uses the board's words.
+- Names rule: a note in no universe no longer shows "counting…" forever. A click on a
+  name goes to its next occurrence. The needs-universe row links to the Features page. The
+  Dismiss notices use the board's words.
+- Export: the cover warning and the pt-BR settings names follow the boards ("Separador
+  de cena no EPUB", "Propriedade da coleção"). A collection gets its own "Writes…"
+  sentence.
+- Publish next: the header button waits for a first published chapter, as the line does
+  (board 32d). The command and the button open the chapter before the check (Q11).
+- Read the book: it reuses the tab already reading that book, else opens a new tab
+  (board 33d). A book with no chapters offers "Create the first chapter" (board 33e).
+
+Left for the manual verification: G0d, the visual match against boards 29–34, and EPUB
+cover rendering in a real reader.
+
 ## Wave 3: docs (Sonnet), then review (Opus)
 
 - **3.1 Guides**, English and pt-BR, Brazilian terms:

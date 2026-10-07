@@ -442,9 +442,10 @@ export class ExportModal extends Modal {
     else {
       const front = this.o.book!.front;
       const label = front.length === 2 ? "both" : front[0];
+      const kind = this.o.book!.collection ? "collection" : "book";
       sentence = front.length === 0
-        ? t("export.where.book", { count })
-        : t("export.where.bookFront", { count, front: t(`export.where.front.${label}`) });
+        ? t(`export.where.${kind}`, { count })
+        : t(`export.where.${kind}Front`, { count, front: t(`export.where.front.${label}`) });
     }
     el.createSpan({ text: ` ${sentence}` });
   }

@@ -427,7 +427,16 @@ a.escrita-universe-answer {
   justify-content: space-between;
   gap: var(--size-4-2);
 }
+.escrita-unlinked-who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.escrita-unlinked-line {
+  font-size: var(--font-ui-smaller);
+}
 .escrita-unlinked-entry {
+  font-weight: var(--font-medium);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
