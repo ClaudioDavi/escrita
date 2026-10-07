@@ -86,8 +86,12 @@ describe("rowsOf", () => {
 
 describe("linkFromGenerated and linkableText", () => {
   it("keeps a Markdown link as generated, even with a pipe in the text", () => {
-    expect(linkFromGenerated("[a|b](Teo.md)", "Teo", "a|b", true)).toBe("[a|b](Teo.md)");
+    expect(linkFromGenerated("[a|b](Teo.md)", "Teo", "a|b")).toBe("[a|b](Teo.md)");
+    expect(linkFromGenerated("[teo](Teo.md)", "Teo", "teo", true)).toBe("[teo](Teo.md)");
     expect(linkableText("a|b", false)).toBe(true);
+  });
+  it("escapes a Markdown link's pipes in a table row, so the cell isn't split", () => {
+    expect(linkFromGenerated("[a|b](Teo.md)", "Teo", "a|b", true)).toBe("[a\\|b](Teo.md)");
   });
   it("builds a wikilink the usual way and refuses a pipe", () => {
     expect(linkFromGenerated("[[Teo|teo]]", "Teo", "teo")).toBe("[[Teo|teo]]");

@@ -18,6 +18,10 @@ How to read it:
   Escrita sets no hotkeys.
 - Edge cases are marked **Edge case**. Defects found while writing this plan, not yet fixed,
   are marked **Likely defect**.
+- The likely defects of the first pass are fixed (`763f532` and the commit after it): the
+  collection's draft status (Collections, step 4), the Export switch's text (Feature switches),
+  the pipe notice and the vault's link setting (Unlinked mentions, steps 4, 6, 13 and 14). Those
+  steps now say what the fix should show.
 
 Time needed: about two hours, plus half an hour for the gates.
 
@@ -234,8 +238,10 @@ These are not 0.9 changes, but they affect what you'll see:
   `Universo/` exists without it. If the panel says the universe note doesn't exist, click
   **Criar** [Create].
 - **Your vault writes Markdown links** (**Usar [[Wikilinks]]** [Use [[Wikilinks]]] is off).
-  Escrita's **Criar link** and **Criar uma coleção…** always write wikilinks. See "Points you
-  may want to change".
+  **Criar link** follows that setting, so in your vault it writes `[Willian](…/Willian.md)`, the
+  path as Obsidian writes your other links. **Criar uma coleção…** always writes wikilinks in
+  `contents`, because Obsidian follows renames in properties only through wikilinks. The
+  wikilink form is checked in step 14 of Unlinked mentions.
 
 ## Unlinked mentions
 
@@ -255,10 +261,10 @@ Board 29. Guide: [The world, section 11](guide/en/the-world.md#11-unlinked-menti
    - Expected: a notice: "A linha mudou desde que a lista foi feita. Nada foi escrito; a lista
      foi atualizada." The note is unchanged. The list refreshes and shows the new line.
 4. **Edge case, a table row.** Click **Criar link** on the "linha 22" row.
-   - Expected: the row becomes `| o velho [[Willian]] | no cais |` (the text is the entry's
-     name, so there is no alias). The table still shows two columns in Live Preview and Reading
-     view.
-   - Expected: a notice "Link criado na linha 22: [[Willian]]".
+   - Expected: the row becomes `| o velho [Willian](…/Willian.md) | no cais |`, a Markdown link
+     because your vault writes them. The table still shows two columns in Live Preview and
+     Reading view, and the link opens Willian's note.
+   - Expected: a notice "Link criado na linha 22: [Willian](…/Willian.md)".
    - Expected: every other row goes. The note now links Willian, and one link per note is
      enough. The section says "Nenhuma menção sem link nesta nota." [No unlinked mentions in
      this note.]
@@ -266,11 +272,11 @@ Board 29. Guide: [The world, section 11](guide/en/the-world.md#11-unlinked-menti
    - Expected: one undo removes the link. The rows come back within a few seconds.
 6. **Edge case, an alias in a table.** Add `aliases: [Will]` to Willian's note. In the farol
    table, change the cell to `o velho Will`. Click **Criar link** on that row.
-   - Expected: `[[Willian\|Will]]`, with the backslash. The table keeps two columns. Undo it
-     and remove the alias afterwards.
+   - Expected: `[Will](…/Willian.md)`. A Markdown link has no alias pipe, so nothing is escaped
+     and the table keeps two columns. Undo it and keep the alias for steps 13 and 14.
 7. Click **Criar link** on the "linha 4" row.
-   - Expected: only "Willian" on line 4 changes, to `[[Willian]]`. The punctuation and the
-     other lines stay as they were.
+   - Expected: only "Willian" on line 4 changes, to `[Willian](…/Willian.md)`. The punctuation
+     and the other lines stay as they were. Undo it.
 8. Open `Contos/Teste 0.9/Sal.md`.
    - Expected: "Nenhuma menção sem link nesta nota.", because the note already links Willian.
 9. **A chapter (Q22).** Open `Romances/Teste 0.9/Livro Longo/Capítulos/03 O cais.md`.
@@ -285,6 +291,22 @@ Board 29. Guide: [The world, section 11](guide/en/the-world.md#11-unlinked-menti
     - Expected: the unlinked section sits at the bottom of the **Entradas** [Entries] tab.
       Willian lives in the shared universe, so this book may have no entries and no rows; the
       point is where the section sits. Set the mode back to **Universo** [Universe].
+13. **Edge case, a pipe in the text.** Make Willian's aliases `aliases: [Will, Will Bill]`. On a
+    new line at the end of the farol note, write `Ontem Will|Bill chegou.` and wait for the rows.
+    - If no row lists "Will|Bill" (only "Will", or nothing), the matcher doesn't read across a
+      pipe, and the case can't reach **Criar link**. Note it and go to step 14.
+    - If a row lists it, click **Criar link**. Expected in your vault (Markdown links):
+      `[Will|Bill](…/Willian.md)`, which reads fine outside a table. Undo it.
+14. **A vault with wikilinks.** Settings › **Arquivos e links** [Files and links]: turn **Usar
+    [[Wikilinks]]** [Use [[Wikilinks]]] on.
+    - **Criar link** on the "linha 4" row. Expected: `[[Willian]]`. Undo it.
+    - In the table, with the cell `o velho Will` from step 6: expected `[[Willian\|Will]]`, with
+      the backslash, and two columns. Undo it.
+    - If step 13 listed "Will|Bill", click **Criar link** on it. Expected: a notice "Este texto
+      não pode ser vinculado aqui. Nada foi escrito." [This text can't be linked here. Nothing
+      was written.], not "A linha mudou…". The note is unchanged.
+    - Turn **Usar [[Wikilinks]]** off again, remove the `Will|Bill` line and the alias, and put
+      the table cell back to `o velho Willian`.
 
 ## Names without an entry
 
@@ -425,10 +447,11 @@ Board 34. Guide: [Publishing, "Export a collection of stories"](guide/en/publish
      ```
 
      The order is the file explorer's (A to Z here), not the order you clicked.
-   - **Likely defect.** Wait two seconds and look at the properties. If `status: rascunho`
-     appears, "New notes start as draft" gave the collection a stage. It then shows in the
-     **Obras** tab and on your home note as a work with 0 words, though the guide says a
-     collection is never a work. See "Points you may want to change".
+   - Expected (fixed in `763f532`): wait two seconds; no `status` appears. "New notes start as
+     draft" skips any note with the `contents` property, even an empty one. The collection is
+     not in the **Obras** tab or on your home note.
+   - **A collection with a status (Q27).** Add `status: rascunho` by hand. Expected: it shows
+     in **Obras** as a work, with almost no words. Remove the line: it goes again.
 5. **Edge case, a name clash.** Run **Criar uma coleção…** again on the same three contos with
    the same title.
    - Expected: a second note, `Marés e outros contos 1.md` or similar. The first is never
@@ -458,9 +481,13 @@ Board 34. Guide: [Publishing, "Export a collection of stories"](guide/en/publish
       three real contos only.
 11. **Edge case, a reordered list.** Move `Sal` to the top of `contents` and export.
     - Expected: Sal comes first in the file.
-12. **Stories row.** Choose **Escolher…** and untick Maré.
+12. **Stories row, picked.** Choose **Escolher…** and untick Maré.
     - Expected: "2 de 3 escolhidos"; the file has two contos.
-13. **Rename a conto.** Rename `Sal.md` to `Sal grosso.md` in the explorer.
+13. **Stories row, a range.** Choose **Do … ao …** [From … to …] and pick the 2nd to the 3rd.
+    - Expected: the range is counted in the `contents` order (Sal first after step 11), not by
+      any number in the file names. The file has those two contos, in that order. Set the row
+      back to **Todos**.
+14. **Rename a conto.** Rename `Sal.md` to `Sal grosso.md` in the explorer.
     - Expected: Obsidian updates the link in `contents`; the collection still exports three
       contos.
 
@@ -587,9 +614,8 @@ on, check that nothing was lost.
 | **Checagem de publicação** [Publish check] | No serial line, no **Publicar o próximo** button, no **Publicar o próximo capítulo** command | Line and button come back; the outline redraws |
 | **Esboço e beats fantasmas** [Outline and ghost beats] | No **Ler o livro** command; an open reading tab closes | **Ler o livro** opens at the saved place |
 
-- **Likely defect.** The **Exportar** switch's description still says "DOCX e Markdown no
-  formato de manuscrito." [DOCX and Markdown in manuscript format.] It doesn't mention EPUB
-  (`settings.features.export.desc` in `src/strings.ts`).
+- Expected (fixed in `763f532`): the **Exportar** switch's description reads "DOCX, EPUB e
+  Markdown no formato de manuscrito, para uma nota, um livro ou uma coleção."
 - While a feature is off, rename a chapter you have a reading position in (outline off) or a
   work you exported (export off). Turn the feature on: the position and "Export again" follow
   the new name.
@@ -683,15 +709,15 @@ lives. Some were already settled by the follow-ups; they are listed so you know.
 
 | Point | Chosen | Alternative | Where |
 |---|---|---|---|
-| Link form | Always a wikilink, `[[Entry\|text]]`, `[[text]]` when the text is the name | Follow "Use [[Wikilinks]]": your vault writes Markdown links, so `[text](Entry.md)` | `src/universe/unlinked-link.ts` (`linkMarkup`), `src/universe/view-unlinked.ts` |
+| Link form | Follows "Use [[Wikilinks]]" through Obsidian's `generateMarkdownLink`: `[text](path)` in your vault; `[[Entry\|text]]`, or `[[text]]` when the text is the name, with wikilinks (fixed in `763f532`) | Always a wikilink | `src/universe/unlinked-link.ts` (`linkFromGenerated`), `src/universe/view-unlinked.ts` (`createLink`) |
 | One link per note | A note that links an entry anywhere lists none of its other mentions | List every unlinked mention | `src/universe/unlinked.ts` (`unlinkedIn`) |
 | Books | The active chapter only (Q22) | The whole book | `src/universe/index.ts` (`unlinkedFor`) |
 | Where rows come from | The note's live text, with the mentions index only saying when it's ready | The stored mentions (Q17), which lag about 4 s behind edits | `src/universe/index.ts` (`unlinkedFor`) |
 | Section header | The note's name | The work card of board 29 | `src/universe/view-unlinked.ts` |
 | Clicking the excerpt | Goes to the line, selects nothing | Select the word | `src/universe/view-unlinked.ts` |
 | What "changed" means | The whole line must be as listed, not only the word | Check only the word | `src/universe/unlinked-link.ts` (`linkPlan`) |
-| A mention whose text holds a pipe | Refused, with the "A linha mudou…" notice. **Likely defect**: the notice is wrong for this case | Its own notice ("Can't link this text") | `src/universe/view-unlinked.ts` (`createLink`) |
-| In a table row | The alias pipe is written `\|` | — (Obsidian requires it) | `src/universe/unlinked-link.ts` |
+| Text that can't be linked | Brackets or a line break, or a pipe with wikilinks: its own notice, "Este texto não pode ser vinculado aqui." (fixed in `763f532`). A pipe in a Markdown link is allowed | Refuse a pipe in both forms | `src/universe/unlinked-link.ts` (`linkableText`), `src/universe/view-unlinked.ts` |
+| In a table row | A wikilink's alias pipe is written `\|`; so is every pipe in a Markdown link's text | — (Obsidian requires it) | `src/universe/unlinked-link.ts` |
 | Per-book mode | The section sits at the bottom of Entradas (D1) | A tab of its own | `src/universe/view.ts` |
 
 ### Names without an entry
@@ -728,7 +754,6 @@ lives. Some were already settled by the follow-ups; they are listed so you know.
 | Scene break | Its own setting, `* * *`; blank goes back to it | The template's `#` | `src/export/writers/epub.ts` (`epubLayout`), `src/settings.ts` |
 | A single note | Listed in the contents by the work's title, with no `h1` | No contents page | `src/export/writers/epub.ts` |
 | Dedication and epigraph pages | Written only when they have text | Always written | `src/export/writers/epub.ts` |
-| Feature description | Still "DOCX e Markdown…". **Likely defect** | Mention EPUB | `src/strings.ts` (`settings.features.export.desc`) |
 
 ### Collections
 
@@ -738,7 +763,8 @@ lives. Some were already settled by the follow-ups; they are listed so you know.
 | When the menu shows | Two or more files, every one a Markdown note Escrita can export; otherwise hidden (follow-up 3) | Show it and skip what doesn't fit | `src/export/collection-menu.ts` (`onFilesMenu`) |
 | Title | Starts empty (board 34b) | The first conto's folder name | `src/export/collection-menu.ts` |
 | Where the note goes | Beside the first conto, opened in the editor (D9) | The vault root, or ask | `src/export/collection-menu.ts` (`createCollection`) |
-| Draft status. **Likely defect** | A collection made in `Contos/` gets `status: rascunho` from "New notes start as draft", so it becomes a work with 0 words | Skip notes with the collection property | `src/core/new-note-status.ts` (`needsDraftStatus`), `src/main.ts` |
+| Draft status | "New notes start as draft" skips a note with the collection property, even an empty one; a status you add by hand makes it a work (Q27; fixed in `763f532`) | Never a work, whatever its status | `src/core/new-note-status.ts` (`needsDraftStatus`), `src/main.ts` (`draftIfNew`) |
+| `contents` link form | Always `[[Name]]` wikilinks, whatever the vault's link setting: Obsidian follows renames in properties only through wikilinks | Follow the setting, like **Criar link** | `src/export/collection-menu.ts` |
 | A collection in the Works tab | Left as is (review): it is a note like any other | Never a work, whatever its status | `src/core/classify.ts` |
 | Same-name contos | Linked by path when another note shares the name | Always by name | `src/export/collection-menu.ts` |
 | A conto's title | Its file name; its `title` property is not read | Read `title` | `src/core/books.ts` (`collectionSource`) |

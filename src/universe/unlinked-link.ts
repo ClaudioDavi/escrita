@@ -1,6 +1,6 @@
 // The "Create link" write for one unlinked mention (0.9, U 2.5; PLAN-0.9 Q1). Pure: no
 // Obsidian imports. One mention becomes `[[Entry|text]]`, or `[[text]]` when the text is
-// the link target exactly. The plan checks the text is still there before it replaces
+// the link target exactly; in a vault set to Markdown links, `[text](Entry.md)`. The plan checks the text is still there before it replaces
 // anything (rule 1): if it moved or changed, it answers null and nothing is written.
 
 import type { Change } from "../core/note-text";
@@ -73,11 +73,12 @@ export function linkMarkup(target: string, text: string, inTable = false): strin
  * text)`, which follows the vault's "Use [[Wikilinks]]" setting). Null when `text` can't sit in
  * that kind of link: brackets or a line break anywhere, a pipe in a wikilink. A wikilink whose
  * alias is the link target drops the alias; in a table row its alias pipe is written `\|`.
- * A Markdown link takes the text as its label, so a pipe there is fine.
+ * A Markdown link takes the text as its label, so a pipe there is fine, except in a table row,
+ * where every pipe is written `\|` so the link doesn't split the cell (a file name has no pipe).
  */
 export function linkFromGenerated(generated: string, linktext: string, text: string, inTable = false): string | null {
   if (generated === "" || text === "" || /[[\]\n\r]/.test(text)) return null;
-  if (!generated.startsWith("[[")) return generated;
+  if (!generated.startsWith("[[")) return inTable ? generated.replace(/(?<!\\)\|/g, "\\|") : generated;
   return linkMarkup(linktext, text, inTable);
 }
 
