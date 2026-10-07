@@ -231,3 +231,25 @@ button.escrita-switch:disabled {
   .escrita-switch-track,
   .escrita-switch-knob { transition: none; }
 }
+
+/* Feature presets on the Features page (1.0, board 38). Buttons wrap on a phone. */
+.escrita-presets { display: flex; flex-direction: column; gap: 6px; padding: 14px 0 6px; }
+.escrita-presets-head { display: flex; align-items: center; gap: 10px; }
+.escrita-presets-title { color: var(--text-normal); }
+.escrita-presets-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.escrita-preset-btn { min-height: 32px; padding: 0 14px; border-radius: 16px; }
+.escrita-preset-btn.is-active { background: var(--interactive-accent); color: var(--text-on-accent); }
+.escrita-presets-confirm {
+  box-sizing: border-box; width: 100%; margin-top: 4px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 8px;
+}
+.escrita-presets-ask { font-weight: 600; }
+.escrita-presets-change { display: flex; gap: 8px; align-items: baseline; }
+.escrita-presets-kind { width: 76px; flex-shrink: 0; font-size: var(--font-ui-smaller); color: var(--text-muted); }
+.escrita-presets-btns { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.escrita-presets-btns button { min-height: 32px; }
+.escrita-presets-setup { align-self: flex-start; min-height: 32px; }
+@media (max-width: 600px) {
+  .escrita-preset-btn, .escrita-presets-btns button { min-height: 44px; }
+}

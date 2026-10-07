@@ -51,6 +51,7 @@ function tabWith(off: FeatureId[] = [], modules: Partial<Record<FeatureId, Parti
   const plugin = {
     settings, saveSettings: saves, data: { history: {}, leftOff: {} },
     books: { allBooks: () => [] },
+    setup: { hasHomeNote: () => true, open: () => {} },
     features: { isOn: (id: FeatureId) => loaded.has(id), get: (id: FeatureId) => (loaded.has(id) ? modules[id] : undefined) },
   };
   for (const [id, draw] of Object.entries(OWNED) as [FeatureId, Draw][]) {
