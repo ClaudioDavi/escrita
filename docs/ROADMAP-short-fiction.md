@@ -843,6 +843,23 @@ is the kind of chore Escrita should remove. Asked by the author on 2026-10-06.
 and EPUB gives one manuscript with the three stories in the note's order, each under its
 title, with the collection's title page.
 
+**Built in 0.9, not yet released.** What the build decided (PLAN-0.9.md, Q24-Q28):
+- **The collection is read by export through a second book source** (`core/collection.ts`,
+  `collectionSource`), every story unnumbered, so the writers don't change. No classifier kind or
+  field. A `contents` link may be a list or text with several wikilinks; duplicates count once.
+- **It exports whole**: the modal's row says "the whole collection" rather than offering a range or
+  a pick (the spec's "all, a range or picked" is not built). Each story is headed by its basename
+  (its `title` property isn't read). A link to nothing, to a non-Markdown file or to the collection
+  itself is the `missingStories` warning, and that story is skipped. Author, dedication, epigraph
+  and cover come from the collection note.
+- **Making one**: the file explorer's **Create a collection…** (two or more Markdown notes) asks for
+  a title, writes the note beside the first story with `[[Name]]` items (a name another note shares
+  is linked by its path) and opens it (D9). The links go in the explorer's sort order, not the order
+  of the clicks.
+- **Not a book**: no outline, no "Read the book", no serial publishing; a work only by the usual rule.
+- Open for the author: the title starts empty; a mixed selection of notes and other files doesn't
+  offer the menu item.
+
 ---
 
 ## Settings summary (new)

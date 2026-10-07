@@ -84,6 +84,20 @@ book one chapter at a time (a newsletter, a serial platform, a blog):
 - Scheduling: a future `date` is allowed; Escrita only records it.
 - Nothing about URLs or a particular site (ARCHITECTURE.md, "Standalone").
 
+**Built in 0.9, not yet released.** Where it differs from the text above:
+- **No serial dashboard view** (rule 3): the outline header shows one line, only while the publish
+  feature is on and at least one chapter is published: the gaps ("Gap: 04"), "Next: 05 A volta" and
+  "last published 30 Sep". A last chapter with no date shows its title, not an earlier date (Q23).
+  A future date is shown as written (D5); the model needs no clock.
+- **What counts**: a chapter whose status maps to the published stage. Chapters left out by
+  `compile: false` and unnumbered ones ("Chapters without a number", a 00 chapter) are not in the
+  sequence (`publish/serial.ts`).
+- **"Publish next chapter"** is a command and a header button (the button waits for a first
+  published chapter). It opens the chapter first, then the same check modal as a single note. The
+  gap is a warning in that check, never a block, and it names every earlier unpublished chapter.
+- Open for the author: naming only the nearest gap; falling back to the outline's book when the
+  vault has more than one.
+
 ## 5. Longform importer (after 1.0)
 
 Longform stores a project in the index note's frontmatter (`longform:` with `format`,
@@ -177,6 +191,22 @@ calls) — Pandoc can't be assumed on mobile. Two presets:
 image from the book note. Validate against EPUBCheck in CI with a fixture book (CI
 may use Java; the plugin itself stays offline).
 
+**Built in 0.9, not yet released.** What the build decided:
+- A third format in the Export modal, for a note, a book and (SF 13) a collection, with the same
+  chapter choice, warnings, preview and "Export again". The file is `<title> (<preset>).epub` (D2).
+- Contents: a title page, dedication and epigraph pages (only when they have text), a table of
+  contents (EPUB 3 nav plus an NCX), one XHTML file per chapter, no running header or word count.
+  The presets set the language and labels; the **scene break is the `epubSceneBreak` setting**
+  (default `* * *`), not the preset's.
+- **The cover** is a `cover` property (a setting, rule 6) on the book note, or on a standalone
+  note's own frontmatter (D3), linking a JPEG or PNG. A missing or unreadable image is a readiness
+  warning and the export goes on without it.
+- The identifier is a `urn:uuid` derived from the work's path and title, so re-exporting keeps it.
+  Images inside the prose are still dropped and listed, as in 0.8.
+- EPUBCheck 5.4.0 passes the `ptbr` fixture with the cover (no errors or warnings). The CI job
+  downloads the latest EPUBCheck and first runs when the 0.9 pull request opens. Rendering in a
+  real reader (Calibre, Apple Books) is left for the manual check.
+
 Print-ready PDF is out of scope: recommend Enhancing Export or Vellum/Atticus.
 
 **Shared with screenplay export.** Screenplay export (ROADMAP-screenplay.md, SP 6) reuses
@@ -191,6 +221,18 @@ A read-only view of all chapters in order, rendered with Obsidian's Markdown ren
 with chapter headings, scene breaks, and markers hidden; remembers the reading position;
 clicking a paragraph opens that chapter at that line for editing. Editing stitched
 chapters (true Scrivenings) is XL and fragile; recommend Continuous Mode for that.
+
+**Built in 0.9, not yet released.** Where it differs from the text above:
+- A view in the main area (type `escrita-reader`), from the command and a header button. It reuses
+  the tab already reading that book. Every included chapter in order, headed as the export heads
+  it (D7: the chapter-heading setting, else the language's preset), with markers hidden by the same
+  manuscript model as the export. Chapters render as they scroll into view.
+- **No chapter rail and no progress bar** (D6); the outline navigates.
+- A click on a paragraph opens its chapter **in a new tab** at that line.
+- The position (chapter and line) is kept per book in `data.json` and follows renames; deleting a
+  chapter sends it back to the top. The view doesn't redraw a chapter when its text changes, only
+  on create, delete and rename. It has no DOM test, and gate G0d (time to the first chapter, the
+  longest block while scrolling a 30-chapter book) is unmeasured.
 
 ## 9. Codex-lite (replaced)
 

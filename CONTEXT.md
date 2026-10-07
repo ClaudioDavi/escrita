@@ -70,7 +70,9 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   list in `core/settings-order.ts`, and `settings.ts` imports no module internals.
 - **Shared services on `plugin`** (use them; never re-derive):
   - `books.classify(x)`: what a file is (chapter, book note, note…), its book,
-    `tracked`, `piece`, `snapshot`, `stage`, `submission`, `export`. Backed by `core/classify.ts`.
+    `tracked`, `piece`, `snapshot`, `stage`, `submission`, `export`, `scope` (0.9: which
+    universe or book it lives in, from `core/scope.ts`; set whenever the universe mode is on,
+    even with the feature off). Backed by `core/classify.ts`.
   - `measure`: every count shown or recorded (`core/measurer.ts`, cached by mtime).
   - `notes`: every write into a note's text (editor when open, else `vault.process`;
     check-then-replace through `core/note-text.ts`).
@@ -84,7 +86,9 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
     port, `core/pending.ts`, and never imports that module).
   - `names`: the names port (`core/names-source.ts`); the lens, the name marks and the
     outline read names through it and never import the universe. The matcher is
-    `core/names.ts`.
+    `core/names.ts`. Since 0.9 it also answers the lens's names rule: `isKnownName`,
+    `workCount`, `wantNameCounts`, `createEntry` and a separate counts signal (all empty
+    when the universe is off); the candidate runs are `core/name-runs.ts`.
   - `index`: the vault index hub (`core/index-hub.ts`): add a spec for a per-file
     index, or `follow` renames and deletes for path-keyed data. `works`: the live
     list of works, built on it.
@@ -101,7 +105,7 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
 - `src/core/*`, `main.ts`, `settings.ts`, `data.ts`, `i18n.ts`, `strings.ts` are
   shared core: change them as a deliberate refactor, not as a side effect of a feature.
 - Growth rule for the classifier: new knowledge arrives as new fields on the result,
-  never as new kinds (the universe's `scope` will be a field).
+  never as new kinds (the universe's `scope` became a field in 0.9).
 
 ## Vocabulary
 
@@ -120,13 +124,16 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
 - **Scene break**: a `---` line with blank lines around it.
 - **Darlings**: cut passages kept in a note, restorable to where they came from.
 - **Snapshot**: a `.txt` copy of a note under `Escrita/Snapshots`, comparable word by word.
-- **Export** (0.8): a manuscript file (Markdown or DOCX) written into the export folder.
+- **Export** (0.8): a manuscript file (Markdown, DOCX or, in 0.9, EPUB) written into the export folder.
   Derived, never tracked, never a work.
 - **Submission** (0.8): a note in the submissions folder recording where a work was
   sent and what came back. Never tracked, never a work.
 - **Feature** (0.7): a switchable part of Escrita (`FeatureId`); off means not loaded, data stays.
 - **Entry** (0.6): a note with the type property, in a universe. **Mention**: a place in
   a note where an entry's name or alias appears (0.7, `core/names.ts`).
+- **Collection** (0.9): a note with a `contents` property, a list of links to contos in reading
+  order, exported as one DOCX, EPUB or Markdown file (`core/collection.ts`). Not a classifier
+  kind or field; a work only by the usual rule.
 - **Tracked**: counted by goals (inside track folders, outside exclude folders).
 - Deep/shallow module, seam, locality: as defined at the top of IMPROVEMENTS.md.
 
@@ -180,7 +187,7 @@ and what upkeep it asks of the writer.
   Improvements: each module owns its settings section (IMPROVEMENTS 11, 20), the export
   and submissions foundations (15–19), and measured performance work (10, 14, 21–23).
   Plan and results in `docs/PLAN-0.8.md`.
-- **0.9 (next), the book and its world**: unlinked mentions with a Link button, names
+- **0.9 (built, not yet released; the author tests first), the book and its world**: unlinked mentions with a Link button, names
   without an entry as a lens rule (U 2.5), EPUB, "Publish next chapter", "Read the book"
   (N 7 stage 3, N 4, N 8; 0.10 merged in on 2026-10-06), collections of contos exported
   as one DOCX or EPUB (SF 13). Improvement: IMPROVEMENTS 9,
@@ -200,4 +207,9 @@ those followers run even when their feature is off); the Reading-view "Appears i
 section across re-renders is still unchecked on desktop (0.7's G0d); the phone checks
 (name marks, the names bench) are waived, because the author has no phone sync; the Markdown
 parity questions with Reading view were checked in a real vault (0.8, G0c) and the
-segmenter follows them, pinned in `tests/markdown-consumers.test.ts`.
+segmenter follows them, pinned in `tests/markdown-consumers.test.ts`. 0.9 adds: "Read the book"
+(`outline/reader-view.ts`) has no DOM test, and its timings (G0d), scroll restore and click-to-line
+are unmeasured in Obsidian (its decisions are pure, in `outline/reader-model.ts` and
+`reader-plan.ts`, which copies the two export preset headings and can drift from them); the EPUB
+CI job (EPUBCheck) first runs when the 0.9 pull request opens; the unlinked rows read the note's
+live text, not the mentions index's offsets, which lag about 4 s behind edits.

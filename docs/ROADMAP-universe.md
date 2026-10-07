@@ -363,6 +363,33 @@ Both need the matcher and the mentions index from 0.7 and moved here (0.7 plan, 
   "Sentence start" comes from the sentence splitter and title abbreviations in
   `core/sentences.ts` (0.5).
 
+**Built in 0.9, not yet released** (the author tests before shipping; PLAN-0.9.md has the
+full record). Where it differs from the text above:
+
+- **Unlinked mentions** are a section with a **Create link** button per mention, not a plain list
+  (rule 2 kept: one click, one mention, never "link all"). It sits under the active work in the
+  Works tab, and at the bottom of the Entries tab in per-book mode, which has no Works tab (D1).
+  For a book it lists the **active chapter's** mentions only (Q22). A note that links an entry
+  anywhere lists none of its mentions. The write is check-then-replace through `plugin.notes`
+  over the whole line the row listed: if the line changed, nothing is written and the row refreshes.
+  The rows come from the note's live text, not the mentions index's stored offsets, which lag
+  about 4 s behind edits; the index only says when the answer is ready.
+- **Names without an entry** is **a revision lens rule, `newName`, off by default**, not a tab in
+  the universe panel (the author: it must be turned on, like the lens). It needs the universe on.
+  A word counts when it recurs: 5 times in the note, or in 2 works (read from an on-demand
+  `universe-names` index that starts the first time the rule runs). Candidate runs
+  (`core/name-runs.ts`): capitalized words joined by spaces or `de`, `da`, `do`, `das`, `dos`;
+  sentence starts are skipped (a leading stop word is dropped first: "A Joana" gives "Joana");
+  English "I" never counts; headings, code, comments and frontmatter are never read.
+- **The dismiss list** is the **Not names** setting (one per line, empty by default), because a word
+  list is a setting (rule 6). It is not the lens's "Ignore here", which is per place.
+- **Create entry** fills in the whole run ("Dona Zefa"), editable in the dialog (D8), through the
+  names port's `createEntry`.
+- **Scope** is a field of the classifier (IMPROVEMENTS 9), so the lens asks for it without importing
+  the universe.
+- Open for the author: the thresholds (5 or 2), the 3 s wait before counts refresh, and whether the
+  list of names collapses.
+
 ---
 
 ## Not in the plugin: website integration

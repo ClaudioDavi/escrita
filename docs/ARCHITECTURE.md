@@ -253,7 +253,9 @@ used as is when something exists there, else normalized, and `""` stays `none`
 (`placementPath`). Both helpers are pure and tested in `tests/classify.test.ts`;
 the rest of the adapter (the `instanceof` checks, the root folder filtered out of
 `folder`/`folders`) is covered by the manual smoke checks. The vault is reached through `VaultTree<F, D>`, a
-read-only port of four calls (`file`, `folder`, `folders`, `frontmatter`), the
+read-only port of five calls (`file`, `folder`, `folders`, `frontmatter` and, since 0.9,
+`resolve(link, from)`, which the adapter in `core/books.ts` answers with
+`metadataCache.getFirstLinkpathDest`), the
 same pattern as `ChapterFs` in `core/chapter-engine.ts`; `tests/classify.test.ts`
 drives it with an in-memory tree. The result:
 
@@ -297,7 +299,8 @@ folder, not inside (or holding) a track folder, not a folder that already has `.
 **`classifyKey(settings)`** (0.8) is one string for every setting classify reads: the
 track, exclude, chapters and chapter template folders, the three plugin folders
 (normalized, so an empty value and the default give the same key), the status property,
-the stages and the four piece properties. Every index spec whose values depend on classify
+the stages, the four piece properties and (0.9) the four scope keys (`universeMode`,
+`universeNote`, `defaultUniverseFolders`, `universeProperty`; a missing mode keys as "off"). Every index spec whose values depend on classify
 puts it in its `settingsKey` (works, explorer, placeholders, entries, threads, mentions),
 so a new classify input is added to the key once and every index rebuilds on it.
 
@@ -310,9 +313,8 @@ the folder, anything under it, including a nested inner book's files).
 keep both.
 
 Growth: new knowledge arrives as new fields on the result and new fields on
-`ClassifySettings`, never as new kinds and never as caller changes. The universe
-roadmap's `scopeFor(file, settings)` becomes a `scope` field computed in the same
-pass; the file explorer counts of v0.3 read `kind`, `book` and `tracked` per item.
+`ClassifySettings`, never as new kinds and never as caller changes. The universe's
+`scopeFor(file, settings)` became the `scope` field in 0.9 (below); the file explorer counts of v0.3 read `kind`, `book` and `tracked` per item.
 The writing desk (0.4) added `stage`, and 0.8 added `submission` and `export`, all the
 same way.
 
@@ -323,6 +325,36 @@ same way.
   (`stageFor` in `core/classify.ts`): the works index, the publish check and the stage
   snapshot all read it, and none re-derives it. Words match after NFC, trim and
   lowercase; a word listed under two stages belongs to the first stage in order.
+- `scope` (0.9, IMPROVEMENTS 9): which world the path lives in, a `Scope` from
+  `core/scope.ts`, set on every placement, folders and `none` included. See "Scope".
+
+## Scope (`core/scope.ts`, 0.9)
+
+The question every universe feature asks first, moved from `universe/scope.ts` into core so
+that the classifier can answer it (IMPROVEMENTS 9). Pure, no Obsidian imports.
+
+- **`Scope`** is `{ kind: "none" | "book" | "universe", root, note }`. `NO_SCOPE` is the none
+  scope; `sameScope(a, b)` compares two. `scopeFor(file, settings, lookup)` computes it;
+  `keptOut`, `linkText`, `inFolder`, `universeNotePath` and `universeRootOf` live beside it.
+  The rules are unchanged from 0.7 (rule 0 `universe: false`, then the file's own property,
+  the book note's, the universe folder, a default-universe folder, a book, else none); the
+  universe section describes them.
+- **Classify imports scope, never the reverse** (no cycle at load). `ScopeSettings`, `ScopeMode`
+  (`off`, `perBook`, `universe`) and `ScopeLookup` are declared in core, so core never imports
+  the universe. `ScopeLookup.resolve` is answered by `VaultTree.resolve`.
+- **`Placement.scope`**: `classify` builds the lookup on its own tree and calls `scopeFor` for a
+  file, a book note, a chapter, a book folder and a folder. Snapshots, submissions, exports and
+  `none` keep `NO_SCOPE`. With the mode off or missing, classify returns at once and reads
+  nothing more (the cost on the 3,020-file bench: about 7% with the mode on, none with it off;
+  `PLAN-0.9.md`, G0c). A missing `universeNote` reads as `Universe.md` and a missing
+  `universeProperty` as `universe`, the universe module's defaults. A throw inside `scopeFor`
+  gives `NO_SCOPE`: classify never throws. Scope follows the `universeMode` setting, **not the
+  feature switch**: a placement has a scope whenever the mode is on, even with the universe
+  feature off, so a caller that cares checks `features.isOn("universe")`.
+- **Who reads what.** The outline's POV code reads `linkText` from here (its copy is gone).
+  `UniverseModule` still calls `scopeFor` and `keptOut` directly, with a lookup it builds, for
+  the entries and the mentions: a placement's scope would need a feature check in every caller.
+  `universe/scope.ts` is deleted; nothing imports it.
 
 ## Markdown segmentation (`core/markdown.ts`)
 
@@ -477,9 +509,54 @@ matches as its parts.
   term. Titles compare with accents kept.
 - **Ports.** `NamesPort` (`plugin.names`) holds one `NamesProvider`: `tableFor(path)` (the
   terms of the note's scope), `entryFor(text, path)` (used by POV links), `version()` and
-  `onChange`. The universe provides it (`universe/names-provider.ts`: one table per scope,
+  `onChange`. Since 0.9 the provider also has optional methods for the lens's names rule, and
+  the port answers false, 0 or nothing when there is no provider (the universe is off):
+  `isKnownName(text, path)` (a name, alias, automatic first name or name title of the note's
+  scope, compared by `foldName` of the whole text), `workCount(text, path)` (in how many
+  works of the scope a capitalized run appears; 0 until the index is built), `wantNameCounts()`
+  (starts the on-demand index, once), `nameCountsReady()`, `createEntry(name, from)` (opens the
+  create-entry dialog for that note's scope with the name filled in; writes nothing) and
+  `hasProvider()`. Cross-work counts have their own signal, `onCountsChange` and
+  `countsVersion()`, apart from `onChange`: only the lens's rule reads counts, so a count
+  update never refreshes the name marks, spellcheck or the outline. The universe provides it (`universe/names-provider.ts`: one table per scope,
   compiled again only when its sources' signature changes) and withdraws it on unload.
   The lens, the name marks and the outline read the port, never the universe.
+- **Name runs** (`core/name-runs.ts`, 0.9). `nameRuns(tokens, sentences, mask, lang)` finds the
+  candidate names of a text: capitalized words one after the other, separated only by spaces or
+  tabs, joined by the language's lowercase joiners (`NAME_JOINERS`: `de`, `da`, `do`, `das`,
+  `dos` in Portuguese, none in English). A run is a `NameRun { from, to, text, key }`, the key
+  being `foldName(text)`. A run that starts a sentence loses a leading stop word ("A Joana"
+  gives "Joana") and is skipped otherwise; English "I" and its contractions never start or
+  join a run; with no language every run at a sentence start is skipped. The rule errs toward
+  silence. `namesMask(md)` is `readerMask` with heading lines and `$$` blocks blanked. The
+  lens's rule and the universe's `universe-names` index both call these two functions, so
+  the in-note count and the cross-work count agree, and neither module imports the other.
+- **Names index** (`universe/names-index.ts`, 0.9). The `universe-names` index: for each note
+  the mentions index would read, the distinct run keys it names (`runsOf`), and the cross-work
+  count behind `workCount`. On demand like the mentions index, and stricter: nothing is built
+  until the lens's rule first runs (`wantNameCounts`), so a writer who never turns the rule
+  on never pays for it. A note's runs settle 4 s after an edit (`NAMES_SETTLE_MS`), and a
+  change to a work's set of runs notifies the port 3 s later (`NAMES_NOTIFY_MS`), once the
+  build has finished and then debounced, never once per file while it builds. With "Skip
+  quotes" on, the cross-work count can include runs from quote lines that the lens never marks.
+- **Unlinked mentions** (`universe/unlinked.ts`, `unlinked-link.ts`, `view-unlinked.ts`, 0.9).
+  `unlinkedIn(mentions, linkedEntries, note)` is pure: from one note's `NoteMentions`, the
+  entries its links resolve to and its text, the occurrences of entries the note never links.
+  `note.inScope` picks the entry as Appears in does, and an occurrence still ambiguous is
+  skipped. `line` is 0-based. An occurrence inside a link or embed already in the text is never
+  listed (the mentions index drops it from the text of a Markdown link to a web page, and Link
+  would have written a link inside it). A note that links an entry anywhere lists none of its
+  mentions, so the writer links the first one. **The rows come from the note's live text**,
+  with the mentions index's matcher: the index only says when the answer is ready
+  (`UniverseModule.unlinkedFor`), because it settles 4 s after an edit and its offsets would be
+  stale, and a row would come back right after Link. `unlinked-link.ts` is the other pure part:
+  `rowsOf`, `excerptOf`, `linkMarkup` (`[[Entry|text]]`, or `[[text]]` when the text is the
+  entry's name) and `linkPlan`, a check-then-replace over the whole line the row listed: a
+  word that grew ("Teo" to "Teodoro") or a changed line writes nothing, and the row refreshes.
+  The write goes through `plugin.notes` on an explicit click: one mention, never "link all".
+  The section draws under the active work in the Works tab, and at the bottom of the Entries
+  tab in per-book mode (which has no Works tab); for a book it lists the **active chapter's**
+  mentions only.
 - **Performance budget.** `tests/names.test.ts` has a CI ceiling (300 entries against a
   10,000-word note under 100 ms) that catches quadratic code, and a local budget that is
   skipped when `CI` is set: **20 ms** (median of the fastest half of the runs, to ride out
@@ -835,7 +912,8 @@ ExportSource  →  ExportDoc  →  ManuscriptWriter<M, P>  →  string | Uint8Ar
   data `P`, so screenplay export (after 1.0) brings a script model, its own presets and its
   own writers (Fountain, PDF, FDX) without changing this file. The three 0.8 writers
   all take `ExportDoc`: `markdownWriter` (reads only `byline`, `chapterHeading` and
-  `sceneBreak` from the preset), `docxWriter` (the layout) and `PreviewWriter` (DOM).
+  `sceneBreak` from the preset), `docxWriter` (the layout) and `PreviewWriter` (DOM). 0.9 adds
+  `epubWriter` (`ManuscriptWriter<EpubBook, EpubLayout>`, see "EPUB writer").
 - **`Preset`** is plain data, in the manuscript's language (which may differ from Obsidian's):
   `id`, `language`, `page` (points; Letter or A4, one margin), `font`, `lineSpacing`,
   `indent`, `sceneBreak` text, `chapterHeading` template (`{n}`, `{title}`), the running
@@ -860,6 +938,36 @@ ExportSource  →  ExportDoc  →  ManuscriptWriter<M, P>  →  string | Uint8Ar
   duplicate, empty or absolute path, or a plain-zip limit. Tests read a zip back with
   `tests/support/zip-reader.ts`.
 
+## EPUB writer (`src/export/writers/epub.ts`, 0.9)
+
+N 7, stage 3. A `ManuscriptWriter<EpubBook, EpubLayout>` beside the Markdown and DOCX writers,
+pure, zipped with `core/zip.ts`. Every input is in the model, so the same book and layout
+give the same bytes.
+
+- **Input.** `EpubBook { doc: ExportDoc, identifier, modified, cover }`: the identifier
+  (`epubIdentifier(path, title)`: four seeded FNV-1a lanes over `path\ntitle` shaped as a
+  version-5 `urn:uuid`, no crypto API, so re-exporting a book keeps its id), the modified date
+  (`epubModified(date)`, UTC whole seconds) and the cover (`EpubCover { data, mediaType }`, JPEG or
+  PNG, or null) come in from outside. `EpubLayout` is `epubLayout(preset, sceneBreak)`: the
+  preset's language, byline and labels, and the scene break **from the setting**
+  (`epubSceneBreak`, default `* * *`, a blank value falls back on load), not the preset's `#`.
+- **Files.** `mimetype` first and stored (the zip store keeps every entry stored, as EPUB
+  requires), `META-INF/container.xml`, the package document (`content.opf`), the EPUB 3 nav
+  document, an NCX for older readers, and the XHTML: a cover page when there is a cover, the title
+  page, the dedication and epigraph pages (written only when they have blocks), and one file
+  per chapter. The nav lists the chapters, or the title page when there are none (an empty list
+  fails EPUBCheck); a body part with no heading (one note) is listed by the work's title and
+  has no `h1`. The landmark labels follow the preset's language.
+- **Markup.** A chapter heading is `h1` and body headings start at `h2`; consecutive quote
+  blocks make one `blockquote`; a scene break is `<p class="scene-break">`; never at a chapter
+  boundary (the manuscript model already drops it there). No running header, word count or end
+  mark: an ebook isn't a manuscript. Embeds are dropped and listed, as in 0.8.
+- **Validation.** The `epubcheck` job in `.github/workflows/ci.yml` builds the fixture book
+  (`tests/fixtures/epub/`) through the real writer and runs EPUBCheck (Java, downloaded in CI,
+  the latest release; the plugin itself stays offline). Run locally on the `ptbr` fixture with
+  the cover: no errors or warnings. The job first runs on a GitHub runner when 0.9 opens its pull
+  request.
+
 ## Book source (`core/book-source.ts`, 0.8)
 
 `BookSource<B>` is the port through which export (and, in 0.9, "Read the book") reads a
@@ -881,6 +989,30 @@ The Obsidian adapter is `bookSource(app, books, notes, settings)` in `core/books
 through `plugin.notes` and calls `includeChapter` with `settings.compileProperty`. It is a
 factory, not a plugin service. The export module and the outline both call it
 (`outline/rows.ts`'s `RowsPort` extends `BookSource`).
+
+## Collections (`core/collection.ts`, 0.9)
+
+SF 13. A collection is a note with a `contents` property (the name is the
+`collectionProperty` setting): a list of links to contos, in reading order. It adds no classifier
+kind and no classifier field (Q28): export asks about the active note.
+
+- `collectionOf(frontmatter, property, resolve)` is pure. It returns null when the note has no
+  such property, an empty `Collection` when the property has no value, else `Collection
+  { stories, missing }`: the story paths in order, each once, and the links that resolve to
+  nothing. The property is found ignoring case; a nested list (an unquoted `[[A]]` in YAML) is
+  flattened; a text value with several wikilinks gives each. It keeps its own small link parser
+  (`core/scope`'s `linkText` reads only a list's first item). A link to a file that isn't Markdown,
+  or to the collection note itself, is missing.
+- `collectionAt(app, note, settings)` in `core/books.ts` is the one place links are resolved
+  (`getFirstLinkpathDest` from the note), so export and the source agree. `collectionSource(app,
+  notes, settings)` is a `BookSource` whose handle is the collection note: its stories come
+  **unnumbered**, always included, titled by their basename (a story's own `title` property is not
+  read), and read through `plugin.notes`. The writers and the manuscript model don't change.
+- `sourceKindOf(place, collection)` in `export/source.ts` picks `note`, `book` or `collection`; a
+  book wins over a `contents` list. `ExportPlan.missing` carries the dangling links, which become
+  the `missingStories` readiness warning; that story is skipped.
+- A collection is a work only by the usual rule (a tracked note with a status). No outline,
+  "Read the book" or serial publishing for it in 0.9.
 
 ## Readiness (`core/readiness.ts`, 0.8)
 
@@ -1223,7 +1355,42 @@ measurer, the vault index and the notes service are core and always on.
   book. A chapter with a target shows `bar.ts`'s thin bar, with the colours and rules of a
   piece's bar in the goals tile (`pieceBar`), in the chapter's own unit; its label says
   where the target came from. Nothing in these files writes to a note.
-- **Commands**: "Open outline", "Open outline as a board", "Create a book" (modal: title +
+- **Serial line and "Publish next"** (0.9, N 4; `header.ts`). When the publish feature is on and at
+  least one chapter is published, the header shows one line (no separate dashboard view, rule 3):
+  the gaps first, then "Next: 05 A volta", then "last published 30 Sep" (a future date is shown as
+  written; a published chapter with no date shows its title instead). The date is "D MMM" in
+  pt-BR and "MMM D" in English. It reads `publish/serial.ts` (a pure file, so the outline imports
+  no module) and the line redraws when the publish switch changes. The "Publish next chapter"
+  button beside it waits for a first published chapter, like the line, and calls
+  `PublishNextPort.publishNext` read through `features.get("publish")`.
+- **Read the book** (0.9, N 8; `reader-model.ts`, `reader-plan.ts`, `reader-view.ts`). A view of
+  type `escrita-reader` in the main area, from the command "Read the book" and a button in the
+  header. It reuses the tab already reading that book, else opens a new one. It reads through the
+  book source. `reader-model.ts` is pure: `readerBlocks(text, { placeholderMarker })` builds the
+  blocks of a chapter on `manuscriptOf`, so what is hidden (frontmatter, `%%` comments, closed
+  HTML comments, placeholders, embeds) is decided in one place and matches the export. A
+  `ReaderBlock { text, line }` has the Markdown rebuilt from the manuscript's runs (marks
+  escaped, links and inline code as plain text, as in the export) and the 0-based source line
+  with the frontmatter counted; a scene break is a `---` block, dropped at a chapter's edge or
+  when doubled. Chapter headings are not blocks: the view draws them from `chapterHeadings`.
+  `reader-plan.ts` is the other pure part: which chapters (included, in order, numbered as the
+  export does), the heading format (D7: the export's heading setting, else the language's preset
+  heading, **a copy of the two literals** that can drift from `export/presets.ts`), where a saved
+  position lands, which block is at the top (`readingPoint`), and how a position follows a
+  rename or a delete (`movePositions`, `dropPositions`). The view renders each block with
+  Obsidian's Markdown renderer, chapter by chapter as it scrolls into view; a click on a
+  paragraph opens its chapter in a new tab at that line (a selection in progress is left alone).
+  Read-only; no chapter rail or progress bar (D6, the outline navigates). It redraws when a
+  chapter is created, deleted or renamed in the book's folder, not when its text changes (the
+  next opening shows an edit). The tab follows its book when the book note, or a folder holding
+  it, is renamed. A book with no chapters offers "Create the first chapter". It has no DOM
+  test; its decisions are the pure files above.
+- **Reading position** (`data.readPosition`, `ReadPosition { chapter, line }`, keyed by the book
+  note's path). Saved when the view scrolls, cleaned on load (`cleanReadPositions`: no chapter
+  dropped, the line a whole number, at least 0). The outline's data follower moves a key or a
+  chapter with a rename (`movePositions`) and drops an entry with a deleted book or chapter,
+  while the outline is off too. Deleting a chapter sends the position back to the top.
+- **Commands**: "Open outline", "Open outline as a board", "Read the book", "Create a book" (modal: title +
   parent folder → creates `<folder>/<title>.md` with `goal`/`deadline` properties, the
   book folder, the chapters folder and a first chapter), "Add a beat to this chapter",
   "Renumber chapters of this book".
@@ -1384,7 +1551,21 @@ measurer, the vault index and the notes service are core and always on.
   the `ready` stage's written word, and drops the record. There are no separate published
   and unpublished settings any more (0.3 values migrate into `stages`). Records follow
   file and folder renames and are dropped on delete, through an index follower. Escrita never commits, pushes or uploads.
-- **Commands** (also in the file menu): "Publish this note", "Unpublish this note".
+- **Serial publishing** (0.9, N 4; `serial.ts`, pure, no Obsidian imports). A book released one
+  chapter at a time. `serialState(chapters, stages, unnumbered)` over `SerialChapter` (the book
+  source's `ChapterRef` plus the status and the date as read) gives `sequence` (chapters in book
+  order, without `compile: false` and without the uncounted ones: no number, a 00 chapter, or a
+  title in "Chapters without a number", by `countedNumbers`), `next` (the first not published),
+  `last` (`{ chapter, date }`, the last published in order, its own date as written) and `gaps`
+  (the unpublished chapters before `last`). Published means the status word maps to the published
+  stage (`stageOf`, since chapters have no classify stage). A gap is a **warning, never a block**:
+  `earlierUnpublished(state, path, stages)` feeds the `earlierChapter` check, which `runChecks`
+  adds for a chapter of a book (the modal says "chapter" or "chapters"). `serialLine` and
+  `chapterLabel` (the digits of the file name plus the title: "04 A escada") feed the outline's
+  line. No clock: a future date is only recorded and shown as written.
+- **Commands** (also in the file menu): "Publish this note", "Unpublish this note", and "Publish
+  next chapter" (0.9; offered inside a book; it opens the first unpublished chapter, then the same
+  check modal as a single note, through `PublishModule.publishNext(bookNotePath)`).
 
 ### export (`src/export/`, 0.8)
 
@@ -1402,7 +1583,7 @@ this module reads the vault, calls the writer and writes the file.
   remembered choices is the book note's path, or the note's.
 - **Modal** (`modal.ts`, boards 26 and 27). Two views of one `ExportModal`: the options (what,
   the chapters: all, a range or ticked, each shown with its manuscript heading and with the
-  `compile: false` chapters named as left out; the format, Markdown or DOCX; the preset, Shunn
+  `compile: false` chapters named as left out; the format, Markdown, DOCX or (0.9) EPUB; the preset, Shunn
   or pt-BR; where it writes; the readiness warnings with "Export anyway"; and a caption for the
   last export with an "Export again" button) and the preview. The modal reaches Obsidian only
   through `ExportHost`, which `index.ts` implements. It opens with the work's remembered choices
@@ -1424,8 +1605,29 @@ this module reads the vault, calls the writer and writes the file.
   embeds the manuscript drops; placeholders, unclosed comments and an empty note are blockers,
   unwritten beats a warning, embeds only information, and each warning links to its lines.
   `needsConfirm` is true when any is a blocker or warning ("Export anyway").
+- **EPUB in the modal** (0.9). A third format, with the same chapter choice, warnings, preview,
+  "Export again" and file names (`<title> (<preset>).epub`, D2: the preset is in the name, as DOCX's).
+  The preset sets the language, byline and labels; the scene break is the `epubSceneBreak`
+  setting. The writer's inputs are built in `index.ts`: `epubIdentifier(target.key, title)`,
+  `epubModified(new Date())`, `epubLayout(preset, settings.epubSceneBreak)`. **The cover** (Q8,
+  D3) is the `coverProperty` of the book note (the whole book) or of a note's own frontmatter,
+  a link to a JPEG or PNG in the vault, read with `vault.readBinary` in `index.ts` (not through the
+  book source) and handed to the writer as `Built.cover`. No property means no cover and no
+  warning; a configured one that is missing, unreadable or neither JPEG nor PNG is the `cover`
+  readiness warning and the export goes on without one. The preview shows the cover and revokes
+  the previous object URL on each redraw.
+- **Collections** (0.9, SF 13; "Collections"). `sourceKindOf` decides `note`, `book` or
+  `collection`. A collection exports like a book, whole (the modal's row only says what it is),
+  its stories as unnumbered chapters headed by their title alone, each on a new page, the EPUB's
+  table of contents listing them; author, dedication, epigraph and cover come from the
+  collection note's properties. A link to nothing is the `missingStories` warning. All three
+  formats. `collection-menu.ts` is the file explorer's "Create a collection…" (`files-menu`, two
+  or more Markdown notes, none an export): a modal asks for a title, `createCollection` writes
+  the note through `notes.create` (`exists: "unique"`) beside the first story with `[[Name]]`
+  list items (a story whose name another note shares is linked by its path), in the file
+  explorer's sort order (`explorerSortOf`, `sortLikeExplorer`), and opens it (D9).
 - **Writing** (`index.ts`, `write`). The file goes through `plugin.notes.create` into the export
-  folder (`exportFolder`, default `Escrita/Exports`): `<title>.md` or `<title> (<preset>).docx`.
+  folder (`exportFolder`, default `Escrita/Exports`): `<title>.md` or `<title> (<preset>).docx` / `.epub`.
   It never replaces without asking. When the name is taken, the modal asks to replace or keep
   both (keep both names the new file with the date and time, `<title> (<preset>) YYYY-MM-DD
   HHhMM.docx`, written with `exists: "unique"`). Replace is offered only for an export at exactly
@@ -1456,8 +1658,9 @@ this module reads the vault, calls the writer and writes the file.
   `tests/fixtures/manuscript/README.md`.
 - **Settings** (`settings-ui.ts`): the property names (`compileProperty`, `dedicationProperty`,
   `epigraphProperty`, `authorProperty`), `authorName`, `authorSurname` (empty means the last word
-  of the name), `contactLines` and `chapterHeadingFormat`. The export folder row is drawn by the
-  core. An `author` property on the book note or the note overrides the settings.
+  of the name), `contactLines` and `chapterHeadingFormat`; since 0.9 also `coverProperty` (default `cover`),
+  `epubSceneBreak` (default `* * *`, blank falls back) and `collectionProperty` (default
+  `contents`). The export folder row is drawn by the core. An `author` property on the book note or the note overrides the settings.
 - **Tests.** `tests/export-*.test.ts` (logic, source, Markdown, DOCX unzipped through
   `tests/support/zip-reader.ts`), `tests/lifecycle-export*.test.ts` (lifecycle, modal, preview,
   renames). Strings in `strings.ts` (English and pt-BR), styles in `styles.css`.
@@ -1571,7 +1774,7 @@ scans its files).
   `inBlock`, `bodyLineIn`) read-only; they are pure, the universe won't need them, and
   their signatures must not change for the lens's sake.
 - **Rules and kinds** (`rules-stem.ts`, `rules-words.ts`, `types.ts`). Six rules, ids
-  `echo`, `adverb`, `gerund`, `crutch`, `name`, `long`. A `Match` is `{ rule, kind, from,
+  `echo`, `adverb`, `gerund`, `crutch`, `name`, `long`, and since 0.9 the opt-in `newName` (below). A `Match` is `{ rule, kind, from,
   to, text, related? }` with kind `base`, `gerundismo`, `chain` or `started`; an echo's
   `related` is the earlier occurrence. Rules take the tokens and sentences built once per
   pass and return matches whatever the settings; `analyze` filters. Language-bound rules
@@ -1667,6 +1870,24 @@ scans its files).
   Notice. Commands: "Toggle revision lens", "Next revision lens match", "Previous
   revision lens match", "Create the word lists note"; no hotkeys. The two private-API
   casts it needs are listed under "Documented exceptions".
+- **Names without an entry (0.9, U 2.5; `rules-names.ts`).** A seventh rule, `newName`, **off
+  by default** and the only one that is opt-in: `OPT_IN_RULES = ["newName"]`, switched on by the
+  `lensRulesOn` setting (`enabledRules(off, on)`; putting it in `RULES` or in `lensRulesOff`'s
+  defaults would have changed every saved vault's output). It runs only while the lens is on,
+  and needs the universe: with it off the panel shows a `needsUniverse` row that links to the
+  Features page. `newNames(toks, sents, mask, o)` takes the candidates from
+  `core/name-runs.ts` `nameRuns` over the lens's own mask and marks one match per occurrence
+  (kind `base`, `text` the run as written). A run is marked when it is not known (the names
+  port's `isKnownName`, the lens's names list, or the "Not names" setting, all compared by
+  `foldName`) and it recurs: at least 5 times in the note, or in at least 2 works of the scope
+  (`workCount`, 0 while the `universe-names` index builds, when only the in-note count applies).
+  `lens/index.ts` builds `NewNameOptions` from `plugin.names` and calls `wantNameCounts()` when
+  the rule runs; its pass key includes `countsVersion()`, so a count change re-runs the pass
+  without refreshing the name marks. The panel lists the marked names under the rule's row,
+  grouped by folded text and ordered by count, with **Create** (`plugin.names.createEntry`,
+  the whole run, "Dona Zefa", editable in the dialog) and **Dismiss** (appends to "Not names",
+  one per line; unlike "Ignore here" it is never a name anywhere). A click on a name steps to
+  its next occurrence. The panel reads the rule list from `enabledRules`, not a fixed list.
 - **Names from the port (0.7).** The session's `analyze` takes `(path, text, version)`, so
   each note is analysed with its own names. `options(path)` sets `lists.names` to the word
   lists note's names merged with the capitalized terms of `plugin.names.tableFor(path)`
@@ -1802,7 +2023,7 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
 `worksIn(scope)`, `scopeOf(file)`, `createEntry()`, `closeThread()`, `showThreads()` and
 `onChange(cb)`. Views and dialogs never read the indexes directly.
 
-- **Scope** (`scope.ts`, `scopeFor`, pure). The question every feature asks first:
+- **Scope** (`core/scope.ts` since 0.9, `scopeFor`, pure; see "Scope"). The question every feature asks first:
   `{ kind: "none" | "book" | "universe", root, note }`. **Rule 0 (0.7)**: `universe: false`
   (the YAML boolean, or the string `"false"`, trimmed, any case: the Properties editor
   writes a string) keeps the file out of the universe, in its book's scope or none. It is
@@ -1814,7 +2035,7 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   folder beside the universe note with the same basename (`universeRootOf`;
   `universeNotePath` is the one place the note path is built). A link that resolves to no
   note joins nothing. The module feeds it a `ScopeLookup` built on `books.classify` and
-  the metadata cache.
+  the metadata cache; `books.classify(x).scope` is the same answer, computed in the classifier's pass.
 - **Settings** (`settings.ts`, pure). `UniverseSettings` extends the plugin settings;
   `normalizeUniverse` fills any missing or wrong-typed value with the English default.
   Five fixed entry types (`ENTRY_KINDS`), each `{ value, folder, template, label }`;
@@ -1850,6 +2071,13 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   from a `StateField` in an editor slot; it is never written into the file, so it is not
   selectable, exported or counted. Reading view shows nothing yet (gate G0d is open: the
   Markdown post-processor route is unproven). Neither file writes to a note.
+- **Unlinked mentions and names without an entry** (0.9, U 2.5). The universe feeds both from
+  the mentions and names indexes; their pure parts, rules and the write are in "Names matcher"
+  (unlinked mentions, name runs, the names index). `UniverseModule` adds `unlinkedFor(file)`
+  ("counting" while the mentions index builds, null for a note outside any scope or an entry),
+  `createEntryNamed(file, name)` (behind the port's `createEntry`) and the `universe-names` index
+  registration, which the module owns (`universe/index.ts`) while `names-provider.ts` answers
+  `isKnownName`, `workCount`, `wantNameCounts` and `nameCountsReady` through the port.
 - **Name marks** (`name-marks.ts`, `name-marks-model.ts`). A CodeMirror `ViewPlugin` that
   puts `spellcheck="false"` on every capitalized name of the note's scope, with an
   optional underline (the "Underline names in the editor" setting, off by default) and

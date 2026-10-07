@@ -89,6 +89,17 @@ outside the universe; moved after screenwriting) · **Target:** 0.9
 - **Wins.** Outside modules get scope without depending on the universe.
 - **Minimum shipped in 0.7.0:** `Entry` no longer stores `scope` and `sameEntry` no
   longer compares it; scope is read live through `scopeOf`.
+- **Built in 0.9, not yet released** (it moves to "Done" at the release, with the version).
+  `core/scope.ts` holds `scopeFor`, `keptOut`, `linkText`, `inFolder`, `universeNotePath`,
+  `universeRootOf` and `NO_SCOPE`; `Placement.scope` is set on every placement through `scopeFor`
+  (never a new kind); `VaultTree.resolve(link, from)` carries link resolution, answered by
+  `getFirstLinkpathDest` in `core/books.ts`; `ClassifySettings` gained the four scope keys, which
+  `classifyKey` includes. `universe/scope.ts` is deleted, and the outline's copy of `linkText` is
+  gone. Measured on the 3,020-file bench: `classify()` 7.23 ms before, 6.45 to 6.57 ms with the
+  mode off (early return) and 7.76 ms with the mode on, about 7% more, under the 10% budget, so
+  `scope` stays a plain field (no lazy getter). Left as it was: `UniverseModule` still calls
+  `scopeFor` and `keptOut` itself rather than reading `classify(x).scope`, because a placement has
+  a scope whenever the mode is on, even with the universe feature off.
 
 ### 13. Shared helpers out of module folders
 
