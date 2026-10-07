@@ -495,6 +495,61 @@ The judge's fixes (`0.9: Wave 2 fixups`):
 Left for the manual verification: G0d, the visual match against boards 29–34, and EPUB
 cover rendering in a real reader.
 
+**Wave 2 result (2026-10-07).** The completeness pass traced seven flows through the code,
+as a writer would run them: link an unlinked mention (the Works tab, and Entries in
+per-book mode); the names rule with Create entry, Dismiss and the universe off; EPUB with a
+cover, Export again, a missing cover and a note's own cover; a collection of three contos
+to DOCX and EPUB with a dangling link; a book with chapters 1–3 and 5 published; Read the
+book; and every touched feature switched off and on. The settings sections draw the new
+rows (the names rule and "Not names"; the cover, EPUB scene break and collection
+property). The four checks pass (179 test files, 3,097 tests), no-network and the bundle
+test included.
+
+Fixes (`0.9: Wave 2 completeness pass: 3 fixes`):
+- Read the book: the reader tab follows its book when the book note, or a folder holding
+  it, is renamed. Before, it kept the old path and showed "no book".
+- Export: the EPUB preview revokes the last cover's object URL each time it redraws. It
+  leaked one per redraw while the modal was open.
+- Outline: the serial line follows the publish switch, like the "Publish next" button,
+  and the outline redraws when publish is turned on or off.
+
+Decisions (kept as built):
+- The serial line reads the chapters' status and date from `publish/serial.ts`, a pure
+  file, so the outline imports no module; it shows only while publish is on.
+- The reader doesn't redraw a chapter when its text changes; it redraws on create, delete
+  and rename in the book's folder. An edit shows the next time the tab is opened.
+
+Open concerns:
+- G0d is unmeasured (time to the first chapter, the longest block while scrolling 30
+  chapters), and so are scroll anchoring on restore, the rename round trip and
+  click-to-line in Obsidian. The reader has no DOM test.
+- The visual match against boards 29–34 is unchecked in Obsidian.
+- The EPUBCheck CI job first runs when the 0.9 pull request opens.
+- Name-count changes share the names port's one change signal, so every editor's name
+  marks refresh about 3 s after a note's set of capitalized runs changes, once the rule
+  has run. A separate counts signal on the port would be cheaper.
+- The lens calls `plugin.universe.createEntryNamed` for "Create entry"; a `createEntry`
+  method on the names port would be the cleaner seam.
+- The unlinked rows read the note's live text, not the stored mentions (Q17), because
+  the index's offsets lag about 4 s behind edits.
+- The reader copies the two preset heading formats (`reader-plan.ts`); they can drift
+  from the export presets.
+
+For the author to decide:
+- Names rule: the thresholds (5 in the note, or 2 works), the 3 s wait, and whether the
+  names list collapses.
+- The serial line puts the gap last; board 32b puts it first.
+- The gap warning names every earlier unpublished chapter; it could name only the
+  nearest. "Publish next chapter" falls back to the vault's only book; it could fall
+  back to the outline's book.
+- A bad cover asks for confirmation ("Export anyway"); it could be information only.
+- Collections follow the selection order, start with an empty title, and a mixed
+  selection still offers "Create a collection…".
+- Read the book: chapter headings are `h1`, a click opens a new tab, and deleting a
+  chapter sends the reading position back to the top.
+- Unlinked mentions: the section shows the note's name, not the work card, and a click on
+  the excerpt goes to the line rather than selecting the word.
+
 ## Wave 3: docs (Sonnet), then review (Opus)
 
 - **3.1 Guides**, English and pt-BR, Brazilian terms:
