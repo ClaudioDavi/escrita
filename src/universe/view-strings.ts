@@ -58,6 +58,7 @@ export const universeViewStrings: Strings = {
     "universe.view.pickUniverse": "Choose a universe",
     "universe.view.activeNote": "active note",
 
+    "universe.view.entryMore": "More actions",
     "universe.view.menu.open": "Open",
     "universe.view.menu.openSide": "Open to the side",
     "universe.view.menu.insertLink": "Insert link in note",
@@ -175,6 +176,7 @@ export const universeViewStrings: Strings = {
     "universe.view.pickUniverse": "Escolher um universo",
     "universe.view.activeNote": "nota ativa",
 
+    "universe.view.entryMore": "Mais ações",
     "universe.view.menu.open": "Abrir",
     "universe.view.menu.openSide": "Abrir ao lado",
     "universe.view.menu.insertLink": "Inserir link na nota",

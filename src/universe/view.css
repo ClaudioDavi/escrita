@@ -465,3 +465,27 @@ a.escrita-universe-answer {
 .escrita-universe-view button.escrita-unlinked-excerpt:focus-visible {
   box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
 }
+
+/* "⋯" entry menu: always there on touch screens, on hover/focus with a mouse */
+.escrita-universe-entry .escrita-universe-entry-more {
+  flex: 0 0 auto;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: calc(var(--size-4-2) * -1);
+}
+.escrita-universe-entry .escrita-universe-entry-more:not(:hover):not(:focus-visible) {
+  background: transparent;
+  box-shadow: none;
+}
+body:not(.is-mobile) .escrita-universe-entry .escrita-universe-entry-more {
+  opacity: 0;
+}
+body:not(.is-mobile) .escrita-universe-entry:hover .escrita-universe-entry-more,
+body:not(.is-mobile) .escrita-universe-entry:focus-within .escrita-universe-entry-more,
+.escrita-universe-entry .escrita-universe-entry-more:focus-visible {
+  opacity: 1;
+}

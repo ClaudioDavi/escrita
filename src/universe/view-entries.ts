@@ -105,6 +105,22 @@ function drawEntry(list: HTMLElement, ctx: PanelCtx, e: Entry, isActive: boolean
   });
   row.addEventListener("contextmenu", (evt) => { evt.preventDefault(); entryMenu(ctx, e).showAtMouseEvent(evt); });
   drawCount(list, row, ctx, e);
+  moreButton(row, () => entryMenu(ctx, e));
+}
+
+/** A visible "⋯" button opening the same menu as the right click (the touch path; hover/focus only with a mouse). */
+function moreButton(row: HTMLElement, menu: () => Menu): void {
+  const btn = row.createEl("button", { cls: "clickable-icon escrita-universe-entry-more" });
+  btn.setAttribute("type", "button");
+  setIcon(btn, "more-horizontal");
+  btn.setAttribute("aria-label", t("universe.view.entryMore"));
+  btn.addEventListener("click", (evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const r = btn.getBoundingClientRect();
+    menu().showAtPosition({ x: r.left, y: r.bottom }, btn.doc);
+  });
+  btn.addEventListener("keydown", (evt) => { evt.stopPropagation(); });
 }
 
 /** The count beside the name (board 23a): a button that opens the list under the row. Nothing at zero or while unknown. */
