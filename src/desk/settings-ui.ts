@@ -19,6 +19,11 @@ export function deskSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: Esc
     .setDesc(t("settings.openHomeOnStartup.desc"))
     .addToggle((c) => c.setValue(s.openHomeOnStartup)
       .onChange(async (v) => { s.openHomeOnStartup = v; await ui.save(); }));
+  new Setting(el)
+    .setName(t("desk.writingMode.setting"))
+    .setDesc(t("desk.writingMode.setting.desc"))
+    .addToggle((c) => c.setValue(s.openInWritingMode)
+      .onChange(async (v) => { s.openInWritingMode = v; await ui.save(); }));
 }
 
 export async function deskOffNotice(plugin: EscritaPlugin): Promise<string | null> {

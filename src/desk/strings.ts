@@ -3,6 +3,13 @@ import type { Strings } from "../i18n";
 // The desk: the home block's rendering, the home note command and its confirm.
 export const deskStrings: Strings = {
   en: {
+    "desk.writingMode.cmd.enter": "Enter writing mode",
+    "desk.writingMode.cmd.exit": "Exit writing mode",
+    "desk.writingMode.exit": "Exit writing mode",
+    "desk.writingMode.notice": "Writing mode. To leave: the button in the corner or the command.",
+    "desk.writingMode.goal": "today {words} / {goal}",
+    "desk.writingMode.setting": "Open in writing mode",
+    "desk.writingMode.setting.desc": "Starts Obsidian in writing mode: only the note, with a small goal counter if Goals is on. Nothing in your files changes.",
     "desk.cmd.openHome": "Open the home note",
     "desk.notice.missing": "“{path}” is not in the vault any more.",
     "desk.notice.createFailed": "Could not create “{path}”.",
@@ -37,6 +44,13 @@ export const deskStrings: Strings = {
     "desk.empty.noneInFolder": "No works in “{folder}”.",
   },
   "pt-BR": {
+    "desk.writingMode.cmd.enter": "Entrar no modo escrita",
+    "desk.writingMode.cmd.exit": "Sair do modo escrita",
+    "desk.writingMode.exit": "Sair do modo escrita",
+    "desk.writingMode.notice": "Modo escrita. Para sair: o botão no canto ou o comando.",
+    "desk.writingMode.goal": "hoje {words} / {goal}",
+    "desk.writingMode.setting": "Abrir no modo escrita",
+    "desk.writingMode.setting.desc": "Abre o Obsidian no modo escrita: só a nota, com um contador pequeno da meta se Metas estiver ligado. Nenhum arquivo muda.",
     "desk.cmd.openHome": "Abrir a nota inicial",
     "desk.notice.missing": "“{path}” não está mais no cofre.",
     "desk.notice.createFailed": "Não foi possível criar “{path}”.",

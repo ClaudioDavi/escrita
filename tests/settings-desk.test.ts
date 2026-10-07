@@ -13,9 +13,9 @@ beforeEach(() => resetSettingLog());
 const plugin = (leftOff: Record<string, unknown> = {}) => ({ settings: { ...DEFAULT_SETTINGS }, data: { leftOff } });
 
 describe("desk settings section", () => {
-  it("draws the heading, the home note and the startup toggle", () => {
+  it("draws the heading, the home note and the startup toggles", () => {
     deskSettingsSection(document.createElement("div"), fakeUi().ui, plugin() as never);
-    expect(settingLog.map((r) => r.name)).toEqual([t("settings.homeNoteHeading"), t("settings.homeNote"), t("settings.openHomeOnStartup")]);
+    expect(settingLog.map((r) => r.name)).toEqual([t("settings.homeNoteHeading"), t("settings.homeNote"), t("settings.openHomeOnStartup"), t("desk.writingMode.setting")]);
   });
 
   it("a committed home note is stored and saved once", () => {
