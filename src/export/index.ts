@@ -6,8 +6,8 @@ import type { FeatureId } from "../core/features";
 import type { Follower } from "../core/vault-index";
 import type { ExportChoice, ExportSelection, LastExport } from "../data";
 import { chapterTitle } from "../core/book";
-import { bookSource, type Book } from "../core/books";
-import type { BookSource } from "../core/book-source";
+import { bookSource, collectionAt, collectionSource, type Book } from "../core/books";
+import type { BookSource, ChapterRef } from "../core/book-source";
 import { exportRoot, followFolderSetting } from "../core/classify";
 import { NoteExistsError, FolderBlockedError } from "../core/notes";
 import { macrotaskYield, yieldBudget } from "../core/vault-index";
@@ -18,7 +18,8 @@ import {
 import { ExportModal, askExists, askWhere, type BookOptions, type ExportHost, type ModalState } from "./modal";
 import { presetById } from "./presets";
 import { exportSettingsSection } from "./settings-ui";
-import { buildExport, needsConfirm, withCoverWarning, type Built, type ExportPlan, type PartPlan } from "./source";
+import { buildExport, needsConfirm, sourceKindOf, withCoverWarning, type Built, type ExportPlan, type PartPlan } from "./source";
+import { onFilesMenu } from "./collection-menu";
 import { docxWriter } from "./writers/docx";
 import { epubIdentifier, epubLayout, epubModified, epubWriter, type EpubCover } from "./writers/epub";
 import { markdownWriter } from "./writers/markdown";
@@ -33,6 +34,8 @@ interface Target {
   chapter: boolean;
   /** the key of its choices in data.exportChoices: the book note's path, or the note's */
   key: string;
+  /** the note lists stories in its collection property (SF 13): exported like a book, whose chapters are the stories */
+  collection: boolean;
 }
 
 const baseName = (path: string): string => (path.split("/").pop() ?? path).replace(/\.md$/i, "");
@@ -87,6 +90,7 @@ export class ExportModule extends FeatureModule {
         return true;
       },
     });
+    this.registerEvent(p.app.workspace.on("files-menu", onFilesMenu(p, (file) => this.exportable(file))));
     this.registerEvent(p.app.workspace.on("file-menu", (menu, file) => {
       if (!(file instanceof TFile) || !this.exportable(file)) return;
       menu.addItem((item) => item
@@ -114,10 +118,29 @@ export class ExportModule extends FeatureModule {
 
   private targetOf(file: TFile): Target {
     const place = this.plugin.books.classify(file);
-    if (place.book && (place.kind === "chapter" || place.kind === "book-note")) {
-      return { file, book: place.book, chapter: place.kind === "chapter", key: place.book.note.path };
+    const kind = sourceKindOf(place, collectionAt(this.plugin.app, file, () => this.plugin.settings) !== null);
+    if (kind === "book" && place.book) {
+      return { file, book: place.book, chapter: place.kind === "chapter", key: place.book.note.path, collection: false };
     }
-    return { file, book: null, chapter: false, key: file.path };
+    return { file, book: null, chapter: false, key: file.path, collection: kind === "collection" };
+  }
+
+  /** A book or a collection: an export of several parts, whose "whole" is the choice. */
+  private multi(target: Target): boolean {
+    return target.book !== null || target.collection;
+  }
+
+  /** The chapters of a target's whole: a book's, or a collection's stories (unnumbered, in the note's order). */
+  private chaptersOf(target: Target): ChapterRef[] {
+    if (target.book) return this.source().chapters(target.book);
+    if (!target.collection) return [];
+    const p = this.plugin;
+    return collectionSource(p.app, p.notes, () => p.settings).chapters(target.file);
+  }
+
+  /** The reading side of a target's source (the same for a book and a collection). */
+  private reader(): Pick<BookSource<unknown>, "read" | "frontmatter"> {
+    return this.source();
   }
 
   /**
@@ -134,7 +157,7 @@ export class ExportModule extends FeatureModule {
 
   /** Whether "Export again" may write on its own for this target and state (same kind of export as the last). */
   private repeatable(target: Target, last: LastExport, state: ModalState): boolean {
-    return canRepeat(last, { whole: state.whole, inBook: target.book !== null, path: target.file.path });
+    return canRepeat(last, { whole: state.whole, inBook: this.multi(target), path: target.file.path });
   }
 
   private frontmatter(path: string): Frontmatter {
@@ -154,22 +177,22 @@ export class ExportModule extends FeatureModule {
   /** The modal's starting state: the work's remembered choices, else the defaults. */
   private stateOf(target: Target, choice: ExportChoice | undefined): ModalState {
     return {
-      whole: target.book !== null && (target.chapter ? choice?.whole ?? true : true),
+      whole: this.multi(target) && (target.chapter ? choice?.whole ?? true : true),
       selection: choice?.chapters ?? { mode: "all" },
       format: choice?.format ?? "docx",
       preset: choice?.preset ?? this.defaultPreset(),
     };
   }
 
-  /** The book note's front matter pages that exist (Q7): the property links to a note. */
-  private frontPages(book: Book): { role: "dedication" | "epigraph"; path: string }[] {
+  /** The front matter pages that exist (Q7) of a book note or a collection note: the property links to a note. */
+  private frontPages(notePath: string): { role: "dedication" | "epigraph"; path: string }[] {
     const { app, settings } = this.plugin;
-    const fm = this.frontmatter(book.note.path);
+    const fm = this.frontmatter(notePath);
     const out: { role: "dedication" | "epigraph"; path: string }[] = [];
     for (const [role, prop] of [["dedication", settings.dedicationProperty], ["epigraph", settings.epigraphProperty]] as const) {
       const link = linkTarget(fm[prop.trim()]);
       if (link === null) continue;
-      const dest = app.metadataCache.getFirstLinkpathDest(link, book.note.path);
+      const dest = app.metadataCache.getFirstLinkpathDest(link, notePath);
       if (dest instanceof TFile && dest.extension === "md") out.push({ role, path: dest.path });
     }
     return out;
@@ -187,18 +210,20 @@ export class ExportModule extends FeatureModule {
     const s = p.settings;
     const preset = presetById(state.preset);
     const base = { placeholderMarker: s.placeholderMarker };
-    if (target.book && state.whole) {
+    if (this.multi(target) && state.whole) {
+      const holder = target.book ? target.book.note : target.file;
       const format = s.chapterHeadingFormat.trim() || preset.chapterHeading;
-      const chapters = planChapters(this.source().chapters(target.book), state.selection, format, s.unnumberedTitles);
+      const chapters = planChapters(this.chaptersOf(target), state.selection, format, s.unnumberedTitles);
       const parts: PartPlan[] = [
-        ...this.frontPages(target.book).map((f): PartPlan => ({ role: f.role, path: f.path, heading: null, title: null, label: baseName(f.path) })),
+        ...this.frontPages(holder.path).map((f): PartPlan => ({ role: f.role, path: f.path, heading: null, title: null, label: baseName(f.path) })),
         ...chapters.chosen.map((c): PartPlan => ({ role: "body", path: c.ref.path, heading: c.heading, title: c.ref.title, label: baseName(c.ref.path) })),
       ];
       return {
         ...base, single: false, parts,
-        title: target.book.title,
-        author: authorOf(s, this.frontmatter(target.book.note.path)),
-        unit: p.measure.unit(target.book.note),
+        title: target.book ? target.book.title : target.file.basename,
+        author: authorOf(s, this.frontmatter(holder.path)),
+        unit: p.measure.unit(holder),
+        ...(target.collection ? { missing: collectionAt(p.app, target.file, () => s)?.missing ?? [] } : {}),
       };
     }
     return {
@@ -213,7 +238,7 @@ export class ExportModule extends FeatureModule {
   private async build(target: Target, state: ModalState): Promise<Built> {
     const p = this.plugin;
     const plan = this.planFor(target, state);
-    const source = this.source();
+    const source = this.reader();
     const checkpoint = yieldBudget({
       set: (cb, ms) => window.setTimeout(cb, ms),
       clear: (h) => window.clearTimeout(h as number),
@@ -269,14 +294,15 @@ export class ExportModule extends FeatureModule {
     const choice = this.plugin.data.exportChoices[target.key];
     const state = again && last ? this.stateOfLast(target, last) : this.stateOf(target, choice);
     let book: BookOptions | null = null;
-    if (target.book) {
+    if (this.multi(target)) {
       book = {
-        chapters: this.source().chapters(target.book),
+        collection: target.collection,
+        chapters: this.chaptersOf(target),
         compileProperty: s.compileProperty,
         headingOverride: s.chapterHeadingFormat,
         unnumberedTitles: s.unnumberedTitles,
         offerChapter: target.chapter,
-        front: this.frontPages(target.book).map((f) => f.role),
+        front: this.frontPages(target.book ? target.book.note.path : target.file.path).map((f) => f.role),
       };
     }
     new ExportModal(this.plugin.app, {
@@ -287,7 +313,7 @@ export class ExportModule extends FeatureModule {
 
   private stateOfLast(target: Target, last: LastExport): ModalState {
     const c = choiceOfLast(last);
-    return { whole: target.book !== null && (target.chapter ? c.whole : true), selection: c.chapters ?? { mode: "all" }, format: c.format, preset: c.preset };
+    return { whole: this.multi(target) && (target.chapter ? c.whole : true), selection: c.chapters ?? { mode: "all" }, format: c.format, preset: c.preset };
   }
 
   /**
@@ -328,8 +354,8 @@ export class ExportModule extends FeatureModule {
   private host(file: TFile): ExportHost {
     const start = this.targetOf(file);
     const known = new Map<string, TFile>();
-    if (start.book) {
-      for (const c of this.source().chapters(start.book)) {
+    if (this.multi(start)) {
+      for (const c of this.chaptersOf(start)) {
         const f = this.plugin.app.vault.getAbstractFileByPath(c.path);
         if (f instanceof TFile) known.set(c.path, f);
       }
@@ -442,7 +468,7 @@ export class ExportModule extends FeatureModule {
   private remember(target: Target, state: ModalState, built: Built, path: string): void {
     const data = this.plugin.data;
     const previous = data.exportChoices[target.key];
-    const book = target.book !== null && state.whole;
+    const book = this.multi(target) && state.whole;
     const chapters: ExportSelection = book ? state.selection : previous?.chapters ?? { mode: "all" };
     const last: LastExport = {
       format: state.format, preset: state.preset, whole: book,
@@ -455,7 +481,7 @@ export class ExportModule extends FeatureModule {
     data.exportChoices[target.key] = {
       format: state.format,
       preset: state.preset,
-      whole: target.book !== null ? state.whole : false,
+      whole: this.multi(target) ? state.whole : false,
       chapters,
       last,
     };

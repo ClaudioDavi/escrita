@@ -268,3 +268,25 @@ export function canRepeat(last: LastExport, now: { whole: boolean; inBook: boole
   if (now.whole !== last.whole) return false;
   return last.whole || !now.inBook || last.source === now.path;
 }
+
+// ------------------------------------------------------------------ collections
+
+/**
+ * The link a collection note lists a story by (Q25): `[[Name]]`, or `[[folder/Name]]` when
+ * another note shares the name (`ambiguous`), so `collectionOf` resolves the story it was made from.
+ */
+export function storyLink(path: string, ambiguous: boolean): string {
+  const bare = path.replace(/\.md$/i, "");
+  return `[[${ambiguous ? bare : bare.split("/").pop() ?? bare}]]`;
+}
+
+/**
+ * A new collection note (Q25): the `property` as a YAML list of quoted `[[links]]` in the
+ * order given, and nothing else. Quoted, so YAML doesn't read `[[A]]` as a nested list;
+ * a property name that isn't plain is quoted too.
+ */
+export function collectionNoteText(property: string, links: readonly string[]): string {
+  const quote = (s: string): string => `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  const key = /^[\p{L}\p{N}_-]+$/u.test(property) ? property : quote(property);
+  return ["---", `${key}:`, ...links.map((l) => `  - ${quote(l)}`), "---", ""].join("\n");
+}

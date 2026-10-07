@@ -469,3 +469,26 @@ describe("the export modal: Enter exports", () => {
     el.remove();
   });
 });
+
+describe("the export modal: a collection (board 34)", () => {
+  const STORIES = [ch("C/A visita.md", "A visita", null), ch("C/Zé.md", "Zé", null)];
+  const COLLECTION: BookOptions = { ...BOOK, chapters: STORIES, offerChapter: false, front: [], collection: true };
+
+  it("says what it is, lists the stories and offers no 'this chapter'", async () => {
+    const { el } = open({ host: fakeHost(), book: COLLECTION });
+    await settle();
+    expect([...el.querySelectorAll(".escrita-export-label")].map((l) => l.textContent)).toEqual(["What", "Stories", "Format", "Template"]);
+    expect(el.textContent).toContain("Collection: 2 stories");
+    expect(el.textContent).toContain("All (2)");
+    expect(el.querySelector("[aria-label='What'] button")).toBeNull();
+  });
+
+  it("names the missing stories in a warning that asks for confirmation", async () => {
+    const warn = { id: "missingStories" as const, level: "warning" as const, n: 2, names: ["X", "Y"], links: [] };
+    const host = fakeHost({ build: async () => ({ ...(await build(["A/Chapters/Prólogo.md"])), warnings: [warn] }) });
+    const { el } = open({ host, book: COLLECTION });
+    await settle();
+    expect(el.querySelector(".escrita-export-wl")!.textContent).toBe("Stories not found: [[X]], [[Y]]. They are left out.");
+    expect(buttons(el)).toContain("Export anyway");
+  });
+});

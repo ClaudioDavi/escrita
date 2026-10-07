@@ -59,6 +59,8 @@ export interface BookOptions {
   offerChapter: boolean;
   /** front matter pages the book note links to (and that exist) */
   front: ("dedication" | "epigraph")[];
+  /** the "book" is a collection (SF 13): its chapters are stories; the "What" row says so and the warnings name stories */
+  collection?: boolean;
 }
 
 export interface ExportModalOptions {
@@ -218,14 +220,16 @@ export class ExportModal extends Modal {
     // the warnings come first (board 26 c)
     const warn = contentEl.createDiv({ cls: "escrita-export-warnings" });
 
-    if (book && book.offerChapter) {
+    if (book?.collection) {
+      this.renderWhat(this.field(t("export.what")), book);
+    } else if (book && book.offerChapter) {
       const f = this.field(t("export.what"));
       this.chips(f, t("export.what"), [
         { label: t("export.what.chapter"), on: !this.state.whole },
         { label: t("export.what.book"), on: this.state.whole },
       ], (i) => { this.state.whole = i === 1; this.render(); this.changed(); });
     }
-    if (book && this.state.whole) this.renderChapters(this.field(t("export.chapters")), book);
+    if (book && this.state.whole) this.renderChapters(this.field(t(book.collection ? "export.stories" : "export.chapters")), book);
 
     const format = this.field(t("export.format"));
     this.chips(format, t("export.format"), FORMATS.map((f) => ({ label: t(`export.format.${f}`), on: this.state.format === f })), (i) => {
@@ -269,6 +273,12 @@ export class ExportModal extends Modal {
       if (it.hint) b.createSpan({ cls: "escrita-export-chip-hint", text: it.hint });
       b.addEventListener("click", () => { if (!it.on) pick(i); });
     });
+  }
+
+  /** A collection is always exported whole: the row only says what it is ("Collection: 3 stories"). */
+  private renderWhat(parent: HTMLElement, book: BookOptions): void {
+    const n = this.plan()?.included.length ?? book.chapters.filter((c) => c.include).length;
+    parent.createDiv({ cls: "escrita-export-muted", text: plural("export.what.collection", n, { n: fmt(n) }) });
   }
 
   private renderChapters(parent: HTMLElement, book: BookOptions): void {
@@ -342,7 +352,7 @@ export class ExportModal extends Modal {
       ? new Set(this.state.selection.paths)
       : new Set(plan.chosen.map((c) => c.ref.path));
     const heads = new Map(plan.included.map((c) => [c.ref.path, c.heading]));
-    const picked = await askChapters(this.app, this.o.book!.chapters, heads, current, this.o.book!.compileProperty);
+    const picked = await askChapters(this.app, this.o.book!.chapters, heads, current, this.o.book!.compileProperty, this.o.book!.collection === true);
     if (picked !== null) {
       this.state.selection = { mode: "pick", paths: picked };
       this.changed();
@@ -372,7 +382,7 @@ export class ExportModal extends Modal {
       return;
     }
     if (this.emptyChoice()) {
-      el.createDiv({ cls: "escrita-export-hint", text: t("export.chapters.none") });
+      el.createDiv({ cls: "escrita-export-hint", text: t(this.o.book?.collection ? "export.stories.none" : "export.chapters.none") });
       return;
     }
     const list = this.built?.warnings ?? [];
@@ -411,6 +421,7 @@ export class ExportModal extends Modal {
       case "unclosedHtmlComment": return t("export.warn.unclosedHtmlComment");
       case "emptyBody": return t("export.warn.emptyBody");
       case "cover": return t("export.warn.cover", { names });
+      case "missingStories": return plural("export.warn.missingStories", w.n, { names: w.names.map((n) => `[[${n}]]`).join(", ") });
     }
   }
 
@@ -573,8 +584,8 @@ export class ExportModal extends Modal {
  * by `compile: false` and greyed). Resolves to the ticked paths, in book order, or
  * null when dismissed.
  */
-export function askChapters(app: App, chapters: readonly ChapterRef[], headings: ReadonlyMap<string, string>, checked: ReadonlySet<string>, compileProperty = "compile"): Promise<string[] | null> {
-  return new Promise((resolve) => new ChaptersModal(app, chapters, headings, checked, resolve, compileProperty).open());
+export function askChapters(app: App, chapters: readonly ChapterRef[], headings: ReadonlyMap<string, string>, checked: ReadonlySet<string>, compileProperty = "compile", collection = false): Promise<string[] | null> {
+  return new Promise((resolve) => new ChaptersModal(app, chapters, headings, checked, resolve, compileProperty, collection).open());
 }
 
 export class ChaptersModal extends Modal {
@@ -588,12 +599,13 @@ export class ChaptersModal extends Modal {
     private checked: ReadonlySet<string>,
     private done: (v: string[] | null) => void,
     private compileProperty = "compile",
+    private collection = false,
   ) {
     super(app);
   }
 
   onOpen(): void {
-    this.setTitle(t("export.chapters"));
+    this.setTitle(t(this.collection ? "export.stories" : "export.chapters"));
     this.modalEl?.addClass("escrita-export-picker");
     const list = this.contentEl.createDiv({ cls: "escrita-export-picklist" });
     for (const ref of this.chapters) {

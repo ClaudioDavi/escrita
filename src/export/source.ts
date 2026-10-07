@@ -57,10 +57,8 @@ export interface ExportPlan {
   single: boolean;
   /**
    * A collection's links that resolve to nothing (`Collection.missing`), skipped (Q26).
-   * Absent for a note and a book. Task 2.7 turns them into a warning: id
-   * `missingStories` (added to `WarningId` then, not now, so the modal's `warningText`
-   * switch stays exhaustive), level `warning`, the link texts as `names`, no links. The
-   * modal's case and its strings belong to task 2.4; 2.7 hands them over.
+   * Absent for a note and a book. `buildExport` turns them into the `missingStories`
+   * warning: level `warning`, the link texts as `names`, no links.
    */
   missing?: string[];
 }
@@ -82,7 +80,7 @@ export interface WarningLink {
   where: string;
 }
 
-export type WarningId = ReadinessId | "cover" | "embeds";
+export type WarningId = ReadinessId | "cover" | "embeds" | "missingStories";
 
 export interface Warning {
   id: WarningId;
@@ -107,7 +105,7 @@ export interface Built {
   cover?: EpubCover | null;
 }
 
-const ORDER: WarningId[] = ["placeholders", "unclosedComment", "unclosedHtmlComment", "unwrittenBeats", "emptyBody", "cover", "embeds"];
+const ORDER: WarningId[] = ["placeholders", "unclosedComment", "unclosedHtmlComment", "unwrittenBeats", "emptyBody", "missingStories", "cover", "embeds"];
 
 /**
  * The warning for a cover that is configured but can't be used (Q8): missing, unreadable, or
@@ -138,7 +136,19 @@ export async function buildExport(plan: ExportPlan, ports: ExportPorts): Promise
   const paths = plan.parts.map((p) => p.path);
   const labels = plan.parts.map((p) => p.label);
   const doc = exportDocOf(source, { placeholderMarker: plan.placeholderMarker });
-  return { source, doc, paths, labels, warnings: warningsOf(plan, source, doc, paths, labels) };
+  const warnings = warningsOf(plan, source, doc, paths, labels);
+  return { source, doc, paths, labels, warnings: withMissingStories(warnings, plan.missing ?? []) };
+}
+
+/**
+ * The warning for a collection's links that point at nothing (Q26): each story is skipped,
+ * so it asks for a confirmation like any warning. `missing` is the link texts; none, no
+ * warning. Placed by ORDER, before the cover and the embeds.
+ */
+export function withMissingStories(warnings: readonly Warning[], missing: readonly string[]): Warning[] {
+  if (missing.length === 0) return [...warnings];
+  const found: Warning = { id: "missingStories", level: "warning", n: missing.length, names: [...missing], links: [] };
+  return ORDER.flatMap((id) => (id === "missingStories" ? [found] : warnings.filter((w) => w.id === id)));
 }
 
 /**
