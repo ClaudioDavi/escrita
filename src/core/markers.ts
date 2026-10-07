@@ -110,8 +110,15 @@ const TABLE_DELIMITER = /^[ \t]*\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|
 
 /** The cells of a table row: split on unescaped pipes, one leading and one trailing pipe dropped. */
 function tableCells(line: string): number {
-  const t = line.trim().replace(/^\|/, "").replace(/(?<!\\)\|$/, "");
-  return t.split(/(?<!\\)\|/).length;
+  const t = line.trim().replace(/^\|/, "").replace(/(^|[^\\])\|$/, "$1");
+  return unescapedPipes(t) + 1;
+}
+
+/** How many pipes in `s` have no backslash right before them (no lookbehind: older iOS lacks it). */
+function unescapedPipes(s: string): number {
+  let n = 0;
+  for (let i = 0; i < s.length; i++) if (s[i] === "|" && s[i - 1] !== "\\") n++;
+  return n;
 }
 
 /**
@@ -130,7 +137,7 @@ export function isTableLine(md: Markdown, i: number): boolean {
   for (let d = start + 1; d <= i + 1 && inRun(d); d++) {
     const delim = raw(d);
     const head = raw(d - 1);
-    if (delim.includes("|") && TABLE_DELIMITER.test(delim) && /(?<!\\)\|/.test(head) && tableCells(head) === tableCells(delim)) return true;
+    if (delim.includes("|") && TABLE_DELIMITER.test(delim) && unescapedPipes(head) > 0 && tableCells(head) === tableCells(delim)) return true;
   }
   return false;
 }

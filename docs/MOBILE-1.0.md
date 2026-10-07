@@ -14,7 +14,7 @@ mouse, so touch-only behaviour (long press, soft keyboard) stays unverified.
 | Check | Result |
 |---|---|
 | Node or Electron APIs in `src/` | None. No `fs`, `path`, `os`, `electron`, `process`, `Buffer`, `require`, `getBasePath` or `FileSystemAdapter`. `main.js` requires only `obsidian`, `@codemirror/state` and `@codemirror/view`. |
-| Regex lookbehind | **5 uses in 4 files, all in `main.js` as literals.** Safari before 16.4 fails to parse the whole file. Finding F1. |
+| Regex lookbehind | **5 uses in 4 files, all in `main.js` as literals.** Safari before 16.4 fails to parse the whole file. Finding F1, fixed by the Wave 1 judge (none left; `tests/no-lookbehind.test.ts` guards `src/` and `main.js`). |
 | Other syntax newer than iOS 15/16 | Only CSS: `color-mix()` (7), `:has()` (1), `@container` (1). All degrade without breaking layout. Finding F5. |
 | JS runtime APIs | `TextEncoder`, `Blob`, `URL.createObjectURL`, `IntersectionObserver` and `ResizeObserver` (both guarded by `typeof`). `\p{…}` with the `u` flag (iOS 11.3+). No `Intl.Segmenter`, `structuredClone`, `.at()`, `replaceAll`, `findLast`. |
 | Hover-only controls | None left. The one hidden control (the outline "⋯") is shown always on mobile. The only hover-only help text is the export preview tip, and the click it hints at works on touch. |
@@ -27,7 +27,8 @@ mouse, so touch-only behaviour (long press, soft keyboard) stays unverified.
 Nothing below is fixed here, because every fix is outside the files this task owns.
 
 - **F1. Regex lookbehind breaks `main.js` on Safari before 16.4. High if any supported iOS is
-  older.** esbuild's `target: "es2018"` (`esbuild.config.mjs:35`) treats lookbehind as
+  older.** **Fixed** by the Wave 1 judge: Q8 already rules lookbehind out, so the five sites
+  were rewritten as below and `tests/no-lookbehind.test.ts` fails on any new one. esbuild's `target: "es2018"` (`esbuild.config.mjs:35`) treats lookbehind as
   supported (it is ES2018) and leaves the literals alone, so `main.js` has them verbatim
   (`grep -c "(?<" main.js` gives 5). A regex literal the engine cannot parse is an early
   `SyntaxError`: the plugin would not load at all, not just lose a feature. The sites:

@@ -11,7 +11,7 @@ const dir = (p: string) => fileURLToPath(new URL(`./fixtures/${p}`, import.meta.
 const read = <T>(p: string): T => JSON.parse(readFileSync(dir(p), "utf8")) as T;
 
 describe("fixtures: settings-0.9", () => {
-  it("parses, and the expected settings add only the two 1.0 keys", () => {
+  it("parses, and the expected settings add only the two 1.0 settings (setupOffered is data)", () => {
     const data = read<EscritaData>("settings-0.9/data.json");
     const expected = read<EscritaSettings>("settings-0.9/expected-settings.json");
     expect(data.version).toBe(1);

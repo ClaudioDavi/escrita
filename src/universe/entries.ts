@@ -109,7 +109,10 @@ export function classifyKeyOf(s: Partial<ClassifySettings>): string {
 
 /** Whether the note is a template (the templates folder, an entry template or the chapter template). */
 export function isTemplatePath(path: string, s: Pick<EntriesSettings, "templatesFolder" | "chapterTemplate" | "entryTypes">): boolean {
-  const norm = (p: string) => p.trim().replace(/^\/+/, "").replace(/(?<!\.md)$/i, ".md");
+  const norm = (p: string) => {
+    const q = p.trim().replace(/^\/+/, "");
+    return /\.md$/i.test(q) ? q : `${q}.md`;
+  };
   if (s.templatesFolder.trim() !== "" && inFolder(path, s.templatesFolder)) return true;
   const templates = [s.chapterTemplate, ...ENTRY_KINDS.map((k) => s.entryTypes[k].template)];
   return templates.some((p) => p.trim() !== "" && norm(p) === path);
