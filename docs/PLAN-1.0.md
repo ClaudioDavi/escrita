@@ -96,8 +96,8 @@ Before any setup or preset UI is built, mockups on the design canvas
 
 This is gate **G1**; Wave 2 doesn't start without it.
 
-**Drawn on 2026-10-07**, boards 35–39 ("1.0 · Preparar o cofre para escrever"; 39 is the writing mode), waiting for
-approval. Decisions the boards propose, beyond the questions above:
+**Drawn and approved on 2026-10-07**, boards 35–39 ("1.0 · Preparar o cofre para
+escrever"; 39 is the writing mode). Decisions the boards settle, beyond the questions above:
 
 - **What each preset turns on** (rebalanced by the author on 2026-10-07: the lens and export
   are essentials). **Essentials** (9): goals, outline, placeholders, typing, the lens,
@@ -130,14 +130,14 @@ approval. Decisions the boards propose, beyond the questions above:
   and carry `example: true`.
 - **A partial failure** says what was made and what wasn't, and undoes nothing. Settings are
   written last.
-- **Open on board 38:** a quiet link to the setup command at the top of the Features page,
-  only when there is no home note.
+- **The setup link on the Features page** (board 38, approved): a quiet link below the
+  preset buttons, only when there is no home note.
 
 ## Gates
 
 - **G0** (before Wave 1): the questions above answered. Q1, Q3, Q8 and the improvements
   are confirmed (2026-10-07).
-- **G1** (before Wave 2): the mockups approved.
+- **G1** (before Wave 2): the mockups approved. **Passed** 2026-10-07.
 - **G2** (before release): the setup in an empty vault goes from install to a working
   conto and book in one command, in English and in Portuguese; run in the author's vault,
   it changes no note and no saved setting (SF 10, "Done when").
@@ -145,24 +145,119 @@ approval. Decisions the boards propose, beyond the questions above:
   value the same (a test with a copy of it, plus a run in the vault).
 - **G4** (before release): `npm run lint` clean, and the mobile emulation pass done.
 
-## Waves (sketch)
+## Models
 
-- **Wave 0: contracts and fixtures.** `core/defaults.ts` types and tables, the settings
-  migration of Q1 with its test against a copy of the author's `data.json`, the preset
-  table (`core/presets.ts`), the setup plan type (what it will create, as data, so the
-  preview and the run read the same list).
-- **Wave 1: foundations (parallel).** Candidate 8 (`piece` and `pieceSource` on the
-  classifier; the explorer and the goals modal read it). Candidate 13 (helpers to `core/`
-  and `ui/`). `eslint-plugin-obsidianmd` and the fixes it asks for. The mobile audit of
-  the code.
-- **Wave 2: features (after G1).** The setup module (notice, command, preview, run,
-  layout). Presets on the Features page. Language defaults wired into the first load and
-  the setup.
-- **Wave 3: docs.** "Getting started", "Revision", "Tracking", the rest of "Writing" and
-  "Features and settings", both languages; the README as the front door; the manifest
-  description; write-backs to ARCHITECTURE.md, the roadmaps and IMPROVEMENTS.md. Then the
-  Opus release review.
-- **Manual verification** on the author's vault, with a test plan (`TEST-1.0.md`), as in 0.9.
+- **Sonnet** does the code: implementation, tests, docs.
+- **Opus** writes the Wave 0 contracts, judges each wave, and reviews the release.
+- A Sonnet task that meets an architecture choice not settled here stops and hands it
+  back.
+
+## Ownership rules
+
+- One owner per file per wave. A task touches only the files it lists, plus new test
+  files named after it. Tasks run one at a time and each commits when its checks pass.
+- `src/core/*`, `main.ts`, `settings.ts` and `data.ts` change only in the task that owns
+  them.
+- **Every task's done-when:** `npm run typecheck`, `npm test` and `npm run build` pass,
+  and `npm run test:bundle` passes after a build. While iterating, a task runs only its
+  own test files; the full checks run once at the end.
+
+## Wave 0: contracts and fixtures
+
+**Q1 as built.** The confirmed outcome stands (an existing install keeps the English
+defaults it relies on; a fresh install takes the set of Obsidian's language), reached
+with less writing: a new setting `defaultsLanguage` (`"en"` or `"pt-BR"`) names the set an
+install uses. `migrateSettings` gives a saved `settings` object without the key `"en"`, so
+no other value has to be written for a 0.9 install. A fresh install (no saved `settings`)
+takes the language from Obsidian and saves once on its first load, so the set never moves
+when Obsidian's language changes later. Loading is `mergeDefaults(defaultsFor(lang), …)`
+and `normalizeSettings` restores a blank field from the same set.
+
+**0.1 Contracts (Opus).** Signatures, doc comments and data, stub bodies where logic is
+due in Wave 1, compiled, no behaviour change for an existing install.
+
+- `core/defaults.ts`: `DefaultsLanguage`, the `en` and `pt-BR` tables as
+  `Partial<EscritaSettings>` of the word-bearing keys only (stage words, chapters folder,
+  unnumbered titles, submission results, export and submissions folders, darlings notes,
+  universe note, entry type labels and folders, thread closed word, the home note name
+  the setup uses), and `defaultsFor(lang): EscritaSettings` (`DEFAULT_SETTINGS` overlaid).
+  Property names stay English in both sets: they are keys in the writer's notes, and a
+  pt-BR vault with `status:` is the author's own. Written, tested.
+- `languageOf(obsidianLanguage)`: `"pt-BR"` for `pt` and `pt-BR`, else `"en"`. Where it reads
+  Obsidian's language (`getLanguage()` needs 1.8.7; `minAppVersion` is 1.7.2) is the
+  contract's call, with the fallback stated.
+- Settings with no UI: `defaultsLanguage` (`"en"`), `openInWritingMode` (`false`).
+  `data.setupOffered` (a flag, not a setting), cleaned on load.
+- `core/feature-presets.ts` (`core/presets.ts` is the manuscript presets): `PresetId`
+  (`essentials`, `writer`, `everything`), `PRESETS` as the three lists of the board,
+  `presetSwitches(id, current)`, `matchingPreset(switches): PresetId | null` (the universe
+  never counts), `presetChanges(current, id): { off: FeatureId[]; on: FeatureId[] }` with
+  requirements pulled in. Stubs.
+- Candidate 8: `Placement.pieceSource: "own" | "book" | null` beside `piece`, with the
+  rule in a doc comment; `piece` keeps today's value until 1.1.
+- `src/setup/plan.ts`: `SetupChoices` (what you write, language, preset, examples, home,
+  layout `"desk" | "focus" | null`), `SetupVault` (a snapshot of what exists: folders,
+  notes and their case, settings, open leaves, whether works exist), `SetupItem` (kind,
+  path or key, `new` / `kept` / `change`, tickable, ticked by default, the reason line),
+  `planSetup(choices, vault, settings): SetupItem[]` (stub). The preview and the run read
+  the same list. A setting counts as the writer's own when it differs from the install's
+  default set; then it is `kept`.
+- How the setup registers. It is not one of the 19 features and never switches off. The
+  contract picks the seam (an always-on module, or registration from `main.ts`), keeps
+  rule 8 (`register*` for everything) and writes it into ARCHITECTURE.md.
+
+**0.2 Fixtures (Sonnet).**
+
+- `tests/fixtures/settings-0.9/`: a copy of the author's `data.json` (from
+  `~/projects/website/escrita/.obsidian/plugins/escrita/`), **scrubbed**: `authorName`,
+  `authorSurname`, `contactLines` and every path or title that names an unpublished work
+  replaced, `history` cut to two days. With the expected effective settings after a 1.0
+  load (G3): every value the same, `defaultsLanguage` `"en"`, features unchanged.
+- `tests/fixtures/setup/`: vault snapshots as JSON (`SetupVault`) with the expected items:
+  an empty vault in English and in Portuguese, the author-like vault of board 36 a, a
+  second run (board 36 b), a case clash (board 36 c), a vault with tabs open.
+
+**Opus judge:** the contracts against Q1–Q12, SF 10 and boards 35–39.
+
+## Wave 1: foundations (one at a time, Sonnet)
+
+| Task | Owns | Done when |
+|---|---|---|
+| 1.1 Effective piece (8) | `core/classify.ts`, `core/measure.ts`, `core/measurer.ts`, `explorer/index.ts`, `goals/progress-modal.ts`, `outline/rows.ts`, `outline/view.ts` (the piece lines only) | A chapter with only a book default shows the same target in the outline, the explorer and the goals modal; `pieceSource` set; IMPROVEMENTS 8's call sites read the field |
+| 1.2 Shared helpers (13) | the helpers listed in IMPROVEMENTS 13, moved to `core/` (pure) and `src/ui/` (modals, `openWork`), and their importers | No module imports another module's folder for them; ARCHITECTURE.md's dependency table updated |
+| 1.3 Presets | `core/feature-presets.ts`, `tests/feature-presets.test.ts` | The three lists of board 38; `matchingPreset` ignores the universe; `presetChanges` pulls in `snapshots` for `stageSnapshot`; a 0.9 all-on install matches "everything" |
+| 1.4 Language defaults on load | `main.ts` (`loadAll`), `settings.ts` (`normalizeSettings`), `core/migrate.ts`, `core/defaults.ts` (tests only) | The 0.9 fixture loads unchanged (G3); a fresh install in Portuguese gets the pt-BR set and Writer (Q7), and saves once; a blank folder setting comes back in the install's language |
+| 1.5 Setup plan | `setup/plan.ts`, `tests/setup-plan.test.ts` | Every `tests/fixtures/setup/` case; never an item over an existing note; a track folder added, never swapped; settings items last |
+| 1.6 Mobile code audit | `docs/MOBILE-1.0.md` (new), module `styles.css` files for hover-only fixes | Every view, modal and menu listed with what a phone gets; no Node or Electron API, no syntax older iOS lacks (lookbehind), hover-only controls fixed; the load time of `main.js` noted for G4 |
+| 1.7 Guidelines lint | `package.json`, the ESLint config, `.github/workflows/ci.yml`, and the files its fixes touch | `npm run lint` clean in CI; every rule left off has its exception in ARCHITECTURE.md. Runs last: its fixes touch many files |
+
+**Opus judge** after the wave. Is any decision made in code that this plan didn't
+settle?
+
+## Wave 2: features (one at a time, Sonnet, after G1)
+
+| Task | Owns | Done when |
+|---|---|---|
+| 2.1 Examples | `setup/examples.ts` (the conto and the two-chapter book, `en` and `pt-BR`, `example: true`) | Each example classifies as a piece and a book; beats, a placeholder and a target in each |
+| 2.2 The setup | `setup/` (the notice, command, two-step modal, run), its strings and styles | Boards 35 and 36: the preview is `planSetup`'s list; every file through `notes.create`; settings written last; a partial failure says what was made |
+| 2.3 The layout | `setup/layout.ts` | Board 37: the home note in front, the outline on top and the lens with placeholders below on the right, by public workspace calls; never closes a leaf |
+| 2.4 Writing mode | `desk/writing-mode.ts`, `desk/index.ts`, `desk/settings-ui.ts`, `desk/strings.ts`, `desk/styles.css`, `desk/open.ts` ("Continue" in the same tab) | Board 39; exiting restores only what it hid; the counter only with goals on; "Open in writing mode" |
+| 2.5 Presets on the Features page | `settings.ts` (the Features page), `strings.ts` | Board 38: three buttons, "Custom", the confirm step listing what changes, the setup link when there is no home note |
+
+**Opus judge**, then G2 on an empty vault in both languages and on the author's vault.
+
+## Wave 3: docs (Sonnet), then review (Opus)
+
+"Getting started", "Revision", "Tracking", the rest of "Writing" and "Features and
+settings", in both languages; the README as the front door; the manifest description
+(Q10); write-backs to ARCHITECTURE.md, the roadmaps and IMPROVEMENTS.md. Then the Opus
+release review.
+
+## Manual verification on `~/projects/website/escrita/`
+
+A test plan (`TEST-1.0.md`), as in 0.9: the setup in a scratch vault and in the author's,
+the presets, writing mode next to the Minimal theme and a zen plugin, the emulated phone
+(G4).
 
 ## Release checklist (CONTEXT.md, "Working process")
 
