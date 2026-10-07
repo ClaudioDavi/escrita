@@ -68,6 +68,24 @@ export function linkMarkup(target: string, text: string, inTable = false): strin
   return text === target ? `[[${target}]]` : `[[${target}${inTable ? "\\|" : "|"}${text}]]`;
 }
 
+/**
+ * The link to write from what Obsidian generated (`generateMarkdownLink(file, source, undefined,
+ * text)`, which follows the vault's "Use [[Wikilinks]]" setting). Null when `text` can't sit in
+ * that kind of link: brackets or a line break anywhere, a pipe in a wikilink. A wikilink whose
+ * alias is the link target drops the alias; in a table row its alias pipe is written `\|`.
+ * A Markdown link takes the text as its label, so a pipe there is fine.
+ */
+export function linkFromGenerated(generated: string, linktext: string, text: string, inTable = false): string | null {
+  if (generated === "" || text === "" || /[[\]\n\r]/.test(text)) return null;
+  if (!generated.startsWith("[[")) return generated;
+  return linkMarkup(linktext, text, inTable);
+}
+
+/** Whether `text` can be linked at all, in a wikilink (`wiki`) or a Markdown link. */
+export function linkableText(text: string, wiki: boolean): boolean {
+  return text !== "" && !/[[\]\n\r]/.test(text) && !(wiki && text.includes("|"));
+}
+
 /** Whether a line is a Markdown table row: it starts with a pipe (Obsidian's tables do). */
 export function isTableRow(line: string): boolean {
   return /^\s*\|/.test(line);

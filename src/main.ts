@@ -195,6 +195,7 @@ export default class EscritaPlugin extends Plugin {
       typeProperty: s.typeProperty,
       templateFolders: [s.templatesFolder],
       ownNotes: [s.homeNote, s.lensListsNote, s.universeNote, s.chapterTemplate],
+      collectionProperty: s.collectionProperty.trim() || "contents",
     };
     const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
     if (!needsDraftStatus(this.books.classify(file), fm, o)) return;

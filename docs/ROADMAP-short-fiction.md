@@ -847,8 +847,8 @@ title, with the collection's title page.
 - **The collection is read by export through a second book source** (`core/collection.ts`,
   `collectionSource`), every story unnumbered, so the writers don't change. No classifier kind or
   field. A `contents` link may be a list or text with several wikilinks; duplicates count once.
-- **It exports whole**: the modal's row says "the whole collection" rather than offering a range or
-  a pick (the spec's "all, a range or picked" is not built). Each story is headed by its basename
+- **The story choice is the book's**: the modal shows "Collection: n stories" and the **Stories**
+  row (all, a range counted in the list, or picked), reusing the chapter choice. Each story is headed by its basename
   (its `title` property isn't read). A link to nothing, to a non-Markdown file or to the collection
   itself is the `missingStories` warning, and that story is skipped. Author, dedication, epigraph
   and cover come from the collection note.

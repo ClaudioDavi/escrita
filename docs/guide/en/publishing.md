@@ -295,7 +295,9 @@ contents:
 ```
 
 You can also write it by hand, or reorder and remove lines. The property is a setting
-(**Collection property**, `contents` by default).
+(**Collection property**, `contents` by default). The items in that property are always
+`[[Name]]` wikilinks, whatever your vault's link setting, because Obsidian only follows renames in
+properties through wikilinks.
 
 **Export it.** Open the collection note and run **Export…**. The window says "Collection: 3
 stories", and the **Stories** row lets you choose which ones go in, as chapters do in a book.
@@ -304,7 +306,9 @@ EPUB so does the cover. A story link that points at nothing is left out, and the
 ("Story not found: …").
 
 A folder with a book in it is still a book, even if its note has a `contents` list. A collection
-is never a book and never a work: it doesn't count toward your goals.
+is never a book. It becomes a work only if you give it a status, and then it moves through the
+stages like any note. **Create a collection…** adds no status, and "New notes start as draft"
+skips it. Its own text is a list of links, so it adds almost nothing to your goals.
 
 ## Publish a book one chapter at a time
 

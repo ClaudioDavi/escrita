@@ -372,10 +372,12 @@ bottom of the **Entries** tab. A row shows:
 
 Click the sentence to go to that line in the note (nothing is selected). Press **Create link**
 and only that one mention becomes a link: `[[Maria|Mari]]`, or `[[Maria]]` when the text is
-the same as the link. Escrita checks that the line is still the same first. If you edited it
+the same as the link. If your vault uses Markdown links (Settings › Files and links, "Use
+[[Wikilinks]]" off), the link is written that way instead: `[Mari](Maria.md)`. Escrita checks that the line is still the same first. If you edited it
 since the list was made, nothing is written, a notice says "The line changed since the list was
 made. Nothing was written; the list is up to date.", and the list refreshes. There is no "link
 all": every link is one click of yours.
+Text that can't sit inside a link (brackets, or a pipe in a wikilink) gets its own notice, "This text can't be linked here. Nothing was written."
 
 What gets listed:
 

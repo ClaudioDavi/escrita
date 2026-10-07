@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyChange } from "../src/core/note-text";
-import { excerptOf, isTableRow, linkMarkup, linkPlan, rowsOf } from "../src/universe/unlinked-link";
+import { excerptOf, isTableRow, linkFromGenerated, linkableText, linkMarkup, linkPlan, rowsOf } from "../src/universe/unlinked-link";
 
 const text = "Ontem o Capitão voltou.\n\nTeo riu. Teo saiu.";
 const teo = { from: text.indexOf("Teo"), to: text.indexOf("Teo") + 3, text: "Teo" };
@@ -81,5 +81,22 @@ describe("rowsOf", () => {
   it("adds the entry name and the excerpt", () => {
     const rows = rowsOf([{ entry: "U/Teo.md", from: teo.from, to: teo.to, line: 2, text: "Teo" }], text, () => "Teo");
     expect(rows[0]).toMatchObject({ name: "Teo", line: 2, excerpt: { match: "Teo" }, lineText: "Teo riu. Teo saiu." });
+  });
+});
+
+describe("linkFromGenerated and linkableText", () => {
+  it("keeps a Markdown link as generated, even with a pipe in the text", () => {
+    expect(linkFromGenerated("[a|b](Teo.md)", "Teo", "a|b", true)).toBe("[a|b](Teo.md)");
+    expect(linkableText("a|b", false)).toBe(true);
+  });
+  it("builds a wikilink the usual way and refuses a pipe", () => {
+    expect(linkFromGenerated("[[Teo|teo]]", "Teo", "teo")).toBe("[[Teo|teo]]");
+    expect(linkFromGenerated("[[Teo|Teo]]", "Teo", "Teo")).toBe("[[Teo]]");
+    expect(linkFromGenerated("[[Teo|teo]]", "Teo", "teo", true)).toBe("[[Teo\\|teo]]");
+    expect(linkableText("a|b", true)).toBe(false);
+  });
+  it("refuses brackets and line breaks in both forms", () => {
+    expect(linkableText("a]b", false)).toBe(false);
+    expect(linkFromGenerated("[a\nb](T.md)", "T", "a\nb")).toBeNull();
   });
 });

@@ -371,10 +371,11 @@ nome da nota aberta e uma linha para cada menção. No modo por livro, a seção
 - um botão **Criar link**.
 
 Clique na frase para ir àquela linha da nota (nada fica selecionado). Aperte **Criar link** e só
-aquela menção vira link: `[[Maria|Mari]]`, ou `[[Maria]]` quando o texto é igual ao link. O
+aquela menção vira link: `[[Maria|Mari]]`, ou `[[Maria]]` quando o texto é igual ao link. Se o seu cofre usa links Markdown (Configurações › Arquivos e
+links, "Usar [[Wikilinks]]" desligado), o link sai nesse formato: `[Mari](Maria.md)`. O
 Escrita confere antes se a linha continua a mesma. Se você a editou depois que a lista foi feita,
 nada é gravado, um aviso diz "A linha mudou desde que a lista foi feita. Nada foi escrito; a
-lista foi atualizada.", e a lista se atualiza. Não existe "ligar tudo": cada link é um clique seu.
+lista foi atualizada.", e a lista se atualiza. Não existe "ligar tudo": cada link é um clique seu. Texto que não cabe dentro de um link (colchetes, ou uma barra vertical num wikilink) tem aviso próprio: "Este texto não pode ser vinculado aqui. Nada foi escrito."
 
 O que entra na lista:
 

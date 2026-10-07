@@ -18,6 +18,14 @@ describe("needsDraftStatus", () => {
     expect(needsDraftStatus(place(), { status: "" }, o)).toBe(true);
   });
 
+  it("skips a collection (a note with the collection property) unless it has a status", () => {
+    const c = { ...o, collectionProperty: "contents" };
+    expect(needsDraftStatus(place(), { contents: ["[[A]]", "[[B]]"] }, c)).toBe(false);
+    expect(needsDraftStatus(place(), { contents: null }, c)).toBe(false);
+    expect(needsDraftStatus(place(), { other: 1 }, c)).toBe(true);
+    expect(needsDraftStatus(place(), { contents: ["[[A]]"] }, o)).toBe(true);
+  });
+
   it("keeps a status the note or its template already has", () => {
     expect(needsDraftStatus(place(), { status: "ideia" }, o)).toBe(false);
     expect(needsDraftStatus(place(), { status: ["revisão"] }, o)).toBe(false);

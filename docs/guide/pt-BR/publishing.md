@@ -301,7 +301,9 @@ contents:
 ```
 
 Você também pode escrevê-la à mão, ou reordenar e remover linhas. A propriedade é uma
-configuração (**Propriedade da coleção**, `contents` por padrão).
+configuração (**Propriedade da coleção**, `contents` por padrão). Os itens dessa propriedade são
+sempre links `[[Nome]]`, qualquer que seja a configuração de links do seu cofre, porque o Obsidian
+só acompanha renomeações nas propriedades por meio de wikilinks.
 
 **Exporte.** Abra a nota da coleção e rode **Exportar…**. A janela diz "Coleção: 3 contos", e a
 linha **Contos** deixa você escolher quais entram, como os capítulos num livro. As propriedades
@@ -310,7 +312,9 @@ capa também. Um link de conto que não leva a nada fica de fora, e o aviso o no
 encontrado: …").
 
 Uma pasta com um livro dentro continua sendo um livro, mesmo que a nota dele tenha uma lista
-`contents`. Uma coleção nunca é um livro nem uma obra: não conta para as suas metas.
+`contents`. Uma coleção nunca é um livro. Ela só vira uma obra se você der a ela um status, e então passa
+pelas etapas como qualquer nota. **Criar uma coleção…** não coloca status, e "Notas novas começam
+como rascunho" a ignora. O texto dela é uma lista de links, então quase não pesa nas suas metas.
 
 ## Publicar um livro um capítulo por vez
 

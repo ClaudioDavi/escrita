@@ -21,6 +21,8 @@ export interface NewNoteOptions {
   templateFolders: string[];
   /** Escrita's own notes (home note, word lists, universe note, chapter template) */
   ownNotes: string[];
+  /** a note with this property is a collection: a work only if the writer gives it a status (Q27) */
+  collectionProperty?: string;
 }
 
 const WRITING_KINDS = new Set(["note", "chapter", "book-note"]);
@@ -49,5 +51,7 @@ export function needsDraftStatus(place: NewNotePlace, fm: Record<string, unknown
   const props = fm ?? {};
   if (filled(props[o.statusProperty])) return false;
   if (o.typeProperty.trim() && filled(props[o.typeProperty])) return false;
+  const coll = (o.collectionProperty ?? "").trim();
+  if (coll && Object.prototype.hasOwnProperty.call(props, coll)) return false;
   return true;
 }
