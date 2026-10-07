@@ -126,6 +126,10 @@ export class UniverseModule extends FeatureModule {
       locale: () => locale(),
       nameTitles: () => p.settings.nameTitles,
       timers,
+      createEntry: (name, from) => {
+        const file = p.app.vault.getAbstractFileByPath(from);
+        if (file instanceof TFile) this.createEntryNamed(file, name);
+      },
       counts: {
         want: () => this.nameRuns?.want(),
         ready: () => this.nameRuns?.isReady() ?? false,

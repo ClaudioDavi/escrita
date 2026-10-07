@@ -290,3 +290,52 @@ export function collectionNoteText(property: string, links: readonly string[]): 
   const key = /^[\p{L}\p{N}_-]+$/u.test(property) ? property : quote(property);
   return ["---", `${key}:`, ...links.map((l) => `  - ${quote(l)}`), "---", ""].join("\n");
 }
+
+// ------------------------------------------------------------------ explorer order (0.9, Q25)
+
+/** Obsidian's "File explorer: sort files by" values (`fileSortOrder` in the vault config). */
+export type ExplorerSort =
+  | "alphabetical" | "alphabeticalReverse"
+  | "byModifiedTime" | "byModifiedTimeReverse"
+  | "byCreatedTime" | "byCreatedTimeReverse";
+
+export interface SortableFile { path: string; ctime: number; mtime: number }
+
+const NATURAL = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
+/** The sort setting as the vault config gives it; anything unknown is the default, name A to Z. */
+export function explorerSortOf(value: unknown): ExplorerSort {
+  switch (value) {
+    case "alphabetical": case "alphabeticalReverse":
+    case "byModifiedTime": case "byModifiedTimeReverse":
+    case "byCreatedTime": case "byCreatedTimeReverse":
+      return value;
+    default: return "alphabetical";
+  }
+}
+
+/**
+ * The files in the order the file explorer lists them, top to bottom (Q25): at every folder
+ * level the folders come before the files, each group in the explorer's sort. Names compare
+ * naturally ("2" before "10"). The time sorts apply to files that sit in the same folder
+ * (a folder has no time here); everything else falls back to the name. Returns a new array.
+ */
+export function sortLikeExplorer<T extends SortableFile>(files: readonly T[], sort: ExplorerSort): T[] {
+  const reverse = sort.endsWith("Reverse");
+  const byTime = sort.startsWith("byModified") ? "mtime" : sort.startsWith("byCreated") ? "ctime" : null;
+  const cmp = (a: T, b: T): number => {
+    const sa = a.path.split("/");
+    const sb = b.path.split("/");
+    let i = 0;
+    while (i < sa.length && i < sb.length && sa[i] === sb[i]) i++;
+    if (i >= sa.length || i >= sb.length) return sa.length - sb.length;
+    const aFile = i === sa.length - 1;
+    const bFile = i === sb.length - 1;
+    if (aFile !== bFile) return aFile ? 1 : -1;            // folders first, whatever the order
+    let r = 0;
+    if (aFile && byTime) r = a[byTime] - b[byTime];       // siblings: newest-last, reversed by the setting
+    if (r === 0) r = NATURAL.compare(sa[i], sb[i]);
+    return reverse ? -r : r;
+  };
+  return [...files].sort(cmp);
+}

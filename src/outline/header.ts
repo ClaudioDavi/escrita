@@ -292,21 +292,22 @@ export function serialDateText(date: string): string {
   return m.isValid() ? m.format(lang() === "pt-BR" ? "D MMM" : "MMM D") : date;
 }
 
-/** The serial line's parts, as text: "Next: 04 A escada", "last published 30 Sep", "Gap: 04". */
+/** The serial line's parts, as text: "Gap: 04", "Next: 04 A escada", "last published 30 Sep" (the gap first, board 32b). */
 export function serialParts(line: SerialLine): { text: string; gap: boolean }[] {
-  const parts = [{
+  const parts: { text: string; gap: boolean }[] = [];
+  if (line.gaps.length) {
+    parts.push({ text: plural("outline.serial.gap", line.gaps.length, { chapters: line.gaps.join(", ") }), gap: true });
+  }
+  parts.push({
     text: line.next ? t("outline.serial.next", { chapter: line.next }) : t("outline.serial.allDone"),
     gap: false,
-  }];
+  });
   parts.push({
     text: line.last.date !== null
       ? t("outline.serial.lastDate", { date: serialDateText(line.last.date) })
       : t("outline.serial.lastTitle", { chapter: line.last.label }),
     gap: false,
   });
-  if (line.gaps.length) {
-    parts.push({ text: plural("outline.serial.gap", line.gaps.length, { chapters: line.gaps.join(", ") }), gap: true });
-  }
   return parts;
 }
 

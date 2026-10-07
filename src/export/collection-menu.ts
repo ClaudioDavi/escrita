@@ -2,22 +2,33 @@ import { Menu, Modal, Notice, TAbstractFile, TFile, normalizePath } from "obsidi
 import type EscritaPlugin from "../main";
 import { safeFileName } from "../core/book";
 import { fmt, plural, t } from "../i18n";
-import { collectionNoteText, storyLink } from "./logic";
+import { collectionNoteText, explorerSortOf, sortLikeExplorer, storyLink, type ExplorerSort } from "./logic";
 
-/** the Markdown notes among the selected files, in the order Obsidian gives them (the explorer's, for a range). */
-function notesOf(files: readonly TAbstractFile[], exportable: (f: TFile) => boolean): TFile[] {
-  return files.filter((f): f is TFile => f instanceof TFile && exportable(f));
+/**
+ * The explorer's sort setting, read from the vault config. The API doesn't type it, so it
+ * is read through `getConfig` when it exists; without it, name A to Z (natural order).
+ */
+function explorerSort(plugin: EscritaPlugin): ExplorerSort {
+  const vault = plugin.app.vault as { getConfig?: (key: string) => unknown };
+  try { return explorerSortOf(vault.getConfig?.("fileSortOrder")); } catch { return "alphabetical"; }
 }
 
 /**
- * The "files-menu" listener (SF 13, Q25): with two or more Markdown notes selected, one
- * item "Create a collection…" (D9: the new note opens). It is the only code that makes a
- * collection; one written by hand exports the same.
+ * The "files-menu" listener (SF 13, Q25, board 34a): when two or more files are selected and
+ * every one is a Markdown note, one item "Create a collection…" (D9: the new note opens).
+ * The links go in the file explorer's order, not the order of the clicks. It is the only code
+ * that makes a collection; one written by hand exports the same.
  */
 export function onFilesMenu(plugin: EscritaPlugin, exportable: (f: TFile) => boolean): (menu: Menu, files: TAbstractFile[]) => void {
   return (menu, files) => {
-    const stories = notesOf(files, exportable);
-    if (stories.length < 2) return;
+    if (files.length < 2) return;
+    const notes: TFile[] = [];
+    for (const f of files) {
+      if (!(f instanceof TFile) || f.extension !== "md" || !exportable(f)) return;
+      notes.push(f);
+    }
+    const stories = sortLikeExplorer(notes.map((file) => ({ file, path: file.path, ctime: file.stat.ctime, mtime: file.stat.mtime })), explorerSort(plugin))
+      .map((x) => x.file);
     menu.addItem((item) => item
       .setTitle(t("export.collection.menu"))
       .setIcon("library")

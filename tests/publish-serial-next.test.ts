@@ -51,11 +51,11 @@ describe("serialLine (outline header)", () => {
     expect(serialDateText("3 de maio")).toBe("3 de maio");
   });
 
-  it("draws the parts, the gap last", () => {
+  it("draws the parts, the gap first", () => {
     const parts = serialParts({ next: "02 B", last: { label: "03 C", date: "2026-10-01" }, gaps: ["02"] });
-    expect(parts.map((p) => p.gap)).toEqual([false, false, true]);
-    expect(parts[0].text).toContain("02 B");
-    expect(parts[2].text).toContain("02");
+    expect(parts.map((p) => p.gap)).toEqual([true, false, false]);
+    expect(parts[0].text).toContain("02");
+    expect(parts[1].text).toContain("02 B");
   });
 });
 

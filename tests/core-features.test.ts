@@ -108,8 +108,28 @@ describe("NamesPort", () => {
     };
   };
 
+  it("keeps the counts signal apart from the names signal, and forwards create entry", () => {
+    const port = new NamesPort();
+    const counts = new Set<() => void>();
+    const created: [string, string][] = [];
+    port.provide({
+      ...provider(),
+      onCountsChange: (cb) => { counts.add(cb); return () => { counts.delete(cb); }; },
+      createEntry: (name, from) => { created.push([name, from]); },
+    });
+    let names = 0, countsSeen = 0;
+    port.onChange(() => { names++; });
+    port.onCountsChange(() => { countsSeen++; });
+    const v = port.version();
+    for (const cb of [...counts]) cb();
+    expect([names, countsSeen, port.version(), port.countsVersion()]).toEqual([0, 1, v, 1]);
+    port.createEntry("Dona Zefa", "a.md");
+    expect(created).toEqual([["Dona Zefa", "a.md"]]);
+  });
+
   it("answers empty with no provider", () => {
     const port = new NamesPort();
+    port.createEntry("x", "a.md");
     expect(port.tableFor("a.md")).toBe(EMPTY_TABLE);
     expect(port.entryFor("Maria", "a.md")).toBeNull();
   });

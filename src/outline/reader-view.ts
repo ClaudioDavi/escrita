@@ -48,6 +48,9 @@ export class ReaderView extends ItemView {
 
   private saveSoon = debounce(() => this.savePosition(), SAVE_DELAY, true);
   private rebuildSoon = debounce(() => { void this.build(); }, 400, true);
+  /** chapters modified since the last refresh (paths), re-rendered together after a quiet time */
+  private dirty = new Set<string>();
+  private refreshSoon = debounce(() => { void this.refreshDirty(); }, 800, true);
 
   constructor(leaf: WorkspaceLeaf, private plugin: EscritaPlugin) {
     super(leaf);
@@ -98,6 +101,13 @@ export class ReaderView extends ItemView {
       touched(f);
       touched({ path: old });
     }));
+    // A chapter saved while the book is open is drawn again, that chapter only.
+    this.registerEvent(vault.on("modify", (f) => {
+      if (this.chapters.some((c) => c.chapter.path === f.path)) {
+        this.dirty.add(f.path);
+        this.refreshSoon();
+      }
+    }));
     this.register(() => this.teardown());
     await this.build();
   }
@@ -122,6 +132,35 @@ export class ReaderView extends ItemView {
     this.chapters = [];
     this.saveSoon.cancel();
     this.rebuildSoon.cancel();
+    this.refreshSoon.cancel();
+    this.dirty.clear();
+  }
+
+  /** Re-renders the modified chapters in place; the reader's place on the page stays where it was. */
+  private async refreshDirty(): Promise<void> {
+    const paths = [...this.dirty];
+    this.dirty.clear();
+    const token = this.token;
+    for (const path of paths) {
+      const c = this.chapters.find((x) => x.chapter.path === path);
+      if (!c) continue;
+      if (c.state !== "done") { c.done = null; continue; }   // not drawn yet: it reads the new text when it scrolls in
+      const scroller = this.contentEl;
+      const before = c.section.getBoundingClientRect();
+      const above = before.bottom <= scroller.getBoundingClientRect().top;
+      const oldComp = c.comp;
+      this.restoring = true;
+      try {
+        c.done = null;
+        await this.render(c);
+        if (token !== this.token) return;
+        if (oldComp) this.removeChild(oldComp);
+        // a chapter above the window changed height: move the page by the difference, so the text in view stays put
+        if (above) scroller.scrollTop += c.section.getBoundingClientRect().height - before.height;
+      } finally {
+        scroller.win.setTimeout(() => { if (token === this.token) this.restoring = false; }, 150);
+      }
+    }
   }
 
   /** Draws the book's chapters as placeholders, then renders the one to restore and, as they scroll in, the rest. */

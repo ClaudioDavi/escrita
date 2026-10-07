@@ -30,6 +30,8 @@ export interface NamesProviderDeps {
   /** quiet time for `refreshSoon` (the metadata cache fires on every save); without it `refreshSoon` refreshes at once */
   timers?: { set(cb: () => void, ms: number): unknown; clear(h: unknown): void };
   /** the on-demand names index behind `workCount` and `wantNameCounts` (universe/names-index.ts); without it the counts are 0 */
+  /** opens the create-entry dialog for a name found in the note at `from` (the lens's "Create entry") */
+  createEntry?(name: string, from: string): void;
   counts?: { want(): void; count(text: string, path: string): number; ready(): boolean };
 }
 
@@ -52,6 +54,8 @@ export function sourceOf(e: Entry): NameSource {
 
 export class UniverseNamesProvider implements NamesProvider {
   private bump = 0;
+  private countsBump = 0;
+  private countListeners = new Set<() => void>();
   private listeners = new Set<() => void>();
   private global: { sig: string; table: TermTable } | null = null;
   /** scope key -> its entries, signature and (while asked for) table; kept current by refresh() */
@@ -160,10 +164,23 @@ export class UniverseNamesProvider implements NamesProvider {
     return this.deps.counts?.ready() ?? false;
   }
 
-  /** The cross-work counts changed (the names index was built, or a note's runs changed): the version moves, so the lens runs its rule again. */
+  createEntry(name: string, from: string): void {
+    this.deps.createEntry?.(name, from);
+  }
+
+  /** The cross-work counts changed (the names index was built, or a note's runs changed): only the counts signal fires, so the lens runs its rule again and nothing else refreshes. */
   countsChanged(): void {
-    this.bump++;
-    for (const cb of [...this.listeners]) cb();
+    this.countsBump++;
+    for (const cb of [...this.countListeners]) cb();
+  }
+
+  countsVersion(): number {
+    return this.countsBump;
+  }
+
+  onCountsChange(cb: () => void): () => void {
+    this.countListeners.add(cb);
+    return () => { this.countListeners.delete(cb); };
   }
 
   version(): number {
@@ -187,6 +204,7 @@ export class UniverseNamesProvider implements NamesProvider {
     if (this.timer !== null) this.deps.timers?.clear(this.timer);
     this.timer = null;
     this.listeners.clear();
+    this.countListeners.clear();
   }
 
   /**

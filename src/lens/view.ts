@@ -288,8 +288,7 @@ export class LensView extends ItemView {
 
   /** "Create entry": the create-entry modal with the whole run filled in (D8). The note is not touched. */
   private createEntry(path: string, name: string): void {
-    const file = this.app.vault.getAbstractFileByPath(path);
-    if (file instanceof TFile) this.plugin.universe.createEntryNamed(file, name);
+    this.plugin.names.createEntry(name, path);
   }
 
   /** "Dismiss": the name goes to "Not names", in every note, with a notice. */

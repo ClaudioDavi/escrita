@@ -32,11 +32,10 @@ export interface NamesProvider {
    * note's own work included: the runs core/name-runs.ts `nameRuns` finds over
    * `namesMask` (never frontmatter, code, comments or headings), keyed by foldName. 0 when
    * the index hasn't been built yet, is still building, or the run appears nowhere.
-   * A change to these counts calls the `onChange` callbacks, so the lens's pass key
-   * (built on `version()`) re-runs the rule. Every names consumer (name marks,
-   * spellcheck, the outline) refreshes on `onChange`, so the index calls it once when
-   * its build finishes and, after that, only when a work's set of runs changes,
-   * debounced: never once per file while it builds.
+   * A change to these counts calls the `onCountsChange` callbacks, not `onChange`: the lens's
+   * pass key (built on `countsVersion()`) re-runs the rule, and the name marks, spellcheck and
+   * the outline stay as they are. It is called once when the index build finishes and, after
+   * that, only when a work's set of runs changes, debounced: never once per file while it builds.
    */
   workCount?(text: string, path: string): number;
   /**
@@ -47,6 +46,19 @@ export interface NamesProvider {
   wantNameCounts?(): void;
   /** Whether `workCount` can answer: the `universe-names` index finished building. The panel says "counting in the other works" until then. */
   nameCountsReady?(): boolean;
+  /**
+   * Cross-work counts changed (the `universe-names` index was built, or a work's runs changed).
+   * Its own signal, apart from `onChange`: only the lens's names rule reads the counts, so a
+   * count update never refreshes the name marks, spellcheck or the outline. `countsVersion()`
+   * grows with it. Optional: a provider without counts never calls it.
+   */
+  onCountsChange?(cb: () => void): () => void;
+  countsVersion?(): number;
+  /**
+   * "Create entry" for a name found in the note at `from` (D8, Q18): opens the create-entry
+   * dialog for that note's scope with `name` filled in. Writes nothing into the note.
+   */
+  createEntry?(name: string, from: string): void;
 }
 
 /** plugin.names: empty until the universe provides; the provider withdraws on unload. */
@@ -54,18 +66,25 @@ export class NamesPort implements NamesProvider {
   private provider: NamesProvider | null = null;
   private listeners = new Set<() => void>();
   private stopForwarding: (() => void) | null = null;
+  private countListeners = new Set<() => void>();
+  private stopCounts: (() => void) | null = null;
   private bump = 0;
+  private countsBump = 0;
 
   /** Install a provider; returns the function that withdraws it. */
   provide(p: NamesProvider): () => void {
     this.stopForwarding?.();
     this.provider = p;
+    this.stopCounts?.();
     this.stopForwarding = p.onChange(() => this.changed());
+    this.stopCounts = p.onCountsChange?.(() => this.countsChanged()) ?? null;
     this.changed();
     return () => {
       if (this.provider !== p) return;
       this.stopForwarding?.();
       this.stopForwarding = null;
+      this.stopCounts?.();
+      this.stopCounts = null;
       this.provider = null;
       this.changed();
     };
@@ -99,6 +118,11 @@ export class NamesPort implements NamesProvider {
     return this.provider?.nameCountsReady?.() ?? false;
   }
 
+  /** "Create entry" through the provider; a no-op when the universe is off (no provider). */
+  createEntry(name: string, from: string): void {
+    this.provider?.createEntry?.(name, from);
+  }
+
   /** True while a provider is installed (the universe is on): the names rule needs it (Q2). */
   hasProvider(): boolean {
     return this.provider !== null;
@@ -112,6 +136,22 @@ export class NamesPort implements NamesProvider {
   onChange(cb: () => void): () => void {
     this.listeners.add(cb);
     return () => { this.listeners.delete(cb); };
+  }
+
+  /** Grows when the cross-work counts change; a consumer of the counts keys its passes on it. */
+  countsVersion(): number {
+    return this.countsBump;
+  }
+
+  /** Cross-work counts changed: not a names change, so `onChange` listeners are not called. */
+  onCountsChange(cb: () => void): () => void {
+    this.countListeners.add(cb);
+    return () => { this.countListeners.delete(cb); };
+  }
+
+  private countsChanged(): void {
+    this.countsBump++;
+    for (const cb of [...this.countListeners]) cb();
   }
 
   private changed(): void {

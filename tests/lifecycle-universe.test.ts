@@ -201,9 +201,12 @@ describe("the names provider, the mentions index and the editor UI go with the u
     plugin.names.wantNameCounts();
     expect(idx.demands).toBe(1);
     let told = 0;
-    plugin.names.onChange(() => told++);
+    let namesChanged = 0;
+    plugin.names.onCountsChange(() => told++);
+    plugin.names.onChange(() => namesChanged++);
     idx.becomeReady();
     expect(told).toBe(1);
+    expect(namesChanged).toBe(0);   // the counts have their own signal: name marks and the rest don't refresh
     expect(plugin.names.nameCountsReady()).toBe(true);
     // known: an entry, a name title; not a new name
     expect(plugin.names.isKnownName("Mariana", "Contos/a.md")).toBe(true);

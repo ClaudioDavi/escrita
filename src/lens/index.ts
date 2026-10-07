@@ -96,6 +96,12 @@ export class LensModule extends FeatureModule {
       this.invalidate();
     }));
 
+    // the cross-work name counts changed: only the names rule reads them
+    this.register(p.names.onCountsChange(() => {
+      this.lastPassKey = this.passKey();
+      this.invalidate();
+    }));
+
     // the word lists note: re-parsed on edit, rebuilt when the setting changes
     const idx = ctx.index<TFile, Lists>({
       name: "lens-lists",
@@ -157,7 +163,7 @@ export class LensModule extends FeatureModule {
     const s = this.plugin.settings;
     return JSON.stringify([
       s.lensLanguage, s.lensRulesOff, s.lensRulesOn, s.notNames, s.lensEchoWindow, s.lensLongSentence,
-      s.lensSkipQuotes, s.quoteStyle, s.paragraphStyle, listsPath(s.lensListsNote), this.plugin.names.version(),
+      s.lensSkipQuotes, s.quoteStyle, s.paragraphStyle, listsPath(s.lensListsNote), this.plugin.names.version(), this.plugin.names.countsVersion(),
     ]);
   }
 
