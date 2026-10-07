@@ -50,7 +50,7 @@ describe("desk lifecycle", () => {
     const add = vi.spyOn(document, "addEventListener");
     const remove = vi.spyOn(document, "removeEventListener");
     registry.apply();
-    expect([...plugin.commands.keys()]).toEqual(["escrita:open-home-note"]);
+    expect([...plugin.commands.keys()].sort()).toEqual(["escrita:enter-writing-mode", "escrita:exit-writing-mode", "escrita:open-home-note"]);
     expect(plugin.liveListeners()).toBe(5);
     expect(add.mock.calls.map((c) => c[0])).toEqual(["visibilitychange"]);
     expect(plugin.followers.size).toBe(2);   // the data follower and the recorder's
@@ -67,7 +67,7 @@ describe("desk lifecycle", () => {
     expect(plugin.extensions).toHaveLength(0);
 
     turn(true);
-    expect(plugin.commands.size).toBe(1);
+    expect(plugin.commands.size).toBe(3);
     expect(plugin.liveListeners()).toBe(5);
     expect(plugin.followers.size).toBe(2);
     add.mockRestore();

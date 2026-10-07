@@ -170,3 +170,56 @@ body.is-mobile .escrita-desk .escrita-desk-sub,
 body.is-mobile .escrita-desk .escrita-desk-count {
   min-height: 44px;
 }
+
+/* Writing mode (board 39): only the note. The sidebars are collapsed through the workspace
+   API; the rest hides here. Obsidian variables only. */
+body.escrita-writing-mode .workspace-ribbon,
+body.escrita-writing-mode .status-bar,
+body.escrita-writing-mode .workspace-tab-header-container,
+body.escrita-writing-mode .mobile-navbar,
+body.escrita-writing-mode .view-header {
+  display: none;
+}
+body.escrita-writing-mode .workspace-split.mod-left-split,
+body.escrita-writing-mode .workspace-split.mod-right-split,
+body.escrita-writing-mode .workspace-leaf-resize-handle {
+  display: none;
+}
+.escrita-writing-exit {
+  position: fixed;
+  top: var(--size-4-2);
+  right: var(--size-4-3);
+  z-index: var(--layer-popover);
+  min-height: 32px;
+  padding: 0 var(--size-4-3);
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: none;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+}
+.escrita-writing-exit:hover,
+.escrita-writing-exit:focus-visible {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+.escrita-writing-goal {
+  position: fixed;
+  bottom: var(--size-4-3);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--layer-popover);
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+body.is-mobile .escrita-writing-exit {
+  min-height: 44px;
+  top: var(--size-4-2);
+}
+body.is-mobile .escrita-writing-goal {
+  bottom: calc(var(--size-4-3) + env(safe-area-inset-bottom, 0px));
+}

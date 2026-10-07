@@ -60,7 +60,7 @@ export class DeskModule extends FeatureModule implements WritingModeHost {
     ctx.onLayoutReady(() => {
       const exists = (path: string) => p.app.vault.getAbstractFileByPath(path) !== null;
       if (pruneMissing(p.data.leftOff, exists)) p.requestSave();
-      if (coldStart) void startupOpen(p);
+      if (coldStart) void startupOpen(p).finally(() => this.mode.startup());
     });
     // Blocks already on screen: draw them now. After an unload the same re-draw runs
     // once the slot is unbound, so they fall back to plain source.
