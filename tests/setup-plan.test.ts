@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { PLAIN_DEFAULTS, itemsToRun, planSetup, type SetupChoices, type SetupItem, type SetupVault } from "../src/setup/plan";
+import { PLAIN_DEFAULTS, itemsToRun, planSetup, settingsAfter, type SetupChoices, type SetupItem, type SetupVault } from "../src/setup/plan";
 import { DEFAULT_SETTINGS, defaultsFor, type EscritaSettings } from "../src/settings";
 import type { DefaultsLanguage } from "../src/core/defaults";
 
@@ -69,6 +69,32 @@ describe("planSetup: rules", () => {
     expect(kinds.lastIndexOf("folder")).toBeLessThan(kinds.indexOf("setting"));
     expect(kinds.lastIndexOf("home")).toBeLessThan(kinds.indexOf("setting"));
     expect(kinds[kinds.length - 1]).toBe("layout");
+  });
+
+  it("open the home note on startup: its own tick, unticked in a vault with works (Wave 2 seams)", () => {
+    const row = (vault: SetupVault) => planSetup(base, vault, DEFAULT_SETTINGS).find((i) => i.target === "openHomeOnStartup");
+    expect(row(empty)).toMatchObject({ state: "change", tick: "startup", ticked: true });
+    expect(row({ ...empty, hasWorks: true })).toMatchObject({ state: "change", tick: "startup", ticked: false, reason: { key: "setup.reason.settingHasWorks" } });
+  });
+
+  it("uses a home note that exists in another case as the home note, under the home tick", () => {
+    const items = planSetup(base, { ...empty, files: ["home.md"] }, DEFAULT_SETTINGS);
+    expect(items.find((i) => i.kind === "home")).toMatchObject({ target: "home.md", state: "kept" });
+    expect(items.find((i) => i.target === "homeNote")).toMatchObject({ state: "change", tick: "home", value: "home.md" });
+  });
+
+  it("settingsAfter: the chosen set where the writer has no word of their own", () => {
+    const own = { ...DEFAULT_SETTINGS, chaptersFolder: "Partes" };
+    const after = settingsAfter(own, "pt-BR");
+    expect(after.chaptersFolder).toBe("Partes");
+    expect(after.stages.draft.words).toBe("rascunho");
+    expect(after.statusProperty).toBe(DEFAULT_SETTINGS.statusProperty);
+    expect(own.stages.draft.words).toBe("draft");
+  });
+
+  it("carries the home note's text, for the run", () => {
+    const home = planSetup(base, empty, DEFAULT_SETTINGS).find((i) => i.kind === "home");
+    expect(home?.content).toContain("```escrita-works");
   });
 
   it("its copy of the plain defaults matches DEFAULT_SETTINGS", () => {

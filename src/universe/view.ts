@@ -20,8 +20,9 @@ import type { AppearsInSource } from "./appears-in-widget";
 import { renderThreads, workResolver } from "./view-threads";
 import { renderUnlinked } from "./view-unlinked";
 import { countMissing, renderWorks, totalWords, wordsLabel } from "./view-works";
+import { VIEW_TYPES } from "../core/view-types";
 
-export const UNIVERSE_VIEW = "escrita-universe";
+export const UNIVERSE_VIEW = VIEW_TYPES.universe;
 export const THREADS_VIEW = "escrita-threads";
 
 export type UniverseTab = "entries" | "threads" | "works";

@@ -11,8 +11,9 @@ import { enabledRules, newNameGroups, ruleRows } from "./panel-model";
 import { formatRate, noteName, positionOf, sharePercent } from "./panel-format";
 import { MIN_SENTENCES, MIN_WORDS } from "./readability";
 import type { LensLang, Measures, RuleId } from "./types";
+import { VIEW_TYPES } from "../core/view-types";
 
-export const LENS_VIEW = "escrita-lens";
+export const LENS_VIEW = VIEW_TYPES.lens;
 
 /** data attribute naming each focusable control, so focus survives a re-render */
 const FOCUS_KEY = "data-escrita-focus";

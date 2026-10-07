@@ -57,10 +57,9 @@ export function languageOf(obsidianLanguage: string | null | undefined): Default
  * `threadKeyword` (it pairs with `threadClosedWord`: `%% fio fechado: … %%`, never
  * `%% thread fechado`), the entry type `value`s and `formValues` (values written into
  * notes, like the stage words; the author's vault uses `personagem` and `conto`).
- * Left out on purpose, same in both languages: `snapshotsFolder` (Escrita's own storage
- * under `Escrita/`, never browsed, and classify falls back to its English constant),
- * `excludeFolders` (the setup never writes it), `placeholderMarker` (`XXX` is no word),
- * `epubSceneBreak`, and every property name.
+ * Left out on purpose: `placeholderMarker` (`XXX` is no word), `epubSceneBreak`, and every
+ * property name. `snapshotsFolder` and `excludeFolders` are in the sets but not here: they
+ * are `INSTALL_KEYS` (below).
  * `darlingsNote` and `globalDarlingsNote` are listed with the same value in both sets:
  * the pt-BR interface calls them "darlings" too.
  */
@@ -70,8 +69,23 @@ export const WORD_KEYS = [
 ] as const;
 export type WordKey = typeof WORD_KEYS[number];
 
-/** One language's set: every word-bearing key, complete (nested records too). */
-export type LanguageDefaults = Pick<EscritaSettings, WordKey>;
+/**
+ * Keys a set holds that only an install takes, never the setup (PLAN-1.0, Wave 2 seams,
+ * 2026-10-07): a fresh install gets them from its set (and a blank snapshots folder comes
+ * back from it, through classify's `snapshotsRoot`), but the setup never lists or changes them, because they name where
+ * things already are. `snapshotsFolder` is Escrita's own store (moving the setting would
+ * orphan every snapshot) and `excludeFolders` is a list the writer curates. pt-BR uses
+ * "Escrita/Versões" and "Modelos"; English is unchanged, and a 0.9 install (set "en") keeps
+ * "Escrita/Snapshots" and "Templates".
+ */
+export const INSTALL_KEYS = ["snapshotsFolder", "excludeFolders"] as const;
+export type InstallKey = typeof INSTALL_KEYS[number];
+
+/** Every key a set holds: the word-bearing keys and the install-only ones. */
+export const SET_KEYS: readonly (WordKey | InstallKey)[] = [...WORD_KEYS, ...INSTALL_KEYS];
+
+/** One language's set: every word-bearing and install-only key, complete (nested records too). */
+export type LanguageDefaults = Pick<EscritaSettings, WordKey | InstallKey>;
 
 /** The stage colours are the same in every set (DEFAULT_STAGES); only the words change. */
 function stages(words: Record<keyof StageMapping, string>): StageMapping {
@@ -106,6 +120,8 @@ const EN: LanguageDefaults = {
   formValues: { shortStory: "short story", essay: "essay", novella: "novella", novel: "novel", poem: "poem", fragment: "fragment" },
   threadKeyword: "thread",
   threadClosedWord: "closed",
+  snapshotsFolder: "Escrita/Snapshots",
+  excludeFolders: "Templates",
 };
 
 /** Brazilian Portuguese (never European: "versão", "envios", "rascunho"). */
@@ -131,6 +147,8 @@ const PT_BR: LanguageDefaults = {
   formValues: { shortStory: "conto", essay: "ensaio", novella: "novela", novel: "romance", poem: "poema", fragment: "fragmento" },
   threadKeyword: "fio",
   threadClosedWord: "fechado",
+  snapshotsFolder: "Escrita/Versões",
+  excludeFolders: "Modelos",
 };
 
 function deepFreeze<T>(v: T): T {
@@ -160,7 +178,7 @@ export function overlayDefaults(base: EscritaSettings, lang: DefaultsLanguage): 
     if (Array.isArray(v)) out[k] = [...(v as unknown[])];
     else if (v && typeof v === "object") out[k] = cloneRecord(v as Record<string, unknown>);
   }
-  for (const k of WORD_KEYS) {
+  for (const k of SET_KEYS) {
     const v = set[k] as unknown;
     out[k] = v && typeof v === "object" ? cloneRecord(v as Record<string, unknown>) : v;
   }

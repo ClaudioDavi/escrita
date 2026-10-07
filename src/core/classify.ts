@@ -213,18 +213,18 @@ export interface Placement<F extends Named, D extends Named> {
 /**
  * The snapshots folder setting as a vault path: trimmed, backslashes and
  * repeated slashes turned into single slashes, edge slashes stripped. Empty (or
- * not a string) gives DEFAULT_SNAPSHOTS_FOLDER, so the result is never "" and
+ * not a string) gives the install's set's folder (`defaultsLanguage`;
+ * DEFAULT_SNAPSHOTS_FOLDER in English and without one), so the result is never "" and
  * never means the whole vault. The one place this normalization lives: settings,
  * classify and the snapshots module all go through it.
  */
 export function snapshotsRoot(setting: unknown, defaultsLanguage?: unknown): string {
-  // `Escrita/Snapshots` in every set (core/defaults.ts leaves snapshotsFolder out on purpose)
-  void defaultsLanguage;
-  return folderRoot(setting, DEFAULT_SNAPSHOTS_FOLDER);
+  // the install's set: `Escrita/Snapshots` in English (DEFAULT_SNAPSHOTS_FOLDER), `Escrita/Versões` in pt-BR
+  return folderRoot(setting, languageSet(defaultsLanguage).snapshotsFolder);
 }
 
 /** The install's default set for a blank folder setting (1.0 task 1.4); an unknown or missing language is "en". */
-function languageSet(defaultsLanguage: unknown): { exportFolder: string; submissionsFolder: string } {
+function languageSet(defaultsLanguage: unknown): { exportFolder: string; submissionsFolder: string; snapshotsFolder: string } {
   return LANGUAGE_DEFAULTS[isDefaultsLanguage(defaultsLanguage) ? defaultsLanguage : "en"];
 }
 

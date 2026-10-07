@@ -20,6 +20,7 @@ import {
   ActiveFiles, addedOn, applyDelta, countsAsWriting, recordBookTotal, renameBook, streak,
 } from "./tracker";
 import { goalsSettingsSection, goalsOffNotice } from "./settings-ui";
+import type { DailyProgress, DailyProgressSource } from "../core/daily-progress";
 
 /**
  * Word goals: tracks real typing in the active file, shows progress in the
@@ -42,6 +43,19 @@ export class GoalsModule extends FeatureModule {
   private currentSprint: Sprint | null = null;
   private sprintTimer: number | null = null;
   private modal: ProgressModal | null = null;
+  private progressListeners = new Set<() => void>();
+
+  /**
+   * The daily progress port (core/daily-progress.ts): today's words and the daily goal,
+   * read by writing mode's counter through `features.get("goals")` while goals are on.
+   */
+  readonly dailyProgress: DailyProgressSource = {
+    current: (): DailyProgress => ({ words: addedOn(this.plugin.data.history, this.today()), goal: this.plugin.settings.dailyGoal }),
+    onChange: (cb) => {
+      this.progressListeners.add(cb);
+      return () => { this.progressListeners.delete(cb); };
+    },
+  };
 
   constructor(private plugin: EscritaPlugin) {
     super();
@@ -141,6 +155,8 @@ export class GoalsModule extends FeatureModule {
     this.activeFiles = new ActiveFiles();
     this.selection = 0;
     this.status = null;   // its element is removed by the context
+    // readers subscribe again when goals come back on (features.onChange)
+    this.progressListeners.clear();
   }
 
   /** Keeps the history of a renamed book or piece current even while goals is off (Q8). */
@@ -288,6 +304,9 @@ export class GoalsModule extends FeatureModule {
   }
 
   private renderStatus(): void {
+    for (const cb of [...this.progressListeners]) {
+      try { cb(); } catch (e) { console.error("Escrita: a daily progress listener failed", e); }
+    }
     if (!this.status || !this.plugin.settings.showStatusBar) return;
     const history = this.plugin.data.history;
     const today = this.today();

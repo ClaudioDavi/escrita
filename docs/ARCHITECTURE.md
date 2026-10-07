@@ -1289,6 +1289,23 @@ the setup. Loading merges the saved settings over `defaultsFor(defaultsLanguage)
 `normalizeSettings` restores a blank field from the same set (task 1.4). `SETUP_NAMES` holds
 the names the setup gives what it creates (home note, folders, examples).
 
+`INSTALL_KEYS` (`snapshotsFolder`, `excludeFolders`) are in both sets but are not word keys:
+a fresh install takes them from its set (pt-BR: `Escrita/Versões`, `Modelos`) and a blank
+snapshots folder comes back from it (`snapshotsRoot(setting, defaultsLanguage)`), but the
+setup never lists or moves them, because they name where things already are.
+
+## Wave 2 ports and view ids (1.0)
+
+- **Writing mode** (`core/writing-mode.ts`): the desk provides `writingMode`
+  (`WritingModePort`); others read it through `writingModeOf(plugin.features)`, null while
+  the desk is off. The setup's "focus" layout enters it.
+- **Daily progress** (`core/daily-progress.ts`): the goals module provides `dailyProgress`
+  (today's words and the daily goal, notified whenever the status bar redraws); writing
+  mode's counter reads it through `dailyProgressOf(plugin.features)`, null while goals are off.
+- **View ids** (`core/view-types.ts` `VIEW_TYPES`): the outline, lens, placeholders and
+  universe panels' ids, from which each module defines its own constant. Code that only
+  places a panel (the setup's layout) reads them here and imports no module folder.
+
 ## Module specs
 
 ### goals (`src/goals/`)

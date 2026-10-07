@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULTS_LANGUAGES, LANGUAGE_DEFAULTS, SETUP_NAMES, WORD_KEYS, isDefaultsLanguage, languageOf, overlayDefaults,
+  DEFAULTS_LANGUAGES, INSTALL_KEYS, LANGUAGE_DEFAULTS, SET_KEYS, SETUP_NAMES, WORD_KEYS, isDefaultsLanguage, languageOf, overlayDefaults,
 } from "../src/core/defaults";
 import { DEFAULT_SETTINGS, defaultsFor, normalizeSettings, type EscritaSettings } from "../src/settings";
 import { mergeDefaults } from "../src/core/merge";
@@ -28,12 +28,20 @@ describe("isDefaultsLanguage", () => {
 });
 
 describe("the default sets", () => {
-  it("list exactly the word-bearing keys, in both languages", () => {
-    for (const lang of DEFAULTS_LANGUAGES) expect(Object.keys(LANGUAGE_DEFAULTS[lang]).sort(), lang).toEqual([...WORD_KEYS].sort());
+  it("list exactly the word-bearing and install-only keys, in both languages", () => {
+    for (const lang of DEFAULTS_LANGUAGES) expect(Object.keys(LANGUAGE_DEFAULTS[lang]).sort(), lang).toEqual([...WORD_KEYS, ...INSTALL_KEYS].sort());
+    for (const k of INSTALL_KEYS) expect(WORD_KEYS as readonly string[], k).not.toContain(k);
   });
 
   it("the English set is DEFAULT_SETTINGS on every key", () => {
-    for (const k of WORD_KEYS) expect(LANGUAGE_DEFAULTS.en[k], k).toEqual(DEFAULT_SETTINGS[k]);
+    for (const k of SET_KEYS) expect(LANGUAGE_DEFAULTS.en[k], k).toEqual(DEFAULT_SETTINGS[k]);
+  });
+
+  it("pt-BR keeps snapshots in Escrita/Versões and excludes Modelos (Wave 2 seams); English is unchanged", () => {
+    expect(LANGUAGE_DEFAULTS["pt-BR"].snapshotsFolder).toBe("Escrita/Versões");
+    expect(LANGUAGE_DEFAULTS["pt-BR"].excludeFolders).toBe("Modelos");
+    expect(LANGUAGE_DEFAULTS.en.snapshotsFolder).toBe("Escrita/Snapshots");
+    expect(LANGUAGE_DEFAULTS.en.excludeFolders).toBe("Templates");
   });
 
   it("hold no property name: those stay English in every set", () => {
@@ -84,11 +92,11 @@ describe("defaultsFor", () => {
     expect(defaultsFor("en")).toEqual(DEFAULT_SETTINGS);
   });
 
-  it("pt-BR changes only the word-bearing keys", () => {
+  it("pt-BR changes only the keys of its set", () => {
     const pt = defaultsFor("pt-BR");
-    const words = new Set<string>(WORD_KEYS);
+    const words = new Set<string>(SET_KEYS);
     for (const k of Object.keys(DEFAULT_SETTINGS) as (keyof EscritaSettings)[]) {
-      if (words.has(k)) expect(pt[k], k).toEqual(LANGUAGE_DEFAULTS["pt-BR"][k as (typeof WORD_KEYS)[number]]);
+      if (words.has(k)) expect(pt[k], k).toEqual(LANGUAGE_DEFAULTS["pt-BR"][k as (typeof SET_KEYS)[number]]);
       else expect(pt[k], k).toEqual(DEFAULT_SETTINGS[k]);
     }
     expect(pt.defaultsLanguage).toBe("en"); // the set does not name itself: loading sets the key
@@ -124,6 +132,13 @@ describe("defaultsFor", () => {
     expect(s.dailyGoal).toBe(300);
     expect(s.exportFolder).toBe("Escrita/Exportações");
     expect(s.stages.revision.words).toBe("revisão");
+  });
+
+  it("a blank snapshots folder comes back from the install's set", () => {
+    const pt = normalizeSettings(mergeDefaults(defaultsFor("pt-BR"), { defaultsLanguage: "pt-BR", snapshotsFolder: "  " }));
+    expect(pt.snapshotsFolder).toBe("Escrita/Versões");
+    const en = normalizeSettings(mergeDefaults(defaultsFor("en"), { snapshotsFolder: "" }));
+    expect(en.snapshotsFolder).toBe("Escrita/Snapshots");
   });
 });
 

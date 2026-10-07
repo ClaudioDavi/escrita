@@ -28,8 +28,9 @@ import {
 } from "./header";
 import { renderPieceBar } from "./bar";
 import { bookSerial, serialLine, type PublishNextPort } from "../core/serial";
+import { VIEW_TYPES } from "../core/view-types";
 
-export const OUTLINE_VIEW = "escrita-outline";
+export const OUTLINE_VIEW = VIEW_TYPES.outline;
 
 interface ChapterRow {
   file: TFile;

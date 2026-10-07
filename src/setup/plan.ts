@@ -28,10 +28,10 @@
 //   (SF 10: "a value the writer already saved is never changed"), and some of these move
 //   what Escrita reads (`chaptersFolder`, `submissionsFolder`), so they never change
 //   without a tick. `trackFolders` (added to, never swapped) goes with the folders it
-//   names and has no tick; `homeNote` and `openHomeOnStartup` go with "home",
-//   `openInWritingMode` with "layout".
-// - In a vault with works (`SetupVault.hasWorks`), the examples, the language group, the
-//   features row and the layout come unticked (board 36 a: "In a vault with settings…
+//   names and has no tick; `homeNote` goes with "home", `openHomeOnStartup` has its own
+//   tick, "startup", and `openInWritingMode` goes with "layout".
+// - In a vault with works (`SetupVault.hasWorks`), the examples, the language group,
+//   "open the home note on startup", the features row and the layout come unticked (board 36 a: "In a vault with settings…
 //   the features row and the layout come unticked"); with more than one open leaf, the
 //   layout row does too (Q4). The reason line says why (Wave 0 judge, 2026-10-07).
 // - Items come in run order: folders, examples, the home note, then the settings (the
@@ -46,6 +46,8 @@ import type { EscritaSettings } from "../settings";
 import { LANGUAGE_DEFAULTS, SETUP_NAMES, WORD_KEYS, type DefaultsLanguage, type WordKey } from "../core/defaults";
 import { presetChanges, presetSwitches, type PresetId } from "../core/feature-presets";
 import type { UniverseMode } from "../universe/settings";
+import { EXAMPLE_CHAPTERS, exampleText, type ExampleRole } from "./examples";
+import { homeNoteText } from "./home-text";
 
 /** "What do you write?" (board 37): short fiction (contos and essays), a novel, or both. */
 export type SetupWrites = "stories" | "books" | "both";
@@ -102,8 +104,12 @@ export type SetupItemKind = "folder" | "example" | "home" | "setting" | "feature
  */
 export type SetupItemState = "new" | "kept" | "change";
 
-/** The tickable rows of the preview. Items sharing a tick go together (the examples are one tick, and so is the language group). */
-export type SetupTick = "examples" | "home" | "language" | "features" | "layout";
+/**
+ * The tickable rows of the preview. Items sharing a tick go together (the examples are one
+ * tick, and so is the language group). "startup" is `openHomeOnStartup` alone, its own row
+ * under the home note, unticked in a vault with works (Wave 2 seams, 2026-10-07).
+ */
+export type SetupTick = "examples" | "home" | "startup" | "language" | "features" | "layout";
 
 /** The writer's ticks, as the preview holds them; a missing tick uses the items' `ticked`. */
 export type SetupTicks = Partial<Record<SetupTick, boolean>>;
@@ -152,11 +158,6 @@ export interface SetupOutcome {
 /** The install's value of the non-word settings the plan writes: DEFAULT_SETTINGS's, copied to keep this file free of obsidian imports (tests/setup-plan.test.ts pins them). */
 export const PLAIN_DEFAULTS = { trackFolders: "", lensLanguage: "auto", homeNote: "", openHomeOnStartup: false, openInWritingMode: false } as const;
 
-/** The example chapters' file names per language: placeholders until task 2.1 (PLAN-1.0, Wave 0 result). */
-const EXAMPLE_CHAPTERS: Record<DefaultsLanguage, readonly string[]> = {
-  en: ["01 Arrival.md", "02 The storm.md"],
-  "pt-BR": ["01 Chegada.md", "02 A tempestade.md"],
-};
 
 const keyOf = (path: string): string => path.normalize("NFC").toLowerCase();
 
@@ -210,26 +211,29 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
   // Examples: the chapters folder follows the writer's own name when they have one.
   const ownChapters = !same(settings.chaptersFolder, install.chaptersFolder);
   const chaptersName = ownChapters ? settings.chaptersFolder : target.chaptersFolder;
-  const addExample = (parent: string, name: string): string => {
+  // The example notes' text (setup/examples.ts) reads the settings in effect after the run.
+  const exampleCtx = { language: choices.language, settings: settingsAfter(settings, choices.language) };
+  const addExample = (parent: string, name: string, role: ExampleRole | null): string => {
     const e = place(parent, name);
+    const content = role && !e.exists ? { content: exampleText(role, exampleCtx) } : {};
     items.push(e.exists
       ? { kind: "example", target: e.path, state: "kept", tick: null, ticked: false, reason: { key: "setup.reason.exists" } }
-      : { kind: "example", target: e.path, state: "new", tick: "examples", ticked: !hasWorks, reason: { key: hasWorks ? "setup.reason.exampleHasWorks" : "setup.reason.exampleNew" } });
+      : { kind: "example", target: e.path, state: "new", tick: "examples", ticked: !hasWorks, reason: { key: hasWorks ? "setup.reason.exampleHasWorks" : "setup.reason.exampleNew" }, ...content });
     return e.path;
   };
-  if (stories) addExample(folderPaths[0], `${names.exampleStory}.md`);
+  if (stories) addExample(folderPaths[0], `${names.exampleStory}.md`, { kind: "story" });
   if (books) {
-    const book = addExample(folderPaths[folderPaths.length - 1], names.exampleBook);
-    addExample(book, `${names.exampleBook}.md`);
-    const chapters = addExample(book, chaptersName);
-    for (const c of EXAMPLE_CHAPTERS[choices.language]) addExample(chapters, c);
+    const book = addExample(folderPaths[folderPaths.length - 1], names.exampleBook, null);
+    addExample(book, `${names.exampleBook}.md`, { kind: "bookNote" });
+    const chapters = addExample(book, chaptersName, null);
+    EXAMPLE_CHAPTERS[choices.language].forEach((c, index) => addExample(chapters, c, { kind: "chapter", index }));
   }
 
   // The home note
   const home = place("", names.homeNote);
   items.push(home.exists
     ? { kind: "home", target: home.path, state: "kept", tick: null, ticked: false, reason: { key: "setup.reason.exists" } }
-    : { kind: "home", target: home.path, state: "new", tick: "home", ticked: true, reason: { key: "setup.reason.homeNew" } });
+    : { kind: "home", target: home.path, state: "new", tick: "home", ticked: true, reason: { key: "setup.reason.homeNew" }, content: homeNoteText({ language: choices.language, examples: items.some((i) => i.kind === "example" && i.state === "new") }) });
 
   // Settings, last. `ticked` of a tick's items follows the tick's default.
   const keep = (key: string, value: unknown, reason: "settingSame" | "settingOwn"): void => {
@@ -278,11 +282,14 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
     else change("universeMode", choices.universeMode, null, true);
   }
 
+  // A home note that exists in another case (home.md for Home.md) is used as it is, under
+  // the home tick (Wave 2 seams, 2026-10-07: case-clash.json).
   if (settings.homeNote === home.path) keep("homeNote", settings.homeNote, "settingSame");
   else if (settings.homeNote !== PLAIN_DEFAULTS.homeNote) keep("homeNote", settings.homeNote, "settingOwn");
   else change("homeNote", home.path, "home", true);
+  // Its own row, unticked in a vault with works (Wave 2 seams, 2026-10-07).
   if (settings.openHomeOnStartup) keep("openHomeOnStartup", true, "settingSame");
-  else change("openHomeOnStartup", true, "home", true);
+  else change("openHomeOnStartup", true, "startup", !hasWorks, hasWorks ? "settingHasWorks" : "settingChange");
 
   const layoutTicked = openLeaves <= 1 && !hasWorks;
   if (choices.layout === "focus") {
@@ -305,6 +312,21 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
       : hasWorks ? { key: "setup.reason.layoutHasWorks" } : { key: "setup.reason.layoutNew" },
   });
   return items;
+}
+
+/**
+ * The settings in effect after a run that writes `language`'s set: the live settings with
+ * that set's word-bearing values on every key that is not the writer's own (differs from
+ * the install's set), as the plan's language group writes them. What the example texts read.
+ * A shallow copy that may share nested values with the live settings and the frozen sets:
+ * read it, never mutate it or hand it to the live settings.
+ */
+export function settingsAfter(settings: EscritaSettings, language: DefaultsLanguage): EscritaSettings {
+  const target = LANGUAGE_DEFAULTS[language];
+  const install = LANGUAGE_DEFAULTS[settings.defaultsLanguage];
+  const out = { ...settings } as Record<string, unknown>;
+  for (const key of WORD_KEYS) if (same(settings[key], install[key])) out[key] = target[key];
+  return out as unknown as EscritaSettings;
 }
 
 /** The items a run executes: not `kept`, and ticked (the writer's tick, else the item's default). */

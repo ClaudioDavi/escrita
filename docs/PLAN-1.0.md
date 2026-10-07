@@ -334,7 +334,7 @@ Plan changes for Wave 2:
 Open for the author:
 - Raise `minAppVersion` to 1.8.7? That drops two lint exceptions and lets `getLanguage()`
   replace `moment.locale()`.
-- F2: the universe panel's entry menu opens only on a right click, and iOS has none. The
+- F2 (now task 2.6): the universe panel's entry menu opens only on a right click, and iOS has none. The
   fix is the outline's "⋯" button. It needs an owner (a small Wave 2 task in `universe/`,
   reusing an approved pattern).
 - F3: the stage word, the placeholder count and the POV label show only in tooltips, which a
@@ -393,10 +393,8 @@ Plan changes for Wave 2:
 - 2.1 replaces `EXAMPLE_CHAPTERS` in `plan.ts` (owns those lines).
 
 Open for the author:
-- With an own `homeNote` and `openHomeOnStartup` off, the setup offers to turn it on under
-  the home tick, ticked by default even in a vault with works. Keep, or untick with works?
-- Still open from Wave 0: `Versões`/`Modelos` in pt-BR, and pointing `homeNote` at an
-  existing `home.md` in another case.
+- (Settled in the Wave 2 seams: the startup row, `Versões`/`Modelos`, and the home note in
+  another case.)
 - Lint covers `src/` only; `eslint package.json` still reports `depend/ban-dependencies`
   for `builtin-modules` (esbuild's externals). Harmless for the review bot, which lints
   sources; replace it with `node:module`'s `builtinModules` in 1.7's follow-up if wanted.
@@ -405,11 +403,55 @@ Open for the author:
 
 | Task | Owns | Done when |
 |---|---|---|
-| 2.1 Examples | `setup/examples.ts` (the conto and the two-chapter book, `en` and `pt-BR`, `example: true`) | Each example classifies as a piece and a book; beats, a placeholder and a target in each |
-| 2.2 The setup | `setup/` (the notice, command, two-step modal, run), its strings and styles | Boards 35 and 36: the preview is `planSetup`'s list; every file through `notes.create`; settings written last; a partial failure says what was made |
-| 2.3 The layout | `setup/layout.ts` | Board 37: the home note in front, the outline on top and the lens with placeholders below on the right, by public workspace calls; never closes a leaf |
-| 2.4 Writing mode | `desk/writing-mode.ts`, `desk/index.ts`, `desk/settings-ui.ts`, `desk/strings.ts`, `desk/styles.css`, `desk/open.ts` ("Continue" in the same tab) | Board 39; exiting restores only what it hid; the counter only with goals on; "Open in writing mode" |
+| 2.1 Examples | `setup/examples.ts` (the conto and the two-chapter book, `en` and `pt-BR`, `example: true`; `EXAMPLE_CHAPTERS` now lives here), and `tests/fixtures/setup/*.json` only if it renames a chapter | Each example classifies as a piece and a book; beats, a placeholder and a target in each |
+| 2.2 The setup | `setup/` except `examples.ts`, `layout.ts` and `layout-strings.ts`: `index.ts` (the notice, command, `open()`), the two-step modal, the run, `home-text.ts`, `plan.ts` (the re-plan), `strings.ts`, styles | Boards 35 and 36: the preview is `planSetup`'s list; every file through `notes.create`; settings written last; a partial failure says what was made |
+| 2.3 The layout | `setup/layout.ts`, `setup/layout-strings.ts` | Board 37: the home note in front, the outline on top and the lens with placeholders below on the right, by public workspace calls; never closes a leaf; "focus" enters writing mode through the port |
+| 2.4 Writing mode | `desk/writing-mode.ts`, `desk/index.ts`, `desk/settings-ui.ts`, `desk/strings.ts`, `desk/styles.css`, `desk/home-note.ts`, `desk/render.ts`, `ui/open-work.ts` ("Continue" in the same tab; it moved there in 1.2) | Board 39; exiting restores only what it hid; the counter only with goals on; "Open in writing mode" |
 | 2.5 Presets on the Features page | `settings.ts` (the Features page), `strings.ts` | Board 38: three buttons, "Custom", the confirm step listing what changes, the setup link when there is no home note |
+| 2.6 The universe entry menu on phones (F2) | `universe/view-entries.ts`, `universe/view.css`, `universe/view-strings.ts` | `docs/MOBILE-1.0.md` F2: each entry row gets a visible "⋯" button opening the same menu as the right click, the outline's pattern (32 px target, a tooltip and `aria-label`); the right click stays |
+
+**Wave 2 seams (2026-10-07, Opus).** Committed before the tasks branch, so none of them waits
+on another's code. Signatures, doc comments and stub bodies; nothing changes for a writer.
+- **Examples (2.1).** `setup/examples.ts`: `EXAMPLE_CHAPTERS`, `ExampleRole`
+  (`story`, `bookNote`, `chapter` with its index), `ExampleContext` (language and the
+  settings in effect after the run) and `exampleText(role, ctx)`, a stub returning "".
+  `planSetup` already calls it and puts the text on each new example item's `content`;
+  `settingsAfter(settings, language)` in `plan.ts` builds the context's settings.
+- **The setup (2.2).** `setup/index.ts` `SetupModule`, a `CoreModule`, constructed and
+  started in `main.ts` (`plugin.setup`, `startCoreModule` after `features.apply()`); its
+  strings (`setupStrings`, `setupLayoutStrings`) are registered there too, so 2.2 doesn't touch
+  `main.ts`. `open()` (stub) opens the modal; `hasHomeNote()` (written) is what the Features
+  page asks. `setup/home-text.ts` `homeNoteText({ language, examples })` gives the home item's
+  `content` (for now the works block alone).
+- **The layout (2.3).** `setup/layout.ts` `applyLayout(plugin, layout): Promise<void>`, a stub.
+  View ids come from `core/view-types.ts` `VIEW_TYPES` (the four modules' constants are now
+  defined from it), so the layout imports no module folder.
+- **Writing mode (2.4).** The port `core/writing-mode.ts` (`WritingModePort`: `isActive`,
+  `enter`, `exit`, `toggle`, `onChange`) and `writingModeOf(plugin.features)`, null while the
+  desk is off. `DeskModule.writingMode` is the stub `desk/writing-mode.ts` `WritingMode`,
+  loaded and unloaded with the desk. The goal counter reads `core/daily-progress.ts`
+  (`dailyProgressOf(plugin.features)`, null while goals are off), which the goals module now
+  provides (`GoalsModule.dailyProgress`, notified whenever the status bar redraws).
+- **Presets on the Features page (2.5).** `plugin.setup.open()` and `plugin.setup.hasHomeNote()`.
+- **String namespaces.** 2.2 `setup.*` in `setup/strings.ts` (the plan's reason keys
+  `setup.reason.*` included); 2.3 `setup.layout.*` in `setup/layout-strings.ts`; 2.4
+  `desk.writingMode.*` in `desk/strings.ts`; 2.5 `settings.features.preset.*` and
+  `settings.features.setupLink` in `strings.ts`; 2.6 `universe.view.entryMore*` in
+  `universe/view-strings.ts`. 2.1 has none: the example texts are in the setup's chosen
+  language, not the interface's, and live in `examples.ts`.
+
+Decisions settled with the seams (the open questions of Wave 0 and Wave 1b, as recommended):
+- **pt-BR snapshots and templates.** A fresh pt-BR install keeps snapshots in
+  `Escrita/Versões` and excludes `Modelos`. They are `INSTALL_KEYS` in `core/defaults.ts`:
+  in both sets, not word keys, so the setup never lists or moves them (moving
+  `snapshotsFolder` would orphan the snapshots, and `excludeFolders` is the writer's list).
+  English is unchanged, and a 0.9 install (set "en") keeps `Escrita/Snapshots` and
+  `Templates`: G3 still passes. A blank snapshots folder comes back from the install's set
+  (`snapshotsRoot(setting, defaultsLanguage)`).
+- **A home note in another case.** An existing `home.md` (for `Home.md`) is used as the home
+  note under the home tick, as `case-clash.json` has it.
+- **"Open the home note on startup"** is its own row (tick `startup`), unticked in a vault
+  with works. Five fixtures move that item from the `home` tick to `startup`.
 
 **Opus judge**, then G2 on an empty vault in both languages and on the author's vault.
 

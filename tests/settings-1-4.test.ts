@@ -32,6 +32,11 @@ describe("1.4 language defaults on load", () => {
     expect(pt.settings.exportFolder).toBe("Escrita/Exportações");
     expect(pt.settings.stages.draft.words).toBe("rascunho");
     expect(pt.settings.entryTypes.character.value).toBe("personagem");
+    // Wave 2 seams: the install-only keys of the pt-BR set
+    expect(pt.settings.snapshotsFolder).toBe("Escrita/Versões");
+    expect(pt.settings.excludeFolders).toBe("Modelos");
+    const en = loadSettings(undefined, "en").settings;
+    expect([en.snapshotsFolder, en.excludeFolders]).toEqual(["Escrita/Snapshots", "Templates"]);
     expect(loadSettings(undefined, "fr").settings.defaultsLanguage).toBe("en");
     expect(loadSettings(null, "pt").fresh).toBe(true);
   });

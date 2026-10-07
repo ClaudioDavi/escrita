@@ -46,3 +46,8 @@ silent they make a choice, listed here so task 1.5 and the judge can overrule it
    still saved in `data.json`, and SF 10 says a saved value never changes without the
    writer's choice; `chaptersFolder` and `submissionsFolder` also move what Escrita reads.
    `trackFolders` has no tick: it gains the folders the run creates.
+9. Wave 2 seams (2026-10-07): `openHomeOnStartup` has its own tick, `startup`, ticked by
+   default only in a vault without works (reason `settingHasWorks` otherwise). A home note
+   that exists in another case (`home.md` for `Home.md`) is `kept` and `homeNote` points at
+   it under the `home` tick (`case-clash.json`). Example chapter names live in
+   `src/setup/examples.ts` (`EXAMPLE_CHAPTERS`, task 2.1); renaming them updates these files.

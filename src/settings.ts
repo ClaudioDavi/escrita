@@ -312,7 +312,7 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   if (typeof s.otherStatusColors !== "string") s.otherStatusColors = DEFAULT_SETTINGS.otherStatusColors;
   if (typeof s.draftNewNotes !== "boolean") s.draftNewNotes = DEFAULT_SETTINGS.draftNewNotes;
   for (const k of PROPERTY_KEYS) s[k] = (typeof s[k] === "string" ? s[k].trim() : "") || DEFAULT_SETTINGS[k];
-  s.snapshotsFolder = snapshotsRoot(s.snapshotsFolder);
+  s.snapshotsFolder = snapshotsRoot(s.snapshotsFolder, s.defaultsLanguage);
   // 0.8 folders: trimmed here; task 1.6 routes them through classify's exportRoot / submissionsRoot
   for (const k of ["exportFolder", "submissionsFolder"] as const) {
     s[k] = (typeof s[k] === "string" ? s[k].trim().replace(/^\/+|\/+$/g, "") : "") || d[k];
@@ -455,7 +455,7 @@ export function pluginFolderRows(el: HTMLElement, ui: SettingsUi, s: EscritaSett
       placeholder: DEFAULT_SETTINGS.exportFolder,
       value: s.exportFolder,
       problemOf: (v) => pluginFolderProblem(
-        exportRoot(v, s.defaultsLanguage), [submissionsRoot(s.submissionsFolder, s.defaultsLanguage), snapshotsRoot(s.snapshotsFolder)],
+        exportRoot(v, s.defaultsLanguage), [submissionsRoot(s.submissionsFolder, s.defaultsLanguage), snapshotsRoot(s.snapshotsFolder, s.defaultsLanguage)],
         ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, exportRoot(s.exportFolder, s.defaultsLanguage), s), books(),
       ),
       save: (v) => { s.exportFolder = exportRoot(v, s.defaultsLanguage); },
@@ -467,7 +467,7 @@ export function pluginFolderRows(el: HTMLElement, ui: SettingsUi, s: EscritaSett
       placeholder: DEFAULT_SETTINGS.submissionsFolder,
       value: s.submissionsFolder,
       problemOf: (v) => pluginFolderProblem(
-        submissionsRoot(v, s.defaultsLanguage), [exportRoot(s.exportFolder, s.defaultsLanguage), snapshotsRoot(s.snapshotsFolder)],
+        submissionsRoot(v, s.defaultsLanguage), [exportRoot(s.exportFolder, s.defaultsLanguage), snapshotsRoot(s.snapshotsFolder, s.defaultsLanguage)],
         ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, submissionsRoot(s.submissionsFolder, s.defaultsLanguage), s), books(),
       ),
       save: (v) => { s.submissionsFolder = submissionsRoot(v, s.defaultsLanguage); },

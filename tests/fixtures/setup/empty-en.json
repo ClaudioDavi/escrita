@@ -189,7 +189,7 @@
       "kind": "setting",
       "target": "openHomeOnStartup",
       "state": "change",
-      "tick": "home",
+      "tick": "startup",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"

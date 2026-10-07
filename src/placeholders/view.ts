@@ -4,8 +4,9 @@ import type { Book } from "../core/books";
 import { fmt, t } from "../i18n";
 import { inBook } from "../core/classify";
 import { displayName, orderPaths, parentPath, type IndexedMarker } from "./logic";
+import { VIEW_TYPES } from "../core/view-types";
 
-export const PLACEHOLDERS_VIEW = "escrita-placeholders";
+export const PLACEHOLDERS_VIEW = VIEW_TYPES.placeholders;
 
 type ScopeChoice = "book" | "all";
 
