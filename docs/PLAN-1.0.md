@@ -219,6 +219,66 @@ due in Wave 1, compiled, no behaviour change for an existing install.
 
 **Opus judge:** the contracts against Q1–Q12, SF 10 and boards 35–39.
 
+**Wave 0 result (date 2026-10-07).** Done: contracts `8ccd9c3`, fixtures `53db612`, judge
+fixes `c878fb2`. The four checks pass, and nothing changes for an existing install: a 0.9
+`data.json` gains `defaultsLanguage: "en"`, `openInWritingMode: false` and
+`setupOffered: true`, all filled in on load, and every other effective value is the same
+(the settings fixture is the author's file with only the three author fields scrubbed;
+`tests/setup-fixtures.test.ts` checks every saved key survives). The presets are the
+board's: Essentials 9, Writer 16, Everything 18 ids plus the universe, which no preset
+touches. The pt-BR words are Brazilian. The contracts add, beyond the list above:
+- `defaultsFor` lives in `settings.ts` (:296), over the pure `overlayDefaults` in
+  `core/defaults.ts`, so core never imports `settings.ts` by value (an import cycle once
+  1.4's `normalizeSettings` calls it).
+- Obsidian's language is read through `locale()` (`moment.locale()`); `getLanguage()`
+  replaces it when `minAppVersion` reaches 1.8.7. Every `pt-…` tag gives pt-BR.
+- Three more word-bearing keys: `threadKeyword` (`fio`), the entry type values and
+  `formValues`. Left out on purpose: `snapshotsFolder`, `excludeFolders`,
+  `placeholderMarker`, `epubSceneBreak`. The setup's names (`Home.md` / `Início.md`, the
+  stories and books folders, the examples) are `SETUP_NAMES`, not settings; `homeNote`
+  stays "".
+- `data.setupOffered` is derived when absent: true when the data holds saved settings
+  (Q5: an update never sees the notice).
+- The setup's ticks live on the items (`tick`, `ticked`), not in `SetupChoices`, so the
+  preview and the run read one list; `itemsToRun` is written.
+- The setup is a `CoreModule` started by `startCoreModule` after `features.apply()`: its
+  own `ModuleContext`, no view or editor slots, never switched off (rule 8;
+  ARCHITECTURE.md, "Core modules").
+
+The judge's fixture rules (`tests/fixtures/setup/README.md`, rules 3 to 8):
+- **A language tick.** `defaultsLanguage`, every word-bearing setting that would change and
+  `lensLanguage` share one tick, `language`, ticked by default only in a vault without
+  works. The fixtures had them changing with no tick: in the author's vault the setup would
+  have moved `submissionsFolder` and `exportFolder` to the Portuguese set, so the pending
+  submissions would stop being submissions. A value equal to the install's set is still
+  saved, and SF 10 says a saved value never changes without the writer's choice.
+  `trackFolders` keeps no tick (it only gains the folders the run makes).
+- **The layout is unticked in a vault with works**, as the board says, not only with more
+  than one leaf open. `author-like` with no tick changed now runs only the `Livros` folder
+  and its track folder (a new test pins it, the G2 rule in miniature).
+- The pt-BR unnumbered titles gain "Nota do autor", which SF 10 names.
+- Kept as the fixtures made them: one item per word key, `kept` items with no tick, the
+  example book as six items, `lensLanguage` written as the picked language, a second run's
+  layout row `new` and unticked rather than a `kept` state.
+
+Plan changes for Wave 1:
+- **1.1** also makes a chapter's cached counts drop when its book note changes (they are
+  keyed by the chapter's mtime).
+- **1.3**: the author's fixture (spellcheck off, `features` `{lens, snapshots}`) reads
+  "Custom"; an all-on 0.9 install reads "Everything".
+- **1.4** also gives the install's set to `normalizeStages`, `normalizeUniverse` (it owns
+  `universe/settings.ts` for that) and classify's folder fallbacks (`snapshotsRoot`,
+  `exportRoot`, `submissionsRoot`), owning those lines of `core/classify.ts` after 1.1
+  commits. Today a blank value there comes back in English.
+- **1.5** follows the language tick and the layout rule above; the reason keys and the
+  chapter file names (`01 Arrival.md`, `01 Chegada.md`) stay provisional until 2.1.
+- Wiring the setup into `main.ts` stays Wave 2's.
+
+Open for the author: whether pt-BR also renames `Escrita/Snapshots` ("Versões") and the
+`Templates` exclude folder ("Modelos"), both English in both sets for now; and whether the
+setup, in a fresh vault with an existing `home.md` (case clash), should point `homeNote` at
+that note under the home tick, as `case-clash.json` does.
+
 ## Wave 1: foundations (one at a time, Sonnet)
 
 | Task | Owns | Done when |
