@@ -4,7 +4,7 @@ import { lang, t } from "./i18n";
 import { listsPath } from "./lens/settings";
 import { cleanWeekdays, mergeDefaults } from "./core/merge";
 import { migrateSettings } from "./core/migrate";
-import { presetSwitches } from "./core/feature-presets";
+import { PRESET_IDS, matchingPreset, presetChanges, presetSwitches, type PresetId } from "./core/feature-presets";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, STAGES, hexColor, normalizeStages, stageConflicts, writtenWord, type Stage, type StageMapping } from "./core/stages";
 import { FEATURE_IDS, FEATURE_PAGE, FEATURE_SPECS, cleanFeatures, wanted, type FeatureId } from "./core/features";
 import { switchesOf } from "./core/feature-registry";
@@ -679,6 +679,8 @@ export class EscritaSettingTab extends PluginSettingTab {
         d.selectEl.setAttr("aria-label", t("settings.language"));
       });
 
+    this.presetBlock(containerEl, ui);
+
     for (const { group, ids } of FEATURE_PAGE) {
       containerEl.createDiv({ cls: "escrita-feature-group", text: t(`settings.features.group.${group}`), attr: { role: "heading", "aria-level": "3" } });
       if (group === "desk") {
@@ -736,6 +738,68 @@ export class EscritaSettingTab extends PluginSettingTab {
         if (id === "explorerCounts" && on) this.drawModule("explorerCounts", containerEl, ui);
       }
     }
+  }
+
+  /**
+   * The presets (board 38): a label ("Custom" unless the switches match one), three buttons,
+   * and a confirm step that lists what turns off and on. Nothing is saved before Apply. Only
+   * this block redraws while asking, so the page keeps its scroll. The setup link shows only
+   * while there is no home note.
+   */
+  private presetBlock(containerEl: HTMLElement, ui: SettingsUi): void {
+    const s = this.plugin.settings;
+    const block = containerEl.createDiv({ cls: "escrita-presets" });
+    let asking: PresetId | null = null;
+    const name = (id: PresetId) => t(`settings.features.preset.${id}`);
+    const order = FEATURE_PAGE.flatMap((g) => g.ids);
+    const list = (ids: FeatureId[]) => ids.length
+      ? [...ids].sort((a, b) => order.indexOf(a) - order.indexOf(b)).map((id) => t(`settings.features.${id}`)).join(", ")
+      : t("settings.features.preset.nothing");
+
+    const draw = () => {
+      block.empty();
+      const current = matchingPreset(switchesOf(s));
+      const head = block.createDiv({ cls: "escrita-presets-head" });
+      head.createSpan({ cls: "escrita-presets-title", text: t("settings.features.preset.label") });
+      head.createSpan({ cls: "escrita-tag escrita-presets-state", text: current ? name(current) : t("settings.features.preset.custom") });
+      const row = block.createDiv({ cls: "escrita-presets-row", attr: { role: "group", "aria-label": t("settings.features.preset.group") } });
+      for (const id of PRESET_IDS) {
+        const b = row.createEl("button", { cls: "escrita-preset-btn", text: name(id) });
+        b.toggleClass("is-active", current === id || asking === id);
+        b.setAttr("aria-pressed", String(current === id));
+        b.addEventListener("click", () => { asking = id; draw(); });
+      }
+      if (asking) {
+        const target = asking;
+        const changes = presetChanges(switchesOf(s), target);
+        if (changes.off.length + changes.on.length === 0) {
+          block.createDiv({ cls: "setting-item-description", text: t("settings.features.preset.already", { name: name(target) }) });
+        } else {
+          const box = block.createDiv({ cls: "escrita-presets-confirm", attr: { role: "group", "aria-label": t("settings.features.preset.confirmGroup") } });
+          box.createDiv({ cls: "escrita-presets-ask", text: t("settings.features.preset.confirm", { name: name(target) }) });
+          for (const [key, ids] of [["off", changes.off], ["on", changes.on]] as const) {
+            const line = box.createDiv({ cls: "escrita-presets-change" });
+            line.createSpan({ cls: "escrita-presets-kind", text: t(`settings.features.preset.${key}`) });
+            line.createSpan({ text: list(ids) });
+          }
+          const note = [t("settings.features.preset.kept"), target === "everything" ? t("settings.features.preset.universe") : ""].filter(Boolean).join(" ");
+          box.createDiv({ cls: "setting-item-description", text: note });
+          const btns = box.createDiv({ cls: "escrita-presets-btns" });
+          btns.createEl("button", { text: t("settings.features.preset.cancel") })
+            .addEventListener("click", () => { asking = null; draw(); });
+          btns.createEl("button", { cls: "mod-cta", text: t("settings.features.preset.apply") })
+            .addEventListener("click", () => {
+              Object.assign(s, presetSwitches(target, switchesOf(s)));
+              void ui.save().then(() => this.display());
+            });
+        }
+      }
+      if (!this.plugin.setup.hasHomeNote()) {
+        block.createEl("button", { cls: "escrita-link escrita-presets-setup", text: t("settings.features.setupLink") })
+          .addEventListener("click", () => this.plugin.setup.open());
+      }
+    };
+    draw();
   }
 
   /** Turning off a feature that keeps data says what stays and where (board FeaturesStates, state 1). */
