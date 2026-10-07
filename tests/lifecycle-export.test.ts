@@ -206,6 +206,7 @@ describe("export lifecycle", () => {
     expect(settingLog.map((r) => r.name)).toEqual([
       "Export", "Left-out property", "Dedication property", "Epigraph property", "Author property",
       "Author name", "Surname for the header", "Contact lines", "Chapter heading",
+      "Cover property", "EPUB scene break", "Collection property",
     ]);
     expect(settingLog[0].heading).toBe(true);
   });
@@ -311,6 +312,121 @@ describe("a note's export", () => {
     expect(typeof created[0].data).toBe("string");
     expect(created[0].data).toContain("por Ana Souza");
     expect(created[0].data).toContain("Dois dias depois, foi embora.");
+  });
+
+  describe("EPUB", () => {
+    const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+    const JPG = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1, 2]);
+    let binaries: Record<string, Uint8Array | Error>;
+    const files = (z: Uint8Array): string => new TextDecoder("latin1").decode(z);
+
+    beforeEach(() => {
+      binaries = {};
+      (plugin.app.vault as unknown as { readBinary: unknown }).readBinary = async (f: TFile) => {
+        const b = binaries[f.path];
+        if (!b || b instanceof Error) throw b ?? new Error("gone");
+        return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+      };
+      plugin.settings.epubSceneBreak = "◆";
+    });
+
+    it("writes an EPUB named with its preset, through notes.create", async () => {
+      expect(await write(state({ format: "epub", preset: "ptbr" }))).toBe(true);
+      expect(created[0].path).toBe("Escrita/Exports/O porão (pt-BR).epub");
+      expect(created[0].exists).toBe("fail");
+      const bytes = created[0].data as Uint8Array;
+      expect(String.fromCharCode(bytes[0], bytes[1])).toBe("PK");
+      expect(files(bytes)).toContain("application/epub+zip");
+      expect(plugin.data.exportChoices[CONTO]).toMatchObject({ format: "epub", preset: "ptbr" });
+      expect(plugin.data.exportChoices[CONTO].last!.path).toBe("Escrita/Exports/O porão (pt-BR).epub");
+    });
+
+    it("reads no cover when the property is missing, and warns about nothing", async () => {
+      active = vaultFiles.get(CONTO)!;
+      run("export");
+      const built = await host().build(state({ format: "epub" }));
+      expect(built.cover).toBeNull();
+      expect(built.warnings.map((w) => w.id)).not.toContain("cover");
+    });
+
+    it("reads a PNG or JPEG cover as binary and puts it in the book", async () => {
+      addFile("Contos/capa.png", "");
+      binaries["Contos/capa.png"] = PNG;
+      fm[CONTO] = { cover: "[[capa.png]]" };
+      active = vaultFiles.get(CONTO)!;
+      run("export");
+      const built = await host().build(state({ format: "epub" }));
+      expect(built.cover).toMatchObject({ mediaType: "image/png" });
+      expect([...built.cover!.data]).toEqual([...PNG]);
+      expect(built.warnings.map((w) => w.id)).not.toContain("cover");
+      await host().write(state({ format: "epub" }), built);
+      expect(files(created[0].data as Uint8Array)).toContain("images/cover.png");
+      binaries["Contos/capa.png"] = JPG;
+      fm[CONTO] = { cover: "![[capa.png]]" };
+      expect((await host().build(state({ format: "epub" }))).cover).toMatchObject({ mediaType: "image/jpeg" });
+    });
+
+    it.each([
+      ["a link to nothing", () => { fm[CONTO] = { cover: "[[sumiu.png]]" }; }],
+      ["an unreadable file", () => { addFile("Contos/capa.png", ""); binaries["Contos/capa.png"] = new Error("EIO"); fm[CONTO] = { cover: "[[capa.png]]" }; }],
+      ["a file that is not JPEG or PNG", () => { addFile("Contos/capa.png", ""); binaries["Contos/capa.png"] = Uint8Array.from([0x47, 0x49, 0x46, 0x38]); fm[CONTO] = { cover: "[[capa.png]]" }; }],
+    ])("warns and goes on without a cover for %s", async (_name, setup) => {
+      setup();
+      active = vaultFiles.get(CONTO)!;
+      run("export");
+      const built = await host().build(state({ format: "epub" }));
+      expect(built.cover).toBeNull();
+      const w = built.warnings.find((x) => x.id === "cover")!;
+      expect(w).toMatchObject({ level: "warning", n: 1 });
+      expect(w.names[0]).toMatch(/^(sumiu|capa)\.png$/);
+      expect(await host().write(state({ format: "epub" }), built)).toBe(true);
+      expect(files(created[0].data as Uint8Array)).not.toContain("images/cover");
+    });
+
+    it("reads the cover only for an EPUB", async () => {
+      fm[CONTO] = { cover: "[[sumiu.png]]" };
+      active = vaultFiles.get(CONTO)!;
+      run("export");
+      const built = await host().build(state({ format: "docx" }));
+      expect(built.cover).toBeUndefined();
+      expect(built.warnings.map((w) => w.id)).not.toContain("cover");
+    });
+
+    it("takes a book's cover from the book note, not from a chapter", async () => {
+      addBook();
+      addFile("Novels/capa.png", "");
+      binaries["Novels/capa.png"] = PNG;
+      fm[BOOK_NOTE] = { ...fm[BOOK_NOTE], cover: "[[capa.png]]" };
+      active = vaultFiles.get(CH[1])!;
+      placement[CH[1]] = { path: CH[1], kind: "chapter", book: (plugin.books as unknown as { _book: unknown })._book, snapshot: false, submission: false, export: false };
+      run("export");
+      const whole = await host().build(state({ whole: true, format: "epub" }));
+      expect(whole.cover).toMatchObject({ mediaType: "image/png" });
+      const alone = await host().build(state({ whole: false, format: "epub" }));
+      expect(alone.cover).toBeNull();
+    });
+
+    it("keeps the identifier of a work across exports and repeats an EPUB with Export again", async () => {
+      const s = state({ format: "epub", preset: "ptbr" });
+      await write(s);
+      await write(s);
+      const id = (z: Uint8Array) => /urn:uuid:[0-9a-f-]+/.exec(files(z))![0];
+      expect(id(created[1].data as Uint8Array)).toBe(id(created[0].data as Uint8Array));
+      created.length = 0;
+      active = vaultFiles.get(CONTO)!;
+      vaultFiles.set("Escrita/Exports/O porão (pt-BR).epub", file("Escrita/Exports/O porão (pt-BR).epub"));
+      placement["Escrita/Exports/O porão (pt-BR).epub"] = { export: true };
+      plugin.app.vault.files.set("Escrita/Exports/O porão (pt-BR).epub", vaultFiles.get("Escrita/Exports/O porão (pt-BR).epub")!);
+      run("export-again");
+      await vi.waitFor(() => expect(created).toHaveLength(1));
+      expect(created[0]).toMatchObject({ path: "Escrita/Exports/O porão (pt-BR).epub", exists: "replace" });
+    });
+
+    it("hands the modal the EPUB scene break", () => {
+      active = vaultFiles.get(CONTO)!;
+      run("export");
+      expect(opts().epubSceneBreak).toBe("◆");
+    });
   });
 
   it("uses the export folder setting, normalized", async () => {

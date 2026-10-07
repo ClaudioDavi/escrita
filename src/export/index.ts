@@ -13,13 +13,14 @@ import { NoteExistsError, FolderBlockedError } from "../core/notes";
 import { macrotaskYield, yieldBudget } from "../core/vault-index";
 import { lang, t } from "../i18n";
 import {
-  authorOf, canRepeat, choiceOfLast, dropChoices, exportFileName, inFolder, keepBothName, lastInPlace, linkTarget, placeOf, planChapters, renameChoices,
+  authorOf, canRepeat, choiceOfLast, coverLink, coverMediaType, dropChoices, exportFileName, inFolder, keepBothName, lastInPlace, linkTarget, placeOf, planChapters, renameChoices,
 } from "./logic";
 import { ExportModal, askExists, askWhere, type BookOptions, type ExportHost, type ModalState } from "./modal";
 import { presetById } from "./presets";
 import { exportSettingsSection } from "./settings-ui";
-import { buildExport, needsConfirm, type Built, type ExportPlan, type PartPlan } from "./source";
+import { buildExport, needsConfirm, withCoverWarning, type Built, type ExportPlan, type PartPlan } from "./source";
 import { docxWriter } from "./writers/docx";
+import { epubIdentifier, epubLayout, epubModified, epubWriter, type EpubCover } from "./writers/epub";
 import { markdownWriter } from "./writers/markdown";
 
 type Frontmatter = Record<string, unknown>;
@@ -219,7 +220,7 @@ export class ExportModule extends FeatureModule {
       yieldNow: macrotaskYield,
       now: () => performance.now(),
     });
-    return buildExport(plan, {
+    const built = await buildExport(plan, {
       read: (path) => source.read(path),
       count: (path, read) => {
         const f = p.app.vault.getAbstractFileByPath(path);
@@ -229,6 +230,34 @@ export class ExportModule extends FeatureModule {
       },
       checkpoint,
     });
+    if (state.format !== "epub") return built;
+    const { cover, name } = await this.readCover(target, state);
+    return { ...built, cover, warnings: name === null ? built.warnings : withCoverWarning(built.warnings, name) };
+  }
+
+  /**
+   * The EPUB cover (Q8, D3): the cover property of the book note (the whole book) or of the
+   * note itself (a note, a chapter alone), a link to an image read as binary through the vault.
+   * No property: no cover, no warning. A configured one that is missing, unreadable or neither
+   * JPEG nor PNG gives `name` (the link as written) for the readiness warning, and no cover.
+   */
+  private async readCover(target: Target, state: ModalState): Promise<{ cover: EpubCover | null; name: string | null }> {
+    const { app, settings } = this.plugin;
+    const prop = settings.coverProperty.trim();
+    if (prop === "") return { cover: null, name: null };
+    const holder = target.book && state.whole ? target.book.note.path : target.file.path;
+    const link = coverLink(this.frontmatter(holder)[prop]);
+    if (link === null) return { cover: null, name: null };
+    const dest = app.metadataCache.getFirstLinkpathDest(link, holder);
+    if (!(dest instanceof TFile)) return { cover: null, name: link };
+    let data: Uint8Array;
+    try {
+      data = new Uint8Array(await app.vault.readBinary(dest));
+    } catch {
+      return { cover: null, name: link };
+    }
+    const mediaType = coverMediaType(data);
+    return mediaType === null ? { cover: null, name: link } : { cover: { data, mediaType }, name: null };
   }
 
   // ------------------------------------------------------------------ opening
@@ -251,7 +280,7 @@ export class ExportModule extends FeatureModule {
       };
     }
     new ExportModal(this.plugin.app, {
-      book, state, last, marker: s.placeholderMarker,
+      book, state, last, marker: s.placeholderMarker, epubSceneBreak: s.epubSceneBreak,
       host: this.host(target.file),
     }).open();
   }
@@ -342,14 +371,17 @@ export class ExportModule extends FeatureModule {
   private async write(target: Target, state: ModalState, built: Built, again = false): Promise<boolean> {
     const p = this.plugin;
     const preset = presetById(state.preset);
-    const writer = state.format === "docx" ? docxWriter : markdownWriter;
     const title = this.titleFor(target, state);
     const path = this.pathFor(title, state);
     let data: string | Uint8Array;
     try {
-      // EPUB is a format from 0.9 on; the modal offers it from task 2.4, which writes it here
-      if (state.format === "epub") throw new Error("not implemented: 0.9 task 2.4");
-      data = writer.write(built.doc, preset);
+      if (state.format === "epub") {
+        // the identifier is the work's: a book note's or a note's path with the title, so a re-export keeps its id
+        data = epubWriter.write(
+          { doc: built.doc, identifier: epubIdentifier(target.key, title), modified: epubModified(new Date()), cover: built.cover ?? null },
+          epubLayout(preset, p.settings.epubSceneBreak),
+        );
+      } else data = (state.format === "docx" ? docxWriter : markdownWriter).write(built.doc, preset);
     } catch (e) {
       console.error("Escrita: couldn't format the export", e);
       new Notice(t("export.error"));

@@ -355,6 +355,62 @@
   outline: 1px solid rgba(217, 119, 87, 0.55);
   border-radius: 2px;
 }
+
+/* EPUB reading column (board 31): a reflowable page, not a manuscript */
+.escrita-export-paper.is-epub {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 16px;
+  line-height: 1.55;
+}
+.escrita-export-paper.is-epub p {
+  text-indent: 1.4em;
+}
+.escrita-export-paper.is-epub .escrita-export-front,
+.escrita-export-paper.is-epub .escrita-export-quote {
+  margin-left: 1.4em;
+  text-indent: 0;
+}
+.escrita-export-paper.is-epub .escrita-export-front {
+  margin-left: 0;
+}
+.escrita-export-title.is-epub {
+  margin: 1em 0 0.2em;
+  font-size: 1.6em;
+  text-transform: none;
+}
+.escrita-export-cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 160px;
+  aspect-ratio: 2 / 3;
+  margin: 0 auto;
+  border: 1px solid #d9d4ca;
+  background: #e8e3d8;
+  overflow: hidden;
+}
+.escrita-export-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.escrita-export-contents-title {
+  margin: 0 0 8px;
+  text-align: center;
+  font-weight: bold;
+}
+.escrita-export-contents {
+  margin: 0 auto 8px;
+  padding: 0 0 0 1.4em;
+  max-width: 24em;
+}
+.escrita-export-chapter.is-opener {
+  margin: 44px 0 18px;
+  padding-top: 18px;
+  border-top: 1px solid #d9d4ca;
+  font-size: 1.25em;
+  font-weight: bold;
+}
 .escrita-export-tip {
   position: absolute;
   right: var(--size-4-4);

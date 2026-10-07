@@ -6,6 +6,7 @@
 //     → buildExport (reads each part once, through plugin.notes, so unsaved text counts)
 //     → { source: ExportSource, labels, warnings }
 
+import type { EpubCover } from "./writers/epub";
 import type { Author, ExportDoc, ExportPart, ExportSource } from "../core/export-pipeline";
 import { droppedIn, exportDocOf } from "../core/export-pipeline";
 import { segment } from "../core/markdown";
@@ -81,14 +82,14 @@ export interface WarningLink {
   where: string;
 }
 
-export type WarningId = ReadinessId | "embeds";
+export type WarningId = ReadinessId | "cover" | "embeds";
 
 export interface Warning {
   id: WarningId;
   /** a blocker or warning asks for "Export anyway"; info (embeds) only reports */
   level: "blocker" | "warning" | "info";
   n: number;
-  /** embeds: the dropped targets, each once, in order */
+  /** embeds: the dropped targets, each once, in order; cover: the configured link */
   names: string[];
   links: WarningLink[];
 }
@@ -102,9 +103,21 @@ export interface Built {
   /** the label of each source part, same order */
   labels: string[];
   warnings: Warning[];
+  /** the EPUB cover image (Q8), when the format is EPUB and the cover property gave a usable image */
+  cover?: EpubCover | null;
 }
 
-const ORDER: WarningId[] = ["placeholders", "unclosedComment", "unclosedHtmlComment", "unwrittenBeats", "emptyBody", "embeds"];
+const ORDER: WarningId[] = ["placeholders", "unclosedComment", "unclosedHtmlComment", "unwrittenBeats", "emptyBody", "cover", "embeds"];
+
+/**
+ * The warning for a cover that is configured but can't be used (Q8): missing, unreadable, or
+ * not JPEG or PNG. It asks for a confirmation like any warning; the export goes on without a
+ * cover. `name` is the link as the note writes it. Placed before the embeds, by ORDER.
+ */
+export function withCoverWarning(warnings: readonly Warning[], name: string): Warning[] {
+  const cover: Warning = { id: "cover", level: "warning", n: 1, names: [name], links: [] };
+  return ORDER.flatMap((id) => (id === "cover" ? [cover] : warnings.filter((w) => w.id === id)));
+}
 
 /** Reads every part once and measures the body, then collects the warnings. */
 export async function buildExport(plan: ExportPlan, ports: ExportPorts): Promise<Built> {

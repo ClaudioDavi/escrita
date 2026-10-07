@@ -59,11 +59,11 @@ export function fileTitle(title: string): string {
   return s === "" ? "Export" : s;
 }
 
-/** `<title>.md`, `<title>.epub` (0.9, PLAN-0.9 Q5), or `<title> (<preset>).docx` (Q3). */
+/** `<title>.md`, or `<title> (<preset>).docx` / `.epub` (Q3; D2: an EPUB names its preset as DOCX does). */
 export function exportFileName(title: string, format: ExportFormat, preset: string): string {
   const base = fileTitle(title);
-  if (format === "md" || format === "epub") return `${base}.${format}`;
-  return `${base} (${presetLabel(preset)}).docx`;
+  if (format === "md") return `${base}.md`;
+  return `${base} (${presetLabel(preset)}).${format}`;
 }
 
 /** "2026-10-05 14h32", local time (the keep-both name, G1). */
@@ -72,11 +72,11 @@ export function stamp(d: Date): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}h${p(d.getMinutes())}`;
 }
 
-/** The keep-both name: `<title> (<preset>) YYYY-MM-DD HHhMM.docx`, or `<title> YYYY-MM-DD HHhMM.md` (and `.epub`). */
+/** The keep-both name: `<title> (<preset>) YYYY-MM-DD HHhMM.docx` (or `.epub`), or `<title> YYYY-MM-DD HHhMM.md`. */
 export function keepBothName(title: string, format: ExportFormat, preset: string, at: Date): string {
   const base = fileTitle(title);
-  if (format === "md" || format === "epub") return `${base} ${stamp(at)}.${format}`;
-  return `${base} (${presetLabel(preset)}) ${stamp(at)}.docx`;
+  if (format === "md") return `${base} ${stamp(at)}.md`;
+  return `${base} (${presetLabel(preset)}) ${stamp(at)}.${format}`;
 }
 
 /** folder + name, without a doubled or leading slash; an empty folder is the vault root. */
@@ -93,6 +93,26 @@ export function linkTarget(value: unknown): string | null {
   const m = /^\s*\[\[([^\]|#]*)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]\s*$/.exec(value);
   const target = (m ? m[1] : value).trim();
   return target === "" ? null : target;
+}
+
+/**
+ * The link a cover property holds (Q8, D3): `[[capa.png]]`, `![[capa.png]]`, `[[pasta/capa.png|x]]`
+ * or plain text; YAML reads an unquoted `[[x]]` as a nested list, so the first text inside a list
+ * counts. Null when there is none.
+ */
+export function coverLink(value: unknown): string | null {
+  let v: unknown = value;
+  while (Array.isArray(v)) v = v[0];
+  if (typeof v !== "string") return null;
+  return linkTarget(v.trim().replace(/^!/, ""));
+}
+
+/** The image type of a cover from its first bytes (JPEG or PNG), else null: the extension is not trusted. */
+export function coverMediaType(data: Uint8Array): "image/jpeg" | "image/png" | null {
+  if (data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) return "image/jpeg";
+  const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  if (data.length >= png.length && png.every((b, i) => data[i] === b)) return "image/png";
+  return null;
 }
 
 /** A string property, trimmed; "" when it is missing or not text. */

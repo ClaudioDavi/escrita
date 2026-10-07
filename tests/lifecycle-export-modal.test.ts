@@ -5,7 +5,7 @@ import { registerStrings } from "../src/i18n";
 import type { LastExport } from "../src/data";
 import { ChaptersModal, ExportModal, type BookOptions, type ExportHost, type ExportModalOptions, type ModalState } from "../src/export/modal";
 import { exportStrings } from "../src/export/strings";
-import { buildExport, type Built, type ExportPlan } from "../src/export/source";
+import { buildExport, withCoverWarning, type Built, type ExportPlan } from "../src/export/source";
 
 beforeAll(() => registerStrings(exportStrings));
 beforeEach(() => vi.useFakeTimers());
@@ -132,6 +132,60 @@ describe("the export modal: a book (board 26 a)", () => {
     el.querySelector<HTMLElement>("[aria-label='Template'] button:not(.is-on)")!.click();
     await settle();
     expect(host.built).toHaveBeenCalledTimes(2);
+  });
+
+  describe("EPUB (board 31)", () => {
+    const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const builds = vi.fn();
+    beforeEach(() => builds.mockClear());
+    const epubHost = (cover: boolean) => fakeHost({
+      build: async (s: ModalState) => {
+        builds();
+        const b = await build(["A/Chapters/Prólogo.md", "A/Chapters/03 A casa.md"]);
+        if (s.format !== "epub") return b;
+        return cover ? { ...b, cover: { data: PNG, mediaType: "image/png" as const } } : { ...b, cover: null, warnings: withCoverWarning(b.warnings, "capa.png") };
+      },
+    });
+
+    it("offers EPUB as the third format, and reads the cover only when it is chosen", async () => {
+      const host = epubHost(true);
+      const { el } = open({ host });
+      await settle();
+      expect([...el.querySelectorAll("[aria-label='Format'] button")].map((b) => b.textContent)).toEqual(["DOCX", "Markdown", "EPUB"]);
+      expect(builds).toHaveBeenCalledTimes(1);
+      btn(el, "EPUB").click();
+      await settle();
+      expect(builds).toHaveBeenCalledTimes(2);
+      expect(el.querySelector(".escrita-export-where")!.textContent).toContain("cover, title page, contents");
+      btn(el, "DOCX").click();
+      await settle();
+      expect(builds).toHaveBeenCalledTimes(3);
+    });
+
+    it("warns about a cover that can't be used, and the button reads Exportar mesmo assim in pt-BR", async () => {
+      const host = epubHost(false);
+      const { el } = open({ host, state: { whole: true, selection: { mode: "all" }, format: "epub", preset: "ptbr" } });
+      await settle();
+      const rows = [...el.querySelectorAll(".escrita-export-wl")].map((r) => r.querySelector(".escrita-export-wtext")!.textContent);
+      expect(rows).toContain("The cover “capa.png” is missing, can’t be read or isn’t a JPEG or PNG: the EPUB goes without a cover");
+      expect(btn(el, "Export anyway")).toBeDefined();
+      expect(exportStrings["pt-BR"]["export.buttonAnyway"]).toBe("Exportar mesmo assim");
+    });
+
+    it("previews the reading column: contents and chapter openers, the EPUB scene break", async () => {
+      const host = epubHost(true);
+      const { el } = open({ host, epubSceneBreak: "◆", state: { whole: true, selection: { mode: "all" }, format: "epub", preset: "ptbr" } });
+      await settle();
+      btn(el, "Preview").click();
+      const paper = el.querySelector(".escrita-export-paper")!;
+      expect(paper.classList.contains("is-epub")).toBe(true);
+      expect(paper.querySelector(".escrita-export-cover")).not.toBeNull();
+      expect(paper.querySelector(".escrita-export-contents-title")!.textContent).toBe("Sumário");
+      expect([...paper.querySelectorAll(".escrita-export-contents li")].map((l) => l.textContent)).toEqual(["Heading 0", "Heading 1"]);
+      expect(paper.querySelectorAll(".escrita-export-chapter.is-opener")).toHaveLength(2);
+      expect(paper.querySelector(".escrita-export-count")).toBeNull();
+      expect(paper.querySelector(".escrita-export-end")).toBeNull();
+    });
   });
 
   it("rebuilds after a pause when a range input changes", async () => {

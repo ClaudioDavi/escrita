@@ -135,3 +135,13 @@ describe("buildExport: a book", () => {
     expect(seen.mock.calls[0][1].mtime).toBeNull();
   });
 });
+
+describe("withCoverWarning (Q8)", () => {
+  it("adds a confirming warning before the embeds, keeping the others in order", async () => {
+    const { withCoverWarning } = await import("../src/export/source");
+    const w = (id: string, level: "warning" | "info") => ({ id, level, n: 1, names: [], links: [] }) as never;
+    const out = withCoverWarning([w("placeholders", "warning"), w("embeds", "info")], "capa.png");
+    expect(out.map((x) => x.id)).toEqual(["placeholders", "cover", "embeds"]);
+    expect(out[1]).toMatchObject({ level: "warning", n: 1, names: ["capa.png"] });
+  });
+});

@@ -11,7 +11,7 @@ import type EscritaPlugin from "../main";
 export function exportSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
   const s = plugin.settings;
   new Setting(el).setName(t("export.settings.heading")).setHeading();
-  const text = (key: "compileProperty" | "dedicationProperty" | "epigraphProperty" | "authorProperty", name: string): void => {
+  const text = (key: "compileProperty" | "dedicationProperty" | "epigraphProperty" | "authorProperty" | "coverProperty" | "epubSceneBreak" | "collectionProperty", name: string): void => {
     new Setting(el)
       .setName(t(`export.settings.${name}`))
       .setDesc(t(`export.settings.${name}.desc`))
@@ -52,4 +52,7 @@ export function exportSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: E
       c.setPlaceholder(t("export.settings.heading.format.placeholder")).setValue(s.chapterHeadingFormat);
       ui.saveOnCommit(c, () => "", (v) => { s.chapterHeadingFormat = v; });
     });
+  text("coverProperty", "cover");
+  text("epubSceneBreak", "epubBreak");
+  text("collectionProperty", "collection");
 }

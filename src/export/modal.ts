@@ -11,13 +11,13 @@ import { fmt, lang, plural, t } from "../i18n";
 import { choiceOfLast, planChapters, whenText, dayMonthText, presetLabel, type ChapterPlan } from "./logic";
 import { presetById, PRESETS } from "./presets";
 import { needsConfirm, type Built, type Warning } from "./source";
+import { epubLayout } from "./writers/epub";
 import { PreviewWriter } from "./writers/preview";
 
 export interface ModalState {
   /** the whole book (when there is one), or just the active note */
   whole: boolean;
   selection: ExportSelection;
-  /** "epub" is a format (0.9) the modal doesn't offer until task 2.4 */
   format: ExportFormat;
   preset: string;
 }
@@ -68,10 +68,12 @@ export interface ExportModalOptions {
   last: LastExport | null;
   /** the placeholder marker word from settings, for "2 XXX markers" */
   marker: string;
+  /** the `epubSceneBreak` setting, for the EPUB preview */
+  epubSceneBreak?: string;
   host: ExportHost;
 }
 
-const FORMATS: ("docx" | "md")[] = ["docx", "md"];
+const FORMATS: ExportFormat[] = ["docx", "md", "epub"];
 
 /** The file name part of a path, without the extension. */
 function baseName(path: string): string {
@@ -88,6 +90,7 @@ export class ExportModal extends Modal {
   private failed = false;
   private busy = false;
   private timer: number | null = null;
+  private coverUrl: string | null = null;
   // regions redrawn without redrawing the whole view (a range input keeps its focus)
   private dyn: { warn: HTMLElement; where: HTMLElement; last: HTMLElement; footer: HTMLElement } | null = null;
 
@@ -105,8 +108,14 @@ export class ExportModal extends Modal {
 
   onClose(): void {
     this.seq++;
+    this.dropCoverUrl();
     if (this.timer !== null) window.clearTimeout(this.timer);
     this.contentEl.empty();
+  }
+
+  private dropCoverUrl(): void {
+    if (this.coverUrl) URL.revokeObjectURL(this.coverUrl);
+    this.coverUrl = null;
   }
 
   // ------------------------------------------------------------------ state
@@ -120,7 +129,8 @@ export class ExportModal extends Modal {
 
   private key(): string {
     const s = this.state;
-    return JSON.stringify([s.whole, s.whole ? s.selection : null, s.preset]);
+    // an EPUB reads its cover too, so it is built apart from the same text in another format
+    return JSON.stringify([s.whole, s.whole ? s.selection : null, s.preset, s.format === "epub"]);
   }
 
   private emptyChoice(): boolean {
@@ -219,8 +229,11 @@ export class ExportModal extends Modal {
 
     const format = this.field(t("export.format"));
     this.chips(format, t("export.format"), FORMATS.map((f) => ({ label: t(`export.format.${f}`), on: this.state.format === f })), (i) => {
+      const wasEpub = this.state.format === "epub";
       this.state.format = FORMATS[i];
       this.render();
+      // the cover is read for an EPUB only: build again when the format crosses that line
+      if (wasEpub !== (this.state.format === "epub")) this.changed();
     });
     const preset = this.field(t("export.preset"));
     // the template of the UI language comes first (board 26: pt-BR leads for a Portuguese writer)
@@ -397,6 +410,7 @@ export class ExportModal extends Modal {
       case "unclosedComment": return t("export.warn.unclosedComment");
       case "unclosedHtmlComment": return t("export.warn.unclosedHtmlComment");
       case "emptyBody": return t("export.warn.emptyBody");
+      case "cover": return t("export.warn.cover", { names });
     }
   }
 
@@ -412,7 +426,8 @@ export class ExportModal extends Modal {
     const count = this.aboutText(built.source.count.amount, built.source.count.unit);
     const book = this.o.book !== null && this.state.whole;
     let sentence: string;
-    if (!book) sentence = t("export.where.note", { count });
+    if (this.state.format === "epub") sentence = t(built.cover ? "export.where.epubCover" : "export.where.epub");
+    else if (!book) sentence = t("export.where.note", { count });
     else {
       const front = this.o.book!.front;
       const label = front.length === 2 ? "both" : front[0];
@@ -506,6 +521,7 @@ export class ExportModal extends Modal {
 
   private renderPreview(): void {
     const { contentEl } = this;
+    this.dropCoverUrl();
     this.modalEl?.addClass("is-preview");
     this.setTitle("");
     const head = contentEl.createDiv({ cls: "escrita-export-phead" });
@@ -522,7 +538,16 @@ export class ExportModal extends Modal {
     const built = this.built;
     if (!built) scroll.createDiv({ cls: "escrita-export-muted", text: t("export.reading") });
     else {
+      const epub = this.state.format === "epub";
+      const layout = epubLayout(presetById(this.state.preset), this.o.epubSceneBreak ?? "");
+      this.coverUrl = null;
+      if (epub && built.cover) {
+        try {
+          this.coverUrl = URL.createObjectURL(new Blob([built.cover.data as BlobPart], { type: built.cover.mediaType }));
+        } catch { /* no object URLs here: the preview draws a plain cover box */ }
+      }
       const writer = new PreviewWriter(scroll, {
+        epub: epub ? { sceneBreak: layout.sceneBreak, contentsLabel: layout.contentsLabel, cover: built.cover != null, coverUrl: this.coverUrl } : undefined,
         where: (part) => built.labels[part] ?? "",
         tip: (part, line) => t("export.preview.tip", { where: built.labels[part] ?? "", line: fmt(line + 1) }),
         open: (part, line) => { const path = built.paths[part]; if (path) { this.close(); this.o.host.jump(path, line); } },

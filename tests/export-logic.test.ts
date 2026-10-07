@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ChapterRef } from "../src/core/book-source";
 import { cleanExportChoices, type ExportChoice } from "../src/data";
 import {
-  authorOf, choiceOfLast, dropChoices, exportFileName, fileTitle, inFolder, keepBothName, linkTarget, planChapters,
+  authorOf, choiceOfLast, coverLink, coverMediaType, dropChoices, exportFileName, fileTitle, inFolder, keepBothName, linkTarget, planChapters,
   presetLabel, renameChoices, stamp, whenText, dayMonthText,
 } from "../src/export/logic";
 
@@ -75,6 +75,9 @@ describe("file names (Q3, G1)", () => {
     expect(exportFileName("O porão", "md", "shunn")).toBe("O porão.md");
     expect(exportFileName("O porão", "docx", "shunn")).toBe("O porão (Shunn).docx");
     expect(exportFileName("A Casa", "docx", "ptbr")).toBe("A Casa (pt-BR).docx");
+    // D2: an EPUB names its preset too, so two presets don't overwrite each other
+    expect(exportFileName("A Casa", "epub", "ptbr")).toBe("A Casa (pt-BR).epub");
+    expect(exportFileName("A Casa", "epub", "shunn")).toBe("A Casa (Shunn).epub");
     expect(presetLabel("custom")).toBe("custom");
   });
   it("keeps both with the export's date and time", () => {
@@ -82,6 +85,7 @@ describe("file names (Q3, G1)", () => {
     expect(stamp(at)).toBe("2026-10-05 14h32");
     expect(keepBothName("O porão", "docx", "shunn", at)).toBe("O porão (Shunn) 2026-10-05 14h32.docx");
     expect(keepBothName("O porão", "md", "shunn", at)).toBe("O porão 2026-10-05 14h32.md");
+    expect(keepBothName("O porão", "epub", "ptbr", at)).toBe("O porão (pt-BR) 2026-10-05 14h32.epub");
     expect(stamp(new Date(2026, 0, 3, 4, 5))).toBe("2026-01-03 04h05");
   });
   it("makes a safe title, never empty", () => {
@@ -223,5 +227,24 @@ describe("repeating an export (Q17)", () => {
     const choices = { "B.md": { format: "docx" as const, preset: "shunn", whole: false, last: { ...last } } };
     expect(renameChoicesAgain(choices, "B/C.md", "B/Z.md")).toBe(true);
     expect(choices["B.md"].last.source).toBe("B/Z.md");
+  });
+});
+
+describe("the cover property (Q8, D3)", () => {
+  it("reads the link of a wikilink, an embed, a nested list or plain text", () => {
+    expect(coverLink("[[capa.png]]")).toBe("capa.png");
+    expect(coverLink("![[img/capa.jpg|x]]")).toBe("img/capa.jpg");
+    expect(coverLink([["capa.png"]])).toBe("capa.png");
+    expect(coverLink("capa.png")).toBe("capa.png");
+    expect(coverLink("")).toBeNull();
+    expect(coverLink(undefined)).toBeNull();
+    expect(coverLink(3)).toBeNull();
+  });
+
+  it("tells JPEG and PNG by their first bytes, nothing else", () => {
+    expect(coverMediaType(Uint8Array.from([0xff, 0xd8, 0xff, 0xdb]))).toBe("image/jpeg");
+    expect(coverMediaType(Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toBe("image/png");
+    expect(coverMediaType(Uint8Array.from([0x47, 0x49, 0x46, 0x38]))).toBeNull();
+    expect(coverMediaType(new Uint8Array(0))).toBeNull();
   });
 });

@@ -18,7 +18,22 @@ export interface PreviewHooks {
   /** a click on a block that knows its line */
   open?(part: number, line: number): void;
   /** the band labels, by role ("dedication", "epigraph", "text") */
-  zone?(kind: "dedication" | "epigraph" | "text"): string;
+  zone?(kind: "dedication" | "epigraph" | "text" | "cover" | "contents"): string;
+  /**
+   * Draw an EPUB's reading column instead of a manuscript (0.9, board 31): no contact lines, no
+   * word count, no end mark; the cover, the title page, the table of contents and each chapter
+   * opening a section, with the EPUB's own scene break. Absent: the manuscript.
+   */
+  epub?: {
+    /** the `epubSceneBreak` setting */
+    sceneBreak: string;
+    /** the contents' title in the preset's language ("Sumário") */
+    contentsLabel: string;
+    /** the cover image's object URL; null draws a plain cover box when `cover` is true */
+    coverUrl: string | null;
+    /** the book has a cover image */
+    cover: boolean;
+  };
 }
 
 function appendRuns(el: HTMLElement, runs: readonly Run[]): void {
@@ -52,17 +67,20 @@ export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
   write(doc: ExportDoc, preset: Preset): string {
     const host = this.host;
     host.empty();
-    const paper = host.createDiv({ cls: "escrita-export-paper", attr: { lang: preset.language } });
-    paper.setCssStyles({
+    const epub = this.hooks.epub;
+    const paper = host.createDiv({ cls: epub ? "escrita-export-paper is-epub" : "escrita-export-paper", attr: { lang: preset.language } });
+    if (!epub) paper.setCssStyles({
       fontFamily: `"${preset.font.family}", "Times New Roman", Times, serif`,
       fontSize: `${preset.font.size * PX}px`,
       lineHeight: String(preset.lineSpacing),
     });
-    paper.style.setProperty("--escrita-export-indent", `${preset.indent * PX}px`);
+    if (!epub) paper.style.setProperty("--escrita-export-indent", `${preset.indent * PX}px`);
     const tip = host.createDiv({ cls: "escrita-export-tip" });
     tip.hide?.();
 
-    this.titlePage(paper, doc, preset);
+    if (epub) {
+      this.epubFront(paper, doc, preset, epub);
+    } else this.titlePage(paper, doc, preset);
 
     const book = isBookDoc(doc);
     let firstBody = true;
@@ -72,18 +90,38 @@ export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
       if (part.role !== "body" && blocks.length === 0) return;
       wrote = true;
       // bands only where a book's file starts a page for its front matter and its text
-      if (book) {
+      if (book && !epub) {
         if (part.role !== "body") this.zone(paper, part.role);
         else if (firstBody && part.heading !== null) this.zone(paper, "text");
       }
       if (part.role === "body") firstBody = false;
-      if (part.role === "body" && part.heading !== null) paper.createDiv({ cls: "escrita-export-chapter", text: part.heading });
+      if (epub && part.role !== "body") this.zone(paper, part.role);
+      if (part.role === "body" && part.heading !== null) paper.createDiv({ cls: epub ? "escrita-export-chapter is-opener" : "escrita-export-chapter", text: part.heading });
       for (const b of blocks) this.block(paper, b, index, part.role !== "body", preset);
     });
-    if (wrote && preset.endMark) paper.createDiv({ cls: "escrita-export-end", text: preset.endMark });
+    if (wrote && preset.endMark && !epub) paper.createDiv({ cls: "escrita-export-end", text: preset.endMark });
 
     this.wire(paper, tip);
     return "";
+  }
+
+  /** The EPUB's first pages: the cover, the title page and the table of contents (Q6, board 31). */
+  private epubFront(paper: HTMLElement, doc: ExportDoc, preset: Preset, epub: NonNullable<PreviewHooks["epub"]>): void {
+    if (epub.cover) {
+      this.zone(paper, "cover");
+      const box = paper.createDiv({ cls: "escrita-export-cover" });
+      if (epub.coverUrl) box.createEl("img", { attr: { src: epub.coverUrl, alt: "" } });
+    }
+    paper.createDiv({ cls: "escrita-export-title is-epub", text: doc.title });
+    const name = doc.author.name.trim();
+    if (name !== "") paper.createDiv({ cls: "escrita-export-byline", text: fillTemplate(preset.byline, { name }) });
+    this.zone(paper, "contents");
+    paper.createDiv({ cls: "escrita-export-contents-title", text: epub.contentsLabel });
+    const list = paper.createEl("ol", { cls: "escrita-export-contents" });
+    for (const part of doc.parts) {
+      if (part.role !== "body") continue;
+      list.createEl("li", { text: part.heading ?? doc.title });
+    }
   }
 
   private titlePage(paper: HTMLElement, doc: ExportDoc, preset: Preset): void {
@@ -100,7 +138,7 @@ export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
     if (name !== "") paper.createDiv({ cls: "escrita-export-byline", text: fillTemplate(preset.byline, { name }) });
   }
 
-  private zone(paper: HTMLElement, kind: "dedication" | "epigraph" | "text"): void {
+  private zone(paper: HTMLElement, kind: "dedication" | "epigraph" | "text" | "cover" | "contents"): void {
     const label = this.hooks.zone?.(kind) ?? kind;
     paper.createDiv({ cls: "escrita-export-zone", text: label });
   }
@@ -109,7 +147,7 @@ export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
     let el: HTMLElement;
     switch (b.kind) {
       case "sceneBreak":
-        el = paper.createDiv({ cls: "escrita-export-break", text: preset.sceneBreak });
+        el = paper.createDiv({ cls: "escrita-export-break", text: this.hooks.epub?.sceneBreak ?? preset.sceneBreak });
         break;
       case "heading":
         el = paper.createDiv({ cls: `escrita-export-heading is-h${b.level}` });
