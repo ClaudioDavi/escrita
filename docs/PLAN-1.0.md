@@ -118,7 +118,10 @@ approval. Decisions the boards propose, beyond the questions above:
     note on startup"; the setup turns it on when the writer picks this layout. Part of the
     home block feature, no switch of its own. Hiding is a body class
     (`escrita-writing-mode`) plus public workspace calls to collapse and restore the
-    sidebars; nothing is written to the vault.
+    sidebars; nothing is written to the vault. Obsidian has no zen mode of its own, and
+    community plugins do (Zen Mode, Ultra Zen Mode, Easy View); kept anyway (2026-10-07)
+    because the setup can offer it without a second plugin and only Escrita has the goal
+    counter and "Continue". It stays this small; the guide names those plugins for more.
 - **The setup never changes a saved setting without a tick.** In a vault with settings,
   values the writer saved are listed as kept; the features row and the layout come unticked.
   A track folder is added to the list, never swapped.
@@ -182,5 +185,8 @@ approval. Decisions the boards propose, beyond the questions above:
   documented exceptions). Each needs a sentence ready for the reviewer.
 - **The bundle size on phones.** 1.2 MB parsed at startup. Measured in Q8; if it is slow,
   the DOCX and EPUB writers load on first export.
+- **Writing mode next to a zen plugin or theme.** Both hiding the same chrome, or a theme
+  restyling it. Test it with the Minimal theme and one zen plugin on; exiting must restore
+  only what Escrita hid.
 - **Docs size.** Three new guides in two languages and a README rewrite is the largest docs
   wave so far.
