@@ -53,46 +53,6 @@ interface lives. Test through the interface.
 - **Planned for 0.8:** `chaptersPort` moves to core as the book source (candidate 18).
   The beats, the checked edits and the action switch stay in the view.
 
-### 8. One rule for a note's effective piece, including a chapter's book default
-
-**Strength:** medium–strong · **Pairs with:** N 2, candidate 7
-
-- **Problem.** "Piece, then unit, then `noteProgress`" is written out in several places:
-  - `core/measurer.ts:124-132`
-  - `outline/view.ts:335-344`
-  - `explorer/index.ts:389-390`
-  - `goals/progress-modal.ts:146,234`, which also uses `progressOf`
-
-  The book default for chapter targets (0.7) is applied only in the outline: in
-  `outline/rows.ts:69` through `effectivePiece` (`core/measure.ts:235-251`), and at
-  `view.ts:919-920`. So the explorer's "target next to the count" and the goals modal
-  don't see it.
-- **Change.** Decide the effective piece once, as a field on the classifier result (the
-  growth rule): for example `piece` plus `pieceSource: "own" | "book"`. Compute it in
-  `core/classify.ts` (`pieceOf`, `:268-274`, used at `:313`). The classifier already
-  holds `book.note` and `tree.frontmatter`. Callers use `measure.note(file)`, or a sync
-  peek for the explorer.
-- **Wins.** Every surface agrees on a chapter's target; a chapter counted in characters
-  works everywhere.
-
-### 13. Shared helpers out of module folders
-
-**Strength:** medium, small · **Pairs with:** candidate 6, export (candidate 19)
-
-- **Problem.** Pure helpers live in one module's folder and are used by another:
-  - `confirmAction` (outline), used by `snapshots/index.ts:20`
-  - `dialogueInDoc` and `blockStateIn` (editor), used by `lens/measures.ts:11` and
-    `lens/analyze.ts:10`
-  - `openWork` (desk), used by `universe/view-works.ts:5`
-  - `goals/piece`, used by `outline/bar.ts:5` (new since 0.7)
-
-  An edit for one module can break another. Export would add a use of
-  `publish/checks`.
-- **Change.** Move the pure ones to `core/` and the modals to a shared `ui/` folder.
-- **Wins.** Clear ownership; the module dependency table only lists runtime calls.
-- **Planned for 0.8, in part:** the publish checks move to core (candidate 19).
-- **Done in 1.0 (task 1.2):** `core/block-context.ts`, `core/dialogue.ts`, `core/typography.ts`, `core/piece-bar.ts`, `ui/confirm.ts`, `ui/open-work.ts`. Export needs no `publish/checks` (it uses `core/readiness.ts`). Moved, not rewritten.
-
 ### 24. One counts interface on the names port, and "create entry" as a universe port
 
 **Strength:** medium, small · **Pairs with:** U 2.5
@@ -218,6 +178,8 @@ None at the moment.
 
 | Version | Improvement |
 |---|---|
+| 1.0.0 | Shared helpers out of module folders (candidate 13): `core/block-context.ts`, `core/dialogue.ts`, `core/typography.ts` and `core/piece-bar.ts` in core; `ui/confirm.ts` and `ui/open-work.ts` in a shared `src/ui/`. Moved, not rewritten; export needs no `publish/checks` (it uses `core/readiness.ts`), so the module dependency list holds only runtime calls |
+| 1.0.0 | One rule for a note's effective piece (candidate 8): `books.classify(x).piece` is the piece with the book's chapter default filled in, and `pieceSource` (`"own"`, `"book"` or null) says where it came from (`effectivePiece` in `core/measure.ts`, applied in `core/classify.ts`); the measurer, the outline rows, the explorer and the goals modal read it, so a chapter's target agrees everywhere |
 | 0.9.0 | Scope as one live answer (candidate 9, the fuller change): `books.classify(x).scope` is a plain field set through `scopeFor` in `core/scope.ts`, link resolution is `VaultTree.resolve`, `universe/scope.ts` and the outline's copy of `linkText` are gone, and `scopeKey` is split from `classifyKey`. On the 3,020-file bench `classify()` stays within the 10% budget (7.23 ms before; 6.5 ms with the mode off, 6.7–10.5 ms with it on); a lazy getter was measured slower and dropped |
 | 0.8.0 | Loose ends closed: the publish check warns about an unclosed `<!--` (candidate 19's readiness checks); the classifier has a test with a small fake for the Obsidian side (`core/books.ts`, nested books); the Reading-view parity questions were checked in a real vault (G0c; D16, D18 and D19 follow it, and `%%` inside `$$` is now literal) and are pinned in `tests/markdown-consumers.test.ts`; and the editor-writes rule is written in ARCHITECTURE's conventions: an edit at the cursor of the editor that triggered it may write directly, and `plugin.notes` is for writes to any other note |
 | 0.8.0 | One name fold in core (candidate 10): `universe`'s `foldText` is now `foldName` |
