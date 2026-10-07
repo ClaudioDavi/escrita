@@ -173,12 +173,17 @@ function same(a: unknown, b: unknown): boolean {
 
 /**
  * The plan for `choices` in `vault`, given the live `settings`: every item the preview
- * shows, in run order (see the file comment). Never throws; an empty vault and a second
+ * shows, in run order (see the file comment). `ticks` are the writer's ticks so far; only the
+ * language tick changes the plan's items (see `languageRuns`). Never throws; an empty vault and a second
  * run in the same vault (board 36 b: every item `kept`, "Nothing to do") are ordinary
  * inputs.
  */
-export function planSetup(choices: SetupChoices, vault: SetupVault, settings: EscritaSettings): SetupItem[] {
+export function planSetup(choices: SetupChoices, vault: SetupVault, settings: EscritaSettings, ticks: SetupTicks = {}): SetupItem[] {
   const { hasWorks, openLeaves } = vault;
+  // Whether the language group will run (the writer's tick, else its default): the example
+  // book's chapters folder and the example texts follow the language only when it does
+  // (Wave 1b result: the preview re-plans with the ticks, so what it shows is what runs).
+  const languageRuns = ticks.language ?? !hasWorks;
   const names = SETUP_NAMES[choices.language];
   const target = LANGUAGE_DEFAULTS[choices.language];
   const install = LANGUAGE_DEFAULTS[settings.defaultsLanguage];
@@ -210,9 +215,9 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
 
   // Examples: the chapters folder follows the writer's own name when they have one.
   const ownChapters = !same(settings.chaptersFolder, install.chaptersFolder);
-  const chaptersName = ownChapters ? settings.chaptersFolder : target.chaptersFolder;
+  const chaptersName = ownChapters || !languageRuns ? settings.chaptersFolder : target.chaptersFolder;
   // The example notes' text (setup/examples.ts) reads the settings in effect after the run.
-  const exampleCtx = { language: choices.language, settings: settingsAfter(settings, choices.language) };
+  const exampleCtx = { language: choices.language, settings: languageRuns ? settingsAfter(settings, choices.language) : settings };
   const addExample = (parent: string, name: string, role: ExampleRole | null): string => {
     const e = place(parent, name);
     const content = role && !e.exists ? { content: exampleText(role, exampleCtx) } : {};
