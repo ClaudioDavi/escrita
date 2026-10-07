@@ -155,7 +155,8 @@ escrever"; 39 is the writing mode). Decisions the boards settle, beyond the ques
 ## Ownership rules
 
 - One owner per file per wave. A task touches only the files it lists, plus new test
-  files named after it. Tasks run one at a time and each commits when its checks pass.
+  files named after it. Independent tasks run in parallel in worktrees and each commits when
+  its checks pass; a merge step brings them together.
 - `src/core/*`, `main.ts`, `settings.ts` and `data.ts` change only in the task that owns
   them.
 - **Every task's done-when:** `npm run typecheck`, `npm test` and `npm run build` pass,
@@ -279,7 +280,7 @@ Open for the author: whether pt-BR also renames `Escrita/Snapshots` ("Versões")
 setup, in a fresh vault with an existing `home.md` (case clash), should point `homeNote` at
 that note under the home tick, as `case-clash.json` does.
 
-## Wave 1: foundations (one at a time, Sonnet)
+## Wave 1: foundations (parallel, Sonnet; 1.7 after the merge)
 
 | Task | Owns | Done when |
 |---|---|---|
@@ -294,7 +295,7 @@ that note under the home tick, as `case-clash.json` does.
 **Opus judge** after the wave. Is any decision made in code that this plan didn't
 settle?
 
-## Wave 2: features (one at a time, Sonnet, after G1)
+## Wave 2: features (parallel, Sonnet, after G1)
 
 | Task | Owns | Done when |
 |---|---|---|
