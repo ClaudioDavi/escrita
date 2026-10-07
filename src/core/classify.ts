@@ -5,7 +5,7 @@
 // folder through `ChapterFs`; core/books.ts adapts the real vault to it.
 
 import { folderList, folderListOf } from "./lists";
-import { readPiece, type Piece, type PieceProperties } from "./measure";
+import { effectivePiece, parseUnit, readChapterDefault, readPiece, type Piece, type PieceProperties, type PieceUnit } from "./measure";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, readStatus, stageOf, type Stage, type StageMapping } from "./stages";
 // one direction only: classify imports scope, scope never imports classify (no cycle at load)
 import { inFolder, NO_SCOPE, scopeFor, type Scope, type ScopeLookup, type ScopeMode, type ScopeSettings } from "./scope";
@@ -45,6 +45,11 @@ export interface VaultTree<F extends Named, D extends Named> {
  * so callers don't change.
  */
 export interface ClassifySettings extends PieceProperties {
+  /**
+   * The book note's property holding its chapters' default target (Q47). Optional: missing or
+   * blank means no book default, so a chapter's piece is its own.
+   */
+  chapterTargetProperty?: string;
   /** "Chapters", "Capítulos", or a nested path like "Drafts/Chapters" */
   chaptersFolder: string;
   /** raw folderList text; empty = the whole vault */
@@ -144,7 +149,11 @@ export interface Placement<F extends Named, D extends Named> {
    * template. Independent of kind: a chapter can be untracked.
    */
   tracked: boolean;
-  /** readPiece(frontmatter) for any markdown file, chapters included; null otherwise. A standalone piece is `kind === "note" && piece`. */
+  /**
+   * The effective piece of a markdown file; null otherwise. For a chapter it is the note's own
+   * piece with the book's chapter default filled in (see `pieceSource`); for every other file it
+   * is `readPiece(frontmatter)`. A standalone piece is `kind === "note" && piece`.
+   */
   piece: Piece | null;
   /**
    * Where the piece's target comes from (1.0, IMPROVEMENTS 8). The rule, one for every
@@ -156,12 +165,10 @@ export interface Placement<F extends Named, D extends Named> {
    * - "book": a chapter's target is its book's default (only `kind === "chapter"`).
    * - null: no target (no piece, or a piece with only a limit, unit or deadline).
    *
-   * Wave 0: set from today's `piece` ("own" when it has a target, else null) and read by
-   * nobody. Task 1.1 computes the book default here and makes `piece` the effective piece
-   * (a chapter with only a book default then has a piece, with source "book"); until then
-   * `piece` keeps today's value, the note's own (readPiece). A standalone piece stays
-   * `kind === "note" && piece`: book defaults reach chapters only. Cached counts keyed by
-   * the chapter's mtime must also drop when the book note changes (task 1.1's call).
+   * Computed here from the book note's frontmatter, so a chapter with only a book default has
+   * a piece with source "book". A standalone piece stays `kind === "note" && piece`: book
+   * defaults reach chapters only. Cached counts keyed by the chapter's mtime drop when the
+   * book note's default changes (core/measurer.ts).
    */
   pieceSource: "own" | "book" | null;
   /**
@@ -251,7 +258,7 @@ export function classifyKey(s: ClassifySettings): string {
     str(s.trackFolders), str(s.excludeFolders), str(s.chaptersFolder), str(s.chapterTemplate),
     snapshotsRoot(s.snapshotsFolder), submissionsRoot(s.submissionsFolder), exportRoot(s.exportFolder),
     str(s.statusProperty), s.stages ?? null,
-    str(s.targetProperty), str(s.limitProperty), str(s.unitProperty), str(s.deadlineProperty),
+    str(s.targetProperty), str(s.limitProperty), str(s.unitProperty), str(s.deadlineProperty), str(s.chapterTargetProperty),
   ]);
 }
 
@@ -414,6 +421,25 @@ function pieceOf(fm: Record<string, unknown> | undefined, settings: ClassifySett
   }
 }
 
+/**
+ * A chapter's effective piece (IMPROVEMENTS 8): its own piece with the book note's default
+ * target (and unit) filled in. A blank unit is no unit, so it never overrides the book's.
+ */
+function chapterPieceOf<F extends Named, D extends Named>(
+  tree: VaultTree<F, D>, book: BookOf<F, D>, fm: Record<string, unknown> | undefined,
+  own: Piece | null, settings: ClassifySettings,
+): { piece: Piece | null; source: "own" | "book" | null } {
+  try {
+    const prop = settings.chapterTargetProperty;
+    const def = prop ? readChapterDefault(frontmatterOf(tree, book.note), { chapterTargetProperty: prop, unitProperty: settings.unitProperty }) : null;
+    const raw = fm?.[settings.unitProperty];
+    const ownUnit: PieceUnit | null = raw === undefined || raw === null || (typeof raw === "string" && raw.trim() === "") ? null : parseUnit(raw);
+    return effectivePiece(own, def, ownUnit);
+  } catch {
+    return { piece: own, source: own?.target !== undefined ? "own" : null };
+  }
+}
+
 /** The one stage rule for works: only a tracked note or book note has one. */
 function stageFor(fm: Record<string, unknown> | undefined, tracked: boolean, settings: ClassifySettings): Stage | null {
   if (!tracked) return null;
@@ -519,7 +545,8 @@ export function classify<F extends Named, D extends Named>(
       if (book) {
         // compare against the handle's path, never the settings string
         const kind: Kind = markdown && parentOf(path) === book.chaptersFolder.path ? "chapter" : "book-file";
-        return withScope({ path, kind, markdown, book, tracked, piece, pieceSource, snapshot: false, stage: null, submission: false, export: false }, tree, settings, read);
+        const eff = kind === "chapter" ? chapterPieceOf(tree, book, fm, piece, settings) : { piece, source: pieceSource };
+        return withScope({ path, kind, markdown, book, tracked, piece: eff.piece, pieceSource: eff.source, snapshot: false, stage: null, submission: false, export: false }, tree, settings, read);
       }
       return withScope({ path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, pieceSource, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false }, tree, settings, read);
     }

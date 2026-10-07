@@ -52,7 +52,7 @@ import type EscritaPlugin from "../main";
 import type { Book } from "./books";
 import { MeasureCache, type Seed } from "./measure-cache";
 import {
-  noteProgress, readBookGoal, readUnit, sumCounts,
+  noteProgress, readBookGoal, readChapterDefault, readUnit, sumCounts,
   type BookGoal, type Counts, type Piece, type PieceUnit, type Progress,
 } from "./measure";
 
@@ -78,6 +78,8 @@ const RECOUNT_MS = 500;
 export class Measurer {
   private cache: MeasureCache<TFile>;
   private dirty = new Set<string>();
+  /** each book note's chapter default as last seen, to tell when it changed */
+  private defaults = new Map<string, string>();
   private recount = debounce(() => this.flush(), RECOUNT_MS, true);
 
   constructor(private plugin: EscritaPlugin) {
@@ -86,7 +88,11 @@ export class Measurer {
     plugin.registerEvent(vault.on("rename", (f, oldPath) => {
       if (this.dirty.delete(oldPath)) this.dirty.add(f.path);
       if (f instanceof TFolder) this.cache.renamePrefix(oldPath, f.path);
-      else this.cache.rename(oldPath, f.path);
+      else {
+        this.cache.rename(oldPath, f.path);
+        const d = this.defaults.get(oldPath);
+        if (d !== undefined) { this.defaults.delete(oldPath); this.defaults.set(f.path, d); }
+      }
     }));
     plugin.registerEvent(vault.on("delete", (f) => {
       this.dirty.delete(f.path);
@@ -94,8 +100,11 @@ export class Measurer {
       else this.cache.forget(f.path);
     }));
     plugin.registerEvent(vault.on("modify", (f) => this.changed(f)));
+    // A book note's chapter default (target or unit) decides how its chapters are counted and shown.
+    plugin.registerEvent(plugin.app.metadataCache.on("changed", (f) => this.bookNoteChanged(f)));
     // The vault announces every file as "created" while it loads: only later creations count.
     workspace.onLayoutReady(() => {
+      for (const b of plugin.books.allBooks()) this.defaults.set(b.note.path, this.defaultKey(b.note));
       plugin.registerEvent(vault.on("create", (f) => this.changed(f)));
     });
   }
@@ -117,8 +126,9 @@ export class Measurer {
     return this.cache.peek(path, unit !== undefined || (f instanceof TFile && this.unit(f) !== "words"));
   }
 
+  /** The unit a note is counted in: its effective piece's (a chapter may take its book's), else its unit property. */
   unit(file: TFile): PieceUnit {
-    return readUnit(this.plugin.books.frontmatter(file), this.plugin.settings);
+    return this.plugin.books.classify(file).piece?.unit ?? readUnit(this.plugin.books.frontmatter(file), this.plugin.settings);
   }
 
   async note(file: TFile, pieceOverride?: Piece): Promise<NoteMeasure> {
@@ -154,6 +164,30 @@ export class Measurer {
 
   onChange(cb: (paths: string[]) => void): () => void {
     return this.cache.onChange(cb);
+  }
+
+  private defaultKey(note: TFile): string {
+    return JSON.stringify(readChapterDefault(this.plugin.books.frontmatter(note), this.plugin.settings));
+  }
+
+  /**
+   * When a book note's chapter default changed, its chapters' cached counts are dropped (they are
+   * keyed by the chapter's mtime, which didn't move) and recounted: the unit they are counted in
+   * may be different now.
+   */
+  private bookNoteChanged(f: TFile): void {
+    if (f.extension !== "md") return;
+    const p = this.plugin.books.classify(f);
+    if (p.kind !== "book-note" || !p.book) return;
+    const key = this.defaultKey(f);
+    const prev = this.defaults.get(f.path);
+    this.defaults.set(f.path, key);
+    if (prev === key) return;
+    for (const c of this.plugin.books.chapters(p.book)) {
+      this.cache.forget(c.file.path);
+      this.dirty.add(c.file.path);
+    }
+    this.recount();
   }
 
   private changed(f: TAbstractFile): void {
