@@ -494,6 +494,51 @@ settings", in both languages; the README as the front door; the manifest descrip
 (Q10); write-backs to ARCHITECTURE.md, the roadmaps and IMPROVEMENTS.md. Then the Opus
 release review.
 
+**Wave 3 result and release review (2026-10-07).** Tasks 3.0 to 3.6 merged into `1.0` with
+no conflicts (`598134f`), then 3.7, the README (`5068393`), then the review's fixes
+(`90f21c1`). Verdict: **ready to release once G2 and G4 pass** in real Obsidian
+([TEST-1.0.md](TEST-1.0.md)); nothing in the code blocks it.
+- **What the review checked.** Data safety: every note through `notes.create` with
+  `exists: "return"`, settings saved once and last (skipped when a folder failed), a saved
+  setting changed only under a tick (since 3.0 the folders and the "Shared world" answer have
+  ticks too), a failure reported and nothing undone; writing mode collapses only open
+  sidebars and reopens only those, exits on unload, writes nothing; G3's test
+  (`tests/settings-g3.test.ts`) and the `defaultsLanguage: "en"` migration. Guidelines: no
+  `innerHTML`, no `console.log`, no hotkeys, commands through the module context, the
+  manifest description is Q10's (137 characters). Strings: parity test, no European
+  Portuguese in the guides or strings. Docs: every command and setting name (from the
+  `setName` and command strings) searched in the seven English guides; links and anchors
+  of the README and both guides resolve (no docs-link test exists; checked by a script).
+- **Fixes (`90f21c1`).** 3.1 and 3.4 both documented the home note, its three settings and
+  writing mode: Tracking owns them now, and Getting started keeps only what the setup does,
+  with links. "New notes start as draft" moved from Writing to Tracking (the Stages
+  setting). The guides and TEST-1.0 item 7 no longer name a "Continue" button: the code has
+  none, a click on a work row opens it. Missing cross-links to Revision and Tracking added.
+  pt-BR Writing named the outline button, not the command (**Abrir esboço como quadro**).
+  The setup's Writer text now lists explorer counts and the stage snapshot. The effective
+  piece shows in the status bar, not the progress window (which shows a chapter's book):
+  corrected in the changelog, IMPROVEMENTS and ARCHITECTURE. Changelog: presets ask first
+  (not "one click"), an upgrade note that an existing install keeps the English defaults,
+  and the lint runs in CI.
+- **`npm run lint` "JSON parse failed".** Not the repo: the RTK shell hook rewrites
+  `eslint` for its own output and also lints `research_notes/`. `rtk proxy npm run lint`
+  (and CI) exit 0.
+- **Left for the author.**
+  - The pt-BR home note has two names: the setup and the pt-BR defaults use `Início.md`,
+    while **Abrir a nota inicial** with an empty setting adopts or offers `Inicio.md` (0.4's
+    "no accent" rule, `desk/home-note.ts`). Both work; pick one after 1.0 if it matters.
+  - Boards 36 ("Today: Custom, 18 on") and 39 ("Continue") still show what the code
+    doesn't draw; the guides follow the code.
+  - `ROADMAP-short-fiction.md` keeps SF 10's original preset lists in prose under the
+    "Shipped in 1.0" block, on purpose.
+- **Release steps that remain** (the checklist above): G2 (a, b, c) and G4 in
+  [TEST-1.0.md](TEST-1.0.md), with G3 by eye after G2c; then ROADMAP.md (1.0 to "Shipped",
+  plan screenwriting next) and the changelog heading `1.0.0` with its date;
+  `npm version major --no-git-tag-version` (writes `1.0.0` and `"1.0.0": "1.8.7"` in
+  `versions.json`); commit as `1.0.0`, the PR from `1.0` to `main`, merge, tag `1.0.0`, push
+  the tag, publish the drafted GitHub release; then the `obsidian-releases` pull request
+  (Q12).
+
 ## Manual verification on `~/projects/website/escrita/`
 
 A test plan (`TEST-1.0.md`), as in 0.9: the setup in a scratch vault and in the author's,
