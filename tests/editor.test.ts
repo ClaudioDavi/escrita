@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { blockStateIn, bodyLineIn, inlineProtected } from "../src/editor/context";
+import { blockStateIn, bodyLineIn, inlineProtected } from "../src/core/block-context";
 import { breakEdit, decideEnter, isProseLine, trailingBreakKeep, withoutTrailingBreak } from "../src/editor/enter-flow";
 import { segment } from "../src/core/markdown";
-import { typographyFor, type TypographyOptions } from "../src/editor/typography";
+import { typographyFor, type TypographyOptions } from "../src/core/typography";
 import { sceneBreakEdit } from "../src/editor/scene-break";
 import { spellcheckSuppressed } from "../src/editor/spellcheck";
 

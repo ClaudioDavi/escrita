@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dimPlan, type DialogueOptions } from "../../src/editor/dialogue";
+import { dimPlan, type DialogueOptions } from "../../src/core/dialogue";
 import { segment } from "../../src/core/markdown";
 import { dialogueNote } from "../support/dialogue-note";
 

@@ -15,7 +15,7 @@ import {
   beatLetter, chapterAsBeatText, decideKey, decideNoteKey, dropIndex, moveItem, resolveTarget,
   type ActiveFile, type Field, type KeyAction, type OutlineTarget,
 } from "./model";
-import { confirmAction } from "./modals";
+import { confirmAction } from "../ui/confirm";
 import { errorMessage } from "./errors";
 import { loadRows, type ChapterRow as LoadedRow } from "./rows";
 import {

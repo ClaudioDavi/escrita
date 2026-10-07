@@ -7,7 +7,7 @@ import { DeskModule } from "../src/desk";
 import { gatherDesk } from "../src/desk/gather";
 import { FeatureModule } from "../src/core/module-context";
 import type { PendingSource, PendingSubmission } from "../src/core/pending";
-import { openWork } from "../src/desk/open";
+import { openWork } from "../src/ui/open-work";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
 
 let plugin: FakePlugin;

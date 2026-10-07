@@ -413,7 +413,7 @@ export class UniverseModule extends FeatureModule {
   /**
    * The works of a scope (a universe, in practice): books and tracked standalone notes
    * with a known stage, entries excluded, with their stage and form (null form = "No form").
-   * Group and sort with groupWorks(); count words with plugin.measure; open with desk/open.openWork.
+   * Group and sort with groupWorks(); count words with plugin.measure; open with ui/open-work.openWork.
    */
   worksIn(scope: Scope): WorkInfo[] {
     if (scope.kind === "none") return [];

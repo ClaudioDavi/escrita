@@ -2,7 +2,7 @@
 // name, a dot in the stage's color, the word count, a click that opens where you left off.
 
 import { fmt, plural, t } from "../i18n";
-import { openWork } from "../desk/open";
+import { openWork } from "../ui/open-work";
 import { groupWorks, type WorkInfo } from "./works-list";
 import type { PanelCtx } from "./view-parts";
 

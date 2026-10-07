@@ -11,7 +11,7 @@ import type { IndexChange } from "../core/vault-index";
 import { isoDay } from "../core/dates";
 import { fmt, fmtShortDay, lang, plural, t } from "../i18n";
 import { gatherDesk, pendingSource, type DeskNotice, type Gathered } from "./gather";
-import { openWork } from "./open";
+import { openWork } from "../ui/open-work";
 import { countBar, factParts, type CountKey, type FactLabels, type FactPart, type WorkLine } from "./works";
 
 const RENDER_MS = 250;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dialogueInDoc, dialogueRanges, dimPlan, MAX_WIDEN, type DialogueOptions, type Range } from "../src/editor/dialogue";
+import { dialogueInDoc, dialogueRanges, dimPlan, MAX_WIDEN, type DialogueOptions, type Range } from "../src/core/dialogue";
 import { segment } from "../src/core/markdown";
 import { dialogueNote } from "./support/dialogue-note";
 import type { QuoteStyle } from "../src/settings";

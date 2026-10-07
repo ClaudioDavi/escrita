@@ -91,6 +91,7 @@ interface lives. Test through the interface.
 - **Change.** Move the pure ones to `core/` and the modals to a shared `ui/` folder.
 - **Wins.** Clear ownership; the module dependency table only lists runtime calls.
 - **Planned for 0.8, in part:** the publish checks move to core (candidate 19).
+- **Done in 1.0 (task 1.2):** `core/block-context.ts`, `core/dialogue.ts`, `core/typography.ts`, `core/piece-bar.ts`, `ui/confirm.ts`, `ui/open-work.ts`. Export needs no `publish/checks` (it uses `core/readiness.ts`). Moved, not rewritten.
 
 ### 24. One counts interface on the names port, and "create entry" as a universe port
 

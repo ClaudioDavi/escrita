@@ -7,7 +7,7 @@
 //   letter'     → ’              (apostrophe)
 
 import type { QuoteStyle } from "../settings";
-import { inlineProtected } from "./context";
+import { inlineProtected } from "./block-context";
 
 export interface TypographyOptions {
   quoteStyle: QuoteStyle;
