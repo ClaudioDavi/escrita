@@ -55,7 +55,12 @@ export const PRESET_IGNORED: FeatureId = "universe";
 export function presetSwitches(id: PresetId, current: FeatureSwitches): FeatureSwitches {
   const list = PRESETS[id];
   const features = { ...current.features };
-  const out: FeatureSwitches = { ...current, features };
+  const out: FeatureSwitches = {
+    features,
+    explorerCounts: current.explorerCounts,
+    spellcheckOnDemand: current.spellcheckOnDemand,
+    universeMode: current.universeMode,
+  };
   for (const spec of FEATURE_SPECS) {
     if (spec.id === PRESET_IGNORED) continue;
     const on = list.includes(spec.id);
