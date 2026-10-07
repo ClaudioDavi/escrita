@@ -39,7 +39,7 @@ Exportar e Envios são os dois interruptores que a 0.8 acrescenta, no grupo Publ
 | Interruptor | Desligado significa |
 |---|---|
 | Metas e sprints | Sem contagem de palavras escritas, meta diária, janela de progresso, sprints nem barra de status. As configurações dele se escondem. |
-| Esboço e beats fantasmas | Sem painel do esboço, sem beats fantasmas no editor, sem comandos de beat. |
+| Esboço e beats fantasmas | Sem painel do esboço, sem beats fantasmas no editor, sem comandos de beat, sem **Ler o livro**. |
 | Marcadores | Sem pílulas de marcador, pontos no explorador, painel nem selo no esboço. (A checagem de publicação continua parando num marcador esquecido numa nota, enquanto a Publicação estiver ligada.) |
 | Enter e tipografia | O Enter não faz quebras de cena nem capítulos; sem travessões e aspas automáticos. |
 | Foco no diálogo | O comando e o esmaecimento somem. |
@@ -47,13 +47,13 @@ Exportar e Envios são os dois interruptores que a 0.8 acrescenta, no grupo Publ
 | Inserir de um modelo | O comando some. (O universo continua usando a pasta de modelos.) |
 | Ortografia sob demanda | O comando que liga e desliga some. |
 | Contagens no explorador | Sem contagens, totais de pasta nem metas ao lado dos nomes. |
-| Lente de revisão | Sem lente, painel, comandos de percorrer nem itens de menu. |
+| Lente de revisão | Sem lente, painel, comandos de percorrer nem itens de menu. A regra de nomes e "Não são nomes" também se escondem. |
 | Versões | Sem comandos de versão, tela de comparar, versões automáticas nem "versão antes de publicar". |
 | Darlings | Sem "Mover seleção para os darlings", painel nem restaurar. |
 | Versão a cada estágio | Uma mudança de estágio não guarda versão. |
 | Bloco de obras e onde você parou | O bloco `escrita-works` aparece como código simples; o Escrita para de registrar onde você parou; sem comando da nota inicial nem abrir ao iniciar. |
-| Checagem de publicação | Sem comandos de publicar e despublicar. |
-| Exportar | Sem os comandos **Exportar…** e **Exportar de novo**, sem item no menu do arquivo e sem a seção Exportação nas configurações. A linha da pasta das exportações continua. |
+| Checagem de publicação | Sem os comandos de publicar, despublicar e **Publicar o próximo capítulo**. |
+| Exportar | Sem os comandos **Exportar…** e **Exportar de novo**, sem item no menu do arquivo (nem **Criar uma coleção…**) e sem a seção Exportação nas configurações. A linha da pasta das exportações continua. |
 | Envios | Sem o comando nem o item de menu **Registrar envio**, sem a contagem de pendentes no bloco de obras e sem a seção Envios nas configurações. A linha da pasta dos envios continua. |
 | Universo compartilhado | Sem painel, sem comandos do universo, sem "Aparece em", sem marcas de nomes nem nomes na lente. |
 | Fios | Sem comandos de fio, sinal na margem nem aba no painel. |
@@ -70,7 +70,9 @@ Nada é apagado quando você desliga um recurso.
 - **Metas**: o seu histórico de escrita fica nos dados do Escrita (o aviso diz quantos dias).
 - **Lente**: as suas listas de palavras ficam na nota delas.
 - **Acompanhamento**: o ponto onde você parou fica nos dados do Escrita.
-- **Exportar**: os arquivos já gravados ficam na pasta das exportações. As suas escolhas para cada obra (formato, modelo, capítulos) e a última exportação ficam nos dados do Escrita, e acompanham renomeações e mudanças de lugar com o recurso desligado. Ligue de novo e "Exportar de novo" ainda conhece o último arquivo.
+- **Esboço**: o ponto onde você parou em "Ler o livro" fica nos dados do Escrita e acompanha renomeações.
+- **Lente de revisão**: a lista "Não são nomes" fica nas configurações.
+- **Exportar**: as notas de coleção são notas comuns e ficam. Os arquivos já gravados (EPUB também) ficam na pasta das exportações. As suas escolhas para cada obra (formato, modelo, capítulos) e a última exportação ficam nos dados do Escrita, e acompanham renomeações e mudanças de lugar com o recurso desligado. Ligue de novo e "Exportar de novo" ainda conhece o último arquivo.
 - **Envios**: as notas de envio ficam onde estão, na pasta dos envios. O aviso diz o nome da pasta e quantas notas há. São notas comuns: com o recurso desligado elas continuam sem entrar nas metas e sem virar obras. Se você já usa esse nome de pasta para outra coisa, mude a pasta nas configurações.
 - **Fios**: os marcadores ficam nas suas notas; as datas em que cada um foi visto pela
   primeira vez ficam nos dados.
@@ -105,6 +107,24 @@ versões, isso inclui mover os arquivos de versão no disco.
 - **Capítulos sem número** (Configurações, Livros) é lida por Exportar e pelo esboço: uma lista
   de títulos (Prólogo, Interlúdio, Epílogo…) que saem na exportação só com o título e não
   mostram número no esboço. Os demais são contados a partir de 1.
+
+## Configurações da 0.9
+
+Estas configurações pertencem a um recurso. Elas se escondem quando o recurso está desligado.
+
+| Configuração | Recurso | O que faz |
+|---|---|---|
+| Nomes sem entrada (uma regra, na seção Revisão) | Lente de revisão | Desligada por padrão. Marca nomes recorrentes com inicial maiúscula que não têm entrada. Precisa de um modo de universo. |
+| Não são nomes | Lente de revisão | Palavras que a regra nunca marca, uma por linha. **Dispensar** no painel da lente acrescenta uma palavra. |
+| Propriedade da capa | Exportar | A propriedade da nota do livro que liga a capa do EPUB (JPEG ou PNG). `cover`. |
+| Separador de cena no EPUB | Exportar | A linha que o EPUB mostra entre cenas. `* * *`. |
+| Propriedade da coleção | Exportar | A propriedade de uma nota que lista contos na ordem de leitura. `contents`. |
+
+Dois comandos chegam com a 0.9 e não têm configuração. **Ler o livro** pertence a Esboço e beats
+fantasmas. **Publicar o próximo capítulo** pertence a Checagem de publicação. O botão **Publicar o
+próximo** no cabeçalho do esboço só aparece com os dois ligados. As menções sem link não têm
+interruptor próprio: fazem parte do Universo compartilhado, então somem quando o universo está
+desligado.
 
 ## Linhas de pasta e como os campos salvam
 

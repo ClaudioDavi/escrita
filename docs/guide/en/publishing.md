@@ -1,7 +1,7 @@
 # Publishing
 
 This page covers what happens when a work leaves your desk: checking a note before you
-publish it, exporting a conto or a book as a manuscript, and keeping track of where you
+publish it, exporting a conto, a book or a collection as a manuscript or an EPUB, publishing a book chapter by chapter, and keeping track of where you
 sent it. Escrita never sends anything anywhere. It checks, it writes a file, and it
 records what you tell it.
 
@@ -12,6 +12,9 @@ check**, **Export** and **Submissions**.
 - [Check a note and mark it published](#check-a-note-and-mark-it-published)
 - [Send a conto to a magazine](#send-a-conto-to-a-magazine)
 - [Export a note or a book](#export-a-note-or-a-book)
+- [Export an EPUB](#export-an-epub)
+- [Export a collection of stories](#export-a-collection-of-stories)
+- [Publish a book one chapter at a time](#publish-a-book-one-chapter-at-a-time)
 - [Record a submission](#record-a-submission)
 - [Settings](#settings)
 - [Commands](#commands)
@@ -225,6 +228,118 @@ In Settings › Escrita › Export:
   names the author for that work. It overrides the name above. For that work the surname is
   the last word of that name.
 
+## Export an EPUB
+
+An EPUB is a book for an ebook reader. Open the note or the book and run **Export…**. In the
+format row choose **EPUB**. The rest of the window works as before: the chapters, the warnings,
+the preview and **Export again**.
+
+An EPUB is not a manuscript, so it looks different from the DOCX:
+
+- It has a title page, the dedication and epigraph pages if you have them, a contents page and
+  one page per chapter. A book made of one note has the same, with one chapter.
+- Chapter headings follow the template you chose, as in DOCX.
+- It has no running header, no word count and no end mark. A line only for a manuscript is left
+  out.
+- The scene break is a line of your own choice (see below), never at the start or end of a
+  chapter.
+- The contents page says **Contents** (**Sumário** with the pt-BR template).
+
+**Add a cover.** Put a link to an image in the `cover` property of the book's note, or of the
+note itself when you export a note alone:
+
+```
+cover: "[[cover.jpg]]"
+```
+
+The image must be a JPEG or PNG in your vault. The EPUB then starts with the cover. With no
+`cover` property there is no cover and no warning. If the property is there but the image is
+missing, can't be read or isn't a JPEG or PNG, the **Before you send** box says "Cover not found
+or unreadable", and the EPUB goes without a cover. The button then says **Export anyway**.
+
+**The file name.** `Title (Shunn).epub` or `Title (pt-BR).epub`, in the export folder, like the
+DOCX. If the file exists, Escrita asks the same questions as for any export. Exporting the same
+book again keeps the book's identity for your reader, until you rename the book.
+
+**The scene break.** Your `---` lines become the line in the setting **EPUB scene break**
+(`* * *` by default). It is not the `#` of the manuscript template. Empty goes back to the
+default.
+
+You don't need to check the file yourself. Open it in your ebook reader to read it.
+
+The preview of an EPUB shows the cover and the contents in their own places.
+
+## Export a collection of stories
+
+A collection is a note that lists short stories in reading order. It exports like a book: one
+file, a title page, each story on a new page under its title alone.
+
+**Make one from the file explorer.**
+
+1. Select two or more notes in the file explorer (Ctrl-click, or Cmd-click on a Mac).
+2. Right-click and choose **Create a collection…**.
+3. Type the title and press **Create**.
+
+Escrita makes a note with that title beside the first story and opens it. The stories are in the
+order the explorer shows them, not the order you clicked. The window says how many stories go in
+the property, for example "3 stories, in this order, go in the “contents” property."
+
+The note holds only a list of links:
+
+```
+---
+contents:
+  - "[[The cellar]]"
+  - "[[The long way home]]"
+---
+```
+
+You can also write it by hand, or reorder and remove lines. The property is a setting
+(**Collection property**, `contents` by default).
+
+**Export it.** Open the collection note and run **Export…**. The window says "Collection: 3
+stories", and the **Stories** row lets you choose which ones go in, as chapters do in a book.
+The dedication and epigraph properties on the collection note work as on a book note, and in an
+EPUB so does the cover. A story link that points at nothing is left out, and the warning names it
+("Story not found: …").
+
+A folder with a book in it is still a book, even if its note has a `contents` list. A collection
+is never a book and never a work: it doesn't count toward your goals.
+
+## Publish a book one chapter at a time
+
+If you publish a book as a serial, Escrita keeps track of what comes next. It uses the status of
+your chapters: a chapter whose status is your word for the published stage is published. It
+asks nothing more of you.
+
+**The line in the outline.** Once one chapter is published, the outline header shows a line:
+
+> Gap: 04 · Next: 05 The stairs · last published 30 Sep
+
+- **Next** is the first chapter that isn't published, in book order.
+- **last published** is the date of the last published chapter, as written in its date property
+  (a date in the future too). If it has no date, the line shows the chapter's name instead.
+- **Gap** appears only when a chapter before the last published one is not published. It lists
+  the numbers. It is a warning, never a block.
+- When every chapter is published, the line says "Every chapter is published".
+
+A chapter left out with `compile: false`, and a chapter with no number (a prologue, an
+interlude, anything in **Chapters without a number**), is not in the sequence.
+
+**Publish the next one.** Press **Publish next** in the outline header, or run **Publish next
+chapter** with a chapter or the book note open. If you have only one book in the vault, the
+command works from any note. Escrita opens the first unpublished chapter and shows the usual
+publish window, with its checks. Nothing is published until you press **Publish**. If every
+chapter is published, a notice says so.
+
+**The gap warning.** In the publish window of any chapter, a line says "Every earlier chapter is
+published", or warns "Previous chapter not published: 04. A reader would skip a chapter." It
+names every earlier chapter that isn't published. It is a warning: you can still publish.
+
+**Dates in the future.** You can pick a day ahead in the publish window, to schedule a chapter.
+Escrita only writes the date. It publishes nothing by itself, and the outline line shows the
+future date as written.
+
 ## Record a submission
 
 Run **Record a submission** (or **Record a submission…** in the file menu) from a work. It
@@ -305,6 +420,9 @@ The status words are under Stages, and the status property under Books.
 | Surname for the header | The header's "Surname". Empty uses the last word of the name. |
 | Contact lines | Address, email, phone, one per line, at the top of the title page. |
 | Chapter heading | Use `{n}` for the number and `{title}` for the title. Empty uses the template's own. |
+| Cover property | On the book note, or on a note exported alone: a link to a JPEG or PNG image, used as the EPUB cover. `cover`. |
+| EPUB scene break | The line an EPUB shows between scenes. `* * *`. |
+| Collection property | A note with this property, a list of links to stories in reading order, exports as a collection. `contents`. |
 
 **Submissions:**
 
@@ -331,9 +449,10 @@ fields save when you leave them.
 |---|---|
 | Publish this note | Checks the note, then sets status and date. |
 | Unpublish this note | Puts the earlier status back. Offered for a published note. |
-| Export… | Opens the export window for the active note or its book. |
+| Export… | Opens the export window for the active note, its book or its collection. Choose DOCX, Markdown or EPUB. |
 | Export again | Repeats the last export of the work. Offered when the work has one. |
+| Publish next chapter | Opens the publish check of the first unpublished chapter of the book. Offered with a chapter or the book note open. |
 | Record a submission | Makes a submission note for the active work. |
 
 The same actions are in the file menu: **Publish…**, **Unpublish**, **Export…** and **Record
-a submission…**. Escrita sets no hotkeys; bind the ones you use in Settings › Hotkeys.
+a submission…**. With two or more notes selected in the file explorer, the menu also has **Create a collection…**. Escrita sets no hotkeys; bind the ones you use in Settings › Hotkeys.

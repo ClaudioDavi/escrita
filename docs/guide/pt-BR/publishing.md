@@ -1,7 +1,7 @@
 # Publicação
 
 Esta página cobre o que acontece quando uma obra sai da sua mesa: conferir uma nota antes de
-publicar, exportar um conto ou um livro como manuscrito e acompanhar para onde você o
+publicar, exportar um conto, um livro ou uma coleção como manuscrito ou EPUB, publicar um livro capítulo a capítulo e acompanhar para onde você o
 enviou. O Escrita nunca envia nada para lugar nenhum. Ele confere, grava um arquivo e
 registra o que você disser.
 
@@ -12,6 +12,9 @@ Outras páginas: [Recursos e configurações](features-and-settings.md), [Escrit
 - [Conferir uma nota e marcá-la como publicada](#conferir-uma-nota-e-marcá-la-como-publicada)
 - [Enviar um conto a uma revista](#enviar-um-conto-a-uma-revista)
 - [Exportar uma nota ou um livro](#exportar-uma-nota-ou-um-livro)
+- [Exportar um EPUB](#exportar-um-epub)
+- [Exportar uma coleção de contos](#exportar-uma-coleção-de-contos)
+- [Publicar um livro um capítulo por vez](#publicar-um-livro-um-capítulo-por-vez)
 - [Registrar um envio](#registrar-um-envio)
 - [Configurações](#configurações)
 - [Comandos](#comandos)
@@ -162,7 +165,7 @@ caracteres para uma peça que conta caracteres.
 e os links viram o texto deles. Itens incorporados (`![[…]]`) ficam de fora. Notas de rodapé
 ficam como texto.
 
-### Os avisos e "Exportar assim mesmo"
+### Os avisos e "Exportar mesmo assim"
 
 No alto da janela, uma caixa **Antes de enviar** lista o que o Escrita achou no texto que vai
 exportar: marcadores esquecidos, um comentário sem fechamento (`%%` ou `<!--`: o resto da
@@ -170,7 +173,7 @@ nota some), beats sem texto depois e uma nota vazia. Ele confere todos os capít
 escolheu, e cada item tem um link **Ir para a linha** que abre a nota ali. Um capítulo vazio
 num livro não é problema. Uma nota avulsa vazia é.
 
-Se houver qualquer coisa nessa lista, o botão principal diz **Exportar assim mesmo** em vez
+Se houver qualquer coisa nessa lista, o botão principal diz **Exportar mesmo assim** em vez
 de **Exportar**. Itens incorporados também aparecem, só para avisar que ficam de fora; eles
 não mudam o botão.
 
@@ -210,7 +213,7 @@ novo**, e existe o comando **Exportar de novo**.
 **Exportar de novo** repete a última exportação com as mesmas escolhas. Ele grava na hora, sem
 janela, quando não há nada a confirmar e é o mesmo tipo de exportação: o livro inteiro, ou o
 mesmo capítulo. Um capítulo exportado sozinho é repetido a partir desse capítulo. Fora isso,
-abre a janela com essas escolhas, e o botão diz **Exportar assim mesmo** quando há avisos.
+abre a janela com essas escolhas, e o botão diz **Exportar mesmo assim** quando há avisos.
 
 Ele só grava por cima do último arquivo se ele ainda estiver onde o Escrita o gravou, com o
 mesmo nome. Se você o moveu ou renomeou, ou ele sumiu, o Escrita pergunta **Onde gravar**: "A
@@ -231,6 +234,118 @@ Em Configurações › Escrita › Exportação:
 - **Propriedade do autor** (`author` por padrão): uma propriedade de uma nota, ou da nota de
   um livro, que dá o autor daquela obra. Ela tem preferência sobre o nome acima. Para essa
   obra, o sobrenome é a última palavra desse nome.
+
+## Exportar um EPUB
+
+Um EPUB é um livro para leitor de e-books. Abra a nota ou o livro e rode **Exportar…**. Na linha
+**Formato**, escolha **EPUB**. O resto da janela funciona como antes: os capítulos, os avisos, a
+prévia e **Exportar de novo**.
+
+Um EPUB não é um manuscrito, então é diferente do DOCX:
+
+- Tem folha de rosto, as páginas de dedicatória e epígrafe se você as tiver, um sumário e uma
+  página por capítulo. Um livro feito de uma nota só tem o mesmo, com um capítulo.
+- Os títulos dos capítulos seguem o modelo que você escolheu, como no DOCX.
+- Não tem cabeçalho corrente, contagem de palavras nem marca de fim. O que só vale para
+  manuscrito fica de fora.
+- O separador de cena é uma linha da sua escolha (veja abaixo), nunca no começo nem no fim de
+  um capítulo.
+- A página de sumário se chama **Sumário** (**Contents** com o modelo em inglês).
+
+**Coloque uma capa.** Ponha um link para uma imagem na propriedade `cover` da nota do livro, ou
+da própria nota quando você exporta uma nota sozinha:
+
+```
+cover: "[[capa.jpg]]"
+```
+
+A imagem precisa ser JPEG ou PNG e estar no cofre. O EPUB então começa pela capa. Sem a
+propriedade `cover`, não há capa e não há aviso. Se a propriedade existe, mas a imagem não foi
+achada, não pode ser lida ou não é JPEG nem PNG, a caixa **Antes de enviar** diz "Capa não
+encontrada ou ilegível", e o EPUB sai sem capa. O botão passa a dizer **Exportar mesmo assim**.
+
+**O nome do arquivo.** `Título (Shunn).epub` ou `Título (pt-BR).epub`, na pasta das exportações,
+como o DOCX. Se o arquivo já existe, o Escrita faz as mesmas perguntas de qualquer exportação.
+Exportar o mesmo livro de novo mantém a identidade dele no seu leitor, até você renomear o livro.
+
+**O separador de cena.** As suas linhas `---` viram a linha da configuração **Separador de cena
+no EPUB** (`* * *` por padrão). Não é o `#` do modelo de manuscrito. Vazio volta ao padrão.
+
+Você não precisa conferir o arquivo por outros meios. Abra-o no seu leitor de e-books para ler.
+
+A prévia de um EPUB mostra a capa e o sumário nos lugares deles.
+
+## Exportar uma coleção de contos
+
+Uma coleção é uma nota que lista contos na ordem de leitura. Ela é exportada como um livro: um
+arquivo, uma folha de rosto, cada conto numa página nova, só com o título.
+
+**Crie uma pelo explorador de arquivos.**
+
+1. Selecione duas ou mais notas no explorador de arquivos (Ctrl-clique, ou Cmd-clique no Mac).
+2. Clique com o botão direito e escolha **Criar uma coleção…**.
+3. Digite o título e aperte **Criar**.
+
+O Escrita cria uma nota com esse título ao lado do primeiro conto e a abre. Os contos ficam na
+ordem em que o explorador os mostra, não na ordem em que você clicou. A janela diz quantos contos
+vão para a propriedade, por exemplo "3 contos, nesta ordem, vão na propriedade “contents”."
+
+A nota guarda só uma lista de links:
+
+```
+---
+contents:
+  - "[[A adega]]"
+  - "[[O caminho longo]]"
+---
+```
+
+Você também pode escrevê-la à mão, ou reordenar e remover linhas. A propriedade é uma
+configuração (**Propriedade da coleção**, `contents` por padrão).
+
+**Exporte.** Abra a nota da coleção e rode **Exportar…**. A janela diz "Coleção: 3 contos", e a
+linha **Contos** deixa você escolher quais entram, como os capítulos num livro. As propriedades
+de dedicatória e epígrafe na nota da coleção funcionam como na nota de um livro, e num EPUB a
+capa também. Um link de conto que não leva a nada fica de fora, e o aviso o nomeia ("Conto não
+encontrado: …").
+
+Uma pasta com um livro dentro continua sendo um livro, mesmo que a nota dele tenha uma lista
+`contents`. Uma coleção nunca é um livro nem uma obra: não conta para as suas metas.
+
+## Publicar um livro um capítulo por vez
+
+Se você publica um livro em série, o Escrita acompanha o que vem a seguir. Ele usa o status dos
+seus capítulos: um capítulo cujo status é a sua palavra para o estágio publicado está publicado.
+Não pede mais nada de você.
+
+**A linha no esboço.** Quando um capítulo está publicado, o cabeçalho do esboço mostra uma linha:
+
+> Lacuna: 04 · Próximo: 05 A escada · último publicado em 30 set
+
+- **Próximo** é o primeiro capítulo que não está publicado, na ordem do livro.
+- **último publicado** é a data do último capítulo publicado, como está escrita na propriedade de
+  data dele (inclusive uma data no futuro). Se ele não tem data, a linha mostra o nome do capítulo.
+- **Lacuna** só aparece quando um capítulo antes do último publicado não está publicado. Lista os
+  números. É um aviso, nunca um bloqueio.
+- Quando todos os capítulos estão publicados, a linha diz "Todos os capítulos estão publicados".
+
+Um capítulo deixado de fora com `compile: false`, e um capítulo sem número (um prólogo, um
+interlúdio, qualquer um de **Capítulos sem número**), não entra na sequência.
+
+**Publique o próximo.** Aperte **Publicar o próximo** no cabeçalho do esboço, ou rode **Publicar o
+próximo capítulo** com um capítulo ou a nota do livro aberta. Se você tem um só livro no cofre, o
+comando funciona de qualquer nota. O Escrita abre o primeiro capítulo não publicado e mostra a
+janela de publicação de sempre, com as conferências. Nada é publicado até você apertar
+**Publicar**. Se todos os capítulos estão publicados, um aviso diz isso.
+
+**O aviso de lacuna.** Na janela de publicação de qualquer capítulo, uma linha diz "Todos os
+capítulos anteriores estão publicados", ou avisa "Capítulo anterior não publicado: 04. Quem lê
+pularia um capítulo." Ela nomeia cada capítulo anterior que não está publicado. É um aviso: você
+ainda pode publicar.
+
+**Datas no futuro.** Você pode escolher um dia adiante na janela de publicação, para agendar um
+capítulo. O Escrita só grava a data. Não publica nada sozinho, e a linha do esboço mostra a data
+futura como foi escrita.
 
 ## Registrar um envio
 
@@ -311,6 +426,9 @@ As palavras de status ficam em Estágios, e a propriedade de status em Livros.
 | Sobrenome do cabeçalho | O "Sobrenome" do cabeçalho. Vazio usa a última palavra do nome. |
 | Linhas de contato | Endereço, e-mail, telefone, uma por linha, no topo da folha de rosto. |
 | Título do capítulo | Use `{n}` para o número e `{title}` para o título. Vazio usa o do modelo. |
+| Propriedade da capa | Na nota do livro, ou numa nota exportada sozinha: um link para uma imagem JPEG ou PNG, usada como capa do EPUB. `cover`. |
+| Separador de cena no EPUB | A linha que o EPUB mostra entre cenas. `* * *`. |
+| Propriedade da coleção | Uma nota com esta propriedade, uma lista de links para contos na ordem de leitura, é exportada como coleção. `contents`. |
 
 **Envios:**
 
@@ -337,10 +455,11 @@ Os campos de texto salvam quando você sai deles.
 |---|---|
 | Publicar esta nota | Confere a nota, depois define status e data. |
 | Despublicar esta nota | Devolve o status anterior. Aparece para uma nota publicada. |
-| Exportar… | Abre a janela de exportação da nota ativa ou do livro dela. |
+| Exportar… | Abre a janela de exportação da nota ativa, do livro ou da coleção dela. Escolha DOCX, Markdown ou EPUB. |
 | Exportar de novo | Repete a última exportação da obra. Aparece quando a obra tem uma. |
+| Publicar o próximo capítulo | Abre a checagem de publicação do primeiro capítulo não publicado do livro. Aparece com um capítulo ou a nota do livro aberta. |
 | Registrar envio | Cria uma nota de envio para a obra ativa. |
 
 As mesmas ações estão no menu do arquivo: **Publicar…**, **Despublicar**, **Exportar…** e
-**Registrar envio…**. O Escrita não define atalhos; associe os que você usa em Configurações ›
+**Registrar envio…**. Com duas ou mais notas selecionadas no explorador de arquivos, o menu também tem **Criar uma coleção…**. O Escrita não define atalhos; associe os que você usa em Configurações ›
 Atalhos.

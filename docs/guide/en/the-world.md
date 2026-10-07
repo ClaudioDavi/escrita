@@ -350,11 +350,72 @@ Once an entry exists, its names stop being treated as typos.
   Universe settings to see a thin line under every recognized name. It is off by default. The
   names are unflagged either way. **Ctrl-click** (**Cmd-click** on a Mac) on an underlined
   name opens its entry.
+- **Names without an entry.** An opt-in lens rule that finds recurring names with no entry. See section 11.
 - **Revision lens.** With the lens on, a spelling variant of an entry's name (*Marianna* when
   the entry is *Mariana*) is flagged as a name variant, and repeating a name is not counted as
   an echo. Your word lists note still adds to the names.
 
 The marks only draw over your text. They never change it.
+
+## 11. Unlinked mentions
+
+An unlinked mention is a place where a note says an entry's name and doesn't link it. Escrita
+lists them for the note you have open, and turns one into a link when you press a button.
+
+Open the universe panel. On the **Works** tab, under the work, the **Unlinked mentions** section
+shows the open note's name and one row for each mention. In per-book mode, the section is at the
+bottom of the **Entries** tab. A row shows:
+
+- the entry's name and the line number ("line 12");
+- the sentence around the mention, with the name marked;
+- a **Create link** button.
+
+Click the sentence to go to that line in the note (nothing is selected). Press **Create link**
+and only that one mention becomes a link: `[[Maria|Mari]]`, or `[[Maria]]` when the text is
+the same as the link. Escrita checks that the line is still the same first. If you edited it
+since the list was made, nothing is written, a notice says "The line changed since the list was
+made. Nothing was written; the list is up to date.", and the list refreshes. There is no "link
+all": every link is one click of yours.
+
+What gets listed:
+
+- The same mentions as "Appears in" (section 9), so the same rules for names, aliases and
+  scope apply.
+- **One link is enough.** If the note already links an entry anywhere, the rest of its mentions
+  are not listed. You link the first one, and the others can stay as plain text.
+- Text inside a link, an embed or a Markdown link to a web address is never listed.
+- The list is only for the open note, and it says "No unlinked mentions in this note." when
+  there is nothing.
+
+While the first count after starting Obsidian runs, the section says "counting…".
+
+### Names without an entry
+
+The revision lens can also point at names you haven't made an entry for yet. This rule is **off
+until you turn it on**: Settings › Escrita › Revision, in the rules, **Names without an entry**. It needs the universe on (a mode that isn't Off) and
+the lens on in the note. With the universe off, the lens panel says "Needs the universe on." and
+has an **Open Features** button.
+
+The rule marks a capitalized name, or a run of capitalized words ("Capitão Ramos"), when:
+
+- it isn't a name already: not an entry's name or alias, not in your lens names list, and not in
+  **Not names** (below);
+- it isn't at the start of a sentence;
+- it comes back: at least 5 times in the note, or in at least 2 of your works.
+
+In the lens panel, the rule shows a list with one row for each name: how many times it is in the
+note, how many works it is in ("3 in the note · 2 works"), and two actions.
+
+- **Create entry** opens the new entry window with the name filled in. The note you are
+  writing is not touched. When the entry exists, the mark goes.
+- **Dismiss** says "this is not a name" and adds the word to **Not names**, for every note. A
+  notice says "“Word” went to Not names and won't be marked again."
+
+Click a name in the list to go to its next place. The lens's step buttons (**Previous name
+without an entry**, **Next name without an entry**) walk through them.
+
+**Not names** is a setting in the same section: one word or run per line, compared ignoring
+capitals and accents. Add words by hand, or remove a line to have the word marked again.
 
 ## Example: a writer of short stories in Portuguese
 

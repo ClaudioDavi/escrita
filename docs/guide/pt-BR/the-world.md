@@ -349,11 +349,75 @@ Quando uma entrada existe, os nomes dela deixam de ser tratados como erros de di
 - **Sublinhado.** Ligue **Sublinhar nomes no editor** nas configurações do Universo para ver
   um traço fino sob cada nome reconhecido. Vem desligado. Os nomes ficam sem marca de erro de
   qualquer jeito. **Ctrl-clique** (**Cmd-clique** no Mac) num nome sublinhado abre a entrada.
+- **Nomes sem entrada.** Uma regra opcional da lente que acha nomes recorrentes sem entrada. Veja a seção 11.
 - **Lente de revisão.** Com a lente ligada, uma variação de grafia do nome de uma entrada
   (*Marianna* quando a entrada é *Mariana*) é apontada como variação de nome, e repetir um nome
   não conta como eco. A sua nota de listas de palavras continua acrescentando nomes.
 
 As marcas só desenham sobre o texto. Elas nunca o alteram.
+
+## 11. Menções sem link
+
+Uma menção sem link é um lugar onde uma nota diz o nome de uma entrada e não a liga. O Escrita
+lista essas menções da nota que você tem aberta e transforma uma em link quando você aperta um
+botão.
+
+Abra o painel do universo. Na aba **Obras**, sob a obra, a seção **Menções sem link** mostra o
+nome da nota aberta e uma linha para cada menção. No modo por livro, a seção fica no fim da aba
+**Entradas**. Uma linha mostra:
+
+- o nome da entrada e o número da linha ("linha 12");
+- a frase em volta da menção, com o nome destacado;
+- um botão **Criar link**.
+
+Clique na frase para ir àquela linha da nota (nada fica selecionado). Aperte **Criar link** e só
+aquela menção vira link: `[[Maria|Mari]]`, ou `[[Maria]]` quando o texto é igual ao link. O
+Escrita confere antes se a linha continua a mesma. Se você a editou depois que a lista foi feita,
+nada é gravado, um aviso diz "A linha mudou desde que a lista foi feita. Nada foi escrito; a
+lista foi atualizada.", e a lista se atualiza. Não existe "ligar tudo": cada link é um clique seu.
+
+O que entra na lista:
+
+- As mesmas menções de "Aparece em" (seção 9), com as mesmas regras de nomes, apelidos e
+  alcance.
+- **Um link basta.** Se a nota já liga uma entrada em algum lugar, as outras menções dela não
+  são listadas. Você liga a primeira, e as demais podem ficar como texto.
+- Texto dentro de um link, de uma incorporação ou de um link Markdown para um endereço da web
+  nunca é listado.
+- A lista é só da nota aberta, e diz "Nenhuma menção sem link nesta nota." quando não há nada.
+
+Enquanto a primeira contagem depois de abrir o Obsidian roda, a seção diz "contando…".
+
+### Nomes sem entrada
+
+A lente de revisão também pode apontar nomes para os quais você ainda não fez uma entrada. Esta
+regra vem **desligada até você ligá-la**: Configurações › Escrita › Revisão, nas regras, **Nomes
+sem entrada**. Ela precisa do universo ligado (um modo que não seja Desligado) e da lente ligada
+na nota. Com o universo desligado, o painel da lente diz "Precisa do universo ligado." e tem um
+botão **Abrir recursos**.
+
+A regra marca um nome com inicial maiúscula, ou uma sequência de palavras com maiúscula
+("Capitão Ramos"), quando:
+
+- ele ainda não é um nome conhecido: não é nome nem apelido de uma entrada, não está na sua lista
+  de nomes da lente e não está em **Não são nomes** (abaixo);
+- não está no começo de uma frase;
+- ele volta: pelo menos 5 vezes na nota, ou em pelo menos 2 das suas obras.
+
+No painel da lente, a regra mostra uma lista com uma linha por nome: quantas vezes ele aparece
+na nota, em quantas obras ele está ("3 na nota · 2 obras") e duas ações.
+
+- **Criar entrada** abre a janela de nova entrada com o nome já preenchido. A nota que você está
+  escrevendo não é tocada. Quando a entrada existe, a marca some.
+- **Dispensar** diz "isto não é um nome" e põe a palavra em **Não são nomes**, para todas as
+  notas. Um aviso diz "“Palavra” foi para “Não são nomes” e não será mais marcado."
+
+Clique num nome da lista para ir à próxima ocorrência dele. Os botões de percorrer da lente
+(**Nome sem entrada anterior**, **Próximo nome sem entrada**) passam por eles.
+
+**Não são nomes** é uma configuração da mesma seção: uma palavra ou sequência por linha,
+comparadas sem diferenciar maiúsculas nem acentos. Acrescente palavras à mão, ou apague uma linha
+para a palavra voltar a ser marcada.
 
 ## Exemplo: uma escritora de contos em português
 

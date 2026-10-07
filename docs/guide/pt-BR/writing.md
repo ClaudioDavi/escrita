@@ -1,7 +1,7 @@
 # Escrita
 
-Esta página cobre o que a 0.7 acrescenta ao esboço: ponto de vista, status e filtros, e metas
-por capítulo. As outras partes da página (metas, marcadores, digitação, mover blocos, modelos
+Esta página cobre o que a 0.7 acrescenta ao esboço (ponto de vista, status e filtros, e metas
+por capítulo) e, desde a 0.9, a leitura do livro inteiro. As outras partes da página (metas, marcadores, digitação, mover blocos, modelos
 e o resto) ainda vão chegar, e por enquanto o README as lista.
 
 Outras páginas: [Recursos e configurações](features-and-settings.md) e
@@ -92,6 +92,25 @@ configuração (**Propriedade da meta dos capítulos**).
 - **O padrão aparece só no esboço.** As contagens do explorador e as metas leem as propriedades
   de cada capítulo, então o explorador pode não mostrar meta ao lado de um capítulo em que o
   esboço mostra uma barra vinda do padrão do livro.
+
+## Ler o livro
+
+Para ler um livro como o leitor vai ler, abra um capítulo qualquer ou a nota do livro e rode
+**Ler o livro**. Você também pode apertar **Ler o livro** no cabeçalho do esboço. Abre-se uma aba
+com todos os capítulos em ordem, um depois do outro.
+
+- **Parece a exportação.** Comentários, beats e marcadores ficam escondidos, como num manuscrito.
+  Um capítulo deixado de fora com `compile: false` não aparece. Os títulos dos capítulos são os
+  que a exportação imprimiria.
+- **É só leitura.** Você não muda nada nesta aba. Clique num parágrafo e o capítulo abre numa
+  aba nova, naquela linha, pronto para editar.
+- **É rápido num livro longo.** Os capítulos são desenhados à medida que você rola até eles.
+- **Lembra onde você parou.** Feche a aba e abra de novo: você está no mesmo lugar. Isso acompanha
+  o capítulo se você o renomeia ou move. Se o capítulo é apagado, você começa pelo topo.
+- **Um livro sem capítulos** diz "Este livro ainda não tem capítulos para ler.", com um botão
+  **Criar o primeiro capítulo**. Na aba de leitura, **Abrir o esboço** volta ao esboço.
+
+Ligue ou desligue junto com o esboço (Recursos › Esboço e beats fantasmas).
 
 ## Quando algo parece errado
 

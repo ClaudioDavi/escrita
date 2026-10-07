@@ -1,7 +1,7 @@
 # Writing
 
-This page covers the parts of writing that 0.7 adds to the outline: point of view, status and
-filters, and per-chapter targets. Other parts of the page (goals, placeholders, typing,
+This page covers the parts of writing that 0.7 adds to the outline (point of view, status and
+filters, and per-chapter targets) and, since 0.9, reading the whole book. Other parts of the page (goals, placeholders, typing,
 moving blocks, templates and the rest) are still to come, and the README lists them for now.
 
 Other pages: [Features and settings](features-and-settings.md) and [The world](the-world.md).
@@ -89,6 +89,26 @@ property is a setting (**Chapter target property**).
 - **The default shows in the outline only.** The file explorer's counts and the goals read
   each chapter's own properties, so the explorer may show no target next to a chapter where
   the outline shows a bar from the book's default.
+
+## Read the book
+
+To read a book the way a reader will, open any chapter or the book's note and run **Read the
+book**. You can also press **Read the book** in the outline's header. A tab opens with every
+chapter in order, one after the other.
+
+- **It looks like the export.** Comments, beats and placeholders are hidden, as in a manuscript.
+  A chapter left out with `compile: false` isn't shown. Chapter headings are the ones the export
+  would print.
+- **It is read-only.** You can't change anything in this tab. Click a paragraph and the chapter
+  opens in a new tab at that line, ready to edit.
+- **It is quick on a long book.** Chapters are drawn as you scroll toward them.
+- **It remembers where you stopped.** Close the tab and open it again: you are at the same
+  place. This follows the chapter if you rename or move it. If the chapter is deleted, you
+  start at the top.
+- **A book with no chapters** says "This book has no chapters to read yet", with a **Create the
+  first chapter** button. In the reading tab, **Open the outline** goes back to the outline.
+
+Turn it on or off with the outline (Features › Outline and ghost beats).
 
 ## When something looks wrong
 

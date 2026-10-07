@@ -35,7 +35,7 @@ When you update, every feature is on, so nothing disappears until you choose. Ex
 | Switch | Off means |
 |---|---|
 | Goals and sprints | No word tracking, daily goal, progress window, sprints or status bar. Its settings hide. |
-| Outline and ghost beats | No outline panel, no ghost beats in the editor, no beat commands. |
+| Outline and ghost beats | No outline panel, no ghost beats in the editor, no beat commands, no **Read the book**. |
 | Placeholders | No placeholder pills, explorer dots, panel or outline badge. (The publish check still stops on a placeholder left in a note, while Publish is on.) |
 | Enter flow and smart typography | Enter doesn't make scene breaks or chapters; no automatic dashes and quotes. |
 | Dialogue focus | The command and its dimming go. |
@@ -43,13 +43,13 @@ When you update, every feature is on, so nothing disappears until you choose. Ex
 | Insert from a template | The command goes. (The universe still uses the templates folder.) |
 | Spellcheck on demand | The toggle command goes. |
 | Word counts in the explorer | No counts, no folder totals, no targets next to names. |
-| Revision lens | No lens, panel, stepping commands or menu items. |
+| Revision lens | No lens, panel, stepping commands or menu items. The names rule and "Not names" hide too. |
 | Snapshots | No snapshot commands, compare view, automatic snapshots or "snapshot before publish". |
 | Darlings | No "Move selection to darlings", panel or restore. |
 | Snapshot at each stage | A stage change takes no snapshot. |
 | Works block and where you left off | The `escrita-works` block shows as plain code; Escrita stops recording where you left off; no home note command or open on startup. |
-| Publish check | No publish or unpublish commands. |
-| Export | No **Export…** or **Export again** command, no file-menu item, and no Export section in the settings. The export folder row stays. |
+| Publish check | No publish, unpublish or **Publish next chapter** commands. |
+| Export | No **Export…** or **Export again** command, no file-menu item (and no **Create a collection…**), and no Export section in the settings. The export folder row stays. |
 | Submissions | No **Record a submission** command or menu item, no pending count in the home block, and no Submissions section in the settings. The submissions folder row stays. |
 | Shared universe | No panel, no universe commands, no "Appears in", no name marks or lens names. |
 | Threads | No thread commands, margin flag or panel tab. |
@@ -65,7 +65,9 @@ Nothing is deleted when you turn a feature off.
 - **Goals**: your writing history stays in Escrita's data (the notice says how many days).
 - **Lens**: your word lists stay in their note.
 - **The desk**: where you left off stays in Escrita's data.
-- **Export**: the files already written stay in the export folder. Your choices for each work (format, template, chapters) and its last export stay in Escrita's data, and keep up with renames and moves while the feature is off. Turn it on again and "Export again" still knows the last file.
+- **Outline**: where you stopped in "Read the book" stays in Escrita's data, and keeps up with renames.
+- **Revision lens**: the "Not names" list stays in the settings.
+- **Export**: collection notes are ordinary notes and stay. The files already written (EPUB too) stay in the export folder. Your choices for each work (format, template, chapters) and its last export stay in Escrita's data, and keep up with renames and moves while the feature is off. Turn it on again and "Export again" still knows the last file.
 - **Submissions**: the submission notes stay where they are, in the submissions folder. The notice names the folder and how many notes there are. They are ordinary notes: with the feature off they still don't count toward goals and don't become works. Change the folder in the settings if you already use that name for something else.
 - **Threads**: the markers stay in your notes; the dates each was first seen stay in the data.
 - **Universe**: entries are ordinary notes, so they are never touched. Colours chosen for
@@ -99,6 +101,23 @@ snapshot files on disk.
 - **Chapters without a number** (Settings, Books) is read by Export and the outline: a list
   of titles (Prologue, Interlude, Epilogue…) that export with their title alone and show no
   number in the outline. The rest are counted from 1.
+
+## Settings added in 0.9
+
+These settings belong to a feature. They hide when that feature is off.
+
+| Setting | Feature | What it does |
+|---|---|---|
+| Names without an entry (a rule, in the Revision section) | Revision lens | Off by default. Marks recurring capitalized names that have no entry. Needs a universe mode. |
+| Not names | Revision lens | Words the rule never marks, one per line. **Dismiss** in the lens panel adds a word. |
+| Cover property | Export | The book note's property that links the EPUB cover (JPEG or PNG). `cover`. |
+| EPUB scene break | Export | The line an EPUB shows between scenes. `* * *`. |
+| Collection property | Export | The property of a note that lists stories in reading order. `contents`. |
+
+Two commands arrive with 0.9 and have no setting. **Read the book** belongs to Outline and
+ghost beats. **Publish next chapter** belongs to Publish check. The **Publish next** button in
+the outline header shows only while both are on. Unlinked mentions have no switch of their own:
+they are part of Shared universe, so they go when the universe is off.
 
 ## Folder rows and how fields save
 
