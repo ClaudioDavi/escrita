@@ -95,6 +95,26 @@ Before any setup or preset UI is built, mockups on the design canvas
 
 This is gate **G1**; Wave 2 doesn't start without it.
 
+**Drawn on 2026-10-07**, boards 35–38 ("1.0 · Preparar o cofre para escrever"), waiting for
+approval. Decisions the boards propose, beyond the questions above:
+
+- **What each preset turns on.** SF 10 predates export, submissions and the stage snapshot,
+  and names "Enter and typography" in no preset. Proposed: **Essentials** (7): goals, outline,
+  placeholders, typing, darlings, snapshots, the home block. **Writer** (16): Essentials plus
+  the lens, dialogue focus, moving blocks, templates, explorer counts, the stage snapshot, the
+  publish check, export and submissions. **Everything** (19) adds spellcheck on demand,
+  threads and the universe. The universe mode never changes through a preset.
+- **The setup never changes a saved setting without a tick.** In a vault with settings,
+  values the writer saved are listed as kept; the features row and the layout come unticked.
+  A track folder is added to the list, never swapped.
+- **Names.** The command is "Set up a writing vault" ("Preparar o cofre para escrever"); the
+  home note is `Home.md` or `Início.md`; the examples start with "Example ·" or "Exemplo ·"
+  and carry `example: true`.
+- **A partial failure** says what was made and what wasn't, and undoes nothing. Settings are
+  written last.
+- **Open on board 38:** a quiet link to the setup command at the top of the Features page,
+  only when there is no home note.
+
 ## Gates
 
 - **G0** (before Wave 1): the questions above answered. Q1, Q3, Q8 and the improvements
