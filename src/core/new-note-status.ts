@@ -1,6 +1,8 @@
 // Whether a note the writer just created should start in the draft stage (no Obsidian imports).
 // main.ts asks this a moment after the vault's "create" event, so a template has landed first.
 
+import { propertyKey } from "./book-source";
+
 export interface NewNotePlace {
   kind: string;
   markdown: boolean;
@@ -21,8 +23,12 @@ export interface NewNoteOptions {
   templateFolders: string[];
   /** Escrita's own notes (home note, word lists, universe note, chapter template) */
   ownNotes: string[];
-  /** a note with this property is a collection: a work only if the writer gives it a status (Q27) */
-  collectionProperty?: string;
+  /**
+   * A note with any of these properties (any value, even none; name in any case) is not
+   * prose, so it gets no draft status: a collection is a work only if the writer gives it
+   * a status (Q27).
+   */
+  structuralProperties: string[];
 }
 
 const WRITING_KINDS = new Set(["note", "chapter", "book-note"]);
@@ -51,7 +57,6 @@ export function needsDraftStatus(place: NewNotePlace, fm: Record<string, unknown
   const props = fm ?? {};
   if (filled(props[o.statusProperty])) return false;
   if (o.typeProperty.trim() && filled(props[o.typeProperty])) return false;
-  const coll = (o.collectionProperty ?? "").trim();
-  if (coll && Object.prototype.hasOwnProperty.call(props, coll)) return false;
+  if (o.structuralProperties.some((p) => propertyKey(props, p) !== undefined)) return false;
   return true;
 }

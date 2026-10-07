@@ -5,6 +5,7 @@ import { withProperty } from "../src/core/chapter-plan";
 const o: NewNoteOptions = {
   statusProperty: "status", typeProperty: "tipo",
   templateFolders: ["Modelos"], ownNotes: ["Início.md", "Listas de palavras", "Universo.md", "Modelos/Capítulo.md"],
+  structuralProperties: [],
 };
 const place = (p: Partial<NewNotePlace> = {}): NewNotePlace =>
   ({ kind: "note", markdown: true, tracked: true, snapshot: false, path: "Contos/Novo.md", ...p });
@@ -19,9 +20,10 @@ describe("needsDraftStatus", () => {
   });
 
   it("skips a collection (a note with the collection property) unless it has a status", () => {
-    const c = { ...o, collectionProperty: "contents" };
+    const c = { ...o, structuralProperties: ["contents"] };
     expect(needsDraftStatus(place(), { contents: ["[[A]]", "[[B]]"] }, c)).toBe(false);
     expect(needsDraftStatus(place(), { contents: null }, c)).toBe(false);
+    expect(needsDraftStatus(place(), { Contents: ["[[A]]"] }, c)).toBe(false);
     expect(needsDraftStatus(place(), { other: 1 }, c)).toBe(true);
     expect(needsDraftStatus(place(), { contents: ["[[A]]"] }, o)).toBe(true);
   });

@@ -74,8 +74,6 @@ export function sameScope(a: Scope, b: Scope): boolean {
  */
 export const NO_SCOPE: Scope = Object.freeze({ kind: "none", root: "", note: null }) as Scope;
 
-const NONE: Scope = NO_SCOPE;
-
 /** Whether `path` is `folder` itself or inside it. Slashes at the folder's edges are ignored, "" means the whole vault, case-sensitive. */
 export function inFolder(path: string, folder: string): boolean {
   const f = folder.replace(/^\/+|\/+$/g, "");
@@ -144,9 +142,9 @@ export function keptOut(path: string, lookup: ScopeLookup, settings: ScopeSettin
 
 export function scopeFor(file: { path: string }, settings: ScopeSettings, lookup: ScopeLookup): Scope {
   const mode = settings.universeMode;
-  if (mode === "off") return NONE;
+  if (mode === "off") return NO_SCOPE;
   const book = lookup.book(file.path);
-  const bookScope: Scope = book ? { kind: "book", root: trimSlashes(book.folder), note: book.note } : NONE;
+  const bookScope: Scope = book ? { kind: "book", root: trimSlashes(book.folder), note: book.note } : NO_SCOPE;
   if (mode === "perBook") return bookScope;
 
   for (const path of book ? [file.path, book.note] : [file.path]) {

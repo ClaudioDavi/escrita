@@ -16,7 +16,7 @@
 
 import type { ChapterRef } from "../core/book-source";
 import { countedNumbers } from "../core/book";
-import { stageOf, type StageMapping } from "../core/stages";
+import { readStatus, stageOf, type StageMapping } from "../core/stages";
 import { dateText, hasDate } from "./date";
 
 /** One chapter as the serial model reads it: the book source's ref plus two properties. */
@@ -70,10 +70,9 @@ export function serialChapters(
 ): SerialChapter[] {
   return chapters.map((c) => {
     const fm = frontmatter(c.path) ?? {};
-    const status = fm[statusProperty];
     return {
       ...c,
-      status: typeof status === "string" || typeof status === "number" ? String(status) : null,
+      status: readStatus(fm, statusProperty),
       date: fm[dateProperty] ?? null,
     };
   });

@@ -4,6 +4,7 @@
 // variables, and the modal turns them into text with t().
 
 import { stageOf, type StageMapping } from "../core/stages";
+import { propertyValue } from "../core/book-source";
 import { readinessOf, unclosedComment } from "../core/readiness";
 import { countIn, pieceProgress, readPiece, type PieceProperties } from "../core/measure";
 
@@ -69,13 +70,6 @@ export function isFilled(v: unknown): boolean {
   if (typeof v === "string") return v.trim() !== "";
   if (Array.isArray(v)) return v.some(isFilled);
   return true;
-}
-
-function propertyValue(fm: Record<string, unknown>, name: string): unknown {
-  if (name in fm) return fm[name];
-  const lower = name.toLowerCase();
-  const key = Object.keys(fm).find((k) => k.toLowerCase() === lower);
-  return key === undefined ? undefined : fm[key];
 }
 
 // ------------------------------------------------------------------ all checks

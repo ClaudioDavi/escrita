@@ -17,7 +17,7 @@
 // same book and layout give the same bytes. EPUBCheck validates the fixture book in CI
 // (task 1.4, gate G0a).
 
-import type { ExportDoc, ManuscriptWriter, Preset } from "../../core/export-pipeline";
+import { fillTemplate, type ExportDoc, type ManuscriptWriter, type Preset } from "../../core/export-pipeline";
 import type { Block, Run } from "../../core/manuscript";
 import { zipStore } from "../../core/zip";
 import { xmlEscape } from "./docx";
@@ -66,7 +66,7 @@ export function epubLayout(preset: Preset, sceneBreak: string): EpubLayout {
     language: preset.language,
     byline: preset.byline,
     contentsLabel: pt ? "Sumário" : "Contents",
-    sceneBreak: sceneBreak.trim() || "* * *",
+    sceneBreak,
   };
 }
 
@@ -193,7 +193,7 @@ function write(book: EpubBook, layout: EpubLayout): Uint8Array {
     add("cover", page(lang, pt ? "Capa" : "Cover",
       `<div class="cover"><img src="images/cover.${ext}" alt="${esc(doc.title)}"/></div>`, "cover"));
   }
-  const bylineText = author ? layout.byline.replace(/\{name\}/g, author) : "";
+  const bylineText = author ? fillTemplate(layout.byline, { name: author }) : "";
   add("title", page(lang, doc.title,
     `<div class="title-page">\n<h1>${esc(doc.title)}</h1>${bylineText ? `\n<p class="byline">${esc(bylineText)}</p>` : ""}\n</div>`, "titlepage"));
   // the front matter pages, then the visible table of contents (nav) after them (Q6)

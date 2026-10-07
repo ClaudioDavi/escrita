@@ -365,13 +365,13 @@
 .escrita-export-paper.is-epub p {
   text-indent: 1.4em;
 }
-.escrita-export-paper.is-epub .escrita-export-front,
+.escrita-export-paper.is-epub .escrita-export-front {
+  margin-left: 0;
+  text-indent: 0;
+}
 .escrita-export-paper.is-epub .escrita-export-quote {
   margin-left: 1.4em;
   text-indent: 0;
-}
-.escrita-export-paper.is-epub .escrita-export-front {
-  margin-left: 0;
 }
 .escrita-export-title.is-epub {
   margin: 1em 0 0.2em;

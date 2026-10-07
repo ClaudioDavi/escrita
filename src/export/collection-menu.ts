@@ -2,7 +2,7 @@ import { Menu, Modal, Notice, TAbstractFile, TFile, normalizePath } from "obsidi
 import type EscritaPlugin from "../main";
 import { safeFileName } from "../core/book";
 import { fmt, plural, t } from "../i18n";
-import { collectionNoteText, explorerSortOf, sortLikeExplorer, storyLink, type ExplorerSort } from "./logic";
+import { collectionNoteText, explorerSortOf, sortLikeExplorer, type ExplorerSort } from "./logic";
 
 /**
  * The explorer's sort setting, read from the vault config. The API doesn't type it, so it
@@ -42,10 +42,9 @@ export async function createCollection(plugin: EscritaPlugin, stories: readonly 
   const first = stories[0];
   const folder = first.parent && first.parent.path !== "/" ? `${first.parent.path}/` : "";
   const path = normalizePath(`${folder}${safeFileName(title)}.md`);
-  const property = settings.collectionProperty.trim() || "contents";
-  // a story whose name another note shares is listed by its path, so the link finds the same note
-  const links = stories.map((f) => storyLink(f.path, app.metadataCache.getFirstLinkpathDest(f.basename, path)?.path !== f.path));
-  const { file } = await plugin.notes.create(path, collectionNoteText(property, links), { exists: "unique" });
+  // the vault's link format; a story whose name another note shares gets a path, so the link finds the same note
+  const links = stories.map((f) => `[[${app.metadataCache.fileToLinktext(f, path, true)}]]`);
+  const { file } = await plugin.notes.create(path, collectionNoteText(settings.collectionProperty, links), { exists: "unique" });
   await app.workspace.getLeaf(false).openFile(file, { active: true });
 }
 
@@ -67,7 +66,7 @@ class CollectionModal extends Modal {
     const n = this.stories.length;
     this.contentEl.createDiv({
       cls: "escrita-export-hint",
-      text: plural("export.collection.hint", n, { n: fmt(n), property: this.plugin.settings.collectionProperty.trim() || "contents" }),
+      text: plural("export.collection.hint", n, { n: fmt(n), property: this.plugin.settings.collectionProperty }),
     });
     const buttons = this.contentEl.createDiv({ cls: "modal-button-container" });
     const create = buttons.createEl("button", { cls: "mod-cta", text: t("export.collection.create") });

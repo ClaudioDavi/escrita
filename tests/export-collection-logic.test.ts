@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { collectionNoteText, explorerSortOf, sortLikeExplorer, storyLink } from "../src/export/logic";
+import { collectionNoteText, explorerSortOf, sortLikeExplorer } from "../src/export/logic";
 import { withCoverWarning, withMissingStories, type Warning } from "../src/export/source";
 
 describe("collection note text", () => {
@@ -8,11 +8,6 @@ describe("collection note text", () => {
   });
   it("quotes an odd property name and escapes quotes in a link", () => {
     expect(collectionNoteText("my list", ['[[Say "hi"]]'])).toBe('---\n"my list":\n  - "[[Say \\"hi\\"]]"\n---\n');
-  });
-  it("links by name, or by path without the extension when the name is shared", () => {
-    expect(storyLink("Contos/A visita.md", false)).toBe("[[A visita]]");
-    expect(storyLink("Contos/A visita.md", true)).toBe("[[Contos/A visita]]");
-    expect(storyLink("Raiz.md", false)).toBe("[[Raiz]]");
   });
 });
 

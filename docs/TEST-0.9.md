@@ -446,9 +446,11 @@ Board 34. Guide: [Publishing, "Export a collection of stories"](guide/en/publish
      ---
      ```
 
-     The order is the file explorer's (A to Z here), not the order you clicked.
+     The order is the file explorer's (A to Z here), not the order you clicked. The links follow the vault's
+     "New link format" setting (Files and links); with the default, "Shortest path when
+     possible", they read as above.
    - Expected (fixed in `763f532`): wait two seconds; no `status` appears. "New notes start as
-     draft" skips any note with the `contents` property, even an empty one. The collection is
+     draft" skips any note with the `contents` property (in any case, `Contents:` too), even an empty one. The collection is
      not in the **Obras** tab or on your home note.
    - **A collection with a status (Q27).** Add `status: rascunho` by hand. Expected: it shows
      in **Obras** as a work, with almost no words. Remove the line: it goes again.

@@ -81,6 +81,32 @@ export class BookService {
 }
 
 /**
+ * What `bookSource` and `collectionSource` share: `read` and `frontmatter` by vault path.
+ * Text comes through `notes` (the open editor's buffer when there is one), so `mtime` is
+ * null then and the file's mtime otherwise.
+ */
+function fileReader(app: App, notes: Pick<NoteService, "text" | "editorView">) {
+  const fileAt = (path: string): TFile | null => {
+    const f = app.vault.getAbstractFileByPath(path) ?? app.vault.getAbstractFileByPath(normalizePath(path));
+    return f instanceof TFile ? f : null;
+  };
+  const frontmatter = (path: string): Record<string, unknown> => {
+    const f = fileAt(path);
+    return ((f && app.metadataCache.getFileCache(f)?.frontmatter) as Record<string, unknown> | undefined) ?? {};
+  };
+  const read = async (path: string): Promise<{ text: string; mtime: number | null }> => {
+    const f = fileAt(path);
+    if (!f) throw new Error(`not a file: ${path}`);
+    const open = notes.editorView(f) !== null;
+    const before = f.stat.mtime;
+    const text = await notes.text(f).read();
+    // a save during the read may pair old text with a newer mtime: seed only when unchanged
+    return { text, mtime: open || f.stat.mtime !== before ? null : before };
+  };
+  return { fileAt, frontmatter, read };
+}
+
+/**
  * The Obsidian adapter of core/book-source.ts. Text comes through `notes` (the open
  * editor's buffer when there is one), so `mtime` is null then and the file's mtime
  * otherwise.
@@ -91,28 +117,13 @@ export function bookSource(
   notes: Pick<NoteService, "text" | "editorView">,
   settings: () => Pick<EscritaSettings, "compileProperty">,
 ): BookSource<Book> {
-  const fileAt = (path: string): TFile | null => {
-    const f = app.vault.getAbstractFileByPath(path) ?? app.vault.getAbstractFileByPath(normalizePath(path));
-    return f instanceof TFile ? f : null;
-  };
-  const frontmatter = (path: string): Record<string, unknown> => {
-    const f = fileAt(path);
-    return ((f && app.metadataCache.getFileCache(f)?.frontmatter) as Record<string, unknown> | undefined) ?? {};
-  };
+  const { frontmatter, read } = fileReader(app, notes);
   return {
     chapters: (book) => books.chapters(book).map((c) => ({
       path: c.file.path, title: c.title, number: c.number,
       include: includeChapter(frontmatter(c.file.path), settings().compileProperty),
     })),
-    async read(path) {
-      const f = fileAt(path);
-      if (!f) throw new Error(`not a file: ${path}`);
-      const open = notes.editorView(f) !== null;
-      const before = f.stat.mtime;
-      const text = await notes.text(f).read();
-      // a save during the read may pair old text with a newer mtime: seed only when unchanged
-      return { text, mtime: open || f.stat.mtime !== before ? null : before };
-    },
+    read,
     frontmatter,
   };
 }
@@ -150,27 +161,13 @@ export function collectionSource(
   notes: Pick<NoteService, "text" | "editorView">,
   settings: () => Pick<EscritaSettings, "collectionProperty">,
 ): BookSource<TFile> {
-  const fileAt = (path: string): TFile | null => {
-    const f = app.vault.getAbstractFileByPath(path) ?? app.vault.getAbstractFileByPath(normalizePath(path));
-    return f instanceof TFile ? f : null;
-  };
-  const frontmatter = (path: string): Record<string, unknown> => {
-    const f = fileAt(path);
-    return ((f && app.metadataCache.getFileCache(f)?.frontmatter) as Record<string, unknown> | undefined) ?? {};
-  };
+  const { fileAt, frontmatter, read } = fileReader(app, notes);
   return {
     chapters: (note) => (collectionAt(app, note, settings)?.stories ?? []).flatMap((path) => {
       const f = fileAt(path);
       return f ? [{ path, title: f.basename, number: null, include: true }] : [];
     }),
-    async read(path) {
-      const f = fileAt(path);
-      if (!f) throw new Error(`not a file: ${path}`);
-      const open = notes.editorView(f) !== null;
-      const before = f.stat.mtime;
-      const text = await notes.text(f).read();
-      return { text, mtime: open || f.stat.mtime !== before ? null : before };
-    },
+    read,
     frontmatter,
   };
 }

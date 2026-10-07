@@ -91,7 +91,6 @@ export class NamesIndex<F extends IndexFile> {
 
   isReady(): boolean { return this.index?.isReady() ?? false; }
   get started(): boolean { return this.index !== null; }
-  get demandedYet(): boolean { return this.demanded; }
 
   /** Fires once when the first build is done and after that, debounced, when a note's runs change. */
   onChange(cb: () => void): () => void {

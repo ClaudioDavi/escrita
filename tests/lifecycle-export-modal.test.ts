@@ -67,7 +67,7 @@ const LAST: LastExport = {
 
 function open(o: Partial<ExportModalOptions> & { host: ExportHost }): { m: ExportModal; el: HTMLElement } {
   const m = new ExportModal({} as never, {
-    book: BOOK, state: { whole: true, selection: { mode: "all" }, format: "docx", preset: "ptbr" }, last: null, marker: "XXX", ...o,
+    book: BOOK, state: { whole: true, selection: { mode: "all" }, format: "docx", preset: "ptbr" }, last: null, marker: "XXX", epubSceneBreak: "* * *", ...o,
   });
   vi.spyOn(m, "close").mockImplementation(() => {});
   m.onOpen();

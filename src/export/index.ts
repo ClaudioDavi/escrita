@@ -268,8 +268,7 @@ export class ExportModule extends FeatureModule {
    */
   private async readCover(target: Target, state: ModalState): Promise<{ cover: EpubCover | null; name: string | null }> {
     const { app, settings } = this.plugin;
-    const prop = settings.coverProperty.trim();
-    if (prop === "") return { cover: null, name: null };
+    const prop = settings.coverProperty;
     const holder = target.book && state.whole ? target.book.note.path : target.file.path;
     const link = coverLink(this.frontmatter(holder)[prop]);
     if (link === null) return { cover: null, name: null };

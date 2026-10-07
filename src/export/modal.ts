@@ -71,7 +71,7 @@ export interface ExportModalOptions {
   /** the placeholder marker word from settings, for "2 XXX markers" */
   marker: string;
   /** the `epubSceneBreak` setting, for the EPUB preview */
-  epubSceneBreak?: string;
+  epubSceneBreak: string;
   host: ExportHost;
 }
 
@@ -551,7 +551,7 @@ export class ExportModal extends Modal {
     if (!built) scroll.createDiv({ cls: "escrita-export-muted", text: t("export.reading") });
     else {
       const epub = this.state.format === "epub";
-      const layout = epubLayout(presetById(this.state.preset), this.o.epubSceneBreak ?? "");
+      const layout = epubLayout(presetById(this.state.preset), this.o.epubSceneBreak);
       // the last preview's cover URL goes with its image (the preview is drawn anew)
       this.dropCoverUrl();
       if (epub && built.cover) {

@@ -100,11 +100,11 @@ export interface EscritaSettings extends UniverseSettings {
   contactLines: string;
   /** chapter heading with {n} and {title}; empty = the preset's own (Q5) */
   chapterHeadingFormat: string;
-  /** book note property linking the EPUB cover image, JPEG or PNG (0.9, PLAN-0.9 Q8; no row until task 2.4) */
+  /** book note property linking the EPUB cover image, JPEG or PNG (0.9, PLAN-0.9 Q8) */
   coverProperty: string;
-  /** the scene break line in an EPUB (0.9, Q6; no row until task 2.4) */
+  /** the scene break line in an EPUB (0.9, Q6) */
   epubSceneBreak: string;
-  /** the property of a collection note listing its stories in reading order (0.9, SF 13, PLAN-0.9 Q24; no row yet) */
+  /** the property of a collection note listing its stories in reading order (0.9, SF 13, PLAN-0.9 Q24) */
   collectionProperty: string;
 
   // Submissions (0.8, SF 12; drawn by the submissions module's section, task 3.2)
@@ -161,9 +161,9 @@ export interface EscritaSettings extends UniverseSettings {
   lensLongSentence: number;
   /** rules turned off; an array so mergeDefaults copies it and a future rule starts on */
   lensRulesOff: string[];
-  /** opt-in rules turned on (0.9: `newName`, lens/types OPT_IN_RULES); they start off. No row until task 2.3 */
+  /** opt-in rules turned on (0.9: `newName`, lens/types OPT_IN_RULES); they start off */
   lensRulesOn: string[];
-  /** "Not names": words and runs the names rule never marks, one per line (0.9, Q4; no row until task 2.3) */
+  /** "Not names": words and runs the names rule never marks, one per line (0.9, Q4) */
   notNames: string;
   lensSkipQuotes: boolean;
   lensShowDialogue: boolean;

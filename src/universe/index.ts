@@ -78,8 +78,6 @@ const MENTIONS_EMIT_MS = 1000;
 const SCOPE_MS = 300;
 const WORKS_MS = 500;
 
-const NONE: Scope = { kind: "none", root: "", note: null };
-
 export class UniverseModule extends FeatureModule {
   readonly id = "universe" as const;
   /** two editor slots: the name marks, then the "Appears in" section. No post-processor: Reading view waits on G0d. */

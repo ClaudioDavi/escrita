@@ -68,6 +68,9 @@ beforeEach(() => {
   app.workspace.getLeaf = () => ({ openFile: async (f: TFile) => { opened.push(f); } });
   app.metadataCache.getFileCache = (f: TFile) => ({ frontmatter: fm[f.path] });
   app.metadataCache.getFirstLinkpathDest = (link: string) => [...vaultFiles.values()].find((f) => f.basename === link || f.path.replace(/\.md$/, "") === link) ?? null;
+  // Obsidian's default link format, "shortest path when possible": the name, or the path when the name is shared
+  app.metadataCache.fileToLinktext = (f: TFile, from: string) =>
+    app.metadataCache.getFirstLinkpathDest(f.basename, from) === f ? f.basename : f.path.replace(/\.md$/, "");
   plugin.books = {
     classify: (x: TFile | string) => ({ path: typeof x === "string" ? x : x.path, kind: "note", book: null, snapshot: false, submission: false, export: false }),
   } as never;

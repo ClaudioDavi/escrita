@@ -29,9 +29,9 @@ export interface NamesProviderDeps {
   nameTitles(): string;
   /** quiet time for `refreshSoon` (the metadata cache fires on every save); without it `refreshSoon` refreshes at once */
   timers?: { set(cb: () => void, ms: number): unknown; clear(h: unknown): void };
-  /** the on-demand names index behind `workCount` and `wantNameCounts` (universe/names-index.ts); without it the counts are 0 */
   /** opens the create-entry dialog for a name found in the note at `from` (the lens's "Create entry") */
   createEntry?(name: string, from: string): void;
+  /** the on-demand names index behind `workCount` and `wantNameCounts` (universe/names-index.ts); without it the counts are 0 */
   counts?: { want(): void; count(text: string, path: string): number; ready(): boolean };
 }
 

@@ -99,9 +99,6 @@ export class MentionsIndex<F extends IndexFile> {
     index.demand();
   }
 
-  /** The index was asked to build (it may still be building). */
-  get demandedYet(): boolean { return this.demanded; }
-
   get started(): boolean { return this.index !== null; }
   isReady(): boolean { return this.index?.isReady() ?? false; }
 

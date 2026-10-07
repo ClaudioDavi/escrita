@@ -7,8 +7,8 @@
 // adapter (core/books.ts `collectionSource`), every story unnumbered, so the manuscript
 // model and the writers don't change. Filled in by task 1.7.
 
-/** The property that lists a collection's stories (the property name is a setting). */
-export const DEFAULT_COLLECTION_PROPERTY = "contents";
+import { propertyKey } from "./book-source";
+import { linkText } from "./scope";
 
 /**
  * Where one link of the list points: the vault path of a Markdown note, or null when it
@@ -53,14 +53,9 @@ export function collectionOf(
   property: string,
   resolve: ResolveStory,
 ): Collection | null {
-  const fm = frontmatter ?? {};
-  let key: string | undefined = property in fm ? property : undefined;
-  if (key === undefined) {
-    const lower = property.toLowerCase();
-    key = Object.keys(fm).find((k) => k.toLowerCase() === lower);
-  }
+  const key = propertyKey(frontmatter, property);
   if (key === undefined) return null;
-  const value = fm[key];
+  const value = frontmatter?.[key];
   if (value !== null && value !== undefined && typeof value !== "string" && !Array.isArray(value)) return null;
 
   const stories: string[] = [];
@@ -81,11 +76,4 @@ export function collectionOf(
   };
   visit(value);
   return { stories, missing };
-}
-
-/** The link text of one list item: `[[A|b]]` and `[[A#h]]` give "A"; plain text stays; blank gives null. */
-function linkText(value: string): string | null {
-  const m = /\[\[([^\]]*)\]\]/.exec(value);
-  const inner = (m ? m[1] : value).split("|")[0].split(/[#^]/)[0].trim();
-  return inner === "" ? null : inner;
 }

@@ -44,20 +44,31 @@ export interface BookSource<B> {
 }
 
 /**
+ * The key a frontmatter property is stored under: the exact name, else the first key equal
+ * to it ignoring case (Obsidian treats property names without case). Undefined when the
+ * note has no such property.
+ */
+export function propertyKey(frontmatter: Record<string, unknown> | null | undefined, name: string): string | undefined {
+  const fm = frontmatter ?? {};
+  if (Object.prototype.hasOwnProperty.call(fm, name)) return name;
+  const lower = name.toLowerCase();
+  return Object.keys(fm).find((k) => k.toLowerCase() === lower);
+}
+
+/** A frontmatter property's value, looked up as `propertyKey` finds it; undefined when missing. */
+export function propertyValue(frontmatter: Record<string, unknown> | null | undefined, name: string): unknown {
+  const key = propertyKey(frontmatter, name);
+  return key === undefined ? undefined : frontmatter?.[key];
+}
+
+/**
  * The `compile: false` rule (N 7): a chapter is left out only when the property
  * (looked up by exact name, then ignoring case) is the boolean false or the text
  * "false" (trimmed, any case). Missing, true, or anything else keeps it in, so a
  * typo never silently drops a chapter.
  */
 export function includeChapter(frontmatter: Record<string, unknown> | null | undefined, property: string): boolean {
-  const fm = frontmatter ?? {};
-  let value: unknown = undefined;
-  if (Object.prototype.hasOwnProperty.call(fm, property)) value = fm[property];
-  else {
-    const lower = property.toLowerCase();
-    const key = Object.keys(fm).find((k) => k.toLowerCase() === lower);
-    if (key !== undefined) value = fm[key];
-  }
+  const value = propertyValue(frontmatter, property);
   if (value === false) return false;
   if (typeof value === "string" && value.trim().toLowerCase() === "false") return false;
   return true;

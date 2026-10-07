@@ -12,7 +12,7 @@ import type EscritaPlugin from "../main";
 import { fmt, plural, t } from "../i18n";
 import { isTemplatePath } from "./entries";
 import { countThreads, pickStillValid, readPanelState, toggled, type PanelState } from "./panel-model";
-import { universeNotePath, universeRootOf, type Scope } from "../core/scope";
+import { NO_SCOPE, universeNotePath, universeRootOf, type Scope } from "../core/scope";
 import type { UniverseInfo } from "./index";
 import { FOCUS_ATTR, button, messageBlock, type ClosingForm, type PanelCtx } from "./view-parts";
 import { renderEntries } from "./view-entries";
@@ -26,7 +26,6 @@ export const THREADS_VIEW = "escrita-threads";
 
 export type UniverseTab = "entries" | "threads" | "works";
 
-const NONE: Scope = { kind: "none", root: "", note: null };
 /** how long the panel waits for the indexes to settle before redrawing */
 const REFRESH_MS = 150;
 
@@ -384,7 +383,7 @@ export class ThreadsView extends PanelBase {
     const u = this.plugin.universe;
     // with a mode on, the threads of the active note's scope; off, every tracked work
     const active = u.enabled() ? u.scopeOfActive() : null;
-    const scope = active && active.kind !== "none" ? active : NONE;
+    const scope = active && active.kind !== "none" ? active : NO_SCOPE;
     const threads = u.threads(scope);
     const open = threads.filter((x) => !x.thread.closed);
     const ctx = this.ctx(scope);
