@@ -52,6 +52,12 @@ describe("fixtures: setup", () => {
       }
     });
   }
+  it("author-like, ticks untouched, changes no saved setting but adding a track folder (G2)", () => {
+    const run = itemsToRun(read<SetupCase>("setup/author-like.json").expected, {});
+    const settings = run.filter((i) => i.kind === "setting" || i.kind === "features");
+    expect(settings.map((i) => i.target)).toEqual(["trackFolders"]);
+    expect(run.filter((i) => i.kind === "example" || i.kind === "home" || i.kind === "layout")).toEqual([]);
+  });
   it("second-run has nothing to run", () => {
     expect(itemsToRun(read<SetupCase>("setup/second-run.json").expected, {})).toEqual([]);
   });

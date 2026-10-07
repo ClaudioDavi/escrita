@@ -113,7 +113,7 @@
       "kind": "setting",
       "target": "defaultsLanguage",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"
@@ -124,7 +124,7 @@
       "kind": "setting",
       "target": "stages",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"
@@ -156,18 +156,18 @@
       "kind": "setting",
       "target": "unnumberedTitles",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"
       },
-      "value": "Prólogo, Prefácio, Apresentação, Introdução, Interlúdio, Epílogo, Posfácio"
+      "value": "Prólogo, Prefácio, Apresentação, Introdução, Nota do autor, Interlúdio, Epílogo, Posfácio"
     },
     {
       "kind": "setting",
       "target": "submissionResults",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"
@@ -178,7 +178,7 @@
       "kind": "setting",
       "target": "exportFolder",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"
@@ -189,7 +189,7 @@
       "kind": "setting",
       "target": "submissionsFolder",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"
@@ -200,7 +200,7 @@
       "kind": "setting",
       "target": "universeNote",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"
@@ -211,7 +211,7 @@
       "kind": "setting",
       "target": "entryTypes",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"
@@ -253,7 +253,7 @@
       "kind": "setting",
       "target": "formValues",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"
@@ -271,7 +271,7 @@
       "kind": "setting",
       "target": "threadKeyword",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"
@@ -282,7 +282,7 @@
       "kind": "setting",
       "target": "threadClosedWord",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"
@@ -304,7 +304,7 @@
       "kind": "setting",
       "target": "chaptersFolder",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"
@@ -315,7 +315,7 @@
       "kind": "setting",
       "target": "lensLanguage",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"

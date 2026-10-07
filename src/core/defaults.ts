@@ -112,7 +112,8 @@ const EN: LanguageDefaults = {
 const PT_BR: LanguageDefaults = {
   stages: stages({ idea: "ideia", draft: "rascunho", revision: "revisão", ready: "pronto", published: "publicado" }),
   chaptersFolder: "Capítulos",
-  unnumberedTitles: "Prólogo, Prefácio, Apresentação, Introdução, Interlúdio, Epílogo, Posfácio",
+  // SF 10 names "Nota do autor"; the rest mirror the English list
+  unnumberedTitles: "Prólogo, Prefácio, Apresentação, Introdução, Nota do autor, Interlúdio, Epílogo, Posfácio",
   // the first word is "pending" (submissions/logic): pendente
   submissionResults: "pendente, aceito, recusado, retirado",
   exportFolder: "Escrita/Exportações",

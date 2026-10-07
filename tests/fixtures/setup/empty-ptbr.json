@@ -106,7 +106,7 @@
       "kind": "setting",
       "target": "lensLanguage",
       "state": "change",
-      "tick": null,
+      "tick": "language",
       "ticked": true,
       "reason": {
         "key": "setup.reason.settingChange"

@@ -1,5 +1,5 @@
 {
-  "description": "Board 36 a: the scrubbed 0.9 settings (all word keys the writer's own), existing folders and home note, works present. Examples and the features row come unticked; trackFolders gains Livros, never swapped; the writer's own words are kept.",
+  "description": "Board 36 a: the scrubbed 0.9 settings (the words the writer changed are kept), existing folders and home note, works present. Examples, the language group, the features row and the layout come unticked, so with no tick changed the run touches no saved setting but trackFolders' addition; trackFolders gains Livros, never swapped; the writer's own words are kept.",
   "choices": {
     "writes": "both",
     "language": "pt-BR",
@@ -143,10 +143,10 @@
       "kind": "setting",
       "target": "defaultsLanguage",
       "state": "change",
-      "tick": null,
-      "ticked": true,
+      "tick": "language",
+      "ticked": false,
       "reason": {
-        "key": "setup.reason.settingChange"
+        "key": "setup.reason.settingHasWorks"
       },
       "value": "pt-BR"
     },
@@ -186,21 +186,21 @@
       "kind": "setting",
       "target": "unnumberedTitles",
       "state": "change",
-      "tick": null,
-      "ticked": true,
+      "tick": "language",
+      "ticked": false,
       "reason": {
-        "key": "setup.reason.settingChange"
+        "key": "setup.reason.settingHasWorks"
       },
-      "value": "Prólogo, Prefácio, Apresentação, Introdução, Interlúdio, Epílogo, Posfácio"
+      "value": "Prólogo, Prefácio, Apresentação, Introdução, Nota do autor, Interlúdio, Epílogo, Posfácio"
     },
     {
       "kind": "setting",
       "target": "submissionResults",
       "state": "change",
-      "tick": null,
-      "ticked": true,
+      "tick": "language",
+      "ticked": false,
       "reason": {
-        "key": "setup.reason.settingChange"
+        "key": "setup.reason.settingHasWorks"
       },
       "value": "pendente, aceito, recusado, retirado"
     },
@@ -208,10 +208,10 @@
       "kind": "setting",
       "target": "exportFolder",
       "state": "change",
-      "tick": null,
-      "ticked": true,
+      "tick": "language",
+      "ticked": false,
       "reason": {
-        "key": "setup.reason.settingChange"
+        "key": "setup.reason.settingHasWorks"
       },
       "value": "Escrita/Exportações"
     },
@@ -219,10 +219,10 @@
       "kind": "setting",
       "target": "submissionsFolder",
       "state": "change",
-      "tick": null,
-      "ticked": true,
+      "tick": "language",
+      "ticked": false,
       "reason": {
-        "key": "setup.reason.settingChange"
+        "key": "setup.reason.settingHasWorks"
       },
       "value": "Escrita/Envios"
     },
@@ -370,10 +370,10 @@
       "kind": "setting",
       "target": "lensLanguage",
       "state": "change",
-      "tick": null,
-      "ticked": true,
+      "tick": "language",
+      "ticked": false,
       "reason": {
-        "key": "setup.reason.settingChange"
+        "key": "setup.reason.settingHasWorks"
       },
       "value": "pt-BR"
     },
@@ -440,9 +440,9 @@
       "target": "layout",
       "state": "new",
       "tick": "layout",
-      "ticked": true,
+      "ticked": false,
       "reason": {
-        "key": "setup.reason.layoutNew"
+        "key": "setup.reason.layoutHasWorks"
       },
       "value": "desk"
     }

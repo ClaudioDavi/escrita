@@ -22,9 +22,18 @@
 //   writing language), `homeNote` and `openHomeOnStartup` (with the home note),
 //   `openInWritingMode` (with the writing mode layout), `universeMode` (Everything with a
 //   "Shared world" answer), and the features row. Nothing else.
-// - In a vault with works (`SetupVault.hasWorks`), the examples and the features row
-//   come unticked; with more than one open leaf, the layout row does (Q4). The reason
-//   line says why.
+// - The language group shares one tick, "language": `defaultsLanguage`, every
+//   word-bearing setting that would change, and `lensLanguage`. The writer picked the
+//   language, but a value equal to the install's default set is still saved in data.json
+//   (SF 10: "a value the writer already saved is never changed"), and some of these move
+//   what Escrita reads (`chaptersFolder`, `submissionsFolder`), so they never change
+//   without a tick. `trackFolders` (added to, never swapped) goes with the folders it
+//   names and has no tick; `homeNote` and `openHomeOnStartup` go with "home",
+//   `openInWritingMode` with "layout".
+// - In a vault with works (`SetupVault.hasWorks`), the examples, the language group, the
+//   features row and the layout come unticked (board 36 a: "In a vault with settings…
+//   the features row and the layout come unticked"); with more than one open leaf, the
+//   layout row does too (Q4). The reason line says why (Wave 0 judge, 2026-10-07).
 // - Items come in run order: folders, examples, the home note, then the settings (the
 //   features row among them), written last and only if every folder exists; then the
 //   layout, which writes nothing (public workspace calls, after the features are applied
@@ -47,7 +56,7 @@ export type SetupLayout = "desk" | "focus";
 
 /**
  * The writer's answers in step 1 of the modal, and the layout card picked in step 2.
- * The ticks of step 2 (examples, home note, features, layout) are not here: their
+ * The ticks of step 2 (examples, home note, language, features, layout) are not here: their
  * defaults depend on the vault, so they live on the items (`tick`, `ticked`), and the
  * preview keeps the writer's changes to them as a `SetupTicks` record.
  */
@@ -94,8 +103,8 @@ export type SetupItemKind = "folder" | "example" | "home" | "setting" | "feature
  */
 export type SetupItemState = "new" | "kept" | "change";
 
-/** The tickable rows of the preview. Items sharing a tick go together (the examples are one tick). */
-export type SetupTick = "examples" | "home" | "features" | "layout";
+/** The tickable rows of the preview. Items sharing a tick go together (the examples are one tick, and so is the language group). */
+export type SetupTick = "examples" | "home" | "language" | "features" | "layout";
 
 /** The writer's ticks, as the preview holds them; a missing tick uses the items' `ticked`. */
 export type SetupTicks = Partial<Record<SetupTick, boolean>>;
