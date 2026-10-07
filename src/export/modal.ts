@@ -9,7 +9,7 @@ import { aboutCount } from "../core/export-pipeline";
 import type { PieceUnit } from "../core/measure";
 import { fmt, lang, plural, t } from "../i18n";
 import { choiceOfLast, planChapters, whenText, dayMonthText, presetLabel, type ChapterPlan } from "./logic";
-import { presetById, PRESETS } from "./presets";
+import { presetById, PRESETS } from "../core/presets";
 import { needsConfirm, type Built, type Warning } from "./source";
 import { epubLayout } from "./writers/epub";
 import { PreviewWriter } from "./writers/preview";

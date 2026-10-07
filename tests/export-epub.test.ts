@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { describe, expect, it } from "vitest";
 import { exportDocOf } from "../src/core/export-pipeline";
-import { PTBR, SHUNN } from "../src/export/presets";
+import { PTBR, SHUNN } from "../src/core/presets";
 import { epubIdentifier, epubLayout, epubModified, epubWriter, type EpubBook, type EpubCover } from "../src/export/writers/epub";
 import { bookSource, contoSource } from "./support/export-fixture";
 import { readZip } from "./support/zip-reader";

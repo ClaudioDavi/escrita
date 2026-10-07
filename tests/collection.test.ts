@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TFile } from "obsidian";
-import { collectionOf } from "../src/core/collection";
-import { collectionAt, collectionSource } from "../src/core/books";
+import { collectionOf, storyChapters } from "../src/core/collection";
+import { collectionAt } from "../src/core/books";
 import { DEFAULT_SETTINGS } from "../src/settings";
 
 const names: Record<string, string> = { "A visita": "Contos/A visita.md", "1984": "Contos/1984.md", "Mar": "Contos/Mar.md" };
@@ -68,7 +68,7 @@ function setup(open = new Set<string>()) {
   return { app: app as never, notes, coll, files };
 }
 
-describe("collectionAt and collectionSource", () => {
+describe("collectionAt and storyChapters", () => {
   const s = () => ({ collectionProperty: DEFAULT_SETTINGS.collectionProperty });
   it("resolves from the note; non-Markdown, itself and unknown links are missing", () => {
     const { app, coll } = setup();
@@ -79,22 +79,10 @@ describe("collectionAt and collectionSource", () => {
     expect(collectionAt(app, files[1], s)).toBeNull();
   });
   it("lists stories unnumbered, included, titled by basename", () => {
-    const { app, notes, coll } = setup();
-    expect(collectionSource(app, notes, s).chapters(coll)).toEqual([
+    const { app, coll } = setup();
+    expect(storyChapters(collectionAt(app, coll, s)!)).toEqual([
       { path: "Contos/1984.md", title: "1984", number: null, include: true },
       { path: "Contos/A visita.md", title: "A visita", number: null, include: true },
     ]);
-  });
-  it("reads text, editor text with null mtime when open", async () => {
-    const a = setup();
-    expect(await collectionSource(a.app, a.notes, s).read("Contos/1984.md")).toEqual({ text: "saved", mtime: 4 });
-    const o = setup(new Set(["Contos/1984.md"]));
-    expect(await collectionSource(o.app, o.notes, s).read("Contos/1984.md")).toEqual({ text: "unsaved", mtime: null });
-  });
-  it("frontmatter is {} when there is none", () => {
-    const { app, notes } = setup();
-    const src = collectionSource(app, notes, s);
-    expect(src.frontmatter("Contos/1984.md")).toEqual({ compile: false });
-    expect(src.frontmatter("nope.md")).toEqual({});
   });
 });

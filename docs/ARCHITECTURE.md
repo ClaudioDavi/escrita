@@ -917,9 +917,12 @@ ExportSource  →  ExportDoc  →  ManuscriptWriter<M, P>  →  string | Uint8Ar
 - **`Preset`** is plain data, in the manuscript's language (which may differ from Obsidian's):
   `id`, `language`, `page` (points; Letter or A4, one margin), `font`, `lineSpacing`,
   `indent`, `sceneBreak` text, `chapterHeading` template (`{n}`, `{title}`), the running
-  `header` (`{surname}`, `{title}`, `{page}`), the `countLabel` per unit, `byline` and
-  `endMark`. The two presets are in `src/export/presets.ts`: `shunn` (US Letter, English
-  labels) and `ptbr` (A4, Portuguese labels, "Capítulo {n} — {title}", "FIM").
+  `header` (`{surname}`, `{title}`, `{page}`), the `countLabel` per unit, `byline`,
+  `endMark`, and the ebook labels (`contentsLabel`, `coverLabel`, `startLabel`). The two
+  presets are in `src/core/presets.ts` (core, so the outline's reader reads them too):
+  `shunn` (US Letter, English labels) and `ptbr` (A4, Portuguese labels, "Capítulo {n} —
+  {title}", "FIM", "Sumário"). `presetForLanguage(lang)` is the language's preset (`ptbr`
+  for pt-BR, else `shunn`): export's default and the reader's heading.
 - **Helpers.** `aboutCount` (the title page count: nearest 100 below 10,000, nearest 500
   above, never below 100 for a non-empty work), `chapterHeadings` (numbering counts only
   chapters numbered 1 or more, so a "00 Prólogo" doesn't shift the numbers; a 00 chapter
@@ -1004,10 +1007,10 @@ kind and no classifier field (Q28): export asks about the active note.
   (`core/scope`'s `linkText` reads only a list's first item). A link to a file that isn't Markdown,
   or to the collection note itself, is missing.
 - `collectionAt(app, note, settings)` in `core/books.ts` is the one place links are resolved
-  (`getFirstLinkpathDest` from the note), so export and the source agree. `collectionSource(app,
-  notes, settings)` is a `BookSource` whose handle is the collection note: its stories come
-  **unnumbered**, always included, titled by their basename (a story's own `title` property is not
-  read), and read through `plugin.notes`. The writers and the manuscript model don't change.
+  (`getFirstLinkpathDest` from the note); export resolves it once per target. `storyChapters(collection)`
+  in `core/collection.ts` turns the stories into chapters: **unnumbered**, always included, titled
+  by their basename (a story's own `title` property is not read); they are read through
+  `bookSource`'s `read`, so through `plugin.notes`. The writers and the manuscript model don't change.
 - `sourceKindOf(place, collection)` in `export/source.ts` picks `note`, `book` or `collection`; a
   book wins over a `contents` list. `ExportPlan.missing` carries the dangling links, which become
   the `missingStories` readiness warning; that story is skipped.
@@ -1375,7 +1378,7 @@ measurer, the vault index and the notes service are core and always on.
   when doubled. Chapter headings are not blocks: the view draws them from `chapterHeadings`.
   `reader-plan.ts` is the other pure part: which chapters (included, in order, numbered as the
   export does), the heading format (D7: the export's heading setting, else the language's preset
-  heading, **a copy of the two literals** that can drift from `export/presets.ts`), where a saved
+  heading, `presetForLanguage(lang).chapterHeading` from `core/presets.ts`), where a saved
   position lands, which block is at the top (`readingPoint`), and how a position follows a
   rename or a delete (`movePositions`, `dropPositions`). The view renders each block with
   Obsidian's Markdown renderer, chapter by chapter as it scrolls into view; a click on a

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { exportDocOf } from "../src/core/export-pipeline";
-import { PTBR, SHUNN } from "../src/export/presets";
+import { PTBR, SHUNN } from "../src/core/presets";
 import { PreviewWriter, countLine } from "../src/export/writers/preview";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

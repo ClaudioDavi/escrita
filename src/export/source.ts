@@ -18,7 +18,7 @@ import { readinessOf, type ReadinessId } from "../core/readiness";
  * (task 2.4):
  * - `note`: one note, read whole.
  * - `book`: a book's chapters through `bookSource`, from a chapter or the book note.
- * - `collection`: a collection note's stories through `collectionSource`, each an
+ * - `collection`: a collection note's stories (`storyChapters`), each an
  *   unnumbered chapter headed by its title alone (Q26). Its title is the note's
  *   basename; author, dedication, epigraph and cover come from the note's own
  *   properties, as a book note's. No "This chapter": the note is the collection.
@@ -108,13 +108,14 @@ export interface Built {
 const ORDER: WarningId[] = ["placeholders", "unclosedComment", "unclosedHtmlComment", "unwrittenBeats", "emptyBody", "missingStories", "cover", "embeds"];
 
 /**
- * The warning for a cover that is configured but can't be used (Q8): missing, unreadable, or
- * not JPEG or PNG. It asks for a confirmation like any warning; the export goes on without a
- * cover. `name` is the link as the note writes it. Placed before the embeds, by ORDER.
+ * A warning that comes from outside the readiness checks, spliced in at its place by
+ * ORDER (one warning per id): the collection's missing stories (`buildExport`) and an
+ * unusable EPUB cover (the export module, Q8: missing, unreadable, or not JPEG or PNG,
+ * `names` holding the link as the note writes it). Either asks for a confirmation like
+ * any warning; the export goes on without it.
  */
-export function withCoverWarning(warnings: readonly Warning[], name: string): Warning[] {
-  const cover: Warning = { id: "cover", level: "warning", n: 1, names: [name], links: [] };
-  return ORDER.flatMap((id) => (id === "cover" ? [cover] : warnings.filter((w) => w.id === id)));
+export function withWarning(warnings: readonly Warning[], warning: Warning): Warning[] {
+  return ORDER.flatMap((id) => (id === warning.id ? [warning] : warnings.filter((w) => w.id === id)));
 }
 
 /** Reads every part once and measures the body, then collects the warnings. */
@@ -137,18 +138,12 @@ export async function buildExport(plan: ExportPlan, ports: ExportPorts): Promise
   const labels = plan.parts.map((p) => p.label);
   const doc = exportDocOf(source, { placeholderMarker: plan.placeholderMarker });
   const warnings = warningsOf(plan, source, doc, paths, labels);
-  return { source, doc, paths, labels, warnings: withMissingStories(warnings, plan.missing ?? []) };
-}
-
-/**
- * The warning for a collection's links that point at nothing (Q26): each story is skipped,
- * so it asks for a confirmation like any warning. `missing` is the link texts; none, no
- * warning. Placed by ORDER, before the cover and the embeds.
- */
-export function withMissingStories(warnings: readonly Warning[], missing: readonly string[]): Warning[] {
-  if (missing.length === 0) return [...warnings];
-  const found: Warning = { id: "missingStories", level: "warning", n: missing.length, names: [...missing], links: [] };
-  return ORDER.flatMap((id) => (id === "missingStories" ? [found] : warnings.filter((w) => w.id === id)));
+  // a collection's links that point at nothing (Q26): each story is skipped, so it asks for a confirmation
+  const missing = plan.missing ?? [];
+  return {
+    source, doc, paths, labels,
+    warnings: missing.length === 0 ? warnings : withWarning(warnings, { id: "missingStories", level: "warning", n: missing.length, names: [...missing], links: [] }),
+  };
 }
 
 /**

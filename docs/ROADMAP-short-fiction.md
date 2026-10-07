@@ -844,8 +844,8 @@ and EPUB gives one manuscript with the three stories in the note's order, each u
 title, with the collection's title page.
 
 **Built in 0.9, not yet released.** What the build decided (PLAN-0.9.md, Q24-Q28):
-- **The collection is read by export through a second book source** (`core/collection.ts`,
-  `collectionSource`), every story unnumbered, so the writers don't change. No classifier kind or
+- **The collection's stories are exported as a book's chapters** (`core/collection.ts`,
+  `storyChapters`), every story unnumbered, so the writers don't change. No classifier kind or
   field. A `contents` link may be a list or text with several wikilinks; duplicates count once.
 - **The story choice is the book's**: the modal shows "Collection: n stories" and the **Stories**
   row (all, a range counted in the list, or picked), reusing the chapter choice. Each story is headed by its basename

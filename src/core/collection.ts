@@ -3,11 +3,11 @@
 // A collection is a note with a `contents` property (the name is the
 // `collectionProperty` setting): a list of links to contos, in reading order. It is not
 // a classifier kind and adds no classifier field (Q28): export asks `collectionOf`
-// about the active note, and reads the stories through the collection's `BookSource`
-// adapter (core/books.ts `collectionSource`), every story unnumbered, so the manuscript
-// model and the writers don't change. Filled in by task 1.7.
+// about the active note (core/books.ts `collectionAt`) and exports its stories as a
+// book's chapters (`storyChapters`), every story unnumbered, so the manuscript model and
+// the writers don't change. Filled in by task 1.7.
 
-import { propertyKey } from "./book-source";
+import { propertyKey, type ChapterRef } from "./book-source";
 import { linkText } from "./scope";
 
 /**
@@ -76,4 +76,16 @@ export function collectionOf(
   };
   visit(value);
   return { stories, missing };
+}
+
+/**
+ * A collection's stories as chapters (PLAN-0.9 Q28), in the list's order: each with
+ * `number: null`, `include: true` (a story's own properties are ignored, `compile` too:
+ * Q26) and its file name as `title`, never `chapterTitle`'s (a conto's name is not a
+ * chapter name: "1984" keeps its digits). The paths are the resolved Markdown notes.
+ */
+export function storyChapters(collection: Collection): ChapterRef[] {
+  return collection.stories.map((path) => ({
+    path, title: (path.split("/").pop() ?? path).replace(/\.md$/, ""), number: null, include: true,
+  }));
 }

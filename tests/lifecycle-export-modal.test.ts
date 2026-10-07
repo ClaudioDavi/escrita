@@ -5,7 +5,7 @@ import { registerStrings } from "../src/i18n";
 import type { LastExport } from "../src/data";
 import { ChaptersModal, ExportModal, type BookOptions, type ExportHost, type ExportModalOptions, type ModalState } from "../src/export/modal";
 import { exportStrings } from "../src/export/strings";
-import { buildExport, withCoverWarning, type Built, type ExportPlan } from "../src/export/source";
+import { buildExport, withWarning, type Built, type ExportPlan } from "../src/export/source";
 
 beforeAll(() => registerStrings(exportStrings));
 beforeEach(() => vi.useFakeTimers());
@@ -143,7 +143,7 @@ describe("the export modal: a book (board 26 a)", () => {
         builds();
         const b = await build(["A/Chapters/Prólogo.md", "A/Chapters/03 A casa.md"]);
         if (s.format !== "epub") return b;
-        return cover ? { ...b, cover: { data: PNG, mediaType: "image/png" as const } } : { ...b, cover: null, warnings: withCoverWarning(b.warnings, "capa.png") };
+        return cover ? { ...b, cover: { data: PNG, mediaType: "image/png" as const } } : { ...b, cover: null, warnings: withWarning(b.warnings, { id: "cover", level: "warning", n: 1, names: ["capa.png"], links: [] }) };
       },
     });
 

@@ -136,11 +136,11 @@ describe("buildExport: a book", () => {
   });
 });
 
-describe("withCoverWarning (Q8)", () => {
+describe("withWarning: the cover (Q8)", () => {
   it("adds a confirming warning before the embeds, keeping the others in order", async () => {
-    const { withCoverWarning } = await import("../src/export/source");
+    const { withWarning } = await import("../src/export/source");
     const w = (id: string, level: "warning" | "info") => ({ id, level, n: 1, names: [], links: [] }) as never;
-    const out = withCoverWarning([w("placeholders", "warning"), w("embeds", "info")], "capa.png");
+    const out = withWarning([w("placeholders", "warning"), w("embeds", "info")], { id: "cover", level: "warning", n: 1, names: ["capa.png"], links: [] });
     expect(out.map((x) => x.id)).toEqual(["placeholders", "cover", "embeds"]);
     expect(out[1]).toMatchObject({ level: "warning", n: 1, names: ["capa.png"] });
   });

@@ -745,14 +745,14 @@ lives. Some were already settled by the follow-ups; they are listed so you know.
 
 | Point | Chosen | Alternative | Where |
 |---|---|---|---|
-| A bad cover | A warning that turns the button into "Exportar mesmo assim" | Information only, the button stays "Exportar" | `src/export/source.ts` (`withCoverWarning`, `needsConfirm`) |
+| A bad cover | A warning that turns the button into "Exportar mesmo assim" | Information only, the button stays "Exportar" | `src/export/source.ts` (`withWarning`, `needsConfirm`), `src/export/index.ts` (`build`) |
 | Cover link forms | A wikilink, an embed or a plain path | Also a Markdown link `[x](path)`, which your vault writes elsewhere | `src/export/logic.ts` (`coverLink`) |
 | Cover type | Read from the file's first bytes; the extension isn't trusted | Trust the extension | `src/export/logic.ts` (`coverMediaType`) |
 | Reading the cover | `vault.readBinary` in the export module, not through the book source (Q19) | Through the book source | `src/export/index.ts` (`readCover`) |
 | File name | `<title> (<template>).epub` (D2) | `<title>.epub` | `src/export/logic.ts` (`exportFileName`) |
 | Book identity | A UUID from the path and title: renaming the book makes a new book for your reader | From the title only, or stored once | `src/export/writers/epub.ts` (`epubIdentifier`) |
 | Headings | A chapter is `h1`, headings inside start at `h2` | — | `src/export/writers/epub.ts` |
-| Language and labels | Follow the template (pt-BR, en-US), including "Capa", "Início" | A separate language choice | `src/export/writers/epub.ts`, `src/export/presets.ts` |
+| Language and labels | Follow the template (pt-BR, en-US), including "Capa", "Início" | A separate language choice | `src/export/writers/epub.ts`, `src/core/presets.ts` |
 | Scene break | Its own setting, `* * *`; blank goes back to it | The template's `#` | `src/export/writers/epub.ts` (`epubLayout`), `src/settings.ts` |
 | A single note | Listed in the contents by the work's title, with no `h1` | No contents page | `src/export/writers/epub.ts` |
 | Dedication and epigraph pages | Written only when they have text | Always written | `src/export/writers/epub.ts` |
@@ -769,7 +769,7 @@ lives. Some were already settled by the follow-ups; they are listed so you know.
 | `contents` link form | Always `[[Name]]` wikilinks, whatever the vault's link setting: Obsidian follows renames in properties only through wikilinks | Follow the setting, like **Criar link** | `src/export/collection-menu.ts` |
 | A collection in the Works tab | Left as is (review): it is a note like any other | Never a work, whatever its status | `src/core/classify.ts` |
 | Same-name contos | Linked by path when another note shares the name | Always by name | `src/export/collection-menu.ts` |
-| A conto's title | Its file name; its `title` property is not read | Read `title` | `src/core/books.ts` (`collectionSource`) |
+| A conto's title | Its file name; its `title` property is not read | Read `title` | `src/core/collection.ts` (`storyChapters`) |
 | A book with a `contents` list | Exports as a book | As a collection | `src/export/source.ts` (`sourceKindOf`) |
 | What counts as missing | A link to nothing, to a file that isn't a note, or to the collection itself | — | `src/core/collection.ts` |
 | Link forms read | Wikilinks, in a list or several in one text value | Markdown links too | `src/core/collection.ts` |
@@ -795,7 +795,7 @@ lives. Some were already settled by the follow-ups; they are listed so you know.
 |---|---|---|---|
 | Chapter headings | `h1` | A smaller heading | `src/outline/reader-view.ts` |
 | Clicking a paragraph | Opens the chapter in a new tab | The same tab, or a split | `src/outline/reader-view.ts` |
-| Heading format | The export's "Chapter heading" setting; empty uses the language's template heading, a copy of the two export literals that can drift | Import the presets | `src/outline/reader-plan.ts` (`readerHeadingFormat`) |
+| Heading format | The export's "Chapter heading" setting; empty uses the language's template heading (`presetForLanguage`, `src/core/presets.ts`) | A heading of its own | `src/outline/reader-plan.ts` (`readerHeadingFormat`) |
 | Navigation | No chapter rail and no progress bar; the outline navigates (D6) | The rail of board 33 | `src/outline/reader-view.ts` |
 | A deleted chapter | The position goes back to the top | The nearest chapter | `src/outline/reader-plan.ts` (`restoreTarget`) |
 | A rename while reading | The position can be up to 0.6 s old, because the rebuild cancels the pending save | Save before the rebuild | `src/outline/reader-view.ts` (`SAVE_DELAY`) |

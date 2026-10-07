@@ -22,7 +22,7 @@
     <item id="chapter-3" href="chapter-3.xhtml" media-type="application/xhtml+xml"/>
   </manifest>
   <spine toc="ncx">
-    <itemref idref="cover" linear="yes"/>
+    <itemref idref="cover"/>
     <itemref idref="title"/>
     <itemref idref="dedication"/>
     <itemref idref="epigraph"/>

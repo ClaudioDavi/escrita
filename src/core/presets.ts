@@ -1,6 +1,7 @@
 // The two manuscript presets of 0.8 (N 7, stage 2). Plain data, no logic: the writers
-// read them and nothing else about layout. Pure, no Obsidian imports.
-import type { Preset } from "../core/export-pipeline";
+// read them and nothing else about layout. Pure, no Obsidian imports. In core so the
+// outline's reader takes its default chapter heading from here (it never imports export).
+import type { Preset } from "./export-pipeline";
 
 /** Standard manuscript format (Shunn), US Letter, English labels. */
 export const SHUNN: Preset = {
@@ -20,6 +21,9 @@ export const SHUNN: Preset = {
   },
   byline: "by {name}",
   endMark: "END",
+  contentsLabel: "Contents",
+  coverLabel: "Cover",
+  startLabel: "Start of content",
 };
 
 /** The pt-BR editorial preset: same layout, Portuguese labels, A4. */
@@ -40,6 +44,9 @@ export const PTBR: Preset = {
   },
   byline: "por {name}",
   endMark: "FIM",
+  contentsLabel: "Sumário",
+  coverLabel: "Capa",
+  startLabel: "Início",
 };
 
 export const PRESETS: readonly Preset[] = [SHUNN, PTBR];
@@ -47,4 +54,9 @@ export const PRESETS: readonly Preset[] = [SHUNN, PTBR];
 /** The preset with this id, or the first one for an unknown id. */
 export function presetById(id: string): Preset {
   return PRESETS.find((p) => p.id === id) ?? PRESETS[0];
+}
+
+/** The preset a language starts with: pt-BR for Obsidian in Portuguese (Brazil), else Shunn. */
+export function presetForLanguage(language: string): Preset {
+  return language === "pt-BR" ? PTBR : SHUNN;
 }

@@ -6,8 +6,9 @@ import type { FeatureId } from "../core/features";
 import type { Follower } from "../core/vault-index";
 import type { ExportChoice, ExportSelection, LastExport } from "../data";
 import { chapterTitle } from "../core/book";
-import { bookSource, collectionAt, collectionSource, type Book } from "../core/books";
+import { bookSource, collectionAt, type Book } from "../core/books";
 import type { BookSource, ChapterRef } from "../core/book-source";
+import { storyChapters, type Collection } from "../core/collection";
 import { exportRoot, followFolderSetting } from "../core/classify";
 import { NoteExistsError, FolderBlockedError } from "../core/notes";
 import { macrotaskYield, yieldBudget } from "../core/vault-index";
@@ -16,9 +17,9 @@ import {
   authorOf, canRepeat, choiceOfLast, coverLink, coverMediaType, dropChoices, exportFileName, inFolder, keepBothName, lastInPlace, linkTarget, placeOf, planChapters, renameChoices,
 } from "./logic";
 import { ExportModal, askExists, askWhere, type BookOptions, type ExportHost, type ModalState } from "./modal";
-import { presetById } from "./presets";
+import { presetById, presetForLanguage } from "../core/presets";
 import { exportSettingsSection } from "./settings-ui";
-import { buildExport, needsConfirm, sourceKindOf, withCoverWarning, type Built, type ExportPlan, type PartPlan } from "./source";
+import { buildExport, needsConfirm, sourceKindOf, withWarning, type Built, type ExportPlan, type PartPlan } from "./source";
 import { onFilesMenu } from "./collection-menu";
 import { docxWriter } from "./writers/docx";
 import { epubIdentifier, epubLayout, epubModified, epubWriter, type EpubCover } from "./writers/epub";
@@ -34,8 +35,8 @@ interface Target {
   chapter: boolean;
   /** the key of its choices in data.exportChoices: the book note's path, or the note's */
   key: string;
-  /** the note lists stories in its collection property (SF 13): exported like a book, whose chapters are the stories */
-  collection: boolean;
+  /** the note lists stories in its collection property (SF 13): exported like a book, whose chapters are the stories; null for a book or a note */
+  collection: Collection | null;
 }
 
 const baseName = (path: string): string => (path.split("/").pop() ?? path).replace(/\.md$/i, "");
@@ -118,29 +119,23 @@ export class ExportModule extends FeatureModule {
 
   private targetOf(file: TFile): Target {
     const place = this.plugin.books.classify(file);
-    const kind = sourceKindOf(place, collectionAt(this.plugin.app, file, () => this.plugin.settings) !== null);
+    const collection = collectionAt(this.plugin.app, file, () => this.plugin.settings);
+    const kind = sourceKindOf(place, collection !== null);
     if (kind === "book" && place.book) {
-      return { file, book: place.book, chapter: place.kind === "chapter", key: place.book.note.path, collection: false };
+      return { file, book: place.book, chapter: place.kind === "chapter", key: place.book.note.path, collection: null };
     }
-    return { file, book: null, chapter: false, key: file.path, collection: kind === "collection" };
+    return { file, book: null, chapter: false, key: file.path, collection: kind === "collection" ? collection : null };
   }
 
   /** A book or a collection: an export of several parts, whose "whole" is the choice. */
   private multi(target: Target): boolean {
-    return target.book !== null || target.collection;
+    return target.book !== null || target.collection !== null;
   }
 
   /** The chapters of a target's whole: a book's, or a collection's stories (unnumbered, in the note's order). */
   private chaptersOf(target: Target): ChapterRef[] {
     if (target.book) return this.source().chapters(target.book);
-    if (!target.collection) return [];
-    const p = this.plugin;
-    return collectionSource(p.app, p.notes, () => p.settings).chapters(target.file);
-  }
-
-  /** The reading side of a target's source (the same for a book and a collection). */
-  private reader(): Pick<BookSource<unknown>, "read" | "frontmatter"> {
-    return this.source();
+    return target.collection ? storyChapters(target.collection) : [];
   }
 
   /**
@@ -170,17 +165,13 @@ export class ExportModule extends FeatureModule {
     return bookSource(p.app, p.books, p.notes, () => p.settings);
   }
 
-  private defaultPreset(): string {
-    return lang() === "pt-BR" ? "ptbr" : "shunn";
-  }
-
   /** The modal's starting state: the work's remembered choices, else the defaults. */
   private stateOf(target: Target, choice: ExportChoice | undefined): ModalState {
     return {
       whole: this.multi(target) && (target.chapter ? choice?.whole ?? true : true),
       selection: choice?.chapters ?? { mode: "all" },
       format: choice?.format ?? "docx",
-      preset: choice?.preset ?? this.defaultPreset(),
+      preset: choice?.preset ?? presetForLanguage(lang()).id,
     };
   }
 
@@ -223,7 +214,7 @@ export class ExportModule extends FeatureModule {
         title: target.book ? target.book.title : target.file.basename,
         author: authorOf(s, this.frontmatter(holder.path)),
         unit: p.measure.unit(holder),
-        ...(target.collection ? { missing: collectionAt(p.app, target.file, () => s)?.missing ?? [] } : {}),
+        ...(target.collection ? { missing: target.collection.missing } : {}),
       };
     }
     return {
@@ -238,14 +229,15 @@ export class ExportModule extends FeatureModule {
   private async build(target: Target, state: ModalState): Promise<Built> {
     const p = this.plugin;
     const plan = this.planFor(target, state);
-    const source = this.reader();
+    // the text read is the same for a book and a collection: bookSource's
+    const source = this.source();
     const checkpoint = yieldBudget({
       set: (cb, ms) => window.setTimeout(cb, ms),
       clear: (h) => window.clearTimeout(h as number),
       yieldNow: macrotaskYield,
       now: () => performance.now(),
     });
-    const built = await buildExport(plan, {
+    const building = buildExport(plan, {
       read: (path) => source.read(path),
       count: (path, read) => {
         const f = p.app.vault.getAbstractFileByPath(path);
@@ -255,9 +247,10 @@ export class ExportModule extends FeatureModule {
       },
       checkpoint,
     });
-    if (state.format !== "epub") return built;
-    const { cover, name } = await this.readCover(target, state);
-    return { ...built, cover, warnings: name === null ? built.warnings : withCoverWarning(built.warnings, name) };
+    if (state.format !== "epub") return building;
+    const [built, { cover, name }] = await Promise.all([building, this.readCover(target, state)]);
+    if (name === null) return { ...built, cover };
+    return { ...built, cover, warnings: withWarning(built.warnings, { id: "cover", level: "warning", n: 1, names: [name], links: [] }) };
   }
 
   /**
@@ -295,7 +288,7 @@ export class ExportModule extends FeatureModule {
     let book: BookOptions | null = null;
     if (this.multi(target)) {
       book = {
-        collection: target.collection,
+        collection: target.collection !== null,
         chapters: this.chaptersOf(target),
         compileProperty: s.compileProperty,
         headingOverride: s.chapterHeadingFormat,
@@ -306,7 +299,7 @@ export class ExportModule extends FeatureModule {
     }
     new ExportModal(this.plugin.app, {
       book, state, last, marker: s.placeholderMarker, epubSceneBreak: s.epubSceneBreak,
-      host: this.host(target.file),
+      host: this.host(target),
     }).open();
   }
 
@@ -350,8 +343,8 @@ export class ExportModule extends FeatureModule {
    * call runs (Obsidian updates a TFile's path on rename), and ticked chapters are
    * mapped to where they are now, or dropped when they are gone.
    */
-  private host(file: TFile): ExportHost {
-    const start = this.targetOf(file);
+  private host(start: Target): ExportHost {
+    const file = start.file;
     const known = new Map<string, TFile>();
     if (this.multi(start)) {
       for (const c of this.chaptersOf(start)) {

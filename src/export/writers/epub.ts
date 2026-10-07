@@ -48,24 +48,28 @@ export interface EpubLayout {
   language: string;
   /** the byline under the title on the title page, with `{name}` (the preset's) */
   byline: string;
-  /** the table of contents' title: "Contents", "Sumário" */
+  /** the table of contents' title: "Contents", "Sumário" (the preset's) */
   contentsLabel: string;
+  /** the cover page's title and landmark: "Cover", "Capa" (the preset's) */
+  coverLabel: string;
+  /** the first chapter's landmark: "Start of content", "Início" (the preset's) */
+  startLabel: string;
   /** the scene break line: the `epubSceneBreak` setting ("* * *") */
   sceneBreak: string;
 }
 
 /**
- * The layout for a preset (Q5): its language and byline, the contents label in its
- * language ("Sumário" for Portuguese, else "Contents"), and the scene break from the
- * `epubSceneBreak` setting. The preset's own `sceneBreak` ("#") is a manuscript's, not
- * a book's, so the setting wins.
+ * The layout for a preset (Q5): its language, byline and ebook labels (contents, cover,
+ * start), and the scene break from the `epubSceneBreak` setting. The preset's own
+ * `sceneBreak` ("#") is a manuscript's, not a book's, so the setting wins.
  */
 export function epubLayout(preset: Preset, sceneBreak: string): EpubLayout {
-  const pt = /^pt\b/i.test(preset.language);
   return {
     language: preset.language,
     byline: preset.byline,
-    contentsLabel: pt ? "Sumário" : "Contents",
+    contentsLabel: preset.contentsLabel,
+    coverLabel: preset.coverLabel,
+    startLabel: preset.startLabel,
     sceneBreak,
   };
 }
@@ -176,9 +180,7 @@ blockquote p { text-indent: 0; }
 function write(book: EpubBook, layout: EpubLayout): Uint8Array {
   const { doc, cover } = book;
   const lang = layout.language;
-  const pt = /^pt\b/i.test(lang);
   const enc = new TextEncoder();
-  const minBody = layout.sceneBreak;
   const author = doc.author.name.trim();
 
   const pages: { id: string; href: string; xhtml: string }[] = [];
@@ -188,10 +190,10 @@ function write(book: EpubBook, layout: EpubLayout): Uint8Array {
     if (inSpine) spine.push(id);
   };
 
+  const coverPath = cover ? `images/cover.${cover.mediaType === "image/png" ? "png" : "jpg"}` : "";
   if (cover) {
-    const ext = cover.mediaType === "image/png" ? "png" : "jpg";
-    add("cover", page(lang, pt ? "Capa" : "Cover",
-      `<div class="cover"><img src="images/cover.${ext}" alt="${esc(doc.title)}"/></div>`, "cover"));
+    add("cover", page(lang, layout.coverLabel,
+      `<div class="cover"><img src="${coverPath}" alt="${esc(doc.title)}"/></div>`, "cover"));
   }
   const bylineText = author ? fillTemplate(layout.byline, { name: author }) : "";
   add("title", page(lang, doc.title,
@@ -199,7 +201,7 @@ function write(book: EpubBook, layout: EpubLayout): Uint8Array {
   // the front matter pages, then the visible table of contents (nav) after them (Q6)
   for (const role of ["dedication", "epigraph"] as const) {
     const part = doc.parts.find((p) => p.role === role && p.manuscript.blocks.length > 0);
-    if (part) add(role, page(lang, doc.title, `<div class="front">\n${blocksHtml(part.manuscript.blocks, minBody)}\n</div>`, role));
+    if (part) add(role, page(lang, doc.title, `<div class="front">\n${blocksHtml(part.manuscript.blocks, layout.sceneBreak)}\n</div>`, role));
   }
   spine.push("nav");
 
@@ -208,7 +210,7 @@ function write(book: EpubBook, layout: EpubLayout): Uint8Array {
     const id = `chapter-${chapters.length + 1}`;
     const label = p.heading ?? doc.title;
     const head = p.heading !== null ? `<h1>${esc(p.heading)}</h1>\n` : "";
-    add(id, page(lang, label, `<section epub:type="chapter">\n${head}${blocksHtml(p.manuscript.blocks, minBody)}\n</section>`, "bodymatter"));
+    add(id, page(lang, label, `<section epub:type="chapter">\n${head}${blocksHtml(p.manuscript.blocks, layout.sceneBreak)}\n</section>`, "bodymatter"));
     chapters.push({ id, label });
   });
 
@@ -217,15 +219,13 @@ function write(book: EpubBook, layout: EpubLayout): Uint8Array {
     ? chapters.map((c) => ({ href: `${c.id}.xhtml`, label: c.label }))
     : [{ href: "title.xhtml", label: doc.title }];
   const landmarks = [
-    ...(cover ? [`<li><a epub:type="cover" href="cover.xhtml">${esc(pt ? "Capa" : "Cover")}</a></li>`] : []),
+    ...(cover ? [`<li><a epub:type="cover" href="cover.xhtml">${esc(layout.coverLabel)}</a></li>`] : []),
     `<li><a epub:type="toc" href="nav.xhtml">${esc(layout.contentsLabel)}</a></li>`,
-    ...(chapters.length ? [`<li><a epub:type="bodymatter" href="${chapters[0].id}.xhtml">${esc(pt ? "Início" : "Start of content")}</a></li>`] : []),
+    ...(chapters.length ? [`<li><a epub:type="bodymatter" href="${chapters[0].id}.xhtml">${esc(layout.startLabel)}</a></li>`] : []),
   ];
-  const nav =
-    `${XML}<!DOCTYPE html>\n<html xmlns="${NS_XHTML}" xmlns:epub="${NS_EPUB}" lang="${esc(lang)}" xml:lang="${esc(lang)}">\n` +
-    `<head>\n<meta charset="utf-8"/>\n<title>${esc(layout.contentsLabel)}</title>\n<link rel="stylesheet" type="text/css" href="style.css"/>\n</head>\n<body>\n` +
+  const nav = page(lang, layout.contentsLabel,
     `<nav epub:type="toc" id="toc">\n<h1>${esc(layout.contentsLabel)}</h1>\n<ol>\n${toc.map((t) => `<li><a href="${t.href}">${esc(t.label)}</a></li>`).join("\n")}\n</ol>\n</nav>\n` +
-    `<nav epub:type="landmarks" id="landmarks" hidden="hidden">\n<ol>\n${landmarks.join("\n")}\n</ol>\n</nav>\n</body>\n</html>\n`;
+    `<nav epub:type="landmarks" id="landmarks" hidden="hidden">\n<ol>\n${landmarks.join("\n")}\n</ol>\n</nav>`);
 
   const ncx =
     `${XML}<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1" xml:lang="${esc(lang)}">\n<head>\n` +
@@ -234,12 +234,11 @@ function write(book: EpubBook, layout: EpubLayout): Uint8Array {
     toc.map((t, i) => `<navPoint id="navpoint-${i + 1}" playOrder="${i + 1}"><navLabel><text>${esc(t.label)}</text></navLabel><content src="${t.href}"/></navPoint>`).join("\n") +
     `\n</navMap>\n</ncx>\n`;
 
-  const coverExt = cover ? (cover.mediaType === "image/png" ? "png" : "jpg") : "";
   const manifest: string[] = [
     `<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>`,
     `<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>`,
     `<item id="style" href="style.css" media-type="text/css"/>`,
-    ...(cover ? [`<item id="cover-image" href="images/cover.${coverExt}" media-type="${cover.mediaType}" properties="cover-image"/>`] : []),
+    ...(cover ? [`<item id="cover-image" href="${coverPath}" media-type="${cover.mediaType}" properties="cover-image"/>`] : []),
     ...pages.map((p) => `<item id="${p.id}" href="${p.href}" media-type="application/xhtml+xml"/>`),
   ];
   const opf =
@@ -250,7 +249,7 @@ function write(book: EpubBook, layout: EpubLayout): Uint8Array {
     `<dc:language>${esc(lang)}</dc:language>\n<meta property="dcterms:modified">${esc(book.modified)}</meta>\n` +
     (cover ? `<meta name="cover" content="cover-image"/>\n` : "") +
     `</metadata>\n<manifest>\n${manifest.join("\n")}\n</manifest>\n<spine toc="ncx">\n` +
-    spine.map((id) => (id === "cover" ? `<itemref idref="cover" linear="yes"/>` : `<itemref idref="${id}"/>`)).join("\n") +
+    spine.map((id) => `<itemref idref="${id}"/>`).join("\n") +
     `\n</spine>\n</package>\n`;
 
   const container =
@@ -263,8 +262,8 @@ function write(book: EpubBook, layout: EpubLayout): Uint8Array {
     { path: "OEBPS/content.opf", data: enc.encode(opf) },
     { path: "OEBPS/nav.xhtml", data: enc.encode(nav) },
     { path: "OEBPS/toc.ncx", data: enc.encode(ncx) },
-    ...(cover ? [{ path: `OEBPS/cover.xhtml`, data: enc.encode(pages.find((p) => p.id === "cover")!.xhtml) }, { path: `OEBPS/images/cover.${coverExt}`, data: cover.data }] : []),
-    ...pages.filter((p) => p.id !== "cover").map((p) => ({ path: `OEBPS/${p.href}`, data: enc.encode(p.xhtml) })),
+    ...pages.map((p) => ({ path: `OEBPS/${p.href}`, data: enc.encode(p.xhtml) })),
+    ...(cover ? [{ path: `OEBPS/${coverPath}`, data: cover.data }] : []),
     { path: "OEBPS/style.css", data: enc.encode(STYLE) },
   ];
   return zipStore(files);

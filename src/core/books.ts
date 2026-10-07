@@ -81,7 +81,7 @@ export class BookService {
 }
 
 /**
- * What `bookSource` and `collectionSource` share: `read` and `frontmatter` by vault path.
+ * `bookSource`'s `read` and `frontmatter` by vault path.
  * Text comes through `notes` (the open editor's buffer when there is one), so `mtime` is
  * null then and the file's mtime otherwise.
  */
@@ -103,7 +103,7 @@ function fileReader(app: App, notes: Pick<NoteService, "text" | "editorView">) {
     // a save during the read may pair old text with a newer mtime: seed only when unchanged
     return { text, mtime: open || f.stat.mtime !== before ? null : before };
   };
-  return { fileAt, frontmatter, read };
+  return { frontmatter, read };
 }
 
 /**
@@ -132,8 +132,8 @@ export function bookSource(
  * The collection a note describes (core/collection.ts `collectionOf`), its links resolved
  * as Obsidian resolves them from that note (`getFirstLinkpathDest`). A link to a file
  * that isn't Markdown, or to the collection note itself, is missing. Null when the note
- * has no `collectionProperty`. Export asks this about the active note (Q28); the
- * collection source below reads the same answer, so the two never disagree. Task 1.7.
+ * has no `collectionProperty`. Export asks this once about the active note (Q28) and
+ * reads its stories from the answer (`storyChapters`). Task 1.7.
  */
 export function collectionAt(
   app: App,
@@ -145,29 +145,4 @@ export function collectionAt(
     const dest = app.metadataCache.getFirstLinkpathDest(link, note.path);
     return dest instanceof TFile && dest.extension === "md" && dest.path !== note.path ? dest.path : null;
   });
-}
-
-/**
- * The collection's `BookSource` (PLAN-0.9 Q28): the handle is the collection note.
- * `chapters` lists the resolved stories in the note's order (`collectionAt`, missing
- * links left out), each with `number: null`, `include: true` (a story's own properties
- * are ignored, `compile` too: Q26) and its basename as `title`, never `chapterTitle`'s
- * (a conto's name is not a chapter name: "1984" keeps its digits). `read` and
- * `frontmatter` behave as `bookSource`'s: text through `notes`, so an open editor's
- * unsaved text is what gets exported. Task 1.7.
- */
-export function collectionSource(
-  app: App,
-  notes: Pick<NoteService, "text" | "editorView">,
-  settings: () => Pick<EscritaSettings, "collectionProperty">,
-): BookSource<TFile> {
-  const { fileAt, frontmatter, read } = fileReader(app, notes);
-  return {
-    chapters: (note) => (collectionAt(app, note, settings)?.stories ?? []).flatMap((path) => {
-      const f = fileAt(path);
-      return f ? [{ path, title: f.basename, number: null, include: true }] : [];
-    }),
-    read,
-    frontmatter,
-  };
 }

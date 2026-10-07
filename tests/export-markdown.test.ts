@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   aboutCount, chapterHeadings, droppedIn, exportDocOf, fillTemplate, type ExportDoc,
 } from "../src/core/export-pipeline";
-import { PRESETS, PTBR, SHUNN, presetById } from "../src/export/presets";
+import { PRESETS, PTBR, SHUNN, presetById } from "../src/core/presets";
 import { markdownWriter } from "../src/export/writers/markdown";
 import { segment as segmentOf } from "../src/core/markdown";
 import { bookSource, contoSource, fixtureChapters, read } from "./support/export-fixture";

@@ -6,16 +6,12 @@
 import type { ChapterRef } from "../core/book-source";
 import { chapterHeadings } from "../core/export-pipeline";
 import { dropKeys, isUnder, movedPath, renameKeys } from "../core/path-keys";
+import { presetForLanguage } from "../core/presets";
 import type { ReadPosition } from "../data";
-
-/** The export presets' chapter headings, by language (D7: the setting wins; with none, the language's preset). */
-const DEFAULT_HEADINGS = { "pt-BR": "Capítulo {n} — {title}", en: "Chapter {n}: {title}" } as const;
 
 /** D7: the export's chapter-heading setting, else the heading of the preset the language picks. */
 export function readerHeadingFormat(setting: string, language: string): string {
-  const own = setting.trim();
-  if (own !== "") return own;
-  return language === "pt-BR" ? DEFAULT_HEADINGS["pt-BR"] : DEFAULT_HEADINGS.en;
+  return setting.trim() || presetForLanguage(language).chapterHeading;
 }
 
 /** One chapter of the reader: what the view draws above its body. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { collectionNoteText, explorerSortOf, sortLikeExplorer } from "../src/export/logic";
-import { withCoverWarning, withMissingStories, type Warning } from "../src/export/source";
+import { withWarning, type Warning } from "../src/export/source";
 
 describe("collection note text", () => {
   it("lists the links quoted, in order, as the only property", () => {
@@ -11,19 +11,18 @@ describe("collection note text", () => {
   });
 });
 
-describe("the missing stories warning", () => {
+describe("withWarning: the missing stories and cover warnings", () => {
   const embeds: Warning = { id: "embeds", level: "info", n: 1, names: ["x.png"], links: [] };
   const empty: Warning = { id: "emptyBody", level: "warning", n: 1, names: [], links: [] };
-  it("adds nothing without missing links", () => {
-    expect(withMissingStories([embeds], [])).toEqual([embeds]);
-  });
-  it("is a confirming warning placed after the readiness checks and before the embeds", () => {
-    const out = withMissingStories([embeds, empty], ["A", "B"]);
+  const missing: Warning = { id: "missingStories", level: "warning", n: 2, names: ["A", "B"], links: [] };
+  const cover: Warning = { id: "cover", level: "warning", n: 1, names: ["capa.png"], links: [] };
+  it("places missing stories after the readiness checks and before the embeds", () => {
+    const out = withWarning([embeds, empty], missing);
     expect(out.map((w) => w.id)).toEqual(["emptyBody", "missingStories", "embeds"]);
-    expect(out[1]).toEqual({ id: "missingStories", level: "warning", n: 2, names: ["A", "B"], links: [] });
+    expect(out[1]).toBe(missing);
   });
-  it("survives the cover warning", () => {
-    const out = withCoverWarning(withMissingStories([embeds], ["A"]), "capa.png");
+  it("keeps both: missing stories, then the cover", () => {
+    const out = withWarning(withWarning([embeds], missing), cover);
     expect(out.map((w) => w.id)).toEqual(["missingStories", "cover", "embeds"]);
   });
 });

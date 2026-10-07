@@ -69,12 +69,14 @@ export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
     host.empty();
     const epub = this.hooks.epub;
     const paper = host.createDiv({ cls: epub ? "escrita-export-paper is-epub" : "escrita-export-paper", attr: { lang: preset.language } });
-    if (!epub) paper.setCssStyles({
-      fontFamily: `"${preset.font.family}", "Times New Roman", Times, serif`,
-      fontSize: `${preset.font.size * PX}px`,
-      lineHeight: String(preset.lineSpacing),
-    });
-    if (!epub) paper.style.setProperty("--escrita-export-indent", `${preset.indent * PX}px`);
+    if (!epub) {
+      paper.setCssStyles({
+        fontFamily: `"${preset.font.family}", "Times New Roman", Times, serif`,
+        fontSize: `${preset.font.size * PX}px`,
+        lineHeight: String(preset.lineSpacing),
+      });
+      paper.style.setProperty("--escrita-export-indent", `${preset.indent * PX}px`);
+    }
     const tip = host.createDiv({ cls: "escrita-export-tip" });
     tip.hide?.();
 
@@ -86,7 +88,7 @@ export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
     let firstBody = true;
     let wrote = false;
     // the EPUB's table of contents comes after the dedication and epigraph, as in the file (Q6)
-    let contents = epub === undefined;
+    let contents = false;
     const drawContents = (): void => {
       if (contents || !epub) return;
       contents = true;

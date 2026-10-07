@@ -146,6 +146,12 @@ export interface Preset {
   byline: string;
   /** after the last part: "END", "FIM"; null = none */
   endMark: string | null;
+  /** an ebook's table of contents title: "Contents", "Sumário" (EPUB and its preview) */
+  contentsLabel: string;
+  /** an ebook's cover page title and landmark: "Cover", "Capa" */
+  coverLabel: string;
+  /** an ebook's landmark for the first chapter: "Start of content", "Início" */
+  startLabel: string;
 }
 
 // ------------------------------------------------------------------ writers

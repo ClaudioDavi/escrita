@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { exportDocOf, type ExportDoc } from "../src/core/export-pipeline";
-import { PTBR, SHUNN } from "../src/export/presets";
+import { PTBR, SHUNN } from "../src/core/presets";
 import { docxWriter } from "../src/export/writers/docx";
 import { bookSource, contoSource } from "./support/export-fixture";
 import { readZip } from "./support/zip-reader";

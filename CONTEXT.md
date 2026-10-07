@@ -210,6 +210,6 @@ parity questions with Reading view were checked in a real vault (0.8, G0c) and t
 segmenter follows them, pinned in `tests/markdown-consumers.test.ts`. 0.9 adds: "Read the book"
 (`outline/reader-view.ts`) has no DOM test, and its timings (G0d), scroll restore and click-to-line
 are unmeasured in Obsidian (its decisions are pure, in `outline/reader-model.ts` and
-`reader-plan.ts`, which copies the two export preset headings and can drift from them); the EPUB
+`reader-plan.ts`, whose default heading is the core preset's); the EPUB
 CI job (EPUBCheck) first runs when the 0.9 pull request opens; the unlinked rows read the note's
 live text, not the mentions index's offsets, which lag about 4 s behind edits.

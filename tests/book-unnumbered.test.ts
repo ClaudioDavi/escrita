@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { countedNumbers, isUnnumberedTitle, parseTitleList } from "../src/core/book";
 import { chapterHeadings, exportDocOf, type ExportPart } from "../src/core/export-pipeline";
 import { planChapters } from "../src/export/logic";
-import { PTBR, SHUNN } from "../src/export/presets";
+import { PTBR, SHUNN } from "../src/core/presets";
 import { markdownWriter } from "../src/export/writers/markdown";
 import { chapterNumber, chapterTitle } from "../src/core/book";
 import { normalizeSettings, DEFAULT_SETTINGS } from "../src/settings";
