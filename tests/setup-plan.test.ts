@@ -46,7 +46,7 @@ describe("planSetup: rules", () => {
   });
 
   it("never plans a new item over an existing path, in any letter case", () => {
-    const vault: SetupVault = { ...empty, folders: ["BOOKS", "books/EXAMPLE · THE LIGHTHOUSE"], files: ["HOME.MD", "BOOKS/Example · The Lighthouse/example · the lighthouse.md"] };
+    const vault: SetupVault = { ...empty, folders: ["BOOKS", "books/EXAMPLE · THE LIGHTHOUSE"], files: ["HOME.MD", "BOOKS/example · the lighthouse.md"] };
     const items = planSetup(base, vault, DEFAULT_SETTINGS);
     for (const i of items.filter((x) => x.kind === "folder" || x.kind === "example" || x.kind === "home")) {
       const hit = [...vault.folders, ...vault.files].some((p) => p.toLowerCase() === i.target.toLowerCase());
@@ -54,7 +54,7 @@ describe("planSetup: rules", () => {
     }
     expect(items.find((i) => i.kind === "folder" && i.target === "BOOKS")?.state).toBe("kept");
     expect(items.find((i) => i.kind === "home")?.target).toBe("HOME.MD");
-    expect(items.find((i) => i.target === "BOOKS/Example · The Lighthouse/example · the lighthouse.md")?.state).toBe("kept");
+    expect(items.find((i) => i.target === "BOOKS/example · the lighthouse.md")?.state).toBe("kept");
   });
 
   it("adds a track folder, never swaps; keeps a list that already has it", () => {

@@ -223,8 +223,11 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
   };
   if (stories) addExample(folderPaths[0], `${names.exampleStory}.md`, { kind: "story" });
   if (books) {
-    const book = addExample(folderPaths[folderPaths.length - 1], names.exampleBook, null);
-    addExample(book, `${names.exampleBook}.md`, { kind: "bookNote" });
+    // The book note sits NEXT TO the book's folder (Books/X.md beside Books/X/), as the
+    // classifier reads a book (core/classify.ts, bookAt); inside the folder it'd be a plain note.
+    const booksParent = folderPaths[folderPaths.length - 1];
+    const book = addExample(booksParent, names.exampleBook, null);
+    addExample(booksParent, `${names.exampleBook}.md`, { kind: "bookNote" });
     const chapters = addExample(book, chaptersName, null);
     EXAMPLE_CHAPTERS[choices.language].forEach((c, index) => addExample(chapters, c, { kind: "chapter", index }));
   }

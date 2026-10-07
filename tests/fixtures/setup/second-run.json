@@ -44,7 +44,7 @@
     ],
     "files": [
       "Stories/Example · The crossing.md",
-      "Books/Example · The lighthouse/Example · The lighthouse.md",
+      "Books/Example · The lighthouse.md",
       "Books/Example · The lighthouse/Chapters/01 Arrival.md",
       "Books/Example · The lighthouse/Chapters/02 The storm.md",
       "Home.md"
@@ -107,7 +107,7 @@
     },
     {
       "kind": "example",
-      "target": "Books/Example · The lighthouse/Example · The lighthouse.md",
+      "target": "Books/Example · The lighthouse.md",
       "state": "kept",
       "tick": null,
       "ticked": false,

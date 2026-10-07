@@ -61,7 +61,7 @@
     },
     {
       "kind": "example",
-      "target": "Livros/Exemplo · O farol/Exemplo · O farol.md",
+      "target": "Livros/Exemplo · O farol.md",
       "state": "new",
       "tick": "examples",
       "ticked": true,

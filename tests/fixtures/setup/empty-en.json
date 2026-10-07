@@ -82,7 +82,7 @@
     },
     {
       "kind": "example",
-      "target": "Books/Example · The lighthouse/Example · The lighthouse.md",
+      "target": "Books/Example · The lighthouse.md",
       "state": "new",
       "tick": "examples",
       "ticked": true,
