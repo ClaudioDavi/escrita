@@ -127,9 +127,11 @@ num universo vazio.
 ### Encontre e use as entradas
 
 A aba **Entradas** do painel agrupa as entradas por tipo. A busca encontra nomes e
-`aliases`, ignorando acentos e maiúsculas. Clique com o botão direito numa entrada para
-**Abrir**, **Abrir ao lado**, **Inserir link na nota** (no cursor, na última nota que você
-editou) e **Mostrar no explorador**.
+`aliases`, ignorando acentos e maiúsculas. Cada entrada tem um menu com **Abrir**, **Abrir ao lado**,
+**Inserir link na nota** (no cursor, na última nota que você editou) e **Mostrar no
+explorador**. Abra-o com o botão direito, ou com o botão **⋯** (Mais ações) na ponta direita
+da linha. O botão aparece quando o ponteiro está sobre a linha ou a linha tem o foco do
+teclado, e fica sempre visível no celular e no tablet, onde não há botão direito.
 
 ### Remova uma entrada
 

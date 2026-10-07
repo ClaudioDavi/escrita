@@ -128,9 +128,11 @@ in an empty universe.
 ### Find and use entries
 
 The panel's **Entries** tab (Entradas) groups entries by type. The search matches names and
-`aliases`, ignoring accents and case. Right-click an entry for **Open**, **Open to the
+`aliases`, ignoring accents and case. Each entry has a menu with **Open**, **Open to the
 side**, **Insert link in note** (at your cursor in the last note you edited) and **Show in
-file explorer**.
+file explorer**. Open it with a right-click, or with the **⋯** button (More actions) at the
+right end of the row. The button shows when the pointer is over the row or when the row has
+keyboard focus, and it is always shown on a phone or tablet, where there is no right-click.
 
 ### Remove an entry
 
