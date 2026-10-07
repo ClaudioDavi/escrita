@@ -1,0 +1,197 @@
+{
+  "description": "Empty vault, fresh Portuguese install on Writer; the writer picks stories only, Essentials and writing mode: openInWritingMode is written, the features row changes.",
+  "choices": {
+    "writes": "stories",
+    "language": "pt-BR",
+    "preset": "essentials",
+    "universeMode": null,
+    "layout": "focus"
+  },
+  "settings": {
+    "base": "pt-BR",
+    "overrides": {
+      "defaultsLanguage": "pt-BR",
+      "features": {
+        "goals": true,
+        "outline": true,
+        "placeholders": true,
+        "darlings": true,
+        "typing": true,
+        "dialogueFocus": true,
+        "moveBlocks": true,
+        "templates": true,
+        "lens": true,
+        "snapshots": true,
+        "stageSnapshot": true,
+        "publish": true,
+        "export": true,
+        "submissions": true,
+        "desk": true,
+        "threads": false
+      }
+    }
+  },
+  "vault": {
+    "folders": [],
+    "files": [],
+    "noteCounts": {},
+    "openLeaves": 1,
+    "hasWorks": false
+  },
+  "expected": [
+    {
+      "kind": "folder",
+      "target": "Contos",
+      "state": "new",
+      "tick": null,
+      "ticked": true,
+      "reason": {
+        "key": "setup.reason.folderNew"
+      }
+    },
+    {
+      "kind": "example",
+      "target": "Contos/Exemplo · A travessia.md",
+      "state": "new",
+      "tick": "examples",
+      "ticked": true,
+      "reason": {
+        "key": "setup.reason.exampleNew"
+      }
+    },
+    {
+      "kind": "home",
+      "target": "Início.md",
+      "state": "new",
+      "tick": "home",
+      "ticked": true,
+      "reason": {
+        "key": "setup.reason.homeNew"
+      }
+    },
+    {
+      "kind": "setting",
+      "target": "defaultsLanguage",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingSame"
+      },
+      "value": "pt-BR"
+    },
+    {
+      "kind": "setting",
+      "target": "trackFolders",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.trackAll"
+      },
+      "value": ""
+    },
+    {
+      "kind": "setting",
+      "target": "chaptersFolder",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingSame"
+      },
+      "value": "Capítulos"
+    },
+    {
+      "kind": "setting",
+      "target": "lensLanguage",
+      "state": "change",
+      "tick": null,
+      "ticked": true,
+      "reason": {
+        "key": "setup.reason.settingChange"
+      },
+      "value": "pt-BR"
+    },
+    {
+      "kind": "setting",
+      "target": "homeNote",
+      "state": "change",
+      "tick": "home",
+      "ticked": true,
+      "reason": {
+        "key": "setup.reason.settingChange"
+      },
+      "value": "Início.md"
+    },
+    {
+      "kind": "setting",
+      "target": "openHomeOnStartup",
+      "state": "change",
+      "tick": "home",
+      "ticked": true,
+      "reason": {
+        "key": "setup.reason.settingChange"
+      },
+      "value": true
+    },
+    {
+      "kind": "setting",
+      "target": "openInWritingMode",
+      "state": "change",
+      "tick": "layout",
+      "ticked": true,
+      "reason": {
+        "key": "setup.reason.settingChange"
+      },
+      "value": true
+    },
+    {
+      "kind": "features",
+      "target": "features",
+      "state": "change",
+      "tick": "features",
+      "ticked": true,
+      "reason": {
+        "key": "setup.reason.featuresChange",
+        "vars": {
+          "preset": "essentials"
+        }
+      },
+      "value": {
+        "features": {
+          "goals": true,
+          "outline": true,
+          "placeholders": true,
+          "darlings": true,
+          "typing": true,
+          "dialogueFocus": false,
+          "moveBlocks": false,
+          "templates": false,
+          "lens": true,
+          "snapshots": true,
+          "stageSnapshot": false,
+          "publish": false,
+          "export": true,
+          "submissions": false,
+          "desk": true,
+          "threads": false
+        },
+        "explorerCounts": false,
+        "spellcheckOnDemand": false,
+        "universeMode": "off"
+      }
+    },
+    {
+      "kind": "layout",
+      "target": "layout",
+      "state": "new",
+      "tick": "layout",
+      "ticked": true,
+      "reason": {
+        "key": "setup.reason.layoutNew"
+      },
+      "value": "focus"
+    }
+  ]
+}
