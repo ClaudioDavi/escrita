@@ -44,7 +44,7 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 
 ## Next: 1.0, the full release
 
-Plan (draft, questions open): [PLAN-1.0.md](PLAN-1.0.md).
+Plan (draft): [PLAN-1.0.md](PLAN-1.0.md).
 
 Stabilization and setup: a mobile pass, the user guide complete in English and pt-BR (see
 "Documentation"), migrations tested on the author's vault, and the community plugin
@@ -58,7 +58,7 @@ runs once.
 | Stabilization: mobile pass, the user guide complete, migrations tested on the author's vault | Docs | M | Phone gates stay waived (no phone to test on) |
 | Community plugin submission | — | S | |
 
-**Improvements (proposed):** candidate 8, one rule for a note's effective piece (a
+**Improvements:** candidate 8, one rule for a note's effective piece (a
 chapter's book-default target agrees on every surface), and candidate 13, shared helpers
 out of module folders (the setup module needs two of them).
 
