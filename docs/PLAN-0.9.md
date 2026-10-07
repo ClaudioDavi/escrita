@@ -608,6 +608,9 @@ Left as they are, for the author:
 
 ## Manual verification on `~/projects/website/escrita/`
 
+The step-by-step plan, with test notes, edge cases, the open gates and the choices you may want
+to change, is [TEST-0.9.md](TEST-0.9.md).
+
 - A conto in `Contos/` names a character without a link: the Works tab lists it.
   **Link** turns it into a link and changes nothing else. Edit that line first: nothing
   is written, and the row refreshes.
