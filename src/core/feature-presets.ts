@@ -14,9 +14,7 @@
 // it. Everything is "19 of 19" on the boards because the universe is counted there as
 // available, not as switched.
 //
-// Logic is due in Wave 1 (task 1.3); the bodies below are stubs.
-
-import { FEATURE_IDS, type FeatureId, type FeatureSwitches } from "./features";
+import { FEATURE_IDS, FEATURE_SPECS, switchedOn, type FeatureId, type FeatureSwitches } from "./features";
 
 export const PRESET_IDS = ["essentials", "writer", "everything"] as const;
 export type PresetId = typeof PRESET_IDS[number];
@@ -55,8 +53,17 @@ export const PRESET_IGNORED: FeatureId = "universe";
  * The caller writes the result into the settings (one save, then `features.apply()`).
  */
 export function presetSwitches(id: PresetId, current: FeatureSwitches): FeatureSwitches {
-  void id;
-  return { ...current, features: { ...current.features } };
+  const list = PRESETS[id];
+  const features = { ...current.features };
+  const out: FeatureSwitches = { ...current, features };
+  for (const spec of FEATURE_SPECS) {
+    if (spec.id === PRESET_IGNORED) continue;
+    const on = list.includes(spec.id);
+    if (spec.switch === "explorerCounts") out.explorerCounts = on;
+    else if (spec.switch === "spellcheckOnDemand") out.spellcheckOnDemand = on;
+    else if (!spec.switch) features[spec.id] = on;
+  }
+  return out;
 }
 
 /**
@@ -68,7 +75,10 @@ export function presetSwitches(id: PresetId, current: FeatureSwitches): FeatureS
  * "Custom", never an automatic change (board 38).
  */
 export function matchingPreset(switches: FeatureSwitches): PresetId | null {
-  void switches;
+  for (const id of PRESET_IDS) {
+    const list = PRESETS[id];
+    if (FEATURE_IDS.every((f) => f === PRESET_IGNORED || switchedOn(f, switches) === list.includes(f))) return id;
+  }
   return null;
 }
 
@@ -83,7 +93,10 @@ export function matchingPreset(switches: FeatureSwitches): PresetId | null {
  * already match, and the page says "Already on <preset>. Nothing changes."
  */
 export function presetChanges(current: FeatureSwitches, id: PresetId): { off: FeatureId[]; on: FeatureId[] } {
-  void current;
-  void id;
-  return { off: [], on: [] };
+  const list = PRESETS[id];
+  const ids = FEATURE_IDS.filter((f) => f !== PRESET_IGNORED);
+  return {
+    off: ids.filter((f) => switchedOn(f, current) && !list.includes(f)),
+    on: ids.filter((f) => !switchedOn(f, current) && list.includes(f)),
+  };
 }
