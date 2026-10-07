@@ -455,6 +455,34 @@ Decisions settled with the seams (the open questions of Wave 0 and Wave 1b, as r
 
 **Opus judge**, then G2 on an empty vault in both languages and on the author's vault.
 
+**Wave 2 result (2026-10-07).** All six tasks merged into `1.0` with no conflicts
+(`412d260`, `f2a18b9`, `2042157`, `1f3d058`, `11cdb11`, `50b3e92`), then the judge's fixes
+(`b860cb0`). The rules hold in the code: every note goes through `notes.create` with
+`exists: "return"` (a note that appears after the preview is counted as skipped, never
+written); a saved setting changes only under a tick, apart from the two rows the boards
+settle without one (a track folder added to the list, and the "Shared world" answer the
+writer picks in step 1); the settings are saved once, after the files, and skipped when a
+folder failed; a failure is reported and nothing is undone; writing mode collapses only the
+open sidebars and reopens only those, exits on unload, writes nothing; no command has a
+hotkey; every new string has both languages.
+- **Decisions made in code, kept:** the plan takes the ticks (`planSetup`'s fourth argument)
+  so the language tick moves the example chapters' folder and the preview shows what runs;
+  the book note sits beside its folder (`Books/X.md`), as the classifier reads a book; the
+  home note opens in a reused, empty or new tab, never over a writer's tab (2.3's rule, now
+  used by the run too); writing mode is two state-gated commands (renaming one needs a
+  private API); `openWork` forces the same tab while the mode is on; the preset confirm
+  redraws only its block.
+- **Judge fixes (`b860cb0`):** the run opened the home note with `getLeaf(false)`, over the
+  writer's active tab; it now uses the layout's rule. The home note said the examples could
+  be deleted even with the examples unticked. Writing mode hid the note header on desktop,
+  where board 39 b keeps it; now only on phones (39 e). The setup's strings joined the
+  parity test (`tests/strings.test.ts`). The pt-BR example dialogue uses a travessão.
+- **Open for the author (in `TEST-1.0.md`):** folders have no tick, so "Both" in a vault
+  with works creates `Books/` and adds it to a track list; the "Today: Custom, 18 on" line
+  of board 36 is not drawn; the reading column of board 39 is the theme's; writing mode next
+  to a zen plugin; nothing of the setup, the layout or writing mode has run in real
+  Obsidian. G2 and G4 are the manual steps in [TEST-1.0.md](TEST-1.0.md).
+
 ## Wave 3: docs (Sonnet), then review (Opus)
 
 "Getting started", "Revision", "Tracking", the rest of "Writing" and "Features and
