@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   blockForLine, dropPositions, movePositions, readerChapters, readerHeadingFormat, readingPoint, restoreTarget,
+  type SectionBox,
 } from "../src/outline/reader-plan";
 import type { ChapterRef } from "../src/core/book-source";
 import type { ReadPosition } from "../src/data";
@@ -52,9 +53,11 @@ describe("restoreTarget and blockForLine", () => {
 });
 
 describe("readingPoint", () => {
+  const box = (path: string, bottom: number, blocks: { line: number; bottom: number }[] | null): SectionBox =>
+    ({ path, bottom: () => bottom, blocks: () => blocks });
   const sections = [
-    { path: "a", bottom: 100, blocks: [{ line: 2, bottom: 40 }, { line: 4, bottom: 100 }] },
-    { path: "b", bottom: 400, blocks: null },
+    box("a", 100, [{ line: 2, bottom: 40 }, { line: 4, bottom: 100 }]),
+    box("b", 400, null),
   ];
   it("is the first block whose bottom is below the edge", () => {
     expect(readingPoint(sections, 50)).toEqual({ chapter: "a", line: 4 });
@@ -66,6 +69,16 @@ describe("readingPoint", () => {
   it("is the end of the last chapter past everything, and null for none", () => {
     expect(readingPoint([sections[0]], 500)).toEqual({ chapter: "a", line: 4 });
     expect(readingPoint([], 0)).toBeNull();
+  });
+  it("measures no section past the one picked, and only that one's blocks", () => {
+    const read: string[] = [];
+    const spy = (path: string, bottom: number): SectionBox => ({
+      path,
+      bottom: () => { read.push(`${path}.bottom`); return bottom; },
+      blocks: () => { read.push(`${path}.blocks`); return []; },
+    });
+    readingPoint([spy("a", 10), spy("b", 100), spy("c", 300)], 50);
+    expect(read).toEqual(["a.bottom", "b.bottom", "b.blocks"]);
   });
 });
 

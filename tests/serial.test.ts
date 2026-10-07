@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import cases from "./fixtures/serial/cases.json";
 import { chapterNumber, chapterTitle } from "../src/core/book";
 import { cloneDefaultStages } from "../src/core/stages";
-import { serialState, type SerialChapter } from "../src/publish/serial";
+import { serialState, type SerialChapter } from "../src/core/serial";
 
 const stages = cloneDefaultStages();
 for (const k of Object.keys(cases.stageWords) as (keyof typeof cases.stageWords)[]) stages[k].words = cases.stageWords[k];
@@ -24,11 +24,11 @@ describe("serialState fixtures", () => {
       const r = serialState(c.chapters.map(build), stages, c.unnumberedTitles ?? []);
       expect(r.sequence.map(file)).toEqual(c.expected.sequence);
       expect(file(r.next)).toBe(c.expected.next);
-      expect(r.last ? { chapter: file(r.last.chapter), date: r.last.date } : null).toEqual(c.expected.last);
+      expect(r.last ? { chapter: file(r.last), date: r.last.date } : null).toEqual(c.expected.last);
       expect(r.gaps.map(file)).toEqual(c.expected.gaps);
     });
   }
   it("handles an empty book", () => {
-    expect(serialState([], stages)).toEqual({ sequence: [], next: null, last: null, gaps: [] });
+    expect(serialState([], stages)).toEqual({ sequence: [], published: [], next: null, last: null, gaps: [] });
   });
 });

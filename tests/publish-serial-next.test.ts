@@ -5,7 +5,7 @@ import { runChecks } from "../src/publish/checks";
 import { checkText } from "../src/publish/modal";
 import {
   chapterLabel, earlierUnpublished, serialChapters, serialLine, serialState, type SerialChapter,
-} from "../src/publish/serial";
+} from "../src/core/serial";
 import { serialDateText, serialParts } from "../src/outline/header";
 import { registerStrings } from "../src/i18n";
 import { publishStrings } from "../src/publish/strings";
@@ -66,13 +66,13 @@ describe("earlierUnpublished and its check", () => {
   ], stages);
 
   it("lists the earlier unpublished chapters", () => {
-    expect(earlierUnpublished(state, "Book/Chapters/04 D.md", stages)).toEqual(["02 B", "03 C"]);
-    expect(earlierUnpublished(state, "Book/Chapters/02 B.md", stages)).toEqual([]);
+    expect(earlierUnpublished(state, "Book/Chapters/04 D.md")).toEqual(["02 B", "03 C"]);
+    expect(earlierUnpublished(state, "Book/Chapters/02 B.md")).toEqual([]);
   });
 
   it("gives null for a chapter outside the sequence", () => {
-    expect(earlierUnpublished(state, "Book/Chapters/Epilogo.md", stages)).toBeNull();
-    expect(earlierUnpublished(state, "Other.md", stages)).toBeNull();
+    expect(earlierUnpublished(state, "Book/Chapters/Epilogo.md")).toBeNull();
+    expect(earlierUnpublished(state, "Other.md")).toBeNull();
   });
 
   const ctx = { placeholderMarker: "XXX", recommendedProperties: [] as string[] };

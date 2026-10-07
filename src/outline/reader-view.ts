@@ -26,6 +26,8 @@ interface ChapterEls {
   comp: Component | null;
   /** the blocks as drawn, for the reading point and the scroll to a saved line */
   blocks: { el: HTMLElement; line: number }[];
+  /** the drawn blocks' text, so a save that changes nothing a reader sees draws nothing; null until drawn */
+  texts: string[] | null;
   /** resolves when the chapter is drawn (or failed) */
   done: Promise<void> | null;
 }
@@ -147,6 +149,13 @@ export class ReaderView extends ItemView {
       // being drawn: its text may predate the save, so try again once that draw is in
       if (c.state === "loading") { this.dirty.add(path); this.refreshSoon(); continue; }
       if (c.state !== "done") continue;   // not drawn yet: it reads the new text when it scrolls in
+      const fresh = await this.blocksOf(path).catch(() => null);
+      if (token !== this.token) return;
+      if (fresh && c.texts && sameTexts(c.texts, fresh)) {
+        // nothing a reader sees changed (a beat or a comment): keep the drawing, follow the lines
+        fresh.forEach((b, i) => { c.blocks[i].line = b.line; c.blocks[i].el.dataset.line = String(b.line); });
+        continue;
+      }
       const scroller = this.contentEl;
       const before = c.section.getBoundingClientRect();
       const above = before.bottom <= scroller.getBoundingClientRect().top;
@@ -154,7 +163,7 @@ export class ReaderView extends ItemView {
       this.restoring = true;
       try {
         c.done = null;
-        await this.render(c);
+        await this.render(c, fresh ?? undefined);
         if (token !== this.token) return;
         if (oldComp) this.removeChild(oldComp);
         // a chapter above the window changed height: move the page by the difference, so the text in view stays put
@@ -207,7 +216,7 @@ export class ReaderView extends ItemView {
       if (chapter.heading !== "") section.createEl("h1", { cls: "escrita-reader-heading", text: chapter.heading });
       const body = section.createDiv({ cls: "escrita-reader-body is-pending" });
       body.createDiv({ cls: "escrita-reader-loading", text: t("outline.reader.loading") });
-      return { chapter, section, body, state: "idle", comp: null, blocks: [], done: null };
+      return { chapter, section, body, state: "idle", comp: null, blocks: [], texts: null, done: null };
     });
 
     this.restoring = true;
@@ -258,14 +267,15 @@ export class ReaderView extends ItemView {
   // ---------------------------------------------------------------- rendering
 
   /** Reads a chapter and draws its blocks with Obsidian's renderer; once per chapter. */
-  private render(c: ChapterEls): Promise<void> {
+  private render(c: ChapterEls, given?: ReaderBlock[]): Promise<void> {
     if (c.done) return c.done;
     c.state = "loading";
-    c.done = this.draw(c).catch(() => {
+    c.done = this.draw(c, given).catch(() => {
       if (c.state === "loading") {
         // settled, so a later save draws it again (and a refresh never waits on it)
         c.state = "done";
         c.blocks = [];
+        c.texts = null;
         c.body.empty();
         c.body.createDiv({ cls: "escrita-reader-loading", text: t("outline.reader.failed") });
       }
@@ -273,16 +283,21 @@ export class ReaderView extends ItemView {
     return c.done;
   }
 
-  private async draw(c: ChapterEls): Promise<void> {
+  /** The chapter's blocks as the reader shows them, from its current text. */
+  private async blocksOf(path: string): Promise<ReaderBlock[]> {
+    const { text } = await this.source().read(path);
+    return readerBlocks(text, { placeholderMarker: this.plugin.settings.placeholderMarker });
+  }
+
+  /** `given`: the blocks when the caller has just read them (a refresh). */
+  private async draw(c: ChapterEls, given?: ReaderBlock[]): Promise<void> {
     const token = this.token;
-    const { text } = await this.source().read(c.chapter.path);
+    const blocks = given ?? await this.blocksOf(c.chapter.path);
     if (token !== this.token) return;
-    const blocks = readerBlocks(text, { placeholderMarker: this.plugin.settings.placeholderMarker });
     const comp = new Component();
     this.addChild(comp);
     c.comp = comp;
     // drawn off screen and put in at once, so a long chapter lays out one time
-    const wrap = createDiv();
     const drawn: { el: HTMLElement; line: number }[] = [];
     await Promise.all(blocks.map(async (b: ReaderBlock, i) => {
       const el = createDiv({ cls: "escrita-reader-block", attr: { "data-line": String(b.line) } });
@@ -290,11 +305,11 @@ export class ReaderView extends ItemView {
       drawn[i] = { el, line: b.line };
     }));
     if (token !== this.token) { this.removeChild(comp); return; }
-    for (const d of drawn) wrap.appendChild(d.el);
     c.body.empty();
     c.body.removeClass("is-pending");
-    c.body.append(...Array.from(wrap.childNodes));
+    c.body.append(...drawn.map((d) => d.el));
     c.blocks = drawn;
+    c.texts = blocks.map((b) => b.text);
     c.state = "done";
   }
 
@@ -311,10 +326,11 @@ export class ReaderView extends ItemView {
     const top = this.contentEl.getBoundingClientRect().top;
     // below the sticky bar
     const edge = top + (this.contentEl.querySelector(".escrita-reader-bar")?.getBoundingClientRect().height ?? 0) + 1;
+    // measured lazily: readingPoint reads bottoms down to the section at the edge, then only its blocks
     const boxes: SectionBox[] = this.chapters.map((c) => ({
       path: c.chapter.path,
-      bottom: c.section.getBoundingClientRect().bottom,
-      blocks: c.state === "done" ? c.blocks.map((b) => ({ line: b.line, bottom: b.el.getBoundingClientRect().bottom })) : null,
+      bottom: () => c.section.getBoundingClientRect().bottom,
+      blocks: () => c.state === "done" ? c.blocks.map((b) => ({ line: b.line, bottom: b.el.getBoundingClientRect().bottom })) : null,
     }));
     const pos = readingPoint(boxes, edge);
     if (!pos) return;
@@ -340,4 +356,9 @@ export class ReaderView extends ItemView {
     const at = { line, ch: 0 };
     void this.app.workspace.getLeaf("tab").openFile(file, { active: true, eState: { line, cursor: { from: at, to: at } } });
   }
+}
+
+/** Whether freshly read blocks show the same text as the drawn ones, in the same order. */
+function sameTexts(drawn: readonly string[], fresh: readonly ReaderBlock[]): boolean {
+  return drawn.length === fresh.length && fresh.every((b, i) => b.text === drawn[i]);
 }

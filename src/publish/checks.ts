@@ -44,7 +44,7 @@ export interface CheckContext {
   piece?: PieceProperties;
   /**
    * Serial publishing (0.9, Q13): the labels of the earlier chapters of the book's sequence
-   * that aren't published (publish/serial.ts earlierUnpublished). Omitted or null = the note
+   * that aren't published (core/serial.ts earlierUnpublished). Omitted or null = the note
    * isn't a counted chapter, no check. A warning, never a blocker.
    */
   earlierUnpublished?: readonly string[] | null;

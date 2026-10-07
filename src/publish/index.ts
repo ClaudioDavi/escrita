@@ -12,9 +12,10 @@ import { dropKeys, renameKeys } from "../core/path-keys";
 import { writingDay } from "../core/dates";
 import { t } from "../i18n";
 import { isPublished, runChecks } from "./checks";
-import { dateText, initialDate, shouldWriteDate } from "./date";
+import { initialDate, shouldWriteDate } from "./date";
+import { dateText } from "../core/measure";
 import { PublishModal } from "./modal";
-import { earlierUnpublished, serialChapters, serialState, type PublishNextPort, type SerialState } from "./serial";
+import { bookSerial, earlierUnpublished, type PublishNextPort, type SerialState } from "../core/serial";
 import { publishSettingsSection } from "./settings-ui";
 
 type Frontmatter = Record<string, unknown>;
@@ -109,11 +110,7 @@ export class PublishModule extends FeatureModule implements PublishNextPort {
   /** The book's serial state, from the chapters' status and date in the metadata cache. */
   private serialOf(book: Book): SerialState {
     const { books, app, settings: s } = this.plugin;
-    const source = bookSource(app, books, this.plugin.notes, () => s);
-    return serialState(
-      serialChapters(source.chapters(book), (path) => source.frontmatter(path), s.statusProperty, s.dateProperty),
-      s.stages, s.unnumberedTitles,
-    );
+    return bookSerial(bookSource(app, books, this.plugin.notes, () => s), book, s);
   }
 
   /** Q11: the publish check of the book's first unpublished chapter, the same modal as a single note. */
@@ -168,7 +165,7 @@ export class PublishModule extends FeatureModule implements PublishNextPort {
     const place = this.plugin.books.classify(file);
     // a chapter of a book: warn about earlier chapters not yet published (Q13)
     const earlier = place.kind === "chapter" && place.book
-      ? earlierUnpublished(this.serialOf(place.book), file.path, s.stages)
+      ? earlierUnpublished(this.serialOf(place.book), file.path)
       : null;
     const checks = runChecks(text, fm, {
       earlierUnpublished: earlier,

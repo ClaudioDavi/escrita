@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { dateText, hasDate, initialDate, shouldWriteDate } from "../src/publish/date";
+import { dateText, hasDate } from "../src/core/measure";
+import { initialDate, shouldWriteDate } from "../src/publish/date";
 
 const TODAY = "2026-09-29";
 

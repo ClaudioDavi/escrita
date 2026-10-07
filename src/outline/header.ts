@@ -4,7 +4,7 @@
 
 import { Component, moment, setIcon } from "obsidian";
 import { fmt, lang, plural, t } from "../i18n";
-import type { SerialLine } from "../publish/serial";
+import type { SerialLine } from "../core/serial";
 import type { StageMapping } from "../core/stages";
 import { POV_PALETTE, statusTally, type PovColor, type RowFilter, type TallyItem } from "./pov";
 import type { ChapterRow } from "./rows";
@@ -324,21 +324,15 @@ export function renderSerialLine(host: HTMLElement, line: SerialLine | null): vo
 }
 
 /** The header's action row: "Publish next" when there is a chapter to publish, and "Read the book" (0.9, N 8). */
-export function renderHeaderActions(host: HTMLElement, a: { publishNext: (() => void) | null; readBook?: (() => void) | null }): void {
+export function renderHeaderActions(host: HTMLElement, a: { publishNext: (() => void) | null; readBook: () => void }): void {
   host.empty();
-  const read = a.readBook ?? null;
-  host.toggleClass("is-hidden", !a.publishNext && !read);
-  if (a.publishNext) {
-    const go = a.publishNext;
-    const b = host.createEl("button", { cls: "escrita-outline-action", attr: { "aria-label": t("outline.serial.publishNextTip") } });
-    setIcon(b.createSpan({ cls: "escrita-outline-action-icon", attr: { "aria-hidden": "true" } }), "send");
-    b.createSpan({ text: t("outline.serial.publishNext") });
-    b.addEventListener("click", go);
-  }
-  if (read) {
-    const b = host.createEl("button", { cls: "escrita-outline-action", attr: { "aria-label": t("outline.reader.readBookTip") } });
-    setIcon(b.createSpan({ cls: "escrita-outline-action-icon", attr: { "aria-hidden": "true" } }), "book-open");
-    b.createSpan({ text: t("outline.reader.readBook") });
-    b.addEventListener("click", read);
-  }
+  host.removeClass("is-hidden");
+  const button = (tip: string, icon: string, label: string, run: () => void): void => {
+    const b = host.createEl("button", { cls: "escrita-outline-action", attr: { "aria-label": tip } });
+    setIcon(b.createSpan({ cls: "escrita-outline-action-icon", attr: { "aria-hidden": "true" } }), icon);
+    b.createSpan({ text: label });
+    b.addEventListener("click", run);
+  };
+  if (a.publishNext) button(t("outline.serial.publishNextTip"), "send", t("outline.serial.publishNext"), a.publishNext);
+  button(t("outline.reader.readBookTip"), "book-open", t("outline.reader.readBook"), a.readBook);
 }

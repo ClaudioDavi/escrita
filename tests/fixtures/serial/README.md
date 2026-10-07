@@ -1,7 +1,7 @@
 # Serial fixtures (0.9, task 0.2)
 
 Chapter lists with the expected result of `serialState(chapters, stages, unnumbered)` in
-`publish/serial.ts` (N 4, plan Q10-Q13). `cases.json` has `stageWords` (the author's
+`core/serial.ts` (N 4, plan Q10-Q13). `cases.json` has `stageWords` (the author's
 Portuguese stage words, not the settings' English defaults: a test builds a `StageMapping`
 whose `words` are these) and `cases`. Each case has `name`, `note`,
 `chapters` in outline order and `expected`. A case may add `unnumberedTitles` (the

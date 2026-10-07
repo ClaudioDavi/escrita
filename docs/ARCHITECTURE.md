@@ -1362,8 +1362,8 @@ measurer, the vault index and the notes service are core and always on.
   least one chapter is published, the header shows one line (no separate dashboard view, rule 3):
   the gaps first, then "Next: 05 A volta", then "last published 30 Sep" (a future date is shown as
   written; a published chapter with no date shows its title instead). The date is "D MMM" in
-  pt-BR and "MMM D" in English. It reads `publish/serial.ts` (a pure file, so the outline imports
-  no module) and the line redraws when the publish switch changes. The "Publish next chapter"
+  pt-BR and "MMM D" in English. It reads `core/serial.ts` (`bookSerial`, built only when the publish
+  feature is on) and the line redraws when the publish switch changes. The "Publish next chapter"
   button beside it waits for a first published chapter, like the line, and calls
   `PublishNextPort.publishNext` read through `features.get("publish")`.
 - **Read the book** (0.9, N 8; `reader-model.ts`, `reader-plan.ts`, `reader-view.ts`). A view of
@@ -1379,10 +1379,13 @@ measurer, the vault index and the notes service are core and always on.
   `reader-plan.ts` is the other pure part: which chapters (included, in order, numbered as the
   export does), the heading format (D7: the export's heading setting, else the language's preset
   heading, `presetForLanguage(lang).chapterHeading` from `core/presets.ts`), where a saved
-  position lands, which block is at the top (`readingPoint`), and how a position follows a
+  position lands, which block is at the top (`readingPoint`, over lazily measured
+  `SectionBox`es: bottoms down to the section at the edge, then that section's blocks), and how a position follows a
   rename or a delete (`movePositions`, `dropPositions`). The view renders each block with
   Obsidian's Markdown renderer, chapter by chapter as it scrolls into view; a click on a
   paragraph opens its chapter in a new tab at that line (a selection in progress is left alone).
+  A save of a drawn chapter redraws it only when its blocks' text changed (a beat or a comment
+  alone just moves the blocks' lines).
   Read-only; no chapter rail or progress bar (D6, the outline navigates). It redraws when a
   chapter is created, deleted or renamed in the book's folder, not when its text changes (the
   next opening shows an edit). The tab follows its book when the book note, or a folder holding
@@ -1539,7 +1542,8 @@ measurer, the vault index and the notes service are core and always on.
   `overLimit` (the piece's `limit` in its unit; warning; only when a limit is set).
   `sortChecks` puts blockers first; `hasBlockers`. No check assumes a website:
   Escrita is standalone (no URLs, slugs or site build rules).
-- **Dates** (`src/publish/date.ts`, tested): the modal's date field starts at the
+- **Dates** (`src/publish/date.ts`, tested; `hasDate` and `dateText` are in `core/measure.ts`
+  beside `parseDeadline`, shared with the serial line): the modal's date field starts at the
   note's date or today; publishing writes the date only when the user changed it or
   the note has none, so an existing value (even non-ISO) is kept as it is.
 - **Modal** (`src/publish/modal.ts`): "Publish “<title>”", the sorted checks with an
@@ -1554,15 +1558,18 @@ measurer, the vault index and the notes service are core and always on.
   the `ready` stage's written word, and drops the record. There are no separate published
   and unpublished settings any more (0.3 values migrate into `stages`). Records follow
   file and folder renames and are dropped on delete, through an index follower. Escrita never commits, pushes or uploads.
-- **Serial publishing** (0.9, N 4; `serial.ts`, pure, no Obsidian imports). A book released one
-  chapter at a time. `serialState(chapters, stages, unnumbered)` over `SerialChapter` (the book
+- **Serial publishing** (0.9, N 4; `src/core/serial.ts`, pure, no Obsidian imports; in core
+  because the outline reads it too, with the `PublishNextPort` type). A book released one
+  chapter at a time. `bookSerial(source, book, settings)` reads a book through its book source;
+  `serialState(chapters, stages, unnumbered)` over `SerialChapter` (the book
   source's `ChapterRef` plus the status and the date as read) gives `sequence` (chapters in book
   order, without `compile: false` and without the uncounted ones: no number, a 00 chapter, or a
-  title in "Chapters without a number", by `countedNumbers`), `next` (the first not published),
-  `last` (`{ chapter, date }`, the last published in order, its own date as written) and `gaps`
+  title in "Chapters without a number", by `countedNumbers`), `published` (a flag per chapter of
+  `sequence`), `next` (the first not published), `last` (the last published chapter in order; its
+  own date as written) and `gaps`
   (the unpublished chapters before `last`). Published means the status word maps to the published
   stage (`stageOf`, since chapters have no classify stage). A gap is a **warning, never a block**:
-  `earlierUnpublished(state, path, stages)` feeds the `earlierChapter` check, which `runChecks`
+  `earlierUnpublished(state, path)` feeds the `earlierChapter` check, which `runChecks`
   adds for a chapter of a book (the modal says "chapter" or "chapters"). `serialLine` and
   `chapterLabel` (the digits of the file name plus the title: "04 A escada") feed the outline's
   line. No clock: a future date is only recorded and shown as written.

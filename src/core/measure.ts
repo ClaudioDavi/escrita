@@ -167,6 +167,28 @@ export function parseDeadline(v: unknown): string | undefined {
   return `${m[1]}-${m[2]}-${m[3]}`;
 }
 
+/** Whether a frontmatter date value is there at all (any value but missing, null or blank). */
+export function hasDate(raw: unknown): boolean {
+  if (raw === undefined || raw === null) return false;
+  if (typeof raw === "string") return raw.trim() !== "";
+  if (Array.isArray(raw)) return raw.length > 0;
+  return true;
+}
+
+/** A kept date as text for messages: YYYY-MM-DD when it parses, the value as written otherwise. */
+export function dateText(raw: unknown): string {
+  const parsed = parseDeadline(raw);
+  if (parsed) return parsed;
+  if (raw instanceof Date) return String(raw);
+  if (typeof raw === "string") return raw.trim();
+  if (typeof raw === "number" || typeof raw === "boolean") return String(raw);
+  try {
+    return JSON.stringify(raw) ?? "";
+  } catch {
+    return String(raw);
+  }
+}
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === "object";
 }

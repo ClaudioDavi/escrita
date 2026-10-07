@@ -779,14 +779,14 @@ lives. Some were already settled by the follow-ups; they are listed so you know.
 | Point | Chosen | Alternative | Where |
 |---|---|---|---|
 | Line order | The gap first: "Lacuna: 04 · Próximo: 04 A escada · último publicado em 5 out" (follow-up 1, board 32b) | — (settled) | `src/outline/header.ts` (`serialParts`) |
-| Chapter label | The digits in the file name and the title, "04 A escada" | The export heading, "Capítulo 4 — A escada" | `src/publish/serial.ts`, `src/outline/header.ts` |
+| Chapter label | The digits in the file name and the title, "04 A escada" | The export heading, "Capítulo 4 — A escada" | `src/core/serial.ts`, `src/outline/header.ts` |
 | Date format | "D MMM" in pt-BR, "MMM D" in English | The date as written in the note | `src/outline/header.ts` |
 | The gap warning | Names every earlier unpublished chapter | Only the nearest | `src/publish/checks.ts` |
 | Outside a book | The command falls back to the vault's only book | The outline's book | `src/publish/index.ts` (`activeBook`) |
 | The button | Waits for a first published chapter, like the line (board 32d) | Always shown | `src/outline/header.ts` |
-| Future dates | Shown as written (D5) | "agendado para…" | `src/publish/serial.ts` |
-| No date on the last published | Its title, no date (Q23) | The nearest earlier date | `src/publish/serial.ts` |
-| Module import | The outline imports the pure `publish/serial.ts`. Precedent: `outline/bar.ts` imports goals | A port through `features.get` | `src/outline/view.ts`, `src/outline/header.ts` |
+| Future dates | Shown as written (D5) | "agendado para…" | `src/core/serial.ts` |
+| No date on the last published | Its title, no date (Q23) | The nearest earlier date | `src/core/serial.ts` |
+| Module import | The outline imports the pure `core/serial.ts` (moved from `publish/` in the simplify pass); the live publish port comes through `features.get` | A port through `features.get` | `src/outline/view.ts`, `src/outline/header.ts` |
 | With publish off | No line and no button | Show the line anyway | `src/outline/view.ts` |
 
 ### Read the book

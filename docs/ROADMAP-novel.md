@@ -91,7 +91,7 @@ book one chapter at a time (a newsletter, a serial platform, a blog):
   A future date is shown as written (D5); the model needs no clock.
 - **What counts**: a chapter whose status maps to the published stage. Chapters left out by
   `compile: false` and unnumbered ones ("Chapters without a number", a 00 chapter) are not in the
-  sequence (`publish/serial.ts`).
+  sequence (`core/serial.ts`).
 - **"Publish next chapter"** is a command and a header button (the button waits for a first
   published chapter). It opens the chapter first, then the same check modal as a single note. The
   gap is a warning in that check, never a block, and it names every earlier unpublished chapter.

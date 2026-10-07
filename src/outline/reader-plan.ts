@@ -59,23 +59,29 @@ export function blockForLine(lines: readonly number[], line: number): number {
 /** A chapter's place on screen, for `readingPoint`. `blocks` is null while it is not rendered. */
 export interface SectionBox {
   path: string;
-  bottom: number;
-  blocks: { line: number; bottom: number }[] | null;
+  /** the section's bottom edge; read in order, only up to the first section past the edge */
+  bottom(): number;
+  /** the drawn blocks' lines and bottom edges, read only for the section picked; null when not drawn yet */
+  blocks(): { line: number; bottom: number }[] | null;
 }
 
 /**
  * The reading point: the block at the top of the view, given the view's top edge (all in
  * the same coordinates). A chapter not rendered yet counts as its line 0, and so does the
- * heading above a chapter's first block.
+ * heading above a chapter's first block. Measures lazily: the sections above the edge give
+ * only their bottom, and one section its blocks.
  */
 export function readingPoint(sections: readonly SectionBox[], edge: number): ReadPosition | null {
   for (const s of sections) {
-    if (s.bottom <= edge) continue;
-    const block = s.blocks?.find((b) => b.bottom > edge) ?? s.blocks?.[0] ?? null;
+    if (s.bottom() <= edge) continue;
+    const blocks = s.blocks();
+    const block = blocks?.find((b) => b.bottom > edge) ?? blocks?.[0] ?? null;
     return { chapter: s.path, line: block ? block.line : 0 };
   }
   const last = sections[sections.length - 1];
-  return last ? { chapter: last.path, line: last.blocks?.[last.blocks.length - 1]?.line ?? 0 } : null;
+  if (!last) return null;
+  const blocks = last.blocks();
+  return { chapter: last.path, line: blocks?.[blocks.length - 1]?.line ?? 0 };
 }
 
 // ------------------------------------------------------------------ following the vault
