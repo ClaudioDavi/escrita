@@ -295,6 +295,54 @@ that note under the home tick, as `case-clash.json` does.
 **Opus judge** after the wave. Is any decision made in code that this plan didn't
 settle?
 
+**Wave 1 result (2026-10-07).** Only two of the seven tasks landed: 1.6, the mobile code audit
+(`9a054af`, `docs/MOBILE-1.0.md`), and 1.7, the guidelines lint (`782b263`). Then the judge
+fixes (`6ff49f3`). Tasks 1.1 to 1.5 wrote no code. Their worktrees were branched from the
+0.9 line (`923be0b`), not from `1.0`, so the plan and the Wave 0 contracts were missing. Git
+was also refused inside them: the rtk rewrite hook trips the worktree-isolation guard. Every
+check passes on `1.0`, including `npm run lint`. G3 holds on today's load path.
+- **1.7.** `npm run lint` runs in CI with zero warnings. The review config rejects inline
+  disables, so each rule left off is scoped to one file in `eslint.config.mjs` and listed
+  with its reason in ARCHITECTURE.md (`settings.ts` `display()`, `setWarning`, the empty
+  snapshot folder removal, and two APIs typed from 1.8.7). The judge accepts all four. Three
+  small behaviour changes were made in code, and the judge keeps them: a YAML map in the
+  outline shows as JSON, not "[object Object]"; on Obsidian older than 1.8.7 the
+  no-templates notice shows without its button; and the settings placeholders are
+  translated. Nothing else changes for a writer.
+- **1.6.** No Node or Electron API, no hover-only control, no touch target under 32 px. The
+  regex lookbehind (F1) was a load failure on Safari before 16.4. Q8 already rules it out,
+  so the judge rewrote the five sites (`core/markers.ts`, `universe/unlinked-link.ts`,
+  `universe/entries.ts`) and added `tests/no-lookbehind.test.ts` over `src/` and `main.js`.
+  `main.js` is 1.31 MB, with about 26 ms to compile and run on desktop, so lazy-loading
+  the writers would save little.
+- **Judge.** No decision the plan didn't settle was made in code. `tests/settings-g3.test.ts`
+  loads the 0.9 fixture the way `loadAll` does and compares every setting to the expected
+  file. It passes now and is 1.4's guard. The fixtures test's title now says two settings,
+  because `setupOffered` is data.
+
+Plan changes for Wave 2:
+- **Wave 2 waits.** First, 1.1 to 1.5 run again as Wave 1b, from the head of `1.0`. Each
+  worktree must contain `docs/PLAN-1.0.md`, and git must work inside it. If neither can be
+  promised, the tasks run one at a time in the main checkout (the low-resources rule).
+  1.1 commits before 1.4, which owns lines of `core/classify.ts` after it. An Opus judge
+  checks Wave 1b, then Wave 2 starts.
+- **Every task's done-when adds `npm run lint`**, since the lint now lands before the code.
+  No inline `eslint-disable`; a new exception goes in `eslint.config.mjs` and ARCHITECTURE.md.
+- 1.7's fixes touched lines that 1.1 and 1.4 own (`main.ts`, `settings.ts`, `core/defaults.ts`,
+  `core/migrate.ts`, `outline/rows.ts`, `outline/view.ts`). Those tasks build on them.
+
+Open for the author:
+- Raise `minAppVersion` to 1.8.7? That drops two lint exceptions and lets `getLanguage()`
+  replace `moment.locale()`.
+- F2: the universe panel's entry menu opens only on a right click, and iOS has none. The
+  fix is the outline's "⋯" button. It needs an owner (a small Wave 2 task in `universe/`,
+  reusing an approved pattern).
+- F3: the stage word, the placeholder count and the POV label show only in tooltips, which a
+  phone never shows. This is a design question, for version 1.1 or later.
+- The `no-deprecated` exception covers all of `settings.ts`, so 2.5's Features page code is
+  not checked for it. The judge accepts this until `minAppVersion` allows the declarative
+  settings API.
+
 ## Wave 2: features (parallel, Sonnet, after G1)
 
 | Task | Owns | Done when |
