@@ -3,7 +3,8 @@ import { FEATURE_IDS, FEATURE_SPECS, switchedOn, wanted, type FeatureSwitches } 
 import { PRESETS, PRESET_IDS, matchingPreset, presetChanges, presetSwitches } from "../src/core/feature-presets";
 
 const allOn = (): FeatureSwitches => ({ features: {}, explorerCounts: true, spellcheckOnDemand: true, universeMode: "off" });
-// the author's 0.9 fixture: spellcheck off (the default), features { lens, snapshots }
+// a 0.9 install with spellcheck on demand off (its default) and features { lens, snapshots } saved.
+// (The author's own fixture has spellcheck on, so it reads Everything: tests/settings-g3.test.ts.)
 const fixture = (): FeatureSwitches => ({
   features: { lens: true, snapshots: true }, explorerCounts: true, spellcheckOnDemand: false, universeMode: "off",
 });
@@ -55,7 +56,7 @@ describe("matchingPreset", () => {
   it("reads an all-on 0.9 install as everything", () => {
     expect(matchingPreset(allOn())).toBe("everything");
   });
-  it("reads the author's fixture as Custom", () => {
+  it("reads a 0.9 install with spellcheck off as Custom", () => {
     expect(matchingPreset(fixture())).toBeNull();
   });
   it("ignores the universe", () => {

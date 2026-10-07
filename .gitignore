@@ -2,6 +2,7 @@ node_modules/
 main.js
 *.map
 data.json
+!tests/fixtures/**/data.json
 .DS_Store
 .vscode/
 .idea/

@@ -149,8 +149,8 @@ export interface SetupOutcome {
   skipped: SetupItem[];
 }
 
-/** The install's value of the non-word settings the plan writes (DEFAULT_SETTINGS; the word-bearing ones come from the language sets). */
-const PLAIN_DEFAULTS = { trackFolders: "", lensLanguage: "auto", homeNote: "", openHomeOnStartup: false, openInWritingMode: false } as const;
+/** The install's value of the non-word settings the plan writes: DEFAULT_SETTINGS's, copied to keep this file free of obsidian imports (tests/setup-plan.test.ts pins them). */
+export const PLAIN_DEFAULTS = { trackFolders: "", lensLanguage: "auto", homeNote: "", openHomeOnStartup: false, openInWritingMode: false } as const;
 
 /** The example chapters' file names per language: placeholders until task 2.1 (PLAN-1.0, Wave 0 result). */
 const EXAMPLE_CHAPTERS: Record<DefaultsLanguage, readonly string[]> = {

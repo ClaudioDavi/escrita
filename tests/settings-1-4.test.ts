@@ -4,8 +4,10 @@ import { migrateSettings } from "../src/core/migrate";
 import { exportRoot, inExports, submissionsRoot } from "../src/core/classify";
 import { normalizeStages } from "../src/core/stages";
 import { normalizeUniverse } from "../src/universe/settings";
+import { matchingPreset } from "../src/core/feature-presets";
+import { switchesOf } from "../src/core/feature-registry";
 
-// data.json of the 0.9 fixture is git-ignored (the author's file), so a small saved object stands in
+// a small saved object; the full 0.9 fixture is tests/settings-g3.test.ts
 const saved09 = { weeklyGoal: 5, exportFolder: "Escrita/Exports", submissionsFolder: "Escrita/Submissions" };
 
 describe("1.4 language defaults on load", () => {
@@ -67,5 +69,13 @@ describe("1.4 language defaults on load", () => {
     expect(submissionsRoot("", "xx")).toBe("Escrita/Submissions");
     expect(inExports("Escrita/Exportações/a.docx", { exportFolder: "", defaultsLanguage: "pt-BR" })).toBe(true);
     expect(inExports("Escrita/Exports/a.docx", { exportFolder: "", defaultsLanguage: "pt-BR" })).toBe(false);
+  });
+
+  it("a fresh install starts on Writer, in either language, with the universe off (Q7)", () => {
+    for (const locale of ["en", "pt-BR"]) {
+      const { settings } = loadSettings(undefined, locale);
+      expect(matchingPreset(switchesOf(settings)), locale).toBe("writer");
+      expect(settings.universeMode, locale).toBe("off");
+    }
   });
 });

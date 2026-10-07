@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { itemsToRun, planSetup, type SetupChoices, type SetupItem, type SetupVault } from "../src/setup/plan";
+import { PLAIN_DEFAULTS, itemsToRun, planSetup, type SetupChoices, type SetupItem, type SetupVault } from "../src/setup/plan";
 import { DEFAULT_SETTINGS, defaultsFor, type EscritaSettings } from "../src/settings";
 import type { DefaultsLanguage } from "../src/core/defaults";
 
@@ -69,5 +69,9 @@ describe("planSetup: rules", () => {
     expect(kinds.lastIndexOf("folder")).toBeLessThan(kinds.indexOf("setting"));
     expect(kinds.lastIndexOf("home")).toBeLessThan(kinds.indexOf("setting"));
     expect(kinds[kinds.length - 1]).toBe("layout");
+  });
+
+  it("its copy of the plain defaults matches DEFAULT_SETTINGS", () => {
+    for (const [k, v] of Object.entries(PLAIN_DEFAULTS)) expect(DEFAULT_SETTINGS[k as keyof typeof DEFAULT_SETTINGS], k).toEqual(v);
   });
 });
