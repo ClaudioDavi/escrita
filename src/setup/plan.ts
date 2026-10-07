@@ -13,6 +13,8 @@
 //   writer's own when its value differs from the install's default set
 //   (`defaultsFor(settings.defaultsLanguage)`); then it is `kept`. A setting already
 //   equal to what the setup would write is `kept` too. Only the rest are `change`.
+// - New folders and the track-folder change share the "folders" tick: ticked in a vault
+//   without works, unticked in one with works, so "Both" changes nothing there unless ticked.
 // - A track folder is added to `trackFolders`, never swapped: the item's `value` is the
 //   current list plus the new folders. An empty list (the whole vault) stays empty: every
 //   folder is already tracked, and the item is `kept`.
@@ -28,7 +30,8 @@
 //   (SF 10: "a value the writer already saved is never changed"), and some of these move
 //   what Escrita reads (`chaptersFolder`, `submissionsFolder`), so they never change
 //   without a tick. `trackFolders` (added to, never swapped) goes with the folders it
-//   names and has no tick; `homeNote` goes with "home", `openHomeOnStartup` has its own
+//   names, under their tick, "folders" (unticked in a vault with works: the author, 2026-10-07).
+//   `universeMode` has its own tick, "universe", ticked: the writer chose it in step 1; `homeNote` goes with "home", `openHomeOnStartup` has its own
 //   tick, "startup", and `openInWritingMode` goes with "layout".
 // - In a vault with works (`SetupVault.hasWorks`), the examples, the language group,
 //   "open the home note on startup", the features row and the layout come unticked (board 36 a: "In a vault with settings…
@@ -107,9 +110,12 @@ export type SetupItemState = "new" | "kept" | "change";
 /**
  * The tickable rows of the preview. Items sharing a tick go together (the examples are one
  * tick, and so is the language group). "startup" is `openHomeOnStartup` alone, its own row
- * under the home note, unticked in a vault with works (Wave 2 seams, 2026-10-07).
+ * under the home note, unticked in a vault with works (Wave 2 seams, 2026-10-07). "folders"
+ * is the new folders and the track-folder change they bring, unticked in a vault with works;
+ * "universe" is the "Shared world" answer, ticked because the writer chose it in step 1
+ * (both settled by the author, 2026-10-07).
  */
-export type SetupTick = "examples" | "home" | "startup" | "language" | "features" | "layout";
+export type SetupTick = "folders" | "examples" | "home" | "startup" | "language" | "universe" | "features" | "layout";
 
 /** The writer's ticks, as the preview holds them; a missing tick uses the items' `ticked`. */
 export type SetupTicks = Partial<Record<SetupTick, boolean>>;
@@ -206,7 +212,7 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
     folderPaths.push(f.path);
     items.push(f.exists
       ? { kind: "folder", target: f.path, state: "kept", tick: null, ticked: false, reason: { key: "setup.reason.folderExists", vars: { count: vault.noteCounts[f.path] ?? 0 } } }
-      : { kind: "folder", target: f.path, state: "new", tick: null, ticked: true, reason: { key: "setup.reason.folderNew" } });
+      : { kind: "folder", target: f.path, state: "new", tick: "folders", ticked: !hasWorks, reason: { key: hasWorks ? "setup.reason.folderHasWorks" : "setup.reason.folderNew" } });
   };
   const stories = choices.writes !== "books";
   const books = choices.writes !== "stories";
@@ -275,8 +281,8 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
     const added = folderPaths.filter((f) => !have.has(keyOf(f)));
     if (added.length === 0) keep("trackFolders", settings.trackFolders, "settingSame");
     else items.push({
-      kind: "setting", target: "trackFolders", state: "change", tick: null, ticked: true,
-      reason: { key: "setup.reason.trackAdd", vars: { folders: added.join(", ") } }, value: [...tracked, ...added].join("\n"),
+      kind: "setting", target: "trackFolders", state: "change", tick: "folders", ticked: !hasWorks,
+      reason: { key: hasWorks ? "setup.reason.trackAddHasWorks" : "setup.reason.trackAdd", vars: { folders: added.join(", ") } }, value: [...tracked, ...added].join("\n"),
     });
   }
 
@@ -287,7 +293,7 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
 
   if (choices.universeMode !== null) {
     if (settings.universeMode === choices.universeMode) keep("universeMode", settings.universeMode, "settingSame");
-    else change("universeMode", choices.universeMode, null, true);
+    else change("universeMode", choices.universeMode, "universe", true, "universeChoice");
   }
 
   // A home note that exists in another case (home.md for Home.md) is used as it is, under

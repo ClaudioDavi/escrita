@@ -14,7 +14,7 @@ Cases:
 
 | File | Checks |
 |---|---|
-| `empty-en.json` | Empty vault, fresh English install already on Writer. Folders, both examples, home note; `trackFolders` empty stays empty (kept); features kept (already Writer); desk layout. |
+| `empty-en.json` | Empty vault, fresh English install already on Writer. Folders (tick `folders`), both examples, home note; `trackFolders` empty stays empty (kept); features kept (already Writer); desk layout. |
 | `empty-ptbr.json` | The same in Portuguese (Contos, Exemplo ·, Início.md), stories only, Essentials (features row changes), writing mode (`openInWritingMode` written under the layout tick). |
 | `en-install-picks-ptbr.json` | An English install, empty vault, four leaves open; the writer picks Portuguese, Everything and Shared world. Every word-bearing setting changes (darlings notes are equal in both sets, so no item), `universeMode` is written, the layout row is unticked. |
 | `author-like.json` | Board 36 a: the scrubbed 0.9 settings, existing folders and home note, works present. The writer's own words are kept; examples, the language group, the features row and the layout are unticked; `trackFolders` gains `Livros` and keeps the rest. |
@@ -51,3 +51,9 @@ silent they make a choice, listed here so task 1.5 and the judge can overrule it
    that exists in another case (`home.md` for `Home.md`) is `kept` and `homeNote` points at
    it under the `home` tick (`case-clash.json`). Example chapter names live in
    `src/setup/examples.ts` (`EXAMPLE_CHAPTERS`, task 2.1); renaming them updates these files.
+10. Folder and universe ticks (author, 2026-10-07, data safety): the new folders and the
+    track-folder change share one tick, `folders`, ticked by default only in a vault without
+    works (reasons `folderHasWorks`, `trackAddHasWorks` otherwise), so "Both" in a vault with
+    works changes nothing unless ticked. The "Shared world" answer is the row `universeMode`
+    under its own tick, `universe`, ticked by default (the writer chose it in step 1; reason
+    `universeChoice`). A `kept` folder has no tick.

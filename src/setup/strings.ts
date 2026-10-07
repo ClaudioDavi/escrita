@@ -95,6 +95,7 @@ export const setupStrings: Strings = {
     "setup.setting.layout": "Arrange the screen once",
 
     "setup.reason.folderNew": "New. It counts for goals.",
+    "setup.reason.folderHasWorks": "Unticked: you already have works. Tick to create it. It would count for goals.",
     "setup.reason.folderExists": "Already exists, stays. {count} notes. Used as it is.",
     "setup.reason.exists": "Already exists, stays.",
     "setup.reason.exampleNew": "An example you can delete without fear.",
@@ -105,6 +106,8 @@ export const setupStrings: Strings = {
     "setup.reason.settingChange": "Set for the language you chose.",
     "setup.reason.settingHasWorks": "Unticked: you already have works. Tick to change it.",
     "setup.reason.trackAll": "Your whole vault counts, so every folder already does.",
+    "setup.reason.trackAddHasWorks": "Unticked: tick to add {folders} to what you already have.",
+    "setup.reason.universeChoice": "The shared world you chose.",
     "setup.reason.trackAdd": "Adds {folders} to what you already have.",
     "setup.reason.featuresSame": "Already on {preset}.",
     "setup.reason.featuresChange": "Turns the features to match {preset}. The Features page shows the same button.",
@@ -211,6 +214,7 @@ export const setupStrings: Strings = {
     "setup.setting.layout": "Arrumar a tela uma vez",
 
     "setup.reason.folderNew": "Nova. Conta para as metas.",
+    "setup.reason.folderHasWorks": "Desmarcada: você já tem obras. Marque para criar. Ela contaria para as metas.",
     "setup.reason.folderExists": "Já existe, fica. {count} notas. Usada como está.",
     "setup.reason.exists": "Já existe, fica.",
     "setup.reason.exampleNew": "Um exemplo para apagar sem medo.",
@@ -221,6 +225,8 @@ export const setupStrings: Strings = {
     "setup.reason.settingChange": "Definida para o idioma que você escolheu.",
     "setup.reason.settingHasWorks": "Desmarcado: você já tem obras. Marque para mudar.",
     "setup.reason.trackAll": "O cofre inteiro conta, então toda pasta já conta.",
+    "setup.reason.trackAddHasWorks": "Desmarcado: marque para acrescentar {folders} ao que você já tem.",
+    "setup.reason.universeChoice": "O mundo compartilhado que você escolheu.",
     "setup.reason.trackAdd": "Acrescenta {folders} ao que você já tem.",
     "setup.reason.featuresSame": "Já está em {preset}.",
     "setup.reason.featuresChange": "Troca os recursos para combinar com {preset}. A página Recursos mostra o mesmo botão.",

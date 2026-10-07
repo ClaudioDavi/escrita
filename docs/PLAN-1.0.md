@@ -477,8 +477,12 @@ hotkey; every new string has both languages.
   be deleted even with the examples unticked. Writing mode hid the note header on desktop,
   where board 39 b keeps it; now only on phones (39 e). The setup's strings joined the
   parity test (`tests/strings.test.ts`). The pt-BR example dialogue uses a travessão.
-- **Open for the author (in `TEST-1.0.md`):** folders have no tick, so "Both" in a vault
-  with works creates `Books/` and adds it to a track list; the "Today: Custom, 18 on" line
+- **Settled (author, 2026-10-07; task 3.0):** the folders now have a tick of their own,
+  `folders`, shared with the track-folder change: ticked in a vault without works, unticked
+  in one with works. The "Shared world" answer is its own row with its own tick, `universe`,
+  ticked by default. (The two open points below on folders and the world row are closed.)
+- **Open for the author (in `TEST-1.0.md`):** ~~folders have no tick, so "Both" in a vault
+  with works creates `Books/` and adds it to a track list;~~ (settled, see above) the "Today: Custom, 18 on" line
   of board 36 is not drawn; the reading column of board 39 is the theme's; writing mode next
   to a zen plugin; nothing of the setup, the layout or writing mode has run in real
   Obsidian. G2 and G4 are the manual steps in [TEST-1.0.md](TEST-1.0.md).

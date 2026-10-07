@@ -83,11 +83,11 @@ Obsidian in Portuguese (Brasil), vault `vazio-pt`.
    leave it. Then click **Escritor** again: the question goes away. Click **Tudo** once more.
 5. Click **Ver o que vou criar**.
    Expected: step 2, "O que vou criar", in board 36's order: Pastas (`Contos`, `Livros`,
-   marked `+`), Exemplos (`Contos/Exemplo · A travessia.md`, `Livros/Exemplo · O farol`,
+   marked `+`, one tick on the first row), Exemplos (`Contos/Exemplo · A travessia.md`, `Livros/Exemplo · O farol`,
    `Livros/Exemplo · O farol.md`, its `Capítulos` folder and `01 Chegada.md`,
    `02 A tempestade.md`, each with an "exemplo" pill and one tick on the first row),
    Configurações (Recursos "Tudo (19 de 19)", the language group with its tick, Mundo
-   compartilhado "Universo"), Nota inicial (`Início.md` and "Abrir a nota inicial ao
+   compartilhado "Universo", with its own tick, ticked), Nota inicial (`Início.md` and "Abrir a nota inicial ao
    iniciar"), Layout with the two cards **Mesa de escrita** and **Modo escrita**.
    The summary says no existing note changes and counts items and settings.
 6. Untick **Exemplos**.
@@ -171,12 +171,11 @@ cp ~/projects/website/escrita/.obsidian/plugins/escrita/data.json ~/escrita-test
    empty. The only `data.json` change outside `settings` is allowed bookkeeping
    (`setupOffered`, left-off records).
 5. **Edge case**, "Os dois": run it again with **Os dois**.
-   Expected: `Livros/` is a new folder (`+`, folders have no tick) and, if your track
-   folders are a list, "Pastas que contam" adds `Livros` to it. Click **Cancelar**.
-   **Decide**: folders and that track-folder line run without a tick (the boards' rule:
-   "added to, never swapped"). In a vault with works, should the folder row and its
-   track line get a tick of their own, unticked? Today the way to change nothing is to pick
-   only what you already have.
+   Expected: `Livros/` is a new folder (`+`) with a tick, **unticked** because your vault has
+   works; the "Pastas que contam" line that would add `Livros` to your track list shares that
+   tick and is unticked too. Create nothing: the vault is unchanged. Tick the folder row:
+   both the folder and the track line turn on. Click **Cancelar**.
+   (In a vault without works the same row comes ticked. Settled by the author, 2026-10-07.)
 6. **Edge case**, a home note in another case: rename your home note to `início.md` (lower
    case), run the setup. Expected: it is used as it is (`=`), no `Início.md` beside it.
    Rename it back.

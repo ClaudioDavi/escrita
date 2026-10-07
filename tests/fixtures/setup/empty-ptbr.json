@@ -43,7 +43,7 @@
       "kind": "folder",
       "target": "Contos",
       "state": "new",
-      "tick": null,
+      "tick": "folders",
       "ticked": true,
       "reason": {
         "key": "setup.reason.folderNew"

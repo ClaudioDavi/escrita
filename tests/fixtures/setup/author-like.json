@@ -63,10 +63,10 @@
       "kind": "folder",
       "target": "Livros",
       "state": "new",
-      "tick": null,
-      "ticked": true,
+      "tick": "folders",
+      "ticked": false,
       "reason": {
-        "key": "setup.reason.folderNew"
+        "key": "setup.reason.folderHasWorks"
       }
     },
     {
@@ -345,10 +345,10 @@
       "kind": "setting",
       "target": "trackFolders",
       "state": "change",
-      "tick": null,
-      "ticked": true,
+      "tick": "folders",
+      "ticked": false,
       "reason": {
-        "key": "setup.reason.trackAdd",
+        "key": "setup.reason.trackAddHasWorks",
         "vars": {
           "folders": "Livros"
         }

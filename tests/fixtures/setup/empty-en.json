@@ -44,7 +44,7 @@
       "kind": "folder",
       "target": "Stories",
       "state": "new",
-      "tick": null,
+      "tick": "folders",
       "ticked": true,
       "reason": {
         "key": "setup.reason.folderNew"
@@ -54,7 +54,7 @@
       "kind": "folder",
       "target": "Books",
       "state": "new",
-      "tick": null,
+      "tick": "folders",
       "ticked": true,
       "reason": {
         "key": "setup.reason.folderNew"

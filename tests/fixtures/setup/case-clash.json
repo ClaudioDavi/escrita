@@ -64,7 +64,7 @@
       "kind": "folder",
       "target": "Books",
       "state": "new",
-      "tick": null,
+      "tick": "folders",
       "ticked": true,
       "reason": {
         "key": "setup.reason.folderNew"
@@ -155,7 +155,7 @@
       "kind": "setting",
       "target": "trackFolders",
       "state": "change",
-      "tick": null,
+      "tick": "folders",
       "ticked": true,
       "reason": {
         "key": "setup.reason.trackAdd",

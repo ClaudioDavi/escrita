@@ -64,6 +64,21 @@ describe("planSetup: rules", () => {
     expect(all.find((i) => i.target === "trackFolders")?.state).toBe("kept");
   });
 
+  it("new folders and the track-folder change share the folders tick: ticked without works, unticked with works", () => {
+    const settings = { ...DEFAULT_SETTINGS, trackFolders: "Other" };
+    const rows = (vault: SetupVault) => planSetup(base, vault, settings).filter((i) => i.kind === "folder" || i.target === "trackFolders");
+    for (const i of rows(empty)) expect(i, i.target).toMatchObject({ state: expect.stringMatching(/new|change/), tick: "folders", ticked: true });
+    const withWorks = rows({ ...empty, hasWorks: true });
+    expect(withWorks).toHaveLength(3);
+    for (const i of withWorks) expect(i, i.target).toMatchObject({ tick: "folders", ticked: false });
+    expect(itemsToRun(planSetup(base, { ...empty, hasWorks: true }, settings), {}).filter((i) => i.kind === "folder" || i.target === "trackFolders")).toEqual([]);
+  });
+
+  it("the shared world answer is its own ticked row", () => {
+    const row = planSetup({ ...base, preset: "everything", universeMode: "universe" }, { ...empty, hasWorks: true }, DEFAULT_SETTINGS).find((i) => i.target === "universeMode");
+    expect(row).toMatchObject({ state: "change", tick: "universe", ticked: true });
+  });
+
   it("lists settings after every folder, example and home item", () => {
     const kinds = planSetup(base, empty, DEFAULT_SETTINGS).map((i) => i.kind);
     expect(kinds.lastIndexOf("folder")).toBeLessThan(kinds.indexOf("setting"));
