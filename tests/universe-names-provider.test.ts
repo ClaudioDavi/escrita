@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { UniverseNamesProvider } from "../src/universe/names-provider";
 import type { Entry } from "../src/universe/entries";
-import type { Scope } from "../src/universe/scope";
+import type { Scope } from "../src/core/scope";
 import { NamesPort } from "../src/core/names-source";
 import { findNames, EMPTY_TABLE } from "../src/core/names";
 import { ManualTimers } from "./support/memory-vault";

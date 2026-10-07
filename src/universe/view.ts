@@ -12,7 +12,7 @@ import type EscritaPlugin from "../main";
 import { fmt, plural, t } from "../i18n";
 import { isTemplatePath } from "./entries";
 import { countThreads, pickStillValid, readPanelState, toggled, type PanelState } from "./panel-model";
-import { universeNotePath, universeRootOf, type Scope } from "./scope";
+import { universeNotePath, universeRootOf, type Scope } from "../core/scope";
 import type { UniverseInfo } from "./index";
 import { FOCUS_ATTR, button, messageBlock, type ClosingForm, type PanelCtx } from "./view-parts";
 import { renderEntries } from "./view-entries";

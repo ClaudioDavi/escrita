@@ -4,7 +4,7 @@
 // properties are kept unless they are one of those keys.
 
 import { renderTemplate, splitTemplate, templateVars, yamlKey } from "../core/template";
-import type { Scope } from "./scope";
+import type { Scope } from "../core/scope";
 import type { EntryKind, UniverseSettings } from "./settings";
 
 /** The name as a file basename: characters Obsidian and the file systems refuse are dropped. Empty means unusable. */

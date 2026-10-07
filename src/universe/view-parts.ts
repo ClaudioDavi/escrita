@@ -4,7 +4,7 @@
 import { Keymap, Notice, TFile, type Editor } from "obsidian";
 import type EscritaPlugin from "../main";
 import { t } from "../i18n";
-import type { Scope } from "./scope";
+import type { Scope } from "../core/scope";
 import type { AppearsIn } from "./mentions";
 import type { AppearsInLabels } from "./appears-in";
 

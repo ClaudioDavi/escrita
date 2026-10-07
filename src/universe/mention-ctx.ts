@@ -7,7 +7,7 @@
 // or the works change.
 
 import type { MentionCtx } from "./mentions";
-import { sameScope, type Scope } from "./scope";
+import { sameScope, type Scope } from "../core/scope";
 import { inScope } from "./threads";
 import { groupWorks, type WorkInfo } from "./works-list";
 

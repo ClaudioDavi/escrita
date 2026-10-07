@@ -2,6 +2,7 @@
 // Pure: no Obsidian or CodeMirror imports, no i18n.
 
 import { foldName } from "../core/names";
+import { linkText } from "../core/scope";
 import { STAGES, writtenWord, type Stage, type StageMapping } from "../core/stages";
 import type { ChapterRow } from "./rows";
 
@@ -9,21 +10,6 @@ export const POV_PALETTE = ["red", "orange", "yellow", "green", "cyan", "blue", 
 export type PovColor = typeof POV_PALETTE[number];
 
 export interface PovValue { key: string; label: string; path: string | null }
-
-/** The link text of a property value (the semantics of universe/scope.ts linkText, copied so outline doesn't import the universe). */
-function linkText(value: unknown): string | null {
-  if (Array.isArray(value)) {
-    for (const v of value) {
-      const l = linkText(v);
-      if (l) return l;
-    }
-    return null;
-  }
-  if (typeof value !== "string") return null;
-  const m = /\[\[([^\]]*)\]\]/.exec(value);
-  const inner = (m ? m[1] : value).split("|")[0].split(/[#^]/)[0].trim();
-  return inner === "" ? null : inner;
-}
 
 /** Q41: one key per resolved note (its path), else per folded text; the label as written (or the entry's name). */
 export function povValue(value: unknown, resolve: (link: string) => { path: string; name: string } | null): PovValue | null {

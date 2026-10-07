@@ -3,7 +3,7 @@ import { aliasesOf, boolOf, entriesIn, entriesSpec, entriesSettingsKey, phrasesO
 import { defaultUniverseSettings } from "../src/universe/settings";
 import { VaultIndex } from "../src/core/vault-index";
 import { MemoryVault, ManualTimers, type MemFile } from "./support/memory-vault";
-import type { Scope } from "../src/universe/scope";
+import type { Scope } from "../src/core/scope";
 
 const U: Scope = { kind: "universe", root: "Universo", note: "Universo.md" };
 const B: Scope = { kind: "book", root: "Romances/A Casa", note: "Romances/A Casa.md" };

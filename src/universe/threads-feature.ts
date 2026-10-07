@@ -11,7 +11,7 @@ import { FeatureModule, type SettingsUi } from "../core/module-context";
 import type { Follower, VaultIndex } from "../core/vault-index";
 import { dropSeen, pruneSeen, recordSeen, renameSeen } from "./first-seen";
 import { collectThreads, inScope, threadsSpec, type NoteThreads, type ThreadRef } from "./threads";
-import type { Scope } from "./scope";
+import type { Scope } from "../core/scope";
 import { addThreadsEditorMenuItems, closeThreadAtCursor, inSource, plantThread, threadAtCursor, threadMarkerExtension } from "./create";
 import { THREADS_VIEW, ThreadsView } from "./view";
 import { threadsSettingsSection } from "./threads-settings-ui";

@@ -9,7 +9,7 @@
 import { foldName } from "../core/names";
 import { classifyKey, inExports, inFolder, inSubmissions, snapshotsRoot, type ClassifySettings } from "../core/classify";
 import type { IndexFile, IndexSpec } from "../core/vault-index";
-import { sameScope, type Scope } from "./scope";
+import { sameScope, type Scope } from "../core/scope";
 import { ENTRY_KINDS, type EntryKind, type UniverseSettings } from "./settings";
 
 export interface Entry {

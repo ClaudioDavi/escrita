@@ -13,7 +13,7 @@
 import { compileTerms, EMPTY_TABLE, foldName, matchLang, type NameSource, type TermTable } from "../core/names";
 import type { NamesProvider } from "../core/names-source";
 import type { Entry } from "./entries";
-import type { Scope } from "./scope";
+import type { Scope } from "../core/scope";
 
 export interface NamesProviderDeps {
   entries(): Iterable<Entry>;

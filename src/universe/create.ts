@@ -16,7 +16,7 @@ import { parseThreads, threadComment, type ThreadMarker } from "../core/markers"
 import { replaceIfExact } from "../core/note-text";
 import { t } from "../i18n";
 import { entryFolder, entryPath } from "./new-entry";
-import type { Scope } from "./scope";
+import type { Scope } from "../core/scope";
 import { ENTRY_KINDS, type EntryKind } from "./settings";
 import {
   fence, findDuplicate, linkFor, nameFromSelection, plantThreadPlan, resolveAnswer, splitFenced,

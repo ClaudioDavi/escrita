@@ -34,7 +34,7 @@ import { MentionsIndex } from "./mentions-index";
 import { NameMarks, SPELLCHECK_MARKS_WORK } from "./name-marks";
 import { UniverseNamesProvider } from "./names-provider";
 import { registerAppearsStrings } from "./strings-appears";
-import { keptOut, linkText, scopeFor, universeNotePath, universeRootOf, type Scope, type ScopeLookup } from "./scope";
+import { keptOut, linkText, scopeFor, universeNotePath, universeRootOf, type Scope, type ScopeLookup } from "../core/scope";
 import type { EntryKind, UniverseMode } from "./settings";
 import { inScope, type ThreadRef } from "./threads";
 import { formFor, type WorkInfo } from "./works-list";

@@ -4,7 +4,7 @@ import { compileTerms, type NameSource } from "../src/core/names";
 import { MentionCtxFactory, type MentionCtxDeps } from "../src/universe/mention-ctx";
 import { MentionsIndex } from "../src/universe/mentions-index";
 import type { EntriesSettings } from "../src/universe/entries";
-import type { Scope } from "../src/universe/scope";
+import type { Scope } from "../src/core/scope";
 import { defaultUniverseSettings } from "../src/universe/settings";
 import type { WorkInfo } from "../src/universe/works-list";
 import { ManualTimers, MemoryVault, settle, type MemFile } from "./support/memory-vault";

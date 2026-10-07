@@ -10,7 +10,7 @@ import { parseThreads, type ThreadMarker } from "../core/markers";
 import type { IndexFile, IndexSpec } from "../core/vault-index";
 import { basenameOf, classifyKeyOf, isUniverseNote, type EntriesSettings } from "./entries";
 import { seenAt, type SeenStore } from "./first-seen";
-import { sameScope, type Scope } from "./scope";
+import { sameScope, type Scope } from "../core/scope";
 
 export type { ThreadMarker };
 
