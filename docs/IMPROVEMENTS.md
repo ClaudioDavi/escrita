@@ -75,39 +75,6 @@ interface lives. Test through the interface.
 - **Wins.** Every surface agrees on a chapter's target; a chapter counted in characters
   works everywhere.
 
-### 9. Scope as one live answer
-
-**Strength:** medium · **Pairs with:** U 2.5, and later U 2.3 (continuity needs scope
-outside the universe; moved after screenwriting) · **Target:** 0.9
-
-- **Problem.** Scope lives only in the universe: `universe/index.ts:263-266` calls
-  `scopeFor` in `universe/scope.ts`. Nothing outside the universe asks for it yet; the
-  outline keeps its own copy of `linkText`, and the continuity checks (after
-  screenwriting) will need scope.
-- **Change.** `books.classify(x).scope`, with link resolution in the `VaultTree` port and
-  `scopeFor` kept pure, so the lens, editor and outline can ask for scope without the
-  universe module.
-- **Wins.** Outside modules get scope without depending on the universe.
-- **Minimum shipped in 0.7.0:** `Entry` no longer stores `scope` and `sameEntry` no
-  longer compares it; scope is read live through `scopeOf`.
-- **Built in 0.9, not yet released** (it moves to "Done" at the release, with the version).
-  `core/scope.ts` holds `scopeFor`, `keptOut`, `linkText`, `inFolder`, `universeNotePath`,
-  `universeRootOf` and `NO_SCOPE`; `Placement.scope` is set on every placement through `scopeFor`
-  (never a new kind); `VaultTree.resolve(link, from)` carries link resolution, answered by
-  `getFirstLinkpathDest` in `core/books.ts`; `ClassifySettings` gained the four scope keys, which
-  `classifyKey` includes. `universe/scope.ts` is deleted, and the outline's copy of `linkText` is
-  gone. Measured on the 3,020-file bench: `classify()` 7.23 ms before, 6.45 to 6.57 ms with the
-  mode off (early return) and 7.76 ms with the mode on, about 7% more, under the 10% budget, so
-  `scope` stays a plain field (no lazy getter). The 0.9 cleanup (simplify pass) finished it:
-  `UniverseModule.scopeOf` reads `classify(x).scope` (it computed the scope a second time with
-  its own lookup) and keeps `scopeFor` only for paths classify gives no scope by kind (a missing
-  path, the plugin folders), through `books.scopeLookup`, which `keptOut` reads too; classify
-  reuses the frontmatter it already read and parses folder settings once per text
-  (`folderListOf`); and `scopeKey` is split out of `classifyKey`, so a universe setting no longer
-  rebuilds the works, explorer and placeholders indexes. On the same bench, universe mode went
-  from 12.0–13.1 ms to 6.7–10.5 ms (a noisy machine; mode off unchanged). A lazy getter was tried
-  and measured slower (15–16.5 ms: `Object.defineProperty` per placement), so it was dropped.
-
 ### 13. Shared helpers out of module folders
 
 **Strength:** medium, small · **Pairs with:** candidate 6, export (candidate 19)
@@ -250,6 +217,7 @@ None at the moment.
 
 | Version | Improvement |
 |---|---|
+| 0.9.0 | Scope as one live answer (candidate 9, the fuller change): `books.classify(x).scope` is a plain field set through `scopeFor` in `core/scope.ts`, link resolution is `VaultTree.resolve`, `universe/scope.ts` and the outline's copy of `linkText` are gone, and `scopeKey` is split from `classifyKey`. On the 3,020-file bench `classify()` stays within the 10% budget (7.23 ms before; 6.5 ms with the mode off, 6.7–10.5 ms with it on); a lazy getter was measured slower and dropped |
 | 0.8.0 | Loose ends closed: the publish check warns about an unclosed `<!--` (candidate 19's readiness checks); the classifier has a test with a small fake for the Obsidian side (`core/books.ts`, nested books); the Reading-view parity questions were checked in a real vault (G0c; D16, D18 and D19 follow it, and `%%` inside `$$` is now literal) and are pinned in `tests/markdown-consumers.test.ts`; and the editor-writes rule is written in ARCHITECTURE's conventions: an edit at the cursor of the editor that triggered it may write directly, and `plugin.notes` is for writes to any other note |
 | 0.8.0 | One name fold in core (candidate 10): `universe`'s `foldText` is now `foldName` |
 | 0.8.0 | Small redraws and re-reads (candidate 23) |

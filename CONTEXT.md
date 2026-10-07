@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (0.8.0 at the time of writing). The author's
+Current version: see `manifest.json` (0.9.0 at the time of writing). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down
@@ -187,12 +187,12 @@ and what upkeep it asks of the writer.
   Improvements: each module owns its settings section (IMPROVEMENTS 11, 20), the export
   and submissions foundations (15–19), and measured performance work (10, 14, 21–23).
   Plan and results in `docs/PLAN-0.8.md`.
-- **0.9 (built, not yet released; the author tests first), the book and its world**: unlinked mentions with a Link button, names
+- **0.9 (shipped), the book and its world**: unlinked mentions with a Link button, names
   without an entry as a lens rule (U 2.5), EPUB, "Publish next chapter", "Read the book"
   (N 7 stage 3, N 4, N 8; 0.10 merged in on 2026-10-06), collections of contos exported
   as one DOCX or EPUB (SF 13). Improvement: IMPROVEMENTS 9,
-  the fuller change (scope as a field on the classifier result). Plan in `docs/PLAN-0.9.md`.
-- **1.0**: universe + manuscript export complete, setup with presets (Essentials,
+  the fuller change (scope as a field on the classifier result). Plan and results in `docs/PLAN-0.9.md`.
+- **1.0 (next)**: universe + manuscript export complete, setup with presets (Essentials,
   Writer, Everything), mobile pass, docs in both languages, community plugin submission.
 - **After 1.0**: screenwriting (`docs/ROADMAP-screenplay.md`), Fountain and PDF export first;
   then universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
@@ -211,5 +211,5 @@ segmenter follows them, pinned in `tests/markdown-consumers.test.ts`. 0.9 adds: 
 (`outline/reader-view.ts`) has no DOM test, and its timings (G0d), scroll restore and click-to-line
 are unmeasured in Obsidian (its decisions are pure, in `outline/reader-model.ts` and
 `reader-plan.ts`, whose default heading is the core preset's); the EPUB
-CI job (EPUBCheck) first runs when the 0.9 pull request opens; the unlinked rows read the note's
+CI job (EPUBCheck) runs on every pull request; the unlinked rows read the note's
 live text, not the mentions index's offsets, which lag about 4 s behind edits.

@@ -626,6 +626,10 @@ to change, is [TEST-0.9.md](TEST-0.9.md).
 - 0.7's G0d (Reading-view "Appears in" across re-renders) and the visual check against
   the canvas (PLAN-0.7.md, 5.2).
 
+**Result (2026-10-07).** The author tested in the vault and asked for the release. G0d's
+numbers were not written down, so "Read the book" on a long book stays unmeasured in
+Obsidian.
+
 ## Release checklist (CONTEXT.md, "Working process")
 
 - **ROADMAP.md:** move 0.9 to "Shipped"; plan 1.0.

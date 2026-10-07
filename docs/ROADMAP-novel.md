@@ -25,11 +25,11 @@ mobile-safe manuscript tool with first-class Portuguese.
 | 1 | POV and status in the outline (shipped in 0.7.0) | Quick win | S |
 | 2 | Per-chapter targets (shipped in 0.7.0) | Quick win | S |
 | 3 | ~~Dialogue focus~~ (moved to short fiction, feature 7, v0.3) | — | — |
-| 4 | Book-wide publish check and serial dashboard (v0.9) | Quick win | S |
+| 4 | Book-wide publish check and serial dashboard (shipped in 0.9.0) | Quick win | S |
 | 5 | Longform importer (after 1.0) | Quick win | S–M |
 | 6 | Companion-plugin guide (unscheduled; dropped from 0.8) | Quick win | S |
-| 7 | Book compile: Markdown and DOCX (shipped in 0.8.0), EPUB (v0.9) | Big bet | L |
-| 8 | "Read the book" view (v0.9) | Big bet | M |
+| 7 | Book compile: Markdown and DOCX (shipped in 0.8.0), EPUB (shipped in 0.9.0) | Big bet | L |
+| 8 | "Read the book" view (shipped in 0.9.0) | Big bet | M |
 | 9 | ~~Codex-lite~~ (replaced by the universe's "appears in", shipped in 0.7.0) | — | — |
 | 10 | Book-wide snapshots and revision reports (after 1.0) | Big bet | M |
 
@@ -71,7 +71,7 @@ outline shows a bar (a later improvement closes that gap).
 Moved to [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md), feature 7, and scheduled
 for v0.3: it works on any note, so contos get it too.
 
-## 4. Book-wide publish check and serial dashboard (v0.9)
+## 4. Book-wide publish check and serial dashboard (v0.9, shipped in 0.9.0)
 
 Extends feature 1 of the short-fiction roadmap to chapters, for writers who release a
 book one chapter at a time (a newsletter, a serial platform, a blog):
@@ -84,7 +84,7 @@ book one chapter at a time (a newsletter, a serial platform, a blog):
 - Scheduling: a future `date` is allowed; Escrita only records it.
 - Nothing about URLs or a particular site (ARCHITECTURE.md, "Standalone").
 
-**Built in 0.9, not yet released.** Where it differs from the text above:
+**Shipped in 0.9.0.** Where it differs from the text above:
 - **No serial dashboard view** (rule 3): the outline header shows one line, only while the publish
   feature is on and at least one chapter is published: the gaps ("Gap: 04"), "Next: 05 A volta" and
   "last published 30 Sep". A last chapter with no date shows its title, not an earlier date (Q23).
@@ -125,7 +125,7 @@ Escrita's status values and fill its "modified" events while typing. Suggest poi
 Escrita's status property elsewhere or keeping StoryLine's scenes out of the track
 folders, and check both together before 0.8 ships.
 
-## 7. Book compile (stages 1–2 in v0.8, shipped in 0.8.0; stage 3 in v0.9)
+## 7. Book compile (stages 1–2 shipped in 0.8.0; stage 3 shipped in 0.9.0)
 
 The step Scrivener users miss most, and Longform's oldest open requests.
 
@@ -191,7 +191,7 @@ calls) — Pandoc can't be assumed on mobile. Two presets:
 image from the book note. Validate against EPUBCheck in CI with a fixture book (CI
 may use Java; the plugin itself stays offline).
 
-**Built in 0.9, not yet released.** What the build decided:
+**Shipped in 0.9.0.** What the build decided:
 - A third format in the Export modal, for a note, a book and (SF 13) a collection, with the same
   chapter choice, warnings, preview and "Export again". The file is `<title> (<preset>).epub` (D2).
 - Contents: a title page, dedication and epigraph pages (only when they have text), a table of
@@ -204,7 +204,7 @@ may use Java; the plugin itself stays offline).
 - The identifier is a `urn:uuid` derived from the work's path and title, so re-exporting keeps it.
   Images inside the prose are still dropped and listed, as in 0.8.
 - EPUBCheck 5.4.0 passes the `ptbr` fixture with the cover (no errors or warnings). The CI job
-  downloads the latest EPUBCheck and first runs when the 0.9 pull request opens. Rendering in a
+  downloads the latest EPUBCheck and runs on every pull request. Rendering in a
   real reader (Calibre, Apple Books) is left for the manual check.
 
 Print-ready PDF is out of scope: recommend Enhancing Export or Vellum/Atticus.
@@ -215,14 +215,14 @@ and adds Fountain, PDF and FDX writers. Keep the format writers behind one seam 
 they plug in without changing it. The PDF exception is only for scripts: Courier-only
 monospace layout needs no typography decisions, and the PDF is what gets submitted.
 
-## 8. "Read the book" view (v0.9)
+## 8. "Read the book" view (v0.9, shipped in 0.9.0)
 
 A read-only view of all chapters in order, rendered with Obsidian's Markdown renderer,
 with chapter headings, scene breaks, and markers hidden; remembers the reading position;
 clicking a paragraph opens that chapter at that line for editing. Editing stitched
 chapters (true Scrivenings) is XL and fragile; recommend Continuous Mode for that.
 
-**Built in 0.9, not yet released.** Where it differs from the text above:
+**Shipped in 0.9.0.** Where it differs from the text above:
 - A view in the main area (type `escrita-reader`), from the command and a header button. It reuses
   the tab already reading that book. Every included chapter in order, headed as the export heads
   it (D7: the chapter-heading setting, else the language's preset), with markers hidden by the same

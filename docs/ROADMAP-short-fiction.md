@@ -53,6 +53,7 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 0.6.0 | Insert from a template (9) | S | Shipped |
 | 0.7.0 | Feature switches (10, the Features page) | M | Shipped |
 | 0.8.0 | Submissions (12), with export (novel roadmap, 7) | S | Shipped |
+| 0.9.0 | Collections of contos, exported as one file (13) | M | Shipped |
 | 1.0 | Set up a writing vault and presets (10) | S | Planned |
 
 Sections keep their original numbers so references from the other roadmaps stay valid.
@@ -814,7 +815,7 @@ renaming the conto updates the link, and the notes read well with Escrita turned
 
 ---
 
-## 13. Collections (v0.9)
+## 13. Collections (v0.9, shipped in 0.9.0)
 
 **Why.** A writer of contos releases them together: a collection for a contest, a
 self-published ebook, a chapbook. Exporting them one by one and stitching them by hand
@@ -843,7 +844,7 @@ is the kind of chore Escrita should remove. Asked by the author on 2026-10-06.
 and EPUB gives one manuscript with the three stories in the note's order, each under its
 title, with the collection's title page.
 
-**Built in 0.9, not yet released.** What the build decided (PLAN-0.9.md, Q24-Q28):
+**Shipped in 0.9.0.** What the build decided (PLAN-0.9.md, Q24-Q28):
 - **The collection's stories are exported as a book's chapters** (`core/collection.ts`,
   `storyChapters`), every story unnumbered, so the writers don't change. No classifier kind or
   field. A `contents` link may be a list or text with several wikilinks; duplicates count once.

@@ -40,27 +40,24 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 | 0.6.0 | Universe foundations: universe modes, entries, the universe panel (Entries, Threads, Works), migration (U 1.1) · Create entry from selection (U 1.3) · Open threads (U 1.5) · Insert from a template (SF 9) · Forms, with an essay form and form by folder · Improvement: the outline's beat writes through the note text port (candidate 3, finished) |
 | 0.7.0 | Characters across works: "Appears in" (U 1.2) · Names into spellcheck and the revision lens (U 1.4) · Keep a note out of the universe, `universe: false` (U 1.1) · POV and status in the outline (N 1) · Per-chapter targets (N 2) · Feature switches, the Features page (SF 10) · User guide in `docs/guide/` (English and pt-BR) · Minimum Obsidian 1.7.2 · Improvements: modules that load and unload at runtime (candidate 6), chapter rows (candidate 7) |
 | 0.8.0 | Submitting work: export, Markdown and DOCX in the Shunn and pt-BR presets, for a note and a book, with a preview, "Export again" and chapters without a number (N 7, stages 1–2) · Submissions, "Record a submission" and the pending count in the home block (SF 12) · Export and submissions feature switches (19 in all) · User guide "Publishing" (English and pt-BR) · Improvements: each module owns its settings section and feature metadata (11, 20), the export foundations (15–19), mentions on demand (14), time-budgeted index passes (21), name caches and lens (22), small redraws (23) and one name fold (10) |
+| 0.9.0 | The book and its world: unlinked mentions with a Link button and names without an entry as a lens rule (U 2.5) · EPUB 3 export, checked by EPUBCheck in CI (N 7, stage 3) · "Publish next chapter" and the serial line in the outline (N 4) · "Read the book" (N 8) · Collections of contos, exported as one DOCX, EPUB or Markdown file (SF 13) · User guide updated ("The world", "Publishing", "Writing", English and pt-BR) · Improvement: scope as a field on the classifier result (candidate 9) |
 
-## Next: 0.9, the book and its world
+## Next: 1.0, the full release
 
-The book features planned for 0.10 (EPUB, the book-wide publish check, "Read the book"),
-collections of contos, and the universe's U 2.5, merged into one release on 2026-10-06. Plan:
-[PLAN-0.9.md](PLAN-0.9.md). Serves the "revision", "ready" and "published" stages. Upkeep:
-none required; a `cover` property and dismissing flagged names are optional.
+Stabilization and setup: a mobile pass, the user guide complete in English and pt-BR (see
+"Documentation"), migrations tested on the author's vault, and the community plugin
+submission. Serves every stage: a new writer sits down and writes. Upkeep: none; the setup
+runs once.
 
 | Feature | Ref | Effort | Note |
 |---|---|---|---|
-| Unlinked mentions, with a Link button per mention | U 2.5 | S | Moved from 0.7 |
-| Names without an entry: a revision lens rule, off until the writer turns it on | U 2.5 | M | Moved from 0.7 |
-| Export stage 3: EPUB 3, validated by EPUBCheck in CI | N 7 | M | From 0.10 |
-| Book-wide publish check: "Publish next chapter", the next chapter in the outline header, gaps | N 4 | S | From 0.10 |
-| "Read the book" view | N 8 | M | From 0.10 |
-| Collections: several contos exported together as one DOCX or EPUB | SF 13 | M | Asked by the author on 2026-10-06 |
-| User guide for 0.9 | Docs | S | "The world", "Publishing", "Writing", in English and pt-BR |
+| Set up a writing vault: the home note and a first writing layout, with presets (Essentials, Writer, Everything) on the 0.7 feature switches | SF 10 | M | |
+| Defaults in the writer's language: Portuguese status words, folders and word lists when Obsidian runs in Portuguese | SF 10 | S | |
+| Stabilization: mobile pass, the user guide complete, migrations tested on the author's vault | Docs | M | Phone gates stay waived (no phone to test on) |
+| Community plugin submission | — | S | |
 
-**Improvement:** candidate 9, the fuller change: scope as a field on the classifier result
-(`books.classify(x).scope`), with link resolution in the `VaultTree` port and `scopeFor`
-kept pure, so modules outside the universe (the outline, the lens) ask for scope without it.
+**Improvement:** to be picked from IMPROVEMENTS.md when 1.0 is planned in detail; the
+0.9 simplify review added candidates 24–32.
 
 The timeline, dates, facts over time, continuity checks and canon (U 2.1–2.4) were
 planned for 0.9 and moved after screenwriting on 2026-10-06: bloat at this stage.
@@ -79,11 +76,10 @@ fiction), then the universe, then book features. Planning the writing desk as 0.
 0.10 merged into 0.9, so 1.0 follows 0.9. The desk
 shipped as 0.4.0 and the lens as 0.5.0.
 
-| Version | Contents | Ref | Effort | Theme |
-|---|---|---|---|---|
-| 1.0 | Stabilization: mobile pass, the user guide complete in English and pt-BR (see "Documentation"), migrations tested on the author's vault, community plugin submission · Set up a writing vault (creates the home note and a first writing layout, with presets: Essentials, Writer, Everything, built on the 0.7 feature switches) · Defaults in the writer's language: Portuguese status words, folders and word lists when Obsidian runs in Portuguese (SF 10) | SF 10 | M + S | Full release |
+1.0 is planned above, under "Next". After it: screenwriting (`ROADMAP-screenplay.md`), then
+universe phase 2 (U 2.1–2.4).
 
-Improvements: 0.9 is planned above (candidate 9, the fuller change); later versions pick from IMPROVEMENTS.md when they're planned in detail.
+Improvements: later versions pick from IMPROVEMENTS.md when they're planned in detail.
 
 Notes:
 
@@ -95,7 +91,7 @@ Notes:
   reuse them. The vault index (0.4) is also ready for "appears in".
 - Export ships DOCX first (0.8): a conto in standard manuscript format is what contests
   and magazines ask for. Submissions (SF 12) ship with it, since sending a work out is
-  what export is for. EPUB matters mostly for a finished book (0.9).
+  what export is for. EPUB matters mostly for a finished book (0.9.0).
 - Per-chapter targets (N 2) is small: chapters already take `target` / `limit` since 0.2;
   what's left is the bar in the outline and a book default.
 - The universe's "appears in" (U 1.2) replaces Codex-lite (N 9), which is dropped.
@@ -123,7 +119,7 @@ if any, sit in `docs/guide/images/`. The universe guide moved there in 0.7, as
 | Writing | Outline and ghost beats, goals and sprints, placeholders, Enter flow and typography, dialogue focus, moving blocks, templates, explorer counts |
 | Revision | The revision lens and its word lists, snapshots, darlings |
 | Tracking | Stages, the stage snapshot, the home block and where you left off |
-| Publishing | The publish check; export and submissions (0.8); EPUB (0.9) |
+| Publishing | The publish check; export and submissions (0.8); EPUB, collections, publishing a book chapter by chapter (0.9) |
 | The world | The universe, entries, "appears in", open threads (today's universe guide) |
 | Features and settings | The Features page, what each switch turns off, presets (1.0) |
 | Other plugins | The companion-plugin guide (N 6), unscheduled since 2026-10-05: written only if a need shows up |

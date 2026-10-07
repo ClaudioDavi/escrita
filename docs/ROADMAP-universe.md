@@ -84,7 +84,7 @@ The author's vault uses **Universe** mode.
 | Phase | Contents | Effort |
 |---|---|---|
 | 1 | Universe container and entry types · "Appears in" across works · Create entry from selection · Names into spellcheck and revision lens · Open threads | M–L |
-| 2 | Unlinked mentions and names without an entry (v0.9) · Story timeline · Facts that change over time · Continuity checks · Canon status (after screenwriting) | L |
+| 2 | Unlinked mentions and names without an entry (shipped in 0.9.0) · Story timeline · Facts that change over time · Continuity checks · Canon status (after screenwriting) | L |
 
 Phase 1 is useful as soon as contos start sharing characters, so it can run alongside
 the short-fiction roadmap.
@@ -297,7 +297,7 @@ Hooks planted in one story for future stories. They work in every mode.
 
 ---
 
-## Phase 2 (2.5 in v0.9; 2.1–2.4 after screenwriting)
+## Phase 2 (2.5 shipped in 0.9.0; 2.1–2.4 after screenwriting)
 
 ### 2.1 Story timeline
 
@@ -363,7 +363,7 @@ Both need the matcher and the mentions index from 0.7 and moved here (0.7 plan, 
   "Sentence start" comes from the sentence splitter and title abbreviations in
   `core/sentences.ts` (0.5).
 
-**Built in 0.9, not yet released** (the author tests before shipping; PLAN-0.9.md has the
+**Shipped in 0.9.0** (PLAN-0.9.md has the
 full record). Where it differs from the text above:
 
 - **Unlinked mentions** are a section with a **Create link** button per mention, not a plain list
