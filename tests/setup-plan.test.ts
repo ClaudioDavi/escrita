@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { PLAIN_DEFAULTS, itemsToRun, planSetup, settingsAfter, type SetupChoices, type SetupItem, type SetupVault } from "../src/setup/plan";
+import { reasonFor } from "../src/setup/model";
+import { UNIVERSE_NOTE_TEXT } from "../src/core/scope";
 import { DEFAULT_SETTINGS, defaultsFor, type EscritaSettings } from "../src/settings";
 import type { DefaultsLanguage } from "../src/core/defaults";
 
@@ -77,6 +79,28 @@ describe("planSetup: rules", () => {
   it("the shared world answer is its own ticked row", () => {
     const row = planSetup({ ...base, preset: "everything", universeMode: "universe" }, { ...empty, hasWorks: true }, DEFAULT_SETTINGS).find((i) => i.target === "universeMode");
     expect(row).toMatchObject({ state: "change", tick: "universe", ticked: true });
+  });
+
+  it("the shared world plans the universe note, ticked, never over an existing one", () => {
+    const choices = { ...base, universeMode: "universe" as const };
+    const row = planSetup(choices, empty, DEFAULT_SETTINGS).find((i) => i.kind === "universe");
+    expect(row).toMatchObject({ state: "new", tick: "universe", ticked: true, content: UNIVERSE_NOTE_TEXT });
+    expect(row?.target.endsWith(".md")).toBe(true);
+    const has = planSetup(choices, { ...empty, files: [row!.target.toUpperCase()] }, DEFAULT_SETTINGS);
+    expect(has.some((i) => i.kind === "universe")).toBe(false);
+    expect(planSetup({ ...base, universeMode: "perBook" }, empty, DEFAULT_SETTINGS).some((i) => i.kind === "universe")).toBe(false);
+  });
+
+  it("an unticked-default reason gives way once the row is ticked; other reasons stay", () => {
+    const item = (key: string) => ({ reason: { key } }) as SetupItem;
+    expect(reasonFor(item("setup.reason.layoutTabs"), false).key).toBe("setup.reason.layoutTabs");
+    expect(reasonFor(item("setup.reason.layoutTabs"), true).key).toBe("setup.reason.tickedByYou");
+    expect(reasonFor(item("setup.reason.startupNew"), true).key).toBe("setup.reason.startupNew");
+  });
+
+  it("the startup row has its own reason, not the language one", () => {
+    const row = planSetup(base, empty, DEFAULT_SETTINGS).find((i) => i.target === "openHomeOnStartup");
+    expect(row?.reason.key).toBe("setup.reason.startupNew");
   });
 
   it("lists settings after every folder, example and home item", () => {

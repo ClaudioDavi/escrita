@@ -181,7 +181,7 @@
       "tick": "home",
       "ticked": true,
       "reason": {
-        "key": "setup.reason.settingChange"
+        "key": "setup.reason.homeNoteSet"
       },
       "value": "Home.md"
     },
@@ -192,7 +192,7 @@
       "tick": "startup",
       "ticked": true,
       "reason": {
-        "key": "setup.reason.settingChange"
+        "key": "setup.reason.startupNew"
       },
       "value": true
     },

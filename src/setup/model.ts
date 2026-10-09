@@ -8,7 +8,7 @@ import { PRESETS, type PresetId } from "../core/feature-presets";
 import { itemsToRun, planSetup, type SetupChoices, type SetupItem, type SetupTicks, type SetupVault } from "./plan";
 
 /** The preview's groups, in board 37's order. */
-export type PreviewGroupKind = "folder" | "example" | "setting" | "home" | "layout";
+export type PreviewGroupKind = "folder" | "example" | "setting" | "home" | "universe" | "layout";
 
 /** `+` new, `=` stays as it is, `·` a setting that changes (board 36 a). */
 export type PreviewMark = "+" | "=" | "·";
@@ -92,13 +92,25 @@ export function previewGroups(
     ...visible.filter((i) => i.kind === "setting" && !HOME_SETTINGS.has(i.target)),
   ]);
   add("home", [...visible.filter((i) => i.kind === "home"), ...homeSettings]);
+  add("universe", visible.filter((i) => i.kind === "universe"));
   add("layout", visible.filter((i) => i.kind === "layout"));
   return groups;
 }
 
+/** Reasons that explain why a row comes unticked: they stop being true once the writer ticks it. */
+const UNTICKED_REASONS = new Set([
+  "setup.reason.folderHasWorks", "setup.reason.exampleHasWorks", "setup.reason.settingHasWorks",
+  "setup.reason.trackAddHasWorks", "setup.reason.featuresHasWorks", "setup.reason.layoutTabs", "setup.reason.layoutHasWorks",
+]);
+
+/** The reason to show under an item: its own, or "ticked" when it explained an unticked default and the writer has ticked the row since. */
+export function reasonFor(item: SetupItem, on: boolean): SetupItem["reason"] {
+  return on && UNTICKED_REASONS.has(item.reason.key) ? { key: "setup.reason.tickedByYou" } : item.reason;
+}
+
 /** Whether an item makes a file or a folder (what "items" counts), as opposed to a setting or the layout. */
 export function isMade(item: SetupItem): boolean {
-  return item.kind === "folder" || item.kind === "example" || item.kind === "home";
+  return item.kind === "folder" || item.kind === "example" || item.kind === "home" || item.kind === "universe";
 }
 
 export function isSetting(item: SetupItem): boolean {

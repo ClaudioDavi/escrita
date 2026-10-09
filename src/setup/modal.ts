@@ -6,7 +6,7 @@ import { PRESET_IDS, type PresetId } from "../core/feature-presets";
 import type { UniverseMode } from "../universe/settings";
 import { performSetup } from "./apply";
 import {
-  initialChoices, planCounts, planFor, presetCount, previewGroups, tickOn, valueText,
+  initialChoices, planCounts, planFor, presetCount, previewGroups, reasonFor, tickOn, valueText,
   type PreviewGroup, type PreviewRow,
 } from "./model";
 import type { SetupChoices, SetupItem, SetupLayout, SetupTick, SetupTicks, SetupVault, SetupWrites } from "./plan";
@@ -29,8 +29,10 @@ function readVault(plugin: EscritaPlugin): SetupVault {
       noteCounts[dir] = (noteCounts[dir] ?? 0) + 1;
     }
   }
+  // Only the writer's main-area tabs that hold something: a fresh vault opens with sidebar
+  // panels and an empty tab, and those are not the writer's work.
   let openLeaves = 0;
-  workspace.iterateAllLeaves(() => { openLeaves += 1; });
+  workspace.iterateRootLeaves((leaf) => { if (leaf.view.getViewType() !== "empty") openLeaves += 1; });
   const hasWorks = plugin.works.list()[Symbol.iterator]().next().done === false;
   return { folders, files: files.map((f) => f.path), noteCounts, openLeaves, hasWorks };
 }
@@ -195,7 +197,7 @@ export class SetupModal extends Modal {
     if (row.item.kind === "example" && row.item.content !== undefined) line.createSpan({ text: t("setup.pill.example"), cls: "escrita-setup-pill is-example" });
     if (row.item.state === "kept" && row.item.kind !== "setting") line.createSpan({ text: t("setup.pill.kept"), cls: "escrita-setup-pill" });
     if (row.value) body.createDiv({ text: row.value, cls: "escrita-setup-value" });
-    body.createDiv({ text: this.reasonOf(row.item), cls: "escrita-setup-reason" });
+    body.createDiv({ text: this.reasonOf(row.item, row.on), cls: "escrita-setup-reason" });
   }
 
   /** The layout cards (board 37), shown while the layout row is ticked. */
@@ -235,7 +237,7 @@ export class SetupModal extends Modal {
 
   private labelOf(item: SetupItem): string {
     switch (item.kind) {
-      case "folder": case "example": case "home": return item.target;
+      case "folder": case "example": case "home": case "universe": return item.target;
       case "features": return t("setup.setting.features");
       case "layout": return t("setup.setting.layout");
       default: return t(`setup.setting.${item.target}`);
@@ -253,11 +255,12 @@ export class SetupModal extends Modal {
     return valueText(item.value);
   }
 
-  private reasonOf(item: SetupItem): string {
-    const vars: Record<string, string | number> = { ...item.reason.vars };
+  private reasonOf(item: SetupItem, on: boolean): string {
+    const reason = reasonFor(item, on);
+    const vars: Record<string, string | number> = { ...reason.vars };
     // the plan gives the preset's id; the writer reads its name
     if (typeof vars.preset === "string") vars.preset = t(`setup.preset.${vars.preset as PresetId}`);
-    return t(item.reason.key, vars);
+    return t(reason.key, vars);
   }
 
   // ── controls ──
