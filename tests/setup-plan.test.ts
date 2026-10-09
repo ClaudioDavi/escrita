@@ -98,6 +98,25 @@ describe("planSetup: rules", () => {
     expect(items.find((i) => i.target === "homeNote")).toMatchObject({ state: "change", tick: "home", value: "home.md" });
   });
 
+  it("never plans a second home note beside one the desk would adopt (Home.md, Inicio.md)", () => {
+    const pt = { ...base, language: "pt-BR" } as SetupChoices;
+    for (const f of ["Inicio.md", "Home.md"]) {
+      const items = planSetup(pt, { ...empty, files: [f] }, DEFAULT_SETTINGS);
+      expect(items.find((i) => i.kind === "home")).toMatchObject({ target: f, state: "kept" });
+      expect(items.find((i) => i.target === "homeNote")).toMatchObject({ state: "change", value: f });
+    }
+    // with none of them, the language's name is offered
+    expect(planSetup(pt, empty, DEFAULT_SETTINGS).find((i) => i.kind === "home")).toMatchObject({ target: "Início.md", state: "new" });
+  });
+
+  it("uses the home note the setting names, not a second one under the default name", () => {
+    const own = { ...DEFAULT_SETTINGS, homeNote: "Notas/Painel" };
+    const items = planSetup(base, { ...empty, files: ["Notas/Painel.md"] }, own);
+    expect(items.find((i) => i.kind === "home")).toMatchObject({ target: "Notas/Painel.md", state: "kept" });
+    expect(items.some((i) => i.target === "Home.md")).toBe(false);
+    expect(items.find((i) => i.target === "homeNote")).toMatchObject({ state: "kept" });
+  });
+
   it("settingsAfter: the chosen set where the writer has no word of their own", () => {
     const own = { ...DEFAULT_SETTINGS, chaptersFolder: "Partes" };
     const after = settingsAfter(own, "pt-BR");

@@ -51,6 +51,7 @@ import { presetChanges, presetSwitches, type PresetId } from "../core/feature-pr
 import type { UniverseMode } from "../universe/settings";
 import { EXAMPLE_CHAPTERS, exampleText, type ExampleRole } from "./examples";
 import { homeNoteText } from "./home-text";
+import { HOME_NOTE_NAMES } from "../core/home-note";
 
 /** "What do you write?" (board 37): short fiction (contos and essays), a novel, or both. */
 export type SetupWrites = "stories" | "books" | "both";
@@ -243,8 +244,12 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
     EXAMPLE_CHAPTERS[choices.language].forEach((c, index) => addExample(chapters, c, { kind: "chapter", index }));
   }
 
-  // The home note
-  const home = place("", names.homeNote);
+  // The home note: the one the setting names, else one an empty setting adopts (the desk's
+  // rule, desk/home.ts), else the language's name. Never a second home note beside an existing one.
+  const ownHome = settings.homeNote.trim();
+  const home = ownHome
+    ? place("", /\.md$/i.test(ownHome) ? ownHome : `${ownHome}.md`)
+    : [names.homeNote, ...HOME_NOTE_NAMES].map((n) => place("", n)).find((h) => h.exists) ?? place("", names.homeNote);
   items.push(home.exists
     ? { kind: "home", target: home.path, state: "kept", tick: null, ticked: false, reason: { key: "setup.reason.exists" } }
     : { kind: "home", target: home.path, state: "new", tick: "home", ticked: true, reason: { key: "setup.reason.homeNew" }, content: homeNoteText({ language: choices.language, examples: (ticks.examples ?? !hasWorks) && items.some((i) => i.kind === "example" && i.state === "new") }) });
