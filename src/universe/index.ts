@@ -538,7 +538,7 @@ export class UniverseModule extends FeatureModule {
     const f = this.ctxFactory;
     if (!m || !f || !this.entriesIdx?.get(path) || this.scopeOf(path).kind === "none") return null;
     m.demand();
-    if (!m.isReady() || !this.entriesIdx.isReady()) return "counting";
+    if (!m.isCurrent() || !this.entriesIdx.isReady()) return "counting";
     return m.appearsIn(path, f.ctx(path));
   }
 

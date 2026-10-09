@@ -116,7 +116,7 @@ entradas podem mudar de lugar livremente.
 3. Escolha o tipo e, se quiser, acrescente outro apelido. Deixe marcado **Transformar esta
    ocorrência em link** para transformar o texto selecionado em link (um desfazer remove).
 4. **Criar** faz a nota na pasta do tipo, a partir do modelo, com as propriedades de tipo e
-   `universe` definidas (no modo por livro, sem `universe`). Ela abre ao lado.
+   `universe` definidas (no modo por livro, sem `universe`). Ela abre numa nova aba, sem tirar você do texto.
 
 Se já existir uma entrada com esse nome ou apelido, a janela oferece **Abrir** ou **Só
 linkar aqui**. O Escrita nunca sobrescreve uma nota.
@@ -235,7 +235,7 @@ menções no seu texto sozinho. Você não marca nada e nada é escrito nas suas
 ### Onde você vê
 
 - **No painel.** Na aba Entradas, uma entrada com menções mostra "N obras" ao lado do nome.
-  Clique na linha para abrir a lista: cada obra com a contagem de menções e a forma, e, num
+  Clique em "N obras" para abrir a lista (clicar na linha abre a nota da entrada): cada obra com a contagem de menções e a forma, e, num
   livro, o primeiro e o último capítulo que a mencionam ("primeira no cap. 2, última no cap.
   9"). Um grupo chamado **Outras notas** vem depois das obras: outras entradas, a nota do
   universo e notas avulsas que estão no universo. Ele começa fechado.

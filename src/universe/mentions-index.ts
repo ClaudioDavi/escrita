@@ -21,6 +21,12 @@ export const MENTIONS_INDEX_NAME = "universe-mentions";
 /** Q33: the quiet time after a term table change before the index rebuilds. */
 export const TABLE_REBUILD_MS = 2000;
 
+/** The decision behind `isCurrent`: ready, no rebuild pending, and the table is the one the last build read. */
+export function countsAreCurrent(ready: boolean, rebuildPending: boolean, tableSig: string | null, builtSig: string): boolean {
+  if (!ready || rebuildPending) return false;
+  return tableSig === null || tableSig === builtSig;
+}
+
 export interface MentionsDeps<F extends IndexFile> {
   add(spec: IndexSpec<F, NoteMentions>): VaultIndex<F, NoteMentions>;
   /** takes the index out of the hub (module unload); optional in tests */
@@ -98,6 +104,15 @@ export class MentionsIndex<F extends IndexFile> {
     index.demand();
   }
 
+  /**
+   * Ready and not waiting on a table rebuild. Right after an entry is created the index is
+   * ready but still holds counts for the old term table (the rebuild is debounced), so a
+   * zero there means "not counted yet", not "counted, none".
+   */
+  isCurrent(): boolean {
+    return countsAreCurrent(this.isReady(), this.timer !== null, this.demanded ? this.deps.table().signature : null, this.lastSignature);
+  }
+
   get started(): boolean { return this.index !== null; }
   isReady(): boolean { return this.index?.isReady() ?? false; }
 
@@ -120,7 +135,7 @@ export class MentionsIndex<F extends IndexFile> {
     this.timer = this.deps.timers.set(() => {
       this.timer = null;
       const sig = this.deps.table().signature;
-      if (sig === this.lastSignature) return;
+      if (sig === this.lastSignature) { for (const cb of [...this.listeners]) cb(); return; }
       this.lastSignature = sig;
       this.deps.rebuild(MENTIONS_INDEX_NAME);
     }, TABLE_REBUILD_MS);
