@@ -1,6 +1,6 @@
 // The writing mode port (1.0, board 39; PLAN-1.0 "Design first"). Writing mode is part of the
 // home block feature ("desk"), with no switch of its own: the desk module provides the port
-// while loaded (desk/writing-mode.ts, task 2.4), and anything else (the setup's "focus"
+// while loaded (desk/writing-mode.ts), and anything else (the setup's "focus"
 // layout, setup/layout.ts; the setup's run) reads it through `writingModeOf(plugin.features)`,
 // never by importing the desk. With the desk off there is no writing mode: the caller does
 // without it. Pure, no Obsidian imports.

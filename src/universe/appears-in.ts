@@ -8,7 +8,7 @@ import { fmt, t } from "../i18n";
 import { baseName, compactWorks, firstLastLine, mentionStillThere, mentionsLabel, summaryLine } from "./appears-in-model";
 import type { AppearsIn, MentionRow, WorkMentions } from "./mentions";
 
-/** How rows are named. 5.1 wires the real one from `plugin.works`; the default reads file names. */
+/** How rows are named. the universe module wires the real one from `plugin.works`; the default reads file names. */
 export interface AppearsInLabels {
   /** A work (a book note or a standalone note, by path): its name and its form ("novel", "short story"), if known. */
   work(work: string): { name: string; form: string | null };

@@ -1,5 +1,4 @@
 // Where the writer left off in a note (no Obsidian imports).
-// Wave 0 contract: types only.
 
 export interface LeftOff { offset: number; before: string; after: string; at: number }
 
@@ -9,6 +8,7 @@ import { contextAt, findRestoreOffset } from "./anchor";
 import { parseBeats } from "./markers";
 import { segment } from "./markdown";
 import type { DeskRole } from "./works";
+import { safeEntries } from "./records";
 
 /** Editor and file offsets agree only on LF text, so everything works on that. */
 function lf(text: string): string {
@@ -110,8 +110,7 @@ export function pruneMissing(rec: Record<string, LeftOff>, exists: (path: string
 /** Keep only well-typed entries of whatever data.json held. */
 export function cleanLeftOff(raw: unknown): Record<string, LeftOff> {
   const out: Record<string, LeftOff> = {};
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return out;
-  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+  for (const [k, v] of safeEntries(raw)) {
     if (typeof v !== "object" || v === null) continue;
     const e = v as Record<string, unknown>;
     if (typeof e.offset !== "number" || !Number.isFinite(e.offset) || e.offset < 0) continue;

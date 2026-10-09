@@ -18,11 +18,6 @@ beforeEach(() => {
   registry.init();
 });
 
-const turn = (on: boolean): void => {
-  plugin.settings.features = { ...plugin.settings.features, publish: on };
-  registry.apply();
-};
-
 describe("publish lifecycle", () => {
   it("loads with its commands and file menu", () => {
     registry.apply();
@@ -33,7 +28,7 @@ describe("publish lifecycle", () => {
 
   it("leaves no command or listener behind when unloaded", () => {
     registry.apply();
-    turn(false);
+    plugin.turn("publish", false);
     expect(registry.isOn("publish")).toBe(false);
     expect(plugin.commands.size).toBe(0);
     expect(plugin.liveListeners()).toBe(0);
@@ -45,8 +40,8 @@ describe("publish lifecycle", () => {
 
   it("loads again with exactly one of each registration", () => {
     registry.apply();
-    turn(false);
-    turn(true);
+    plugin.turn("publish", false);
+    plugin.turn("publish", true);
     expect([...plugin.commands.keys()]).toHaveLength(3);
     expect(plugin.app.workspace.liveListeners("file-menu")).toBe(1);
     expect(plugin.followers.size).toBe(1);
@@ -76,8 +71,8 @@ describe("publish lifecycle", () => {
   it("keeps its data when switched off and on", () => {
     registry.apply();
     plugin.data.publish["a.md"] = { previousStatus: "draft" };
-    turn(false);
-    turn(true);
+    plugin.turn("publish", false);
+    plugin.turn("publish", true);
     expect(plugin.data.publish["a.md"]).toEqual({ previousStatus: "draft" });
   });
 });

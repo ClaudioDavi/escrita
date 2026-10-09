@@ -55,6 +55,7 @@ import { universeStrings } from "./universe/strings";
 import { universeViewStrings } from "./universe/view-strings";
 import { universeCreateStrings } from "./universe/create-strings";
 import { universeMigrateStrings } from "./universe/migrate-strings";
+import { appearsStrings } from "./universe/strings-appears";
 import { SetupModule } from "./setup";
 import { setupStrings } from "./setup/strings";
 import { setupLayoutStrings } from "./setup/layout-strings";
@@ -110,7 +111,7 @@ export default class EscritaPlugin extends Plugin {
       coreStrings, goalsStrings, outlineStrings, placeholdersStrings, darlingsStrings, editorStrings, publishStrings,
       exportStrings, submissionsStrings,
       explorerStrings, snapshotsStrings, deskStrings, lensStrings,
-      universeStrings, universeViewStrings, universeCreateStrings, universeMigrateStrings,
+      universeStrings, universeViewStrings, universeCreateStrings, universeMigrateStrings, appearsStrings,
       setupStrings, setupLayoutStrings,
     ]) {
       registerStrings(s);

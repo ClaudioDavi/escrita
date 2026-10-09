@@ -16,7 +16,7 @@ export interface NamesProvider {
   /*
    * What the lens's "names without an entry" rule reads (0.9, PLAN-0.9 Q2-Q4, Q18). Optional:
    * a provider without them answers "not known", 0 and a no-op through the port. The
-   * universe's provider adds them (task 2.3, backed by the on-demand `universe-names`
+   * universe's provider adds them (backed by the on-demand `universe-names`
    * index, universe/names-index.ts).
    */
   /**

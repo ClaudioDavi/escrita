@@ -119,6 +119,11 @@ export class FakePlugin extends Component {
   works = {} as unknown;
   notes = {} as unknown;
   features: unknown = undefined;
+  /** Flip a feature switch and let the registry (`plugin.features`) load or unload it. */
+  turn(id: string, on: boolean): void {
+    this.settings.features = { ...this.settings.features, [id]: on };
+    (this.features as { apply(): void }).apply();
+  }
   requestSave = Object.assign(() => {}, { cancel: () => {} });
   saves = 0;
   saveSettingsHook: (() => void) | null = null;

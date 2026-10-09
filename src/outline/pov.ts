@@ -5,6 +5,7 @@ import { foldName } from "../core/names";
 import { linkText } from "../core/scope";
 import { STAGES, writtenWord, type Stage, type StageMapping } from "../core/stages";
 import type { ChapterRow } from "./rows";
+import { safeEntries } from "../core/records";
 
 export const POV_PALETTE = ["red", "orange", "yellow", "green", "cyan", "blue", "purple", "pink"] as const;
 export type PovColor = typeof POV_PALETTE[number];
@@ -37,9 +38,7 @@ export function assignColors(keys: readonly string[], store: Record<string, PovC
 /** Loads `data.povColors`: keeps only entries whose value is a palette colour. */
 export function cleanPovColors(raw: unknown): Record<string, PovColor> {
   const out: Record<string, PovColor> = {};
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
-  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
-    if (k === "__proto__") continue;
+  for (const [k, v] of safeEntries(raw)) {
     if ((POV_PALETTE as readonly unknown[]).includes(v)) out[k] = v as PovColor;
   }
   return out;

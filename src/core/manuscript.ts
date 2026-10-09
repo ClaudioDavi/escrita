@@ -1,6 +1,6 @@
 // A note's prose as an editor receives it (IMPROVEMENTS 15, PLAN-0.8 Q5-Q8). Pure,
 // no Obsidian imports. `manuscriptOf` turns a note's Markdown into a small block
-// model that every export writer formats: Markdown and DOCX in 0.8, EPUB in 0.10.
+// model that every export writer formats: Markdown and DOCX in 0.8, EPUB in 0.9.
 // Nothing in the model is format-specific: a writer never looks at Markdown again.
 //
 // What is dropped, and what is reported (`Manuscript.dropped`):
@@ -15,9 +15,8 @@
 //   the hidden text is reported once, at the opener.
 // Removing an inline `%%` or `<!-- -->` takes the whitespace before it, so no double
 // or trailing space is left.
-// For task 3.1: read `strictLineBreaks` only through a listed ARCHITECTURE exception,
-// or default it off. For task 2.3: the Markdown writer writes a run's "\n" as a
-// CommonMark hard break (backslash, newline).
+// `strictLineBreaks` is read only through a listed ARCHITECTURE exception, else off.
+// The Markdown writer writes a run's "\n" as a CommonMark hard break (backslash, newline).
 // The segmentation is core/markdown's (`segment`), the scene break rule is
 // `isSceneBreakAt` (core/markers.ts), and the link rules come from the `MARKUP`
 // table in core/wordcount.ts, so the manuscript can't drift from the counts.

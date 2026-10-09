@@ -142,7 +142,7 @@ export function bookSource(
  * as Obsidian resolves them from that note (`getFirstLinkpathDest`). A link to a file
  * that isn't Markdown, or to the collection note itself, is missing. Null when the note
  * has no `collectionProperty`. Export asks this once about the active note (Q28) and
- * reads its stories from the answer (`storyChapters`). Task 1.7.
+ * reads its stories from the answer (`storyChapters`).
  */
 export function collectionAt(
   app: App,

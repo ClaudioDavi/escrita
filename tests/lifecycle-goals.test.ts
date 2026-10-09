@@ -41,11 +41,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function turn(on: boolean): void {
-  plugin.settings.features = { ...plugin.settings.features, goals: on };
-  registry.apply();
-}
-
 const COMMANDS = ["escrita:open-progress", "escrita:start-sprint", "escrita:stop-sprint"];
 
 describe("goals lifecycle", () => {
@@ -65,7 +60,7 @@ describe("goals lifecycle", () => {
   it("leaves nothing registered after unload, and data stays", () => {
     plugin.data.history = { "2026-01-01": { added: 5, books: { "Old": { added: 5 } } } } as never;
     registry.apply();
-    turn(false);
+    plugin.turn("goals", false);
     expect(registry.isOn("goals")).toBe(false);
     expect(plugin.commands.size).toBe(0);
     expect(plugin.statusBars[0].isConnected).toBe(false);
@@ -82,8 +77,8 @@ describe("goals lifecycle", () => {
 
   it("loads again with one of each registration", () => {
     registry.apply();
-    turn(false);
-    turn(true);
+    plugin.turn("goals", false);
+    plugin.turn("goals", true);
     expect([...plugin.commands.keys()].sort()).toEqual([...COMMANDS].sort());
     expect(plugin.liveListeners()).toBe(3);
     expect(live.size).toBe(1);
@@ -101,11 +96,11 @@ describe("goals lifecycle", () => {
     expect(live.size).toBe(2);   // the minute refresh and the sprint timer
     const sprint = goals.sprint;
     sprint!.add(40);
-    turn(false);
+    plugin.turn("goals", false);
     expect(live.size).toBe(0);
     expect(goals.sprint).toBe(sprint);
     expect(goals.sprint!.words).toBe(40);
-    turn(true);
+    plugin.turn("goals", true);
     expect(goals.sprint!.words).toBe(40);
     expect(live.size).toBe(2);
   });
@@ -114,7 +109,7 @@ describe("goals lifecycle", () => {
     registry.apply();
     const close = vi.fn();
     (goals as unknown as { modal: unknown }).modal = { close };
-    turn(false);
+    plugin.turn("goals", false);
     expect(close).toHaveBeenCalledTimes(1);
     expect((goals as unknown as { modal: unknown }).modal).toBeNull();
   });
@@ -122,7 +117,7 @@ describe("goals lifecycle", () => {
   it("forgets baselines while off, so words typed meanwhile are not counted", () => {
     registry.apply();
     (goals as unknown as { baseline: Map<string, number> }).baseline.set("a.md", 10);
-    turn(false);
+    plugin.turn("goals", false);
     expect((goals as unknown as { baseline: Map<string, number> }).baseline.size).toBe(0);
   });
 
@@ -140,6 +135,6 @@ describe("goals lifecycle", () => {
     const orig = plugin.addStatusBarItem.bind(plugin);
     plugin.addStatusBarItem = () => { const el = orig(); el.remove(); return el; };
     expect(() => registry.apply()).not.toThrow();
-    expect(() => turn(false)).not.toThrow();
+    expect(() => plugin.turn("goals", false)).not.toThrow();
   });
 });

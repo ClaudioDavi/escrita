@@ -16,7 +16,7 @@
 // a saved settings object without the key is "en" (a 0.9 install keeps every English
 // default it relies on, and nothing has to be written for it); a fresh install takes
 // `languageOf(locale())` once and saves it, so the set never moves when Obsidian's
-// language changes later. Loading (task 1.4) is `mergeDefaults(defaultsFor(lang), saved)`
+// language changes later. Loading is `mergeDefaults(defaultsFor(lang), saved)`
 // and `normalizeSettings` restores a blank field from the same set.
 
 import type { EscritaSettings } from "../settings";

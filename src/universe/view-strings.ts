@@ -1,6 +1,6 @@
 import type { Strings } from "../i18n";
 
-// BUILDER A owns this file: the universe panel and the Open threads view. Keys: universe.view.*
+// The universe panel and the Open threads view. Keys: universe.view.*
 export const universeViewStrings: Strings = {
   en: {
     "universe.view.title": "Universe",

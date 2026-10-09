@@ -13,10 +13,6 @@ let plugin: FakePlugin;
 let mod: OutlineModule;
 let reg: FeatureRegistry;
 
-function turn(on: boolean): void {
-  plugin.settings.features = { ...plugin.settings.features, outline: on };
-}
-
 /** The editor array the module's slot fills, registered once at plugin load. */
 function slotArray(): unknown[] {
   return plugin.extensions[0] as unknown[];
@@ -49,7 +45,7 @@ describe("outline lifecycle", () => {
 
   it("unloads: no command, no extension, no listener, no index, no timer; the view slot answers a placeholder", () => {
     reg.apply();
-    turn(false);
+    plugin.turn("outline", false);
     reg.apply();
     expect(reg.isOn("outline")).toBe(false);
     expect(plugin.commands.size).toBe(0);
@@ -69,9 +65,9 @@ describe("outline lifecycle", () => {
 
   it("loads again with one of each, and the ribbon icon is reused (G0f)", () => {
     reg.apply();
-    turn(false);
+    plugin.turn("outline", false);
     reg.apply();
-    turn(true);
+    plugin.turn("outline", true);
     reg.apply();
     expect([...plugin.commands.keys()].sort()).toEqual([...COMMANDS].sort());
     expect(plugin.views.size).toBe(2);
@@ -82,7 +78,7 @@ describe("outline lifecycle", () => {
 
   it("a click on the ribbon icon of an off feature shows the notice and opens nothing", () => {
     reg.apply();
-    turn(false);
+    plugin.turn("outline", false);
     reg.apply();
     expect(() => plugin.clickRibbon("Open outline")).not.toThrow();
   });
@@ -108,7 +104,7 @@ describe("outline lifecycle", () => {
 
   it("a settings change on an unloaded outline does nothing (the registry skips it)", () => {
     reg.apply();
-    turn(false);
+    plugin.turn("outline", false);
     reg.apply();
     plugin.settings.ghostBeats = false;
     reg.settingsChanged();
@@ -118,7 +114,7 @@ describe("outline lifecycle", () => {
   it("keeps the writer's data: nothing in plugin.data changes across a switch", () => {
     const before = JSON.stringify(plugin.data);
     reg.apply();
-    turn(false);
+    plugin.turn("outline", false);
     reg.apply();
     expect(JSON.stringify(plugin.data)).toBe(before);
   });
@@ -128,7 +124,7 @@ describe("read the book (0.9, Q14)", () => {
   it("the reading positions follow a rename and a delete through the always-on follower, even while off", () => {
     plugin.data.readPosition["Livro.md"] = { chapter: "Livro/Capítulos/01 A.md", line: 12 };
     reg.apply();
-    turn(false);
+    plugin.turn("outline", false);
     reg.apply();
     const f = [...plugin.followers][0];
     f.moved!("Livro/Capítulos/01 A.md", "Livro/Capítulos/01 B.md");

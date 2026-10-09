@@ -34,7 +34,6 @@ import { MentionsIndex } from "./mentions-index";
 import { NamesIndex, type NoteRuns } from "./names-index";
 import { NameMarks, SPELLCHECK_MARKS_WORK } from "./name-marks";
 import { UniverseNamesProvider } from "./names-provider";
-import { registerAppearsStrings } from "./strings-appears";
 import { keptOut, scopeFor, universeNotePath, universeRootOf, type Scope } from "../core/scope";
 import type { EntryKind, UniverseMode } from "./settings";
 import { inScope, type ThreadRef } from "./threads";
@@ -100,7 +99,6 @@ export class UniverseModule extends FeatureModule {
 
   constructor(private plugin: EscritaPlugin) {
     super();
-    registerAppearsStrings();
   }
 
   /** Loaded while the mode is not off (the registry decides); the stateless helpers below work either way. */

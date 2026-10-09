@@ -78,7 +78,7 @@ export function bookSerial<B>(source: BookSource<B>, book: B, s: SerialSettings)
   );
 }
 
-// ------------------------------------------------------------------ labels, line and gap (task 2.5)
+// ------------------------------------------------------------------ labels, line and gap
 
 /** The chapters of a book as the serial model reads them: the source's refs with status and date. */
 export function serialChapters(

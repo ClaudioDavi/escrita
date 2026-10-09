@@ -1,4 +1,4 @@
-// The MentionCtx the mentions index answers with (0.7 plan 5.1, Q20, Q31, Q32): live scope,
+// The MentionCtx the mentions index answers with (0.7 plan Q20, Q31, Q32): live scope,
 // which work a note belongs to and where that work stands in the Works tab. No Obsidian
 // imports: the universe module feeds the deps, tests feed a MemoryVault-backed set.
 //
