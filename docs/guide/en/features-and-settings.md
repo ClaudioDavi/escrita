@@ -108,7 +108,7 @@ What the Brazilian set holds:
 | Universe note | Universe.md | Universo.md |
 | Entry types and their folders | character (Characters), place (Places), object (Objects), group (Groups), event (Events) | personagem (Personagens), lugar (Lugares), objeto (Objetos), grupo (Grupos), evento (Eventos) |
 | Form values | short story, essay, novella, novel, poem, fragment | conto, ensaio, novela, romance, poema, fragmento |
-| Thread words | thread, closed | fio, fechado |
+| Thread words | thread, closed | thread, fechada |
 
 The darlings notes keep the name `Darlings.md` in both. **Property names** (`status`, `target`,
 `type` and the rest) are not in either set: they are keys in your notes and stay English.

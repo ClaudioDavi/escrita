@@ -323,7 +323,7 @@ export const coreStrings: Strings = {
     "settings.features.submissions.desc": "Para onde você mandou cada obra, e o que voltou.",
     "settings.features.universe": "Universo compartilhado",
     "settings.features.universe.desc": "O modo é o interruptor: Desligado não carrega painel nem comandos.",
-    "settings.features.threads": "Fios",
+    "settings.features.threads": "Threads",
     "settings.features.threads.desc": "%% {keyword}: … %% marca uma ponta solta. Vale em qualquer modo.",
     "settings.shared": "Propriedades e pastas",
     "settings.shared.desc": "Os nomes de propriedades que o Escrita lê das suas notas e as pastas onde ele conta a sua escrita. Vários recursos usam, então ficam sempre à vista.",

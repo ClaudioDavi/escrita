@@ -260,10 +260,11 @@ Vault `~/projects/website/escrita/`, window about 390 px wide, in the developer 
 
 In `vazio-pt` unless noted.
 
-1. **Settings fall back to the install's language.** Clear **Palavra de fio** [Thread word]
-   and leave the field. Expected: it reads `fio`, and an existing `%% fio: … %%` is still a
-   thread. Same for the closed word, the universe note (`Universo.md`) and the export and
-   submissions folders: each placeholder is Portuguese.
+1. **Settings fall back to the install's language.** Clear **Palavra de thread fechada**
+   [Closed word] and leave the field. Expected: it reads `fechada`, not `closed`; the thread
+   word reads `thread` (the same in both languages since 2026-10-09). Same for the universe
+   note (`Universo.md`) and the export and submissions folders: each placeholder is
+   Portuguese.
 2. **One home note.** In a copy of `vazio-pt` with `Início.md` renamed to `Inicio.md` and the
    home note setting cleared: run **Abrir a nota inicial**, then the setup. Expected: both
    use `Inicio.md`; no `Início.md` is created.

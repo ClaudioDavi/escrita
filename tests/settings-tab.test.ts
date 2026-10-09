@@ -211,6 +211,6 @@ describe("makeUi().defaults()", () => {
     expect(ui.defaults().chaptersFolder).toBe("Chapters");
     settings.defaultsLanguage = "pt-BR";
     expect(ui.defaults().chaptersFolder).toBe("Capítulos");
-    expect(ui.defaults().threadKeyword).toBe("fio");
+    expect(ui.defaults().threadClosedWord).toBe("fechada");
   });
 });

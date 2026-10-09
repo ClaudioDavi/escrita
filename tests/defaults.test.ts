@@ -58,8 +58,8 @@ describe("the default sets", () => {
     expect(pt.universeNote).toBe("Universo.md");
     expect(pt.entryTypes.character).toEqual({ value: "personagem", folder: "Personagens", template: "", label: "Personagem" });
     expect(pt.formValues.shortStory).toBe("conto");
-    expect(pt.threadKeyword).toBe("fio");
-    expect(pt.threadClosedWord).toBe("fechado");
+    expect(pt.threadKeyword).toBe("thread");
+    expect(pt.threadClosedWord).toBe("fechada");
     expect(pt.submissionResults.split(",")[0].trim()).toBe("pendente");
   });
 

@@ -269,17 +269,6 @@
     },
     {
       "kind": "setting",
-      "target": "threadKeyword",
-      "state": "change",
-      "tick": "language",
-      "ticked": true,
-      "reason": {
-        "key": "setup.reason.settingChange"
-      },
-      "value": "fio"
-    },
-    {
-      "kind": "setting",
       "target": "threadClosedWord",
       "state": "change",
       "tick": "language",
@@ -287,7 +276,7 @@
       "reason": {
         "key": "setup.reason.settingChange"
       },
-      "value": "fechado"
+      "value": "fechada"
     },
     {
       "kind": "setting",

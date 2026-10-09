@@ -51,8 +51,8 @@ export function languageOf(obsidianLanguage: string | null | undefined): Default
  * both sets list exactly these, and that the "en" set equals DEFAULT_SETTINGS on each).
  *
  * Beyond the list in PLAN-1.0 (0.1), three more keys are word-bearing and in the sets:
- * `threadKeyword` (it pairs with `threadClosedWord`: `%% fio fechado: … %%`, never
- * `%% thread fechado`), the entry type `value`s and `formValues` (values written into
+ * `threadKeyword` (it pairs with `threadClosedWord`: `%% thread fechada: … %%` in Portuguese,
+ * never `%% thread closed` there), the entry type `value`s and `formValues` (values written into
  * notes, like the stage words; the author's vault uses `personagem` and `conto`).
  * Left out on purpose: `placeholderMarker` (`XXX` is no word), `epubSceneBreak`, and every
  * property name. `snapshotsFolder` and `excludeFolders` are in the sets but not here: they
@@ -142,8 +142,8 @@ const PT_BR: LanguageDefaults = {
     event: ["evento", "Eventos", "Evento"],
   }),
   formValues: { shortStory: "conto", essay: "ensaio", novella: "novela", novel: "romance", poem: "poema", fragment: "fragmento" },
-  threadKeyword: "fio",
-  threadClosedWord: "fechado",
+  threadKeyword: "thread",
+  threadClosedWord: "fechada",
   snapshotsFolder: "Escrita/Versões",
   excludeFolders: "Modelos",
 };

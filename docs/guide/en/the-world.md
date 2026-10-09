@@ -38,7 +38,7 @@ and hides things; your entries stay in your vault.
 4. **Form property and Form by folder** (Propriedade de forma, Forma por pasta): what kind
    of work a note is (short story, essay, novella, novel, poem, fragment), used to group
    the Works tab. See section 6.
-5. **Thread word and closed word** (Palavra dos fios): the words in thread markers. See
+5. **Thread word and closed word** (Palavra das threads): the words in thread markers. See
    section 7.
 
 ### Choosing the folders in the universe: only fiction set in your world
@@ -201,14 +201,14 @@ never shows in Reading view or an export:
 %% thread: who wrote the letters? %%
 ```
 
-- **Plant a thread** (Plantar um fio): command or editor menu. It inserts the marker at
+- **Plant a thread** (Plantar uma thread): command or editor menu. It inserts the marker at
   the cursor; selected text is copied into it and stays in your prose.
-- **See them**: the panel's **Threads** tab (Fios), grouped by work, with the date each
+- **See them**: the panel's **Threads** tab (Threads), grouped by work, with the date each
   thread was first seen (kept in the plugin's data, never in the note). With the universe
-  off, use **Show open threads** (Mostrar fios abertos), which lists the threads in your
+  off, use **Show open threads** (Mostrar threads abertas), which lists the threads in your
   tracked works. In per-book mode the panel shows the book's threads.
 - **Close one**: the circle in the panel, or right-click the marker in the editor and
-  choose **Close thread…** (Fechar o fio…). Optionally name the work that answers it. The
+  choose **Close thread…** (Fechar a thread…). Optionally name the work that answers it. The
   marker becomes `%% thread closed: … → [[The House]] %%`. **Reopen thread** undoes it.
   Writing the closed form by hand works too.
 
@@ -216,7 +216,7 @@ Closing only writes if the marker is still exactly what the panel read. If you e
 in the meantime, nothing changes and the list refreshes.
 
 **The words are settings.** The thread word (default `thread`) and the closed word
-(default `closed`) can be anything, for example `fio` and `fechado`, giving
+(default `closed`, or `fechada` in a Portuguese install) can be anything, for example `fio` and `fechado`, giving
 `%% fio: … %%` and `%% fio fechado: … %%`.
 
 ## 8. Insert from a template

@@ -164,14 +164,14 @@ describe("a pt-BR install falls back to the pt-BR set (1.0 known issue: English 
 
   it("ui.defaults() is the install's set", () => {
     const r = pt();
-    expect(r.ui.defaults().threadKeyword).toBe("fio");
+    expect(r.ui.defaults().threadClosedWord).toBe("fechada");
     expect(r.ui.defaults().chaptersFolder).toBe("Capítulos");
   });
 
-  it("clearing the thread words restores fio and the pt-BR closed word", () => {
+  it("clearing the thread words restores thread and the pt-BR closed word", () => {
     const r = pt({}, ["threads"]);
     threadsSettingsSection(r.el, r.ui, r.plugin);
-    expect(r.commits[0].fallback()).toBe("fio");
+    expect(r.commits[0].fallback()).toBe("thread");
     expect(r.commits[1].fallback()).toBe(defaultsFor("pt-BR").threadClosedWord);
     expect(r.commits[1].fallback()).not.toBe("closed");
   });

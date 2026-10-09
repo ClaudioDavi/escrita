@@ -26,7 +26,7 @@ Abra Configurações › Escrita. A seção **Recursos** fica no topo. Ela tem:
 | Revisão | Lente de revisão · Versões · Darlings |
 | Acompanhamento | Versão a cada estágio · Bloco de obras e onde você parou |
 | Publicação | Checagem de publicação · Exportar · Envios |
-| O mundo | Universo compartilhado · Fios |
+| O mundo | Universo compartilhado · Threads |
 
 Três interruptores eram configurações antes da 0.7, e agora ficam só aqui: **Contagens no
 explorador**, **Ortografia sob demanda** e o modo do **Universo compartilhado**. A linha do
@@ -47,7 +47,7 @@ apertou, e depois dela você pode mudar qualquer interruptor.
 |---|---|
 | Essencial (9) | Metas e sprints · Esboço e beats fantasmas · Marcadores · Enter e tipografia · Lente de revisão · Darlings · Versões · Exportar · Bloco de obras e onde você parou |
 | Escritor (16) | Tudo do Essencial, mais Foco no diálogo · Mover parágrafo ou cena · Inserir de um modelo · Contagens no explorador · Versão a cada estágio · Checagem de publicação · Envios |
-| Tudo (18) | Todos os interruptores: acrescenta ao Escritor a Ortografia sob demanda e os Fios |
+| Tudo (18) | Todos os interruptores: acrescenta ao Escritor a Ortografia sob demanda e as Threads |
 
 Uma predefinição desliga todo interruptor que não está na lista dela. Apertar um botão ainda
 não muda nada. Abre uma etapa de confirmação, **Aplicar "Escritor"?**, com duas linhas:
@@ -87,7 +87,7 @@ que tiver uma, use o comando de mesmo nome. A preparação é explicada em
 O Escrita escreve algumas palavras nas suas notas e lê outras como nomes de pastas e notas: as
 palavras dos estágios, a pasta dos capítulos, os títulos que não levam número de capítulo, os
 resultados de um envio, as pastas de exportações, envios e versões, a nota do universo e as
-palavras dos tipos, os valores de forma e as palavras dos fios. Tudo isso são configurações, e
+palavras dos tipos, os valores de forma e as palavras das threads. Tudo isso são configurações, e
 elas partem de um conjunto de padrões num idioma. Desde a 1.0 há dois conjuntos, **English** e
 **Português (Brasil)**. A preparação mostra a escolha como **Idioma dos padrões**.
 
@@ -113,7 +113,7 @@ O que o conjunto brasileiro contém:
 | Nota do universo | Universe.md | Universo.md |
 | Tipos de entrada e pastas | character (Characters), place (Places), object (Objects), group (Groups), event (Events) | personagem (Personagens), lugar (Lugares), objeto (Objetos), grupo (Grupos), evento (Eventos) |
 | Valores de forma | short story, essay, novella, novel, poem, fragment | conto, ensaio, novela, romance, poema, fragmento |
-| Palavras dos fios | thread, closed | fio, fechado |
+| Palavras das threads | thread, closed | thread, fechada |
 
 As notas de darlings mantêm o nome `Darlings.md` nos dois. Os **nomes das propriedades**
 (`status`, `target`, `type` e as demais) não estão em nenhum conjunto: são chaves nas suas
@@ -148,7 +148,7 @@ as palavras que o Escrita escreve no seu cofre.
 | Exportar | Sem os comandos **Exportar…** e **Exportar de novo**, sem item no menu do arquivo (nem **Criar uma coleção…**) e sem a seção Exportação nas configurações. A linha da pasta das exportações continua. |
 | Envios | Sem o comando nem o item de menu **Registrar envio**, sem a contagem de pendentes no bloco de obras e sem a seção Envios nas configurações. A linha da pasta dos envios continua. |
 | Universo compartilhado | Sem painel, sem comandos do universo, sem "Aparece em", sem marcas de nomes nem nomes na lente. |
-| Fios | Sem comandos de fio, sinal na margem nem aba no painel. |
+| Threads | Sem comandos de thread, sinal na margem nem aba no painel. |
 
 Ao desligar um recurso, um aviso curto diz o que fica e onde.
 
@@ -166,7 +166,7 @@ Nada é apagado quando você desliga um recurso.
 - **Lente de revisão**: a lista "Não são nomes" fica nas configurações.
 - **Exportar**: as notas de coleção são notas comuns e ficam. Os arquivos já gravados (EPUB também) ficam na pasta das exportações. As suas escolhas para cada obra (formato, modelo, capítulos) e a última exportação ficam nos dados do Escrita, e acompanham renomeações e mudanças de lugar com o recurso desligado. Ligue de novo e "Exportar de novo" ainda conhece o último arquivo.
 - **Envios**: as notas de envio ficam onde estão, na pasta dos envios. O aviso diz o nome da pasta e quantas notas há. São notas comuns: com o recurso desligado elas continuam sem entrar nas metas e sem virar obras. Se você já usa esse nome de pasta para outra coisa, mude a pasta nas configurações.
-- **Fios**: os marcadores ficam nas suas notas; as datas em que cada um foi visto pela
+- **Threads**: os marcadores ficam nas suas notas; as datas em que cada um foi visto pela
   primeira vez ficam nos dados.
 - **Universo**: as entradas são notas comuns, então nunca são tocadas. As cores escolhidas
   para os pontos de vista ficam nos dados.

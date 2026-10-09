@@ -100,7 +100,7 @@ tem escolha a fazer:
 | Caixa | O que cobre |
 |---|---|
 | **Exemplos** | Todas as notas de exemplo juntas. |
-| **Idioma dos padrões** | O idioma e cada configuração que leva palavras: **Status**, **Pasta de capítulos**, **Títulos de capítulo sem número**, **Resultados dos envios**, **Pasta de exportações**, **Pasta de envios**, as notas de darlings, **Nota do universo**, **Tipos de entrada**, **Valores de forma**, **Palavra dos fios**, **Palavra de fio fechado** e **Idioma da escrita**. |
+| **Idioma dos padrões** | O idioma e cada configuração que leva palavras: **Status**, **Pasta de capítulos**, **Títulos de capítulo sem número**, **Resultados dos envios**, **Pasta de exportações**, **Pasta de envios**, as notas de darlings, **Nota do universo**, **Tipos de entrada**, **Valores de forma**, **Palavra das threads**, **Palavra de thread fechada** e **Idioma da escrita**. |
 | **Nota inicial** | Criar a nota inicial e defini-la como a sua **Nota inicial**. |
 | **Abrir a nota inicial ao iniciar** | Abre a nota inicial quando o Obsidian inicia. |
 | **Recursos** | Põe os interruptores como a predefinição que você escolheu. |

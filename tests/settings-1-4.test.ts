@@ -44,14 +44,14 @@ describe("1.4 language defaults on load", () => {
   it("a blank word-bearing field comes back in the install's language", () => {
     const s = defaultsFor("pt-BR");
     s.defaultsLanguage = "pt-BR";
-    s.exportFolder = " "; s.submissionsFolder = ""; s.submissionResults = ""; s.threadKeyword = "";
+    s.exportFolder = " "; s.submissionsFolder = ""; s.submissionResults = ""; s.threadClosedWord = "";
     s.stages = { draft: { words: "", color: "" } } as never;
     s.universeNote = "";
     normalizeSettings(s);
     expect(s.exportFolder).toBe("Escrita/Exportações");
     expect(s.submissionsFolder).toBe("Escrita/Envios");
     expect(s.submissionResults).toBe("pendente, aceito, recusado, retirado");
-    expect(s.threadKeyword).toBe("fio");
+    expect(s.threadClosedWord).toBe("fechada");
     expect(s.stages.draft.words).toBe("rascunho");
     expect(s.universeNote).toBe("Universo.md");
   });
