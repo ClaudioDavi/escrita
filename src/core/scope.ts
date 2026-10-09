@@ -99,6 +99,9 @@ export function linkText(value: unknown): string | null {
   return inner === "" ? null : inner;
 }
 
+/** What a new universe note holds: the properties `name` and `description`, empty. */
+export const UNIVERSE_NOTE_TEXT = "---\nname:\ndescription:\n---\n";
+
 /** The settings' universe note as a vault path: no edge slashes, `.md` added when missing ("Universo/" and "Universo" both give "Universo.md"). */
 export function universeNotePath(universeNote: string): string {
   return withMd(trimSlashes(universeNote.trim()));

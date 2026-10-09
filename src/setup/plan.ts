@@ -52,6 +52,7 @@ import type { UniverseMode } from "../universe/settings";
 import { EXAMPLE_CHAPTERS, exampleText, type ExampleRole } from "./examples";
 import { homeNoteText } from "./home-text";
 import { HOME_NOTE_NAMES } from "../core/home-note";
+import { UNIVERSE_NOTE_TEXT, universeNotePath } from "../core/scope";
 
 /** "What do you write?" (board 37): short fiction (contos and essays), a novel, or both. */
 export type SetupWrites = "stories" | "books" | "both";
@@ -92,14 +93,14 @@ export interface SetupVault {
   files: readonly string[];
   /** markdown notes per folder path, direct and nested, for the "212 notes" reason line; a missing folder counts 0 */
   noteCounts: Readonly<Record<string, number>>;
-  /** leaves open in the workspace (main area tabs and sidebar views) */
+  /** the writer's main-area tabs that hold something (a note); empty tabs and the sidebar panels are not counted */
   openLeaves: number;
   /** whether the vault has any work (`plugin.works`): a book or a tracked note with a stage */
   hasWorks: boolean;
 }
 
 /** The kinds of item, one group each in the preview. */
-export type SetupItemKind = "folder" | "example" | "home" | "setting" | "features" | "layout";
+export type SetupItemKind = "folder" | "example" | "home" | "universe" | "setting" | "features" | "layout";
 
 /**
  * - `new`: does not exist; the run creates it (a folder, a note).
@@ -254,6 +255,15 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
     ? { kind: "home", target: home.path, state: "kept", tick: null, ticked: false, reason: { key: "setup.reason.exists" } }
     : { kind: "home", target: home.path, state: "new", tick: "home", ticked: true, reason: { key: "setup.reason.homeNew" }, content: homeNoteText({ language: choices.language, examples: (ticks.examples ?? !hasWorks) && items.some((i) => i.kind === "example" && i.state === "new") }) });
 
+  // The universe note of a "Shared world" answer: made with the universe tick, never over a note
+  // that exists (the run goes through notes.create with exists "return"). Its path is the one in
+  // effect after the run (the language group may move the default name).
+  if (choices.universeMode === "universe") {
+    const noteSetting = (languageRuns ? settingsAfter(settings, choices.language) : settings).universeNote;
+    const u = place("", universeNotePath(noteSetting));
+    if (!u.exists) items.push({ kind: "universe", target: u.path, state: "new", tick: "universe", ticked: true, reason: { key: "setup.reason.universeNew" }, content: UNIVERSE_NOTE_TEXT });
+  }
+
   // Settings, last. `ticked` of a tick's items follows the tick's default.
   const keep = (key: string, value: unknown, reason: "settingSame" | "settingOwn"): void => {
     items.push({ kind: "setting", target: key, state: "kept", tick: null, ticked: false, reason: { key: `setup.reason.${reason}` }, value });
@@ -305,11 +315,13 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
   // the home tick (Wave 2 seams, 2026-10-07: case-clash.json).
   if (settings.homeNote === home.path) keep("homeNote", settings.homeNote, "settingSame");
   else if (settings.homeNote !== PLAIN_DEFAULTS.homeNote) keep("homeNote", settings.homeNote, "settingOwn");
-  else change("homeNote", home.path, "home", true);
+  else change("homeNote", home.path, "home", true, "homeNoteSet");
   // Its own row, unticked in a vault with works (Wave 2 seams, 2026-10-07).
   if (settings.openHomeOnStartup) keep("openHomeOnStartup", true, "settingSame");
-  else change("openHomeOnStartup", true, "startup", !hasWorks, hasWorks ? "settingHasWorks" : "settingChange");
+  else change("openHomeOnStartup", true, "startup", !hasWorks, hasWorks ? "settingHasWorks" : "startupNew");
 
+  // Only the writer's own tabs count (the vault index reads main-area tabs with a note), so a
+  // fresh vault with Obsidian's default sidebar panels gets the layout ticked.
   const layoutTicked = openLeaves <= 1 && !hasWorks;
   if (choices.layout === "focus") {
     if (settings.openInWritingMode) keep("openInWritingMode", true, "settingSame");

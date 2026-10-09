@@ -45,7 +45,7 @@ describe("fixtures: setup", () => {
       expect(c.vault.openLeaves).toBeGreaterThan(0);
       expect(Array.isArray(c.vault.folders) && Array.isArray(c.vault.files)).toBe(true);
       for (const i of c.expected) {
-        expect(["folder", "example", "home", "setting", "features", "layout"]).toContain(i.kind);
+        expect(["folder", "example", "home", "universe", "setting", "features", "layout"]).toContain(i.kind);
         expect(["new", "kept", "change"]).toContain(i.state);
         expect(typeof i.reason.key).toBe("string");
         if (i.state === "kept") expect(i.tick === null && !i.ticked).toBe(true);

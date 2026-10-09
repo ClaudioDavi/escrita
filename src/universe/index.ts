@@ -34,7 +34,7 @@ import { MentionsIndex } from "./mentions-index";
 import { NamesIndex, type NoteRuns } from "./names-index";
 import { NameMarks, SPELLCHECK_MARKS_WORK } from "./name-marks";
 import { UniverseNamesProvider } from "./names-provider";
-import { keptOut, scopeFor, universeNotePath, universeRootOf, type Scope } from "../core/scope";
+import { UNIVERSE_NOTE_TEXT, keptOut, scopeFor, universeNotePath, universeRootOf, type Scope } from "../core/scope";
 import type { EntryKind, UniverseMode } from "./settings";
 import { inScope, type ThreadRef } from "./threads";
 import { formFor, type WorkInfo } from "./works-list";
@@ -502,7 +502,7 @@ export class UniverseModule extends FeatureModule {
     const path = normalizePath(universeNotePath(p.settings.universeNote));
     await p.notes.ensureFolder(universeRootOf(path));
     // only what is missing: a note already there is returned untouched
-    const r = await p.notes.create(path, "---\nname:\ndescription:\n---\n", { exists: "return" });
+    const r = await p.notes.create(path, UNIVERSE_NOTE_TEXT, { exists: "return" });
     return { file: r.file, created: r.outcome === "created" };
   }
 
