@@ -139,7 +139,10 @@ export class ExplorerDecorations {
   clear(id?: DecorationId): void {
     const ids = id === undefined ? DECORATION_ORDER : [id];
     this.walk(null, (_path, el) => {
-      for (const d of ids) this.owned(el, d)?.remove();
+      for (const d of ids) {
+        this.owned(el, d)?.remove();
+        el.removeAttribute(`data-escrita-has-${d}`);
+      }
     });
   }
 
@@ -181,10 +184,14 @@ export class ExplorerDecorations {
 
   private write(el: DecoEl, id: DecorationId, d: Decoration | null): void {
     let span = this.owned(el, id);
+    // marks the row itself, so styles can follow a decoration without a :has selector
+    const has = `data-escrita-has-${id}`;
     if (!d) {
       span?.remove();
+      el.removeAttribute(has);
       return;
     }
+    if (el.getAttribute(has) === null) el.setAttribute(has, "");
     if (!span) {
       const doc = el.ownerDocument;
       if (!doc) return;

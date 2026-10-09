@@ -75,7 +75,7 @@ function vaultFs(app: App, ensureFolder: (path: string) => Promise<void>): Snaps
     },
     removeIfEmpty: async (dir) => {
       const f = get(dir);
-      if (f instanceof TFolder && f.children.length === 0 && !f.isRoot()) await vault.delete(f);
+      if (f instanceof TFolder && f.children.length === 0 && !f.isRoot()) await app.fileManager.trashFile(f);
     },
   };
 }

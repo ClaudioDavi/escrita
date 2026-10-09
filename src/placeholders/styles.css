@@ -62,7 +62,7 @@
   align-self: center;
 }
 /* keep the dot right after the name even where the name grows to fill the row */
-.nav-file-title:has(> .escrita-explorer-dot) > .nav-file-title-content {
+.nav-file-title[data-escrita-has-dot] > .nav-file-title-content {
   flex-grow: 0;
 }
 
