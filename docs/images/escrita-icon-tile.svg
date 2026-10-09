@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="512" height="512" role="img" aria-label="Escrita">
+  <title>Escrita</title>
+  <rect width="96" height="96" rx="21.12" fill="#B5532F"/>
+  <g transform="translate(12.48 12.48) scale(0.74)">
+    <path d="M41 14C39.5 20 36 25 36 33C36 44 44.5 49.5 48 58C50 62.5 53 56.5 62 54C70 52 78 53 86 55.5M55 14C56.5 20 60 25 60 33C60 44 51.5 49.5 48 58C46 62.5 43 56.5 34 54C26 52 18 53 10 55.5M41 14H55M10 78C18 75.5 26 74.5 34 76.5C41 78.5 45 81 48 85C51 81 55 78.5 62 76.5C70 74.5 78 75.5 86 78M48 39V49" fill="none" stroke="#F5ECE0" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="48" cy="32.5" r="2.3" fill="#F5ECE0"/>
+  </g>
+</svg>

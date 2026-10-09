@@ -1,4 +1,25 @@
-# Escrita
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/banner-dark.png">
+    <img src="docs/images/banner-light.png" alt="Escrita: write and revise fiction in Obsidian" width="574">
+  </picture>
+</p>
+
+<p align="center">
+  <a href="https://github.com/ClaudioDavi/escrita/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ClaudioDavi/escrita?color=B5532F&label=release"></a>
+  <img alt="Obsidian 1.8.7 or later" src="https://img.shields.io/badge/Obsidian-1.8.7%2B-7C3AED">
+  <img alt="Desktop and mobile" src="https://img.shields.io/badge/desktop%20%26%20mobile-yes-5A7A48">
+  <img alt="No network, no AI" src="https://img.shields.io/badge/network-none-2B211C">
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/ClaudioDavi/escrita?color=7A5A48"></a>
+</p>
+
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="docs/guide/en/getting-started.md">Getting started</a> ·
+  <a href="docs/guide/pt-BR/getting-started.md">Comece aqui (português)</a> ·
+  <a href="#what-escrita-does">Features</a> ·
+  <a href="#changelog">Changelog</a>
+</p>
 
 An Obsidian plugin for fiction writers: an outline that lives inside your chapters, word goals and sprints, placeholders, a safe place for the passages you cut, a revision lens, manuscript export, and a shared universe of characters and places.
 
@@ -66,7 +87,7 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
-### 1.0.0 (unreleased)
+### 1.0.0 (2026-10-09)
 
 The full release. Everything from 0.9 is still here; 1.0 adds a way in and finishes the guides.
 

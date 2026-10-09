@@ -41,34 +41,30 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 | 0.7.0 | Characters across works: "Appears in" (U 1.2) · Names into spellcheck and the revision lens (U 1.4) · Keep a note out of the universe, `universe: false` (U 1.1) · POV and status in the outline (N 1) · Per-chapter targets (N 2) · Feature switches, the Features page (SF 10) · User guide in `docs/guide/` (English and pt-BR) · Minimum Obsidian 1.7.2 · Improvements: modules that load and unload at runtime (candidate 6), chapter rows (candidate 7) |
 | 0.8.0 | Submitting work: export, Markdown and DOCX in the Shunn and pt-BR presets, for a note and a book, with a preview, "Export again" and chapters without a number (N 7, stages 1–2) · Submissions, "Record a submission" and the pending count in the home block (SF 12) · Export and submissions feature switches (19 in all) · User guide "Publishing" (English and pt-BR) · Improvements: each module owns its settings section and feature metadata (11, 20), the export foundations (15–19), mentions on demand (14), time-budgeted index passes (21), name caches and lens (22), small redraws (23) and one name fold (10) |
 | 0.9.0 | The book and its world: unlinked mentions with a Link button and names without an entry as a lens rule (U 2.5) · EPUB 3 export, checked by EPUBCheck in CI (N 7, stage 3) · "Publish next chapter" and the serial line in the outline (N 4) · "Read the book" (N 8) · Collections of contos, exported as one DOCX, EPUB or Markdown file (SF 13) · User guide updated ("The world", "Publishing", "Writing", English and pt-BR) · Improvement: scope as a field on the classifier result (candidate 9) |
+| 1.0.0 | The full release: set up a writing vault, with presets (Essentials, Writer, Everything), the home note and a first layout (SF 10) · Defaults in the writer's language (SF 10) · Writing mode · Mobile pass and the universe "⋯" button · User guide complete, seven pages in English and pt-BR · Fixes from the 2026-10-08 review and the demo rehearsal · Minimum Obsidian 1.8.7 · Improvements: one rule for a note's effective piece (candidate 8), shared helpers out of module folders (candidate 13) |
 
-## Next: 1.0, the full release
+## Next: 1.1, screenwriting (phase 1)
 
-Plan (draft): [PLAN-1.0.md](PLAN-1.0.md).
+Plan: to write (`PLAN-1.1.md`), from [ROADMAP-screenplay.md](ROADMAP-screenplay.md).
 
-Stabilization and setup: a mobile pass, the user guide complete in English and pt-BR (see
-"Documentation"), migrations tested on the author's vault, and the community plugin
-submission. Serves every stage: a new writer sits down and writes. Upkeep: none; the setup
-runs once.
+A screenplay is a note in Fountain. Phase 1 makes a script a first-class note and gets it
+out the door as a correct PDF; the editor help comes in phase 2. Serves drafting and
+submitting. Upkeep: none beyond marking a note as a screenplay.
 
 | Feature | Ref | Effort | Note |
 |---|---|---|---|
-| Set up a writing vault: the home note and a first writing layout, with presets (Essentials, Writer, Everything) on the 0.7 feature switches | SF 10 | M | |
-| Defaults in the writer's language: Portuguese status words, folders and word lists when Obsidian runs in Portuguese | SF 10 | S | |
-| Stabilization: mobile pass, the user guide complete, migrations tested on the author's vault | Docs | M | Phone gates stay waived (no phone to test on) |
-| Community plugin submission | — | S | |
+| Screenplay notes and the Fountain parser | SP 1 | M | |
+| Export: Fountain and PDF in industry format | SP 6 | L | |
 
-**Improvements:** candidate 8, one rule for a note's effective piece (a
-chapter's book-default target agrees on every surface), and candidate 13, shared helpers
-out of module folders (the setup module needs two of them).
+**Improvement:** to pick when the plan is written. Candidates: path helpers in core
+(candidate 33) and settings rows with the install's defaults (candidate 36).
 
-The timeline, dates, facts over time, continuity checks and canon (U 2.1–2.4) were
-planned for 0.9 and moved after screenwriting on 2026-10-06: bloat at this stage.
+Still open after 1.0, on desktop: gate G0d (the Reading-view "Appears in" section across
+re-renders) and the by-hand checks in [TEST-1.0.md](TEST-1.0.md) that were not run before
+release. The phone gates stay waived (no phone to test on, 2026-10-05).
 
-Open from 0.7, on desktop: gate G0d (the Reading-view "Appears in" section across
-re-renders) and the visual check against the canvas (PLAN-0.7.md, task 5.2). The phone
-gates (G0c, G0h) are waived: the author has no phone to test on, so mobile behaviour is
-assumed from the documented API (2026-10-05).
+After screenwriting: universe phase 2 (timeline, dates, facts over time, continuity and
+canon; U 2.1–2.4), moved out of 0.9 on 2026-10-06.
 
 ## 0.5 to 1.0
 
@@ -79,8 +75,8 @@ fiction), then the universe, then book features. Planning the writing desk as 0.
 0.10 merged into 0.9, so 1.0 follows 0.9. The desk
 shipped as 0.4.0 and the lens as 0.5.0.
 
-1.0 is planned above, under "Next". After it: screenwriting (`ROADMAP-screenplay.md`), then
-universe phase 2 (U 2.1–2.4).
+1.0 shipped on 2026-10-09. Next: screenwriting (`ROADMAP-screenplay.md`), then universe
+phase 2 (U 2.1–2.4).
 
 Improvements: later versions pick from IMPROVEMENTS.md when they're planned in detail.
 
