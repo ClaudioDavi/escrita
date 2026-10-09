@@ -3,8 +3,6 @@ import { t } from "../i18n";
 import type EscritaPlugin from "../main";
 import type { SettingsUi } from "../core/module-context";
 
-const DEFAULT_NOTE = "Darlings.md";
-
 export function darlingsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
   const s = plugin.settings;
   new Setting(el).setName(t("settings.darlings")).setHeading();
@@ -13,13 +11,13 @@ export function darlingsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin:
     .setDesc(t("settings.darlingsNote.desc"))
     .addText((c) => {
       c.setValue(s.darlingsNote);
-      ui.saveOnCommit(c, () => DEFAULT_NOTE, (v) => { s.darlingsNote = v; });
+      ui.saveOnCommit(c, () => ui.defaults().darlingsNote, (v) => { s.darlingsNote = v; });
     });
   new Setting(el)
     .setName(t("settings.globalDarlingsNote"))
     .addText((c) => {
       c.setValue(s.globalDarlingsNote);
-      ui.saveOnCommit(c, () => DEFAULT_NOTE, (v) => { s.globalDarlingsNote = v; });
+      ui.saveOnCommit(c, () => ui.defaults().globalDarlingsNote, (v) => { s.globalDarlingsNote = v; });
     });
 }
 

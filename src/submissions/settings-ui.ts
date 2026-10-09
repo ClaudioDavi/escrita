@@ -1,6 +1,5 @@
 import { Setting } from "obsidian";
 import { fmt, plural, t } from "../i18n";
-import { DEFAULT_SETTINGS } from "../settings";
 import { inFolder, submissionsRoot } from "../core/classify";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
@@ -14,8 +13,8 @@ export function submissionsSettingsSection(el: HTMLElement, ui: SettingsUi, plug
     .setName(t("submissions.settings.results"))
     .setDesc(t("submissions.settings.results.desc"))
     .addText((c) => {
-      c.setPlaceholder(DEFAULT_SETTINGS.submissionResults).setValue(s.submissionResults);
-      ui.saveOnCommit(c, () => DEFAULT_SETTINGS.submissionResults, (v) => { s.submissionResults = resultValues(v).join(", "); });
+      c.setPlaceholder(ui.defaults().submissionResults).setValue(s.submissionResults);
+      ui.saveOnCommit(c, () => ui.defaults().submissionResults, (v) => { s.submissionResults = resultValues(v).join(", "); });
     });
   const props = [
     ["Work", "submissionWorkProperty"], ["Market", "submissionMarketProperty"], ["Sent", "submissionSentProperty"],
@@ -26,9 +25,9 @@ export function submissionsSettingsSection(el: HTMLElement, ui: SettingsUi, plug
       .setName(t(`submissions.settings.prop${name}`))
       .setDesc(t(`submissions.settings.prop${name}.desc`))
       .addText((c) => {
-        c.setPlaceholder(DEFAULT_SETTINGS[key]).setValue(s[key]);
-        ui.saveOnCommit(c, () => DEFAULT_SETTINGS[key], (v) => {
-          const next = v.trim() || DEFAULT_SETTINGS[key];
+        c.setPlaceholder(ui.defaults()[key]).setValue(s[key]);
+        ui.saveOnCommit(c, () => ui.defaults()[key], (v) => {
+          const next = v.trim() || ui.defaults()[key];
           const all = propsOf(s);
           if (duplicateProp(all, name.toLowerCase() as keyof typeof all, next)) { c.setValue(s[key]); return; }
           s[key] = next;

@@ -10,7 +10,7 @@ import { Notice, Setting } from "obsidian";
 import { locale, t } from "../i18n";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
-import { ENTRY_KINDS, defaultUniverseSettings, normalizeNotePath } from "./settings";
+import { ENTRY_KINDS, normalizeNotePath } from "./settings";
 import { builtinTitlesText } from "./names-settings";
 import { formValuesText, parseFormValues } from "./works-list";
 import { threadWordRows } from "./threads-settings-ui";
@@ -19,7 +19,7 @@ const stripSlashes = (p: string) => p.replace(/^\/+|\/+$/g, "");
 
 export function universeSettingsSection(containerEl: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
   const s = plugin.settings;
-  const d = defaultUniverseSettings();
+  const d = ui.defaults();
   const mode = s.universeMode;
   if (mode === "off") {
     if (plugin.features.isOn("threads")) threadWordRows(containerEl, ui, s);
@@ -146,7 +146,7 @@ export function universeSettingsSection(containerEl: HTMLElement, ui: SettingsUi
 /** "Names" (board 24, l): the underline switch, the extra titles and the three per-entry property names (collapsed). */
 function renderNameRows(plugin: EscritaPlugin, ui: SettingsUi, containerEl: HTMLElement): void {
   const s = plugin.settings;
-  const d = defaultUniverseSettings();
+  const d = ui.defaults();
   new Setting(containerEl).setName(t("universe.settings.names")).setHeading();
 
   new Setting(containerEl)

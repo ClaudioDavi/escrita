@@ -1,6 +1,5 @@
 import { Setting } from "obsidian";
 import { fmt, plural, t } from "../i18n";
-import { DEFAULT_SETTINGS } from "../settings";
 import { exportRoot, inFolder, snapshotsFolderProblem, snapshotsRoot, submissionsRoot } from "../core/classify";
 import { bookProblem, overlapProblem, type FolderProblem } from "../core/folder-problem";
 import type { SettingsUi } from "../core/module-context";
@@ -55,8 +54,8 @@ export function snapshotsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin
     .setDesc(t("settings.snapshotsKeepAuto.desc"))
     .addText((c) => {
       c.setValue(String(s.snapshotsKeepAuto));
-      ui.saveOnCommit(c, () => String(DEFAULT_SETTINGS.snapshotsKeepAuto), (v) => {
-        s.snapshotsKeepAuto = ui.num(v, DEFAULT_SETTINGS.snapshotsKeepAuto, 1);
+      ui.saveOnCommit(c, () => String(ui.defaults().snapshotsKeepAuto), (v) => {
+        s.snapshotsKeepAuto = ui.num(v, ui.defaults().snapshotsKeepAuto, 1);
         c.setValue(String(s.snapshotsKeepAuto));
       });
     });

@@ -1,12 +1,11 @@
 import { Setting } from "obsidian";
 import { t } from "../i18n";
-import { DEFAULT_SETTINGS } from "../settings";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
 
 /**
  * The Export section: the property names, the author on the title page and the
- * chapter heading. The folder is drawn by the core (settings.ts, pluginFolderRows). Every value has an English default in DEFAULT_SETTINGS (rule 6).
+ * chapter heading. The folder is drawn by the core (settings.ts, pluginFolderRows). Every value has a default in the install's set (ui.defaults(), rule 6).
  */
 export function exportSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
   const s = plugin.settings;
@@ -16,8 +15,8 @@ export function exportSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: E
       .setName(t(`export.settings.${name}`))
       .setDesc(t(`export.settings.${name}.desc`))
       .addText((c) => {
-        c.setPlaceholder(DEFAULT_SETTINGS[key]).setValue(s[key]);
-        ui.saveOnCommit(c, () => DEFAULT_SETTINGS[key], (v) => { s[key] = v; });
+        c.setPlaceholder(ui.defaults()[key]).setValue(s[key]);
+        ui.saveOnCommit(c, () => ui.defaults()[key], (v) => { s[key] = v; });
       });
   };
   text("compileProperty", "compile");

@@ -203,3 +203,14 @@ describe("saveOnCommit", () => {
     expect(ui.num("3", 9, 50)).toBe(50);
   });
 });
+
+describe("makeUi().defaults()", () => {
+  it("follows the install's defaultsLanguage, not the English schema", () => {
+    const { tab, settings } = tabWith();
+    const ui = (tab as unknown as { makeUi(): import("../src/core/module-context").SettingsUi }).makeUi();
+    expect(ui.defaults().chaptersFolder).toBe("Chapters");
+    settings.defaultsLanguage = "pt-BR";
+    expect(ui.defaults().chaptersFolder).toBe("Capítulos");
+    expect(ui.defaults().threadKeyword).toBe("fio");
+  });
+});

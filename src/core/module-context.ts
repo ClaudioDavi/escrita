@@ -6,6 +6,7 @@
 import { Component, ItemView, Notice, type App, type Command, type TextAreaComponent, type TextComponent, type MarkdownPostProcessor, type MarkdownPostProcessorContext, type ViewCreator, type WorkspaceLeaf } from "obsidian";
 import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
+import type { EscritaSettings } from "../settings";
 import { t } from "../i18n";
 import type { FeatureId } from "./features";
 import type { Follower, IndexFile, IndexSpec, VaultIndex } from "./vault-index";
@@ -67,6 +68,12 @@ export interface SettingsUi {
    * field then shows what was kept, `apply(v)` stores it, and the settings save.
    */
   saveOnCommit(c: TextComponent | TextAreaComponent, fallback: () => string, apply: (v: string) => void): void;
+  /**
+   * The default set of the install's language (`defaultsFor(settings.defaultsLanguage)`, 1.0):
+   * what a cleared field falls back to and what a placeholder shows. Never DEFAULT_SETTINGS
+   * for a word-bearing setting: that is the English set, wrong in a pt-BR install.
+   */
+  defaults(): EscritaSettings;
   /** Draws the whole tab again (after a change that shows or hides rows). */
   redraw(): void;
   /** A number typed in a field: its digits, at least `min` (default 0); `fallback` when blank or not a number. */
