@@ -57,11 +57,11 @@ async function linkOccurrence(plugin: EscritaPlugin, o: Occurrence, target: stri
   return r.ok;
 }
 
-/** Opens the note in a split next to the writer's text without taking focus from it. */
+/** Opens the note in a new tab of the main area (not a split, which squeezes both panes) without taking focus from the writer's text. */
 async function openBeside(plugin: EscritaPlugin, file: TFile, editor: Editor | null): Promise<void> {
   const ws = plugin.app.workspace;
   try {
-    const leaf = ws.getActiveViewOfType(MarkdownView) ? ws.getLeaf("split", "vertical") : ws.getLeaf(true);
+    const leaf = ws.getLeaf("tab");
     await leaf.openFile(file, { active: false });
   } catch {
     new Notice(t("universe.create.notice.failed"));

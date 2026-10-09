@@ -117,7 +117,7 @@ to a book). The folder is only where new entries are created; entries can move f
 3. Pick the type, and optionally add another alias. Leave **Turn this occurrence into a link** ticked
    to turn the selected text into a link (one undo removes it).
 4. **Create** makes the note in the type's folder from its template, with the type and
-   `universe` properties set (in per-book mode, no `universe`). It opens to the side.
+   `universe` properties set (in per-book mode, no `universe`). It opens in a new tab, and your cursor stays in your text.
 
 If an entry with that name or alias already exists, the modal offers **Open** or **Just
 link here** instead. Escrita never overwrites a note.
@@ -238,7 +238,7 @@ your notes.
 ### Where you see it
 
 - **In the panel.** On the Entries tab, an entry with mentions shows "N works" beside its
-  name. Click the row to open the list: each work with its mention count and its form,
+  name. Click "N works" to open the list (clicking the row opens the entry note): each work with its mention count and its form,
   and for a book, the first and last chapter that mention it ("first in ch. 2, last in
   ch. 9"). A group called **Other notes** follows the works: other entries, the universe
   note and loose notes that are in the universe. It starts closed.

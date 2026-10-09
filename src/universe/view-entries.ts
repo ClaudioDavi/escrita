@@ -135,6 +135,7 @@ function drawCount(list: HTMLElement, row: HTMLElement, ctx: PanelCtx, e: Entry)
   btn.setAttribute("type", "button");
   btn.setAttribute("aria-expanded", String(open));
   btn.setText(works === ai.workCount ? label : worksLabel(works));
+  btn.setAttribute("aria-label", countTip(ai));
   setTooltip(btn, countTip(ai), { placement: "top" });
   btn.addEventListener("click", (evt) => {
     evt.stopPropagation();

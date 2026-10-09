@@ -276,3 +276,23 @@ describe("MentionsIndex lookup maps follow an edit for the changed note only (fi
     expect(resolves.n - before).toBeGreaterThanOrEqual(20);
   });
 });
+
+import { countsAreCurrent } from "../src/universe/mentions-index";
+
+describe("countsAreCurrent (not counted yet versus counted zero)", () => {
+  it("is false while the index is not ready", () => {
+    expect(countsAreCurrent(false, false, "a", "a")).toBe(false);
+  });
+  it("is false while a table rebuild is pending (just after an entry is created)", () => {
+    expect(countsAreCurrent(true, true, "a", "a")).toBe(false);
+  });
+  it("is false when the table moved since the last build", () => {
+    expect(countsAreCurrent(true, false, "b", "a")).toBe(false);
+  });
+  it("is true when ready, nothing pending and the table is the built one", () => {
+    expect(countsAreCurrent(true, false, "a", "a")).toBe(true);
+  });
+  it("ignores the table before the first demand", () => {
+    expect(countsAreCurrent(true, false, null, "")).toBe(true);
+  });
+});
