@@ -3,6 +3,7 @@
 // workspace calls from this plan.
 
 import { VIEW_TYPES } from "../core/view-types";
+import { resolveHomeNote } from "../core/home-note";
 
 /**
  * How a panel is placed:
@@ -64,12 +65,11 @@ export function planPanels(input: PanelPlanInput): PanelStep[] {
 }
 
 /**
- * The vault path the `homeNote` setting names, matched like `SetupModule.hasHomeNote`: letter
- * case ignored, ".md" added when missing. Null when the setting is blank or nothing matches.
+ * The vault path the `homeNote` setting names, found by the desk's rule (`resolveHomeNote`):
+ * ".md" added when missing. Null when the setting is blank or nothing matches.
  * `normalized` is the setting already passed through `normalizePath`.
  */
 export function resolveHomePath(normalized: string, paths: readonly string[]): string | null {
   if (!normalized) return null;
-  const want = (/\.md$/i.test(normalized) ? normalized : `${normalized}.md`).normalize("NFC").toLowerCase();
-  return paths.find((p) => p.normalize("NFC").toLowerCase() === want) ?? null;
+  return resolveHomeNote(paths, /\.md$/i.test(normalized) ? normalized : `${normalized}.md`);
 }

@@ -3,6 +3,7 @@ import type EscritaPlugin from "../main";
 import { CoreModule } from "../core/module-context";
 import { t } from "../i18n";
 import { SetupModal } from "./modal";
+import { resolveHomePath } from "./layout-plan";
 
 /**
  * "Set up a writing vault" (1.0, SF 10; boards 35-37). A core module, not a feature: main.ts
@@ -64,7 +65,6 @@ export class SetupModule extends CoreModule {
     const raw = this.plugin.settings.homeNote.trim();
     if (!raw) return false;
     const setting = normalizePath(raw);
-    const want = (/\.md$/i.test(setting) ? setting : `${setting}.md`).normalize("NFC").toLowerCase();
-    return this.plugin.app.vault.getFiles().some((f) => f.path.normalize("NFC").toLowerCase() === want);
+    return resolveHomePath(setting, this.plugin.app.vault.getFiles().map((f) => f.path)) !== null;
   }
 }

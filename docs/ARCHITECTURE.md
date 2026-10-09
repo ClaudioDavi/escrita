@@ -2152,7 +2152,7 @@ logic lives in core (`stages`, `works`, `left-off`); the desk draws and records.
   files that no longer exist are pruned at layout ready.
 - **Home note** (`home.ts` pure, `home-note.ts`). Setting `homeNote` (a vault path; `.md`
   added when missing; empty by default). The command "Open the home note" (no hotkey)
-  opens it; with the setting empty it adopts an existing `Home.md` or `Inicio.md` and
+  opens it; with the setting empty it adopts an existing `Home.md`, `Início.md` or the older `Inicio.md` and
   never overwrites, and saves it as the setting so open on startup and rename tracking
   follow it; if the note doesn't exist it asks, then creates it holding an empty
   works block (a failure shows a Notice and logs the error). The setting follows a rename

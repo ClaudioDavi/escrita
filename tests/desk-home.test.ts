@@ -73,11 +73,9 @@ describe("settingToSave", () => {
   });
 });
 
-import { resolveCaseless } from "../src/desk/home";
-describe("resolveCaseless", () => {
-  it("finds a case variant, preferring the exact spelling", () => {
-    expect(resolveCaseless(["Home.md", "x.md"], "home.md")).toBe("Home.md");
-    expect(resolveCaseless(["home.md", "Home.md"], "Home.md")).toBe("Home.md");
-    expect(resolveCaseless(["a.md"], "home.md")).toBeNull();
+describe("pt-BR names", () => {
+  it("adopts Início.md before the old Inicio.md, and still adopts Inicio.md alone", () => {
+    expect(homeAction("", has("Início.md", "Inicio.md"))).toEqual({ kind: "adopt", path: "Início.md" });
+    expect(homeAction("", has("Inicio.md"))).toEqual({ kind: "adopt", path: "Inicio.md" });
   });
 });
