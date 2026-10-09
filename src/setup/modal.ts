@@ -32,7 +32,7 @@ function readVault(plugin: EscritaPlugin): SetupVault {
   // Only the writer's main-area tabs that hold something: a fresh vault opens with sidebar
   // panels and an empty tab, and those are not the writer's work.
   let openLeaves = 0;
-  workspace.iterateRootLeaves((leaf) => { if (leaf.view.getViewType() !== "empty") openLeaves += 1; });
+  workspace.iterateRootLeaves((leaf) => { if (leaf.getViewState().type !== "empty") openLeaves += 1; });
   const hasWorks = plugin.works.list()[Symbol.iterator]().next().done === false;
   return { folders, files: files.map((f) => f.path), noteCounts, openLeaves, hasWorks };
 }
