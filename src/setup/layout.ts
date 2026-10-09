@@ -1,5 +1,6 @@
-import { MarkdownView, Notice, Platform, normalizePath, type WorkspaceLeaf } from "obsidian";
+import { Notice, Platform, normalizePath, type WorkspaceLeaf } from "obsidian";
 import type EscritaPlugin from "../main";
+import { markdownLeafFor } from "../ui/leaves";
 import { t } from "../i18n";
 import { writingModeOf } from "../core/writing-mode";
 import type { SetupLayout } from "./plan";
@@ -83,10 +84,7 @@ export async function openHomeNote(plugin: EscritaPlugin): Promise<boolean> {
   const file = path ? vault.getFileByPath(path) : null;
   if (!file) return false;
 
-  let leaf: WorkspaceLeaf | undefined;
-  workspace.iterateRootLeaves((l) => {
-    if (!leaf && l.view instanceof MarkdownView && l.view.file?.path === file.path) leaf = l;
-  });
+  let leaf: WorkspaceLeaf | null = markdownLeafFor(plugin.app, file.path);
   if (!leaf) {
     const recent = workspace.getMostRecentLeaf();
     leaf = recent && recent.view.getViewType() === "empty" ? recent : workspace.getLeaf("tab");
