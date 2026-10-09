@@ -43,6 +43,8 @@ It needs Obsidian **1.8.7 or later**. It works on desktop and on phones.
 
 Step by step: [Getting started](docs/guide/en/getting-started.md) ([Português](docs/guide/pt-BR/getting-started.md)).
 
+![The setup: pick what you write and a starting point, review every note, folder and setting it will create, then create them. It ends on the home note.](docs/images/set-up-a-vault.gif)
+
 ## What Escrita does
 
 Each part is a switch on the Features page, so you can turn off what you don't use. Every command and setting is described in the guide for its group. The guides are in English and in Brazilian Portuguese.
@@ -51,11 +53,17 @@ Each part is a switch on the Features page, so you can turn off what you don't u
 
 **Writing.** The outline sits in the sidebar and lists your chapters and their beats, with point of view, filters, a board and a "Read the book" view. Goals, pacing, sprints, days off, targets for a single conto or essay, placeholders, Enter flow, smart typography, dialogue focus, moving a paragraph or scene, templates, spellcheck on demand and word counts in the file explorer are here too. Guide: [English](docs/guide/en/writing.md) · [Português](docs/guide/pt-BR/writing.md).
 
+![Writing under the outline: a chapter's planned beats show as faint labels in the editor; typing under one ticks it off, with the quotes curled and the ellipsis set as you type, and a new beat is added from the outline.](docs/images/outline-and-beats.gif)
+
 **Tracking.** Works move through five stages (idea, draft, revision, ready, published), mapped to your own status words. The home note shows what to write today and opens each work where you left off. Writing mode strips the screen down to the note. A snapshot is taken at each stage change. Guide: [English](docs/guide/en/tracking.md) · [Português](docs/guide/pt-BR/tracking.md).
 
 **Revision.** The revision lens underlines what is worth rereading (echoes, adverbs, gerunds, crutch words, name variants, long sentences) and never changes your text. Snapshots keep named and automatic copies of a note that you can compare word by word and restore. Darlings keep the passages you cut, restorable to where they came from. Guide: [English](docs/guide/en/revision.md) · [Português](docs/guide/pt-BR/revision.md).
 
+![Revising a chapter: the revision lens underlines echoes and a misspelled name, a paragraph goes to the darlings, and the chapter is compared word by word with its first draft.](docs/images/revision-lens.gif)
+
 **Publishing.** The publish check looks for open comments, placeholders and unwritten beats before you mark a note published. Export writes Markdown, DOCX or EPUB (Shunn and pt-BR templates), for a note, a book or a collection of contos. Submissions record where a work was sent and what came back. Guide: [English](docs/guide/en/publishing.md) · [Português](docs/guide/pt-BR/publishing.md).
+
+![Publishing a chapter: "Publish next chapter" stops on a placeholder, the line is written and the chapter published, then the book is exported as an EPUB with a preview.](docs/images/publish-and-export.gif)
 
 **The world.** A shared universe of characters, places, objects, groups and events, with "Appears in", unlinked mentions, names in the editor and the revision lens, and open threads you plant in one story for a later one. Guide: [English](docs/guide/en/the-world.md) · [Português](docs/guide/pt-BR/the-world.md).
 
