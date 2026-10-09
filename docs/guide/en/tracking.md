@@ -99,9 +99,9 @@ Any other line is ignored. A folder that doesn't exist says so in the block.
 ### Open the home note
 
 **Open the home note** opens the note. If you haven't set one, Escrita adopts an existing
-`Home.md` or `Inicio.md`, and never overwrites it. If there is none, it asks first, then
-creates the note with an empty works block (`Home.md` in English, `Inicio.md` in
-Portuguese). If the note you set doesn't exist, it asks before creating it. Renaming or
+`Home.md`, `Início.md` or `Inicio.md`, and never overwrites it. If there is none, it asks
+first, then creates the note with an empty works block (`Home.md` in English, `Início.md` in
+Portuguese). The setup finds the same note. If the note you set doesn't exist, it asks before creating it. Renaming or
 moving the home note updates the setting.
 
 The command has no default hotkey. You can give it one in Settings › Hotkeys.

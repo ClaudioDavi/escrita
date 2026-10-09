@@ -159,6 +159,8 @@ cp ~/projects/website/escrita/.obsidian/plugins/escrita/data.json ~/escrita-test
    the summary reads "Nada a fazer" or "Nada marcado", with **Criar** greyed. Otherwise
    `Início.md` is offered, ticked (a new note, never over an existing one): click **Criar**.
    Expected: at most `Início.md` is created, and only if it was offered.
+   If your vault already has `Home.md`, `Início.md` or `Inicio.md` and the setting is empty,
+   that note is `=` (adopted), and no second home note is offered.
 4. Check that nothing else moved:
 
    ```bash
@@ -253,6 +255,24 @@ Vault `~/projects/website/escrita/`, window about 390 px wide, in the developer 
 5. Universe panel: each entry row shows **⋯** (no hover needed); tapping it opens the same
    menu as the right click; tapping the row still opens the entry.
 6. `app.emulateMobile(false)` when done.
+
+## Release-candidate fixes (2026-10-09)
+
+In `vazio-pt` unless noted.
+
+1. **Settings fall back to the install's language.** Clear **Palavra de fio** [Thread word]
+   and leave the field. Expected: it reads `fio`, and an existing `%% fio: … %%` is still a
+   thread. Same for the closed word, the universe note (`Universo.md`) and the export and
+   submissions folders: each placeholder is Portuguese.
+2. **One home note.** In a copy of `vazio-pt` with `Início.md` renamed to `Inicio.md` and the
+   home note setting cleared: run **Abrir a nota inicial**, then the setup. Expected: both
+   use `Inicio.md`; no `Início.md` is created.
+3. **Darlings with the note open.** Open the darlings note in a tab beside a conto. Cut a
+   passage to darlings, Ctrl+Z in the darlings note, cut again, restore it, delete another.
+   Expected: the darlings note shows each change at once, undo works there, no text lost.
+4. **Dialogue focus keeps working.** Type dialogue in a conto while the universe panel
+   updates (in a note with entry names). Expected: the focus and the name marks keep
+   following the cursor.
 
 ## Open gates to check by eye
 

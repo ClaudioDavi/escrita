@@ -82,6 +82,7 @@ The full release. Everything from 0.9 is still here; 1.0 adds a way in and finis
   - Escrita now needs Obsidian 1.8.7 or later (`minAppVersion`).
   - Your existing settings are unchanged, and the setup notice does not show on an update. An existing install keeps the English defaults it was using, even when Obsidian runs in Portuguese, so no folder or status word changes under you.
   - Every feature stays as it was, and every switch keeps its state.
+- Fixes before release: clearing a setting restores the default in your install's language, not English (a cleared thread word in Portuguese stays `fio`); the setup and **Open the home note** find the same home note and adopt an existing one instead of creating a second; the darlings note is written through the editor when it is open, so undo works; dialogue focus and the name marks no longer stop after one failed redraw.
 - Internal: shared helpers moved out of module folders (`core/` and `ui/`), and the Obsidian guidelines lint (`eslint-plugin-obsidianmd`) runs in CI.
 
 ### 0.9.0

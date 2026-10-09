@@ -102,9 +102,9 @@ Qualquer outra linha é ignorada. Uma pasta que não existe é avisada no bloco.
 ### Abra a nota inicial
 
 **Abrir a nota inicial** abre a nota. Se você não definiu nenhuma, o Escrita adota um
-`Home.md` ou `Inicio.md` que já exista, e nunca o sobrescreve. Se não houver nenhum, ele
-pergunta antes e então cria a nota com um bloco de obras vazio (`Inicio.md` em português,
-`Home.md` em inglês). Se a nota que você definiu não existe, ele pergunta antes de criá-la.
+`Home.md`, `Início.md` ou `Inicio.md` que já exista, e nunca o sobrescreve. Se não houver
+nenhum, ele pergunta antes e então cria a nota com um bloco de obras vazio (`Início.md` em
+português, `Home.md` em inglês). A preparação do cofre encontra a mesma nota. Se a nota que você definiu não existe, ele pergunta antes de criá-la.
 Renomear ou mover a nota inicial atualiza a configuração.
 
 O comando não tem atalho padrão. Você pode dar um em Configurações › Atalhos.
