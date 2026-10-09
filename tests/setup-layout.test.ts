@@ -44,6 +44,10 @@ describe("resolveHomePath", () => {
     expect(resolveHomePath("home", paths)).toBe("Home.md");
     expect(resolveHomePath("HOME.md", paths)).toBe("Home.md");
   });
+  it("agrees with the desk: exact first, then NFC, then case", () => {
+    expect(resolveHomePath("Home", ["home.md", "Home.md"])).toBe("Home.md");
+    expect(resolveHomePath("Início", ["Início.md".normalize("NFD")])).toBe("Início.md".normalize("NFD"));
+  });
   it("is null when blank or missing", () => {
     expect(resolveHomePath("", paths)).toBeNull();
     expect(resolveHomePath("Início", paths)).toBeNull();
