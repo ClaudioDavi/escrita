@@ -95,6 +95,14 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
+### 1.0.1 (2026-10-09)
+
+Fixes from Obsidian's review of the plugin for the community directory. Nothing changes in how Escrita works.
+
+- Removing an empty snapshot folder now follows your "Deleted files" setting (system trash, Obsidian's `.trash` or delete) like every other removal.
+- The file explorer's placeholder dot no longer uses a `:has` selector, which could slow down a large explorer.
+- Build and type fixes: no `builtin-modules` package, and no deprecated button call.
+
 ### 1.0.0 (2026-10-09)
 
 The full release. Everything from 0.9 is still here; 1.0 adds a way in and finishes the guides.
