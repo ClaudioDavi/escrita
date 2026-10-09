@@ -4,6 +4,7 @@
 // edits touched. Marks are mapped through edits in between. Decorations only: it never
 // changes text (rule 2).
 
+import { dispatchWithRetry } from "../core/dispatch-retry";
 import { StateEffect, type EditorState, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 import { Keymap, Platform, editorInfoField } from "obsidian";
@@ -182,7 +183,10 @@ export class NameMarks {
 
   /** Redraws every editor; `full` also re-matches the whole note (names changed). */
   refresh(full = false): void {
-    for (const v of [...this.views]) v.dispatch({ effects: refreshEffect.of({ full }) });
+    // Called from the names provider's emitter: never throws into it; a failed dispatch is retried once.
+    for (const v of [...this.views]) {
+      dispatchWithRetry(v, () => ({ effects: refreshEffect.of({ full }) }), () => this.views.has(v), () => { /* the ViewPlugin's destroy() removes it; a typing pass redraws it meanwhile */ });
+    }
   }
 
   /** Stops listening for name changes. The per-editor timers go with each ViewPlugin's destroy, when the slot empties. */
