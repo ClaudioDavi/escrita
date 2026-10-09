@@ -34,7 +34,7 @@ export interface IndexHubOptions {
   settingsMs?: number;
   /** how long a metadata build waits for `resolved` (default 5000 ms) */
   fallbackMs?: number;
-  /** passed to every index; a spec's own `settleMs` wins (IndexSpec.settleMs, read from task 1.1 on) */
+  /** passed to every index; a spec's own `settleMs` wins (IndexSpec.settleMs) */
   settleMs?: number;
   batch?: number;
 }

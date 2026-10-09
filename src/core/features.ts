@@ -6,8 +6,8 @@ export const FEATURE_IDS = [
   "moveBlocks", "templates", "spellcheck", "lens", "snapshots", "stageSnapshot", "publish",
   "export", "submissions", "desk", "universe", "threads",
 ] as const;   // also the load order: today's (main.ts:116-127), Q12; unload runs in reverse
-// 0.8 (PLAN-0.8 Q11): "export" and "submissions" follow "publish" (19 ids); their modules arrive in Wave 3,
-// until then the registry finds no module for them and loads nothing.
+// 0.8 (PLAN-0.8 Q11): "export" and "submissions" follow "publish" (19 ids). An id with no
+// module registered loads nothing.
 export type FeatureId = typeof FEATURE_IDS[number];
 export type FeatureGroup = "writing" | "revision" | "desk" | "publishing" | "world";
 
@@ -21,7 +21,7 @@ export interface FeatureSpec {
    * Position of the switch on the Features page within its group, ascending
    * (IMPROVEMENTS 20). The page shows the groups in a fixed order and, inside a
    * group, the switches by `page`; FEATURE_PAGE below is derived from it.
-   * Set on every spec (task 1.9); optional in the type only to keep the contract.
+   * Set on every spec; optional in the type only so a bare spec still compiles.
    */
   page?: number;
 }

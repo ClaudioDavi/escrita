@@ -1,10 +1,9 @@
 // A book's chapters with their text and properties (IMPROVEMENTS 18). Pure port,
-// no Obsidian imports: export and, in 0.10, "Read the book" read a book through it;
-// outline/rows.ts's RowsPort extends it (task 2.5: it drops its own chapters,
-// read and frontmatter, uses ChapterRef.title for the basename, and calls
-// measure.counts without a seed when read's mtime is null). The Obsidian adapter sits
-// beside BookService in core/books.ts (task 1.8) and reads text through
-// plugin.notes, so an open editor's unsaved text is what gets exported.
+// no Obsidian imports: export and "Read the book" read a book through it;
+// outline/rows.ts's RowsPort extends it (it uses ChapterRef.title for the basename and
+// calls measure.counts without a seed when read's mtime is null). The Obsidian adapter
+// sits beside BookService in core/books.ts and reads text through plugin.notes, so an
+// open editor's unsaved text is what gets exported.
 
 /** The property that keeps a chapter out of an export when false (the property name is a setting). */
 export const DEFAULT_COMPILE_PROPERTY = "compile";

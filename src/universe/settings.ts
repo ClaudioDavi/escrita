@@ -94,7 +94,7 @@ export function defaultUniverseSettings(): UniverseSettings {
   };
 }
 
-/** A copy sharing no object with `u` (the install's default set, 1.0 task 1.4). */
+/** A copy sharing no object with `u` (the install's default set, 1.0). */
 function cloneUniverse(u: UniverseSettings): UniverseSettings {
   const d = defaultUniverseSettings();
   const entryTypes = {} as Record<EntryKind, EntryTypeSetting>;

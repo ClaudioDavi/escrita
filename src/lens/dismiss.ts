@@ -5,6 +5,7 @@
 import { wordRegex } from "../core/wordcount";
 import { normalizeWord } from "../core/stem";
 import { ALL_RULES, type Dismissal, type Match, type RuleId } from "./types";
+import { safeEntries } from "../core/records";
 
 const DEFAULT_WORDS = 3;
 const DEFAULT_CAP = 500;
@@ -71,8 +72,7 @@ function isRule(x: unknown): x is RuleId {
 /** Saved data in, a safe shape out: wrong types and unknown rules are dropped. */
 export function cleanDismissed(raw: unknown): Record<string, Dismissal[]> {
   const out: Record<string, Dismissal[]> = {};
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
-  for (const [path, list] of Object.entries(raw as Record<string, unknown>)) {
+  for (const [path, list] of safeEntries(raw)) {
     if (!Array.isArray(list)) continue;
     const clean: Dismissal[] = [];
     for (const x of list) {

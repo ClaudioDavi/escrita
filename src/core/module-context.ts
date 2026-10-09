@@ -51,8 +51,7 @@ export interface ModuleContext {
 }
 
 /**
- * What the settings tab hands a module's `settingsSection` (IMPROVEMENTS 11; the
- * tab is task 2.1, the sections move in 2.2). Lifted from universe/settings-ui.ts.
+ * What the settings tab hands a module's `settingsSection` (IMPROVEMENTS 11).
  */
 export interface SettingsUi {
   app: App;
@@ -105,8 +104,7 @@ export abstract class FeatureModule extends Component {
    * its own heading, except in a slot with shared rows (core/settings-order.ts `also`:
    * placeholders, editor, universe), where the core draws the heading and those rows.
    * Called only while the feature is loaded, in the tab's one order list (PLAN-0.8
-   * Q13), so an off feature's section is gone with it. Read from task 2.1 on; the
-   * sections move here in 2.2.
+   * Q13), so an off feature's section is gone with it.
    */
   settingsSection?(el: HTMLElement, ui: SettingsUi): void;
 
@@ -116,7 +114,6 @@ export abstract class FeatureModule extends Component {
    * Called after the switch is saved, so the feature has already unloaded: read
    * only what stays (plugin.data, settings, the vault), never this module's live
    * state. Returns translated text.
-   * Replaces settings.ts `offNotice` (task 2.2).
    */
   offNotice?(): Promise<string | null>;
 }

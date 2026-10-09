@@ -1,4 +1,4 @@
-// The pending-submissions port (PLAN-0.8 Q12, task 3.2 fills it, 3.3 reads it). The
+// The pending-submissions port (PLAN-0.8 Q12). The
 // submissions module provides it while loaded; the desk reads it only while
 // `features.isOn("submissions")`, through `features.get<{ pending?: PendingSource }>`,
 // and never imports the submissions module. Pure types, no Obsidian imports.

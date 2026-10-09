@@ -1,4 +1,4 @@
-// Stop word lists, written by hand (task 1.3). Not copied from Snowball or NLTK
+// Stop word lists, written by hand. Not copied from Snowball or NLTK
 // (Q7, Q31), so no notice is needed. Words the echo rule should never flag:
 // articles, pronouns, prepositions, contractions, conjunctions, common forms of
 // the everyday verbs, and the said-verbs (repeating "disse" / "said" is normal).

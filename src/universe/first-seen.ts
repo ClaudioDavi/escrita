@@ -6,6 +6,7 @@
 // goes only when the note is deleted. It follows renames through path-keys.
 
 import { dropKeys, renameKeys } from "../core/path-keys";
+import { safeEntries, isRecord } from "../core/records";
 
 /** note path → thread key → first seen (ms since epoch) */
 export type SeenStore = Record<string, Record<string, number>>;
@@ -15,16 +16,13 @@ export function seenKey(text: string): string {
   return text.normalize("NFC").replace(/\s+/g, " ").trim();
 }
 
-const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
-
 /** Saved data (any shape) → a clean store: only finite, positive times under string keys. */
 export function cleanSeen(raw: unknown): SeenStore {
   const out: SeenStore = {};
-  if (!isRecord(raw)) return out;
-  for (const [path, keys] of Object.entries(raw)) {
+  for (const [path, keys] of safeEntries(raw)) {
     if (!isRecord(keys)) continue;
     const clean: Record<string, number> = {};
-    for (const [k, v] of Object.entries(keys)) {
+    for (const [k, v] of safeEntries(keys)) {
       if (typeof v === "number" && Number.isFinite(v) && v > 0) clean[k] = Math.round(v);
     }
     if (Object.keys(clean).length > 0) out[path] = clean;

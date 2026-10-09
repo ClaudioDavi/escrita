@@ -60,7 +60,7 @@ export interface MentionCtx {
   resolve(linkpath: string, from: string): string | null;
   /** `chapter` is the chapter's 1-based position in its book (Chapter.index), not its number; null: not a chapter. */
   workOf(notePath: string): { work: string; chapter: number | null } | null;   // null: other notes
-  /** Position of a work in the Works tab's order (groupWorks then compareWorks, works-list.ts:71-84); 5.1 builds it from plugin.works. */
+  /** Position of a work in the Works tab's order (groupWorks then compareWorks, works-list.ts:71-84); the universe module builds it from plugin.works. */
   workRank(work: string): number;
 }
 

@@ -155,8 +155,8 @@ export function hexColor(v: unknown): string | null {
 
 /**
  * Always a fresh, mutable deep copy; never the input and never DEFAULT_STAGES. A missing or
- * blank word, or a missing colour entry, comes from `base` (the install's default set,
- * 1.0 task 1.4; DEFAULT_STAGES when omitted).
+ * blank word, or a missing colour entry, comes from `base` (the install's default set;
+ * DEFAULT_STAGES when omitted).
  */
 export function normalizeStages(v: unknown, base?: StageMapping): StageMapping {
   const out = cloneDefaultStages();

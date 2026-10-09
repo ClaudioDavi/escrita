@@ -65,15 +65,14 @@ export interface ClassifySettings extends PieceProperties {
   /** the writer's words for each stage; defaults to DEFAULT_STAGES */
   stages?: StageMapping;
   /**
-   * Where submission notes live (SF 12; 0.8). Optional until the setting exists:
-   * task 1.6 reads it through submissionsRoot(), so missing or "" means
-   * DEFAULT_SUBMISSIONS_FOLDER, like the snapshots folder.
+   * Where submission notes live (SF 12; 0.8). Optional in the type: it is read through
+   * submissionsRoot(), so missing or "" means the default folder for `defaultsLanguage`,
+   * like the snapshots folder.
    */
   submissionsFolder?: string;
   /**
-   * Where export writes its files (Q3; 0.8). Optional until the setting exists:
-   * task 1.6 reads it through exportRoot(), so missing or "" means
-   * DEFAULT_EXPORT_FOLDER.
+   * Where export writes its files (Q3; 0.8). Optional in the type: it is read through
+   * exportRoot(), so missing or "" means the default folder for `defaultsLanguage`.
    */
   exportFolder?: string;
   /**
@@ -87,7 +86,7 @@ export interface ClassifySettings extends PieceProperties {
   defaultUniverseFolders?: string;
   /** the property on a work, chapter or entry that links its universe note */
   universeProperty?: string;
-  /** the install's default set (1.0 task 1.4): a blank export or submissions folder falls back to its words; missing is "en" */
+  /** the install's default set (1.0): a blank export or submissions folder falls back to its words; missing is "en" */
   defaultsLanguage?: string;
 }
 
@@ -223,7 +222,7 @@ export function snapshotsRoot(setting: unknown, defaultsLanguage?: unknown): str
   return folderRoot(setting, languageSet(defaultsLanguage).snapshotsFolder);
 }
 
-/** The install's default set for a blank folder setting (1.0 task 1.4); an unknown or missing language is "en". */
+/** The install's default set for a blank folder setting (1.0); an unknown or missing language is "en". */
 function languageSet(defaultsLanguage: unknown): { exportFolder: string; submissionsFolder: string; snapshotsFolder: string } {
   return LANGUAGE_DEFAULTS[isDefaultsLanguage(defaultsLanguage) ? defaultsLanguage : "en"];
 }

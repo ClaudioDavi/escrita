@@ -3,10 +3,10 @@
 // come from a ViewPlugin). It is never written into the file, so it is not selectable text,
 // not exported and not counted. Only in a note that is an entry in the current mode.
 //
-// The universe module (5.1) builds the deps and registers `appearsInExtension` in an editor
+// The universe module builds the deps and registers `appearsInExtension` in an editor
 // slot, so this file never touches `index.ts`.
 //
-// G0d stays open (author, 5.1): Reading view stays out and the TODO stands.
+// G0d stays open (author): Reading view stays out and the TODO stands.
 // TODO(G0d, open): Reading view. A Markdown post-processor would find the note's last
 // section (`ctx.getSectionInfo`) and append `renderAppearsInSection` after it. Gate G0d
 // (does it survive re-renders, long notes and a split pane?) is not run yet, so Reading view
@@ -23,7 +23,7 @@ import type { AppearsIn } from "./mentions";
 /** `AppearsIn` when ready; "counting" while the index builds (board 24d); null when the note is not an entry in this mode (no section). */
 export type AppearsInAnswer = AppearsIn | "counting" | null;
 
-/** What the universe module offers (5.1: `appearsInSource()`): the panel's counts and lists read it, and the widget too. */
+/** What the universe module offers (`appearsInSource()`): the panel's counts and lists read it, and the widget too. */
 export interface AppearsInSource {
   appearsIn(path: string): AppearsInAnswer;
   labels(): AppearsInLabels;

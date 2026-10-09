@@ -32,7 +32,7 @@ const WRITER: readonly FeatureId[] = [
  * "universe" aside (never in a list, never touched). Each list is closed under `requires`
  * (stageSnapshot needs snapshots, which every preset holds). Essentials 9, Writer 16,
  * Everything 18 here (19 with the universe, as the boards count). A fresh install with no
- * setup run starts on Writer (Q7, task 1.4); an existing install keeps its switches (Q6).
+ * setup run starts on Writer (Q7); an existing install keeps its switches (Q6).
  */
 export const PRESETS: Readonly<Record<PresetId, readonly FeatureId[]>> = Object.freeze({
   essentials: Object.freeze([...ESSENTIALS]),

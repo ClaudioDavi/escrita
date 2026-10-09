@@ -1,6 +1,6 @@
 import type { Strings } from "../i18n";
 
-// BUILDER B owns this file: the create-entry modal, plant a thread, close a thread
+// The create-entry modal, plant a thread, close a thread
 // and the editor menu items. Keys: universe.create.*
 export const universeCreateStrings: Strings = {
   en: {

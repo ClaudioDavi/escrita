@@ -1,7 +1,6 @@
 // Is a note's text ready to leave the desk? (IMPROVEMENTS 19). Pure, no Obsidian
-// imports. The marker checks that publish runs today (src/publish/checks.ts:60-160)
-// move here in task 1.5, so export can warn the same way while publish is off,
-// and 0.10's book-wide check gives the same answer. Publish keeps its own
+// imports. The marker checks live here, so publish, export (while publish is off)
+// and the book-wide check give the same answer. Publish keeps its own
 // property checks (recommended properties, over the limit) and adds them after these.
 //
 // Messages are not translated here: each check carries an id, a level and

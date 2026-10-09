@@ -1,4 +1,4 @@
-// Open threads as a switchable feature, split out of the universe module (0.7 plan Q9, task 2.11).
+// Open threads as a switchable feature, split out of the universe module (0.7 plan Q9).
 // It owns the threads index, the thread marker extension, the standalone threads view and the
 // three thread commands. It works with the universe unloaded (the mode off): the stateless
 // helpers it calls on `plugin.universe` (scopeOf, closeThread, answerLink, worksIn) never touch

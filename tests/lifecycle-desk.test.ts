@@ -22,11 +22,6 @@ function setup(ready = true): void {
   registry.init();
 }
 
-function turn(on: boolean): void {
-  plugin.settings.features = { ...plugin.settings.features, desk: on };
-  registry.apply();
-}
-
 /** What the code block slot draws for a block right now. */
 function draw(): { el: HTMLElement; children: unknown[] } {
   const el = document.createElement("div");
@@ -41,8 +36,8 @@ describe("desk lifecycle", () => {
   it("declares its code block once, at init, while off or on", () => {
     expect([...plugin.codeBlocks.keys()]).toEqual(["escrita-works"]);
     registry.apply();
-    turn(false);
-    turn(true);
+    plugin.turn("desk", false);
+    plugin.turn("desk", true);
     expect([...plugin.codeBlocks.keys()]).toEqual(["escrita-works"]);
   });
 
@@ -55,7 +50,7 @@ describe("desk lifecycle", () => {
     expect(add.mock.calls.map((c) => c[0])).toEqual(["visibilitychange"]);
     expect(plugin.followers.size).toBe(2);   // the data follower and the recorder's
 
-    turn(false);
+    plugin.turn("desk", false);
     expect(plugin.commands.size).toBe(0);
     expect(plugin.liveListeners()).toBe(0);
     expect(remove.mock.calls.map((c) => c[0])).toEqual(["visibilitychange"]);
@@ -66,7 +61,7 @@ describe("desk lifecycle", () => {
     expect(plugin.ribbonAdds).toHaveLength(0);
     expect(plugin.extensions).toHaveLength(0);
 
-    turn(true);
+    plugin.turn("desk", true);
     expect(plugin.commands.size).toBe(3);
     expect(plugin.liveListeners()).toBe(5);
     expect(plugin.followers.size).toBe(2);
@@ -80,7 +75,7 @@ describe("desk lifecycle", () => {
     const on = draw();
     expect(on.children).toHaveLength(1);
     expect(on.el.querySelector("pre")).toBeNull();
-    turn(false);
+    plugin.turn("desk", false);
     expect(draw().el.querySelector("pre > code")?.textContent).toBe("folder: Contos");
   });
 
@@ -88,7 +83,7 @@ describe("desk lifecycle", () => {
     registry.apply();
     const { children } = draw();
     const spy = vi.spyOn(children[0] as { unload(): void }, "unload");
-    turn(false);
+    plugin.turn("desk", false);
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
@@ -100,7 +95,7 @@ describe("desk lifecycle", () => {
     registry.apply();
     expect(seen).toEqual([undefined]);   // bound: the block, not plain source
     seen.length = 0;
-    turn(false);
+    plugin.turn("desk", false);
     expect(seen).toEqual(["folder: Contos"]);   // plain source: the blocks are gone
     expect(plugin.app.workspace.updateOptionsCalls).toBeGreaterThan(0);
   });
@@ -111,7 +106,7 @@ describe("desk lifecycle", () => {
     plugin.settings.homeNote = "Contos/a.md";
     plugin.app.vault.files.set("Contos/a.md", {});   // the load-time prune keeps records of notes that exist
     registry.apply();
-    turn(false);
+    plugin.turn("desk", false);
     const data = [...plugin.followers][0];
     data.moved?.("Contos/a.md", "Contos/b.md");
     expect(plugin.data.leftOff).toEqual({ "Contos/b.md": rec });
@@ -125,15 +120,15 @@ describe("desk lifecycle", () => {
     plugin.data.leftOff = { "a.md": rec };
     plugin.app.vault.files.set("a.md", {});
     registry.apply();
-    turn(false);
-    turn(true);
+    plugin.turn("desk", false);
+    plugin.turn("desk", true);
     expect(plugin.data.leftOff).toEqual({ "a.md": rec });
   });
 
   it("the cold-start open and layout work never run after an unload", () => {
     setup(false);
     registry.apply();   // cold start: queued for layout ready
-    turn(false);
+    plugin.turn("desk", false);
     const spy = vi.spyOn(plugin.app.vault, "getAbstractFileByPath");
     plugin.app.workspace.fireLayoutReady();
     expect(spy).not.toHaveBeenCalled();
@@ -142,7 +137,7 @@ describe("desk lifecycle", () => {
   it("settingsChanged reaches the desk only while loaded", () => {
     registry.apply();
     expect(() => registry.settingsChanged()).not.toThrow();
-    turn(false);
+    plugin.turn("desk", false);
     expect(() => registry.settingsChanged()).not.toThrow();
   });
 });
@@ -174,7 +169,7 @@ describe("openWork and the desk switch", () => {
 
   it("ignores leftOff while the desk is off", async () => {
     registry.apply();
-    turn(false);
+    plugin.turn("desk", false);
     const { eStates } = wire();
     await openWork(plugin.asPlugin, "a.md", false);
     expect((eStates[0] as { line: number }).line).not.toBe(1);

@@ -10,7 +10,7 @@ import { compileTerms, type NameSource } from "../src/core/names";
 import { appearsInOpen, renderAppearsInSection, defaultLabels } from "../src/universe/appears-in";
 import { appearsInExtension, type AppearsInAnswer } from "../src/universe/appears-in-widget";
 import { NameMarks, DEBOUNCE_MS } from "../src/universe/name-marks";
-import { registerAppearsStrings } from "../src/universe/strings-appears";
+import { appearsStrings } from "../src/universe/strings-appears";
 import { registerStrings } from "../src/i18n";
 import { universeViewStrings } from "../src/universe/view-strings";
 import type { AppearsIn } from "../src/universe/mentions";
@@ -174,7 +174,7 @@ describe("appearsInExtension", () => {
     };
   }
 
-  beforeEach(() => { registerStrings(universeViewStrings); registerAppearsStrings(); });
+  beforeEach(() => { registerStrings(universeViewStrings); registerStrings(appearsStrings); });
 
   it("draws the section for an entry, nothing for a note that is not one", () => {
     const withIt = deps(() => ai(3));
@@ -223,7 +223,7 @@ describe("the section's compact phone layout (finding 8)", () => {
 
   beforeEach(() => {
     registerStrings(universeViewStrings);
-    registerAppearsStrings();
+    registerStrings(appearsStrings);
     appearsInOpen.note = true;
     appearsInOpen.more = false;
     appearsInOpen.other = false;

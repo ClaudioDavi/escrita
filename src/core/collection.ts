@@ -5,7 +5,7 @@
 // a classifier kind and adds no classifier field (Q28): export asks `collectionOf`
 // about the active note (core/books.ts `collectionAt`) and exports its stories as a
 // book's chapters (`storyChapters`), every story unnumbered, so the manuscript model and
-// the writers don't change. Filled in by task 1.7.
+// the writers don't change.
 
 import { propertyKey, type ChapterRef } from "./book-source";
 import { linkText } from "./scope";

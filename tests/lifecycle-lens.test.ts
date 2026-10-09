@@ -22,11 +22,6 @@ beforeEach(() => {
 });
 afterEach(() => { vi.useRealTimers(); });
 
-function turn(on: boolean): void {
-  plugin.settings.features = { ...plugin.settings.features, lens: on };
-  reg.apply();
-}
-
 const COMMANDS = ["escrita:toggle-revision-lens", "escrita:next-revision-lens-match", "escrita:previous-revision-lens-match", "escrita:create-word-lists-note"];
 
 function registrations() {
@@ -58,7 +53,7 @@ describe("lens lifecycle", () => {
     plugin.data.lensDismissed = { "a.md": [{ rule: "echo", key: "k" }] } as never;
     reg.apply();
     const base = { followers: registrations().followers };
-    turn(false);
+    plugin.turn("lens", false);
     const after = registrations();
     expect(after.commands).toEqual([]);
     expect(after.listeners).toBe(0);
@@ -85,7 +80,7 @@ describe("lens lifecycle", () => {
     reg.apply();
     expect(subs.on).toBe(1);
     expect(subs.off).toBe(0);
-    turn(false);
+    plugin.turn("lens", false);
     expect(subs.off).toBe(1);
     // a provider coming or going now calls nothing of the lens's
     const lensInvalidate = vi.spyOn(lens as unknown as { invalidate(): void }, "invalidate");
@@ -125,15 +120,15 @@ describe("lens lifecycle", () => {
     session.toggle("a.md");
     session.changed("a.md", () => "text");
     expect(vi.getTimerCount()).toBeGreaterThan(0);
-    turn(false);
+    plugin.turn("lens", false);
     expect(vi.getTimerCount()).toBe(0);
   });
 
   it("loads again with one of each registration", () => {
     reg.apply();
     const first = registrations();
-    turn(false);
-    turn(true);
+    plugin.turn("lens", false);
+    plugin.turn("lens", true);
     expect(registrations()).toEqual(first);
     expect(plugin.commands.size).toBe(COMMANDS.length);
     expect(plugin.views.size).toBe(1);
@@ -142,7 +137,7 @@ describe("lens lifecycle", () => {
   });
 
   it("unloaded lens answers its public methods without throwing", () => {
-    turn(false);
+    plugin.turn("lens", false);
     expect(lens.activeState().on).toBe(false);
     expect(lens.lists()).toEqual({ crutch: [], names: [], ignore: [] });
     expect(() => lens.settingsChanged()).not.toThrow();
@@ -151,7 +146,7 @@ describe("lens lifecycle", () => {
 });
 
 describe("lens data followers on a module that was never loaded", () => {
-  beforeEach(() => { turn(false); });
+  beforeEach(() => { plugin.turn("lens", false); });
 
   it("a rename moves the dismissals and the lists note path", () => {
     plugin.data.lensDismissed = { "a.md": [{ rule: "echo", key: "k" }] } as never;
@@ -175,7 +170,7 @@ describe("lens data followers on a module that was never loaded", () => {
   it("turning it on after renames keeps the moved data", () => {
     plugin.data.lensDismissed = { "a.md": [{ rule: "echo", key: "k" }] } as never;
     for (const f of plugin.followers) f.moved?.("a.md", "b.md");
-    turn(true);
+    plugin.turn("lens", true);
     expect(lens.dismissedCount("b.md")).toBe(1);
   });
 });

@@ -1,6 +1,6 @@
 // The daily progress port (1.0, Wave 2 seams): today's words against the daily goal, the
 // same numbers as the goals status bar. The goals module provides it while loaded; writing
-// mode's counter ("today 312 / 500", board 39, task 2.4) reads it through
+// mode's counter ("today 312 / 500", board 39) reads it through
 // `dailyProgressOf(plugin.features)` and never imports goals. With goals off there is no
 // counter. Pure, no Obsidian imports.
 
