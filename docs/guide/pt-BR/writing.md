@@ -241,11 +241,11 @@ Rode **Abrir progresso**, ou clique no contador da barra de status. A janela mos
 
 - **Hoje**: suas palavras contra a meta diária, e quantas você cortou na revisão.
 - **Livro**: o total do livro contra a meta dele, com os capítulos contados.
-- **Sequência**: os dias seguidos em que você escreveu.
+- **Sequência**: os dias seguidos em que você escreveu. Ela sempre conta toda a sua escrita, mesmo com a janela aberta para um livro ou texto.
 - **Esta semana**: a sua média por dia.
 - **Este texto**: para um conto ou ensaio, o tamanho dele contra a meta ou o limite.
 
-Abaixo dos blocos há um gráfico de 30 dias de palavras por dia, com o total corrido do livro. Sob
+Abaixo dos blocos há um gráfico de 30 dias de palavras por dia, com o total corrido do livro. Aberta para um livro ou texto, as barras são as palavras daquele livro ou texto, e não são coloridas pela meta diária. Sob
 ele fica o **ritmo**: as palavras por dia de que você precisa para cumprir o prazo, e a data em que
 você termina na sua média de 7 dias. O ritmo conta só os seus dias de escrita. Se o prazo passou,
 ou você não acrescentou nada na última semana, ele diz isso em vez de adivinhar.

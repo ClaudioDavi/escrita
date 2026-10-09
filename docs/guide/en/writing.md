@@ -235,11 +235,11 @@ Run **Open progress**, or click the counter in the status bar. The window shows:
 
 - **Today**: your words against the daily goal, and how many you cut while revising.
 - **Book**: the book's total against its goal, with the chapters counted.
-- **Streak**: days in a row that you wrote (days off do not break it).
+- **Streak**: days in a row that you wrote (days off do not break it). It always counts all your writing, even when the window is open for one book or piece.
 - **This week**: your average a day.
 - **This piece**: for a conto or an essay, its length against its target or limit.
 
-Below the tiles there is a 30-day chart of words a day, with the book's running total. Under it
+Below the tiles there is a 30-day chart of words a day, with the book's running total. Opened for one book or piece, the bars are the words in that book or piece, and they are not coloured for the daily goal. Under it
 is **pacing**: the words a day you need to meet the deadline, and the date you finish at your
 7-day average. Pacing counts only your writing days. If the deadline has passed, or you haven't
 added anything for a week, it says so instead of guessing.
