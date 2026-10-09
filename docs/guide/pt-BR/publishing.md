@@ -228,7 +228,9 @@ Exportar de novo grava por cima do arquivo sem perguntar.
 Em Configurações › Escrita › Exportação:
 
 - **Nome do autor** vai na folha de rosto e na assinatura.
-- **Sobrenome do cabeçalho** é o "Sobrenome" do cabeçalho. Vazio usa a última palavra do
+- **Sobrenome do cabeçalho** é o "Sobrenome" do cabeçalho. Também é acrescentado depois do
+  nome na assinatura, no contato e no autor do arquivo, se o nome ainda não o tiver. Assim,
+  "Ana" e "Souza" dão "por Ana Souza". Vazio usa a última palavra do
   nome.
 - **Linhas de contato**: endereço, e-mail, telefone, uma por linha, no topo da folha de rosto.
 - **Propriedade do autor** (`author` por padrão): uma propriedade de uma nota, ou da nota de

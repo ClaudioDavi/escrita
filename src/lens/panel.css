@@ -79,10 +79,13 @@ body.is-phone .escrita-lens-row { min-height: 44px; padding-inline-start: 14px; 
   flex: 1 1 0; min-width: 0; min-height: var(--escrita-lens-target);
   padding: 0; background: transparent; border: 0; box-shadow: none;
   color: var(--text-normal); text-align: start; font-size: inherit; cursor: pointer;
+  /* long names wrap inside the button (Obsidian's buttons are nowrap) and never run under the key or the counts */
+  white-space: normal; overflow: hidden; overflow-wrap: anywhere; line-height: 1.25; height: auto;
 }
 .escrita-lens-rulename:disabled { cursor: default; color: var(--text-muted); }
 .escrita-lens-rulename-dim { color: var(--text-muted); cursor: default; display: inline-flex; align-items: center; }
 .escrita-lens-row.is-stepped .escrita-lens-rulename { font-weight: var(--font-medium); }
+.escrita-lens-count, .escrita-lens-rate, .escrita-lens-step { flex-shrink: 0; }
 .escrita-lens-count { color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .escrita-lens-rate { min-width: 34px; text-align: end; font-size: var(--font-ui-smaller); color: var(--text-faint); font-variant-numeric: tabular-nums; }
 .escrita-lens-step {
