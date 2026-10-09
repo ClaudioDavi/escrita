@@ -130,7 +130,6 @@ export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
 
   /** The EPUB's table of contents: after the front matter pages, before the first chapter (Q6). */
   private epubContents(paper: HTMLElement, doc: ExportDoc, epub: NonNullable<PreviewHooks["epub"]>): void {
-    this.zone(paper, "contents");
     paper.createDiv({ cls: "escrita-export-contents-title", text: epub.contentsLabel });
     const list = paper.createEl("ol", { cls: "escrita-export-contents" });
     for (const part of doc.parts) {

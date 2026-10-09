@@ -108,6 +108,9 @@ describe("author and links (Q2, Q7)", () => {
   });
   it("lets an author property override the name, and its own last word the surname", () => {
     expect(authorOf({ ...s, authorSurname: "de Souza" }, { author: "Beto Lima" })).toMatchObject({ name: "Beto Lima", surname: "Lima" });
+    expect(authorOf({ ...s, authorName: "Claudio", authorSurname: "Davi" }, {})).toMatchObject({ name: "Claudio Davi", surname: "Davi" });
+    expect(authorOf({ ...s, authorName: "Ana", authorSurname: "" }, {}).name).toBe("Ana");
+    expect(authorOf({ ...s, authorSurname: "de Souza" }, {}).name).toBe("Ana Souza");
     expect(authorOf(s, { author: 3 }).name).toBe("Ana Souza");
   });
   it("reads the author from the property the setting names, and ignores `author` then", () => {
