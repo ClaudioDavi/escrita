@@ -275,6 +275,66 @@ In `vazio-pt` unless noted.
    updates (in a note with entry names). Expected: the focus and the name marks keep
    following the cursor.
 
+## Demo findings (2026-10-09)
+
+The fixes for `escrita-demo/FINDINGS.md`, numbered as there. In `vazio-pt` unless noted.
+Findings 11 and 12 were settled by the author (threads are "thread", closed "fechada") and
+have no check here.
+
+1. **Linhas do passo 2 [Step 2 rows].** Run **Preparar o cofre para escrever** [Set up a
+   writing vault] and go to step 2, in the default theme and in Typewriter. Expected: no
+   row overlaps another; paths, reasons and badges each have their own line.
+2. **Abrir a nota inicial ao iniciar [Open the home note on startup].** With the setting on,
+   open the core Outline panel on `Início.md`, open a conto, restart Obsidian. Expected:
+   `Início.md` opens in the main area; the right sidebar stays on Escrita's outline.
+3. **Nota do universo [Universe note].** In a fresh copy of `vazio-pt`, run the setup with
+   **Universo** [Shared world]. Expected: step 2 lists "Nota do universo: Universo.md" as a
+   `+` row, ticked; after **Criar** [Create] `Universo.md` exists and the desk opens with no
+   "A nota do universo não existe" message. With a `universo.md` already there, it is
+   listed as nothing new and left untouched.
+4. **Esc num beat novo [Escape on a new beat].** In the outline, press Enter on a beat, type
+   a few words, press Escape. Expected: the new beat and the `---` lines around it are gone
+   from the chapter, the other beats untouched. Again with nothing typed (same result), and
+   once with the chapter edited in the editor before Escape (the beat stays). Tabbing away
+   from a new beat keeps it.
+5. **Título do Comparar [Compare title].** Open **Comparar com a última versão** [Compare with
+   the last snapshot] on a conto, then restart Obsidian. Expected: the tab and the view
+   header both read `Comparar “<nota>”`; renaming the note updates both.
+6. **Variantes de nome [Name variants].** Open the lens panel with the sidebar at about
+   320 px, default theme and Typewriter, light and dark. Expected: the rule name wraps inside
+   its button and never covers the colour key or the counts.
+7. **Layout num cofre novo [Layout in a new vault].** Run the setup in a fresh vault with
+   Obsidian's default sidebar panels. Expected: **Arrumar a tela uma vez** [Arrange the
+   screen once] comes ticked. With two notes open in tabs it comes unticked and says
+   "você já tem 2 notas abertas em abas" [2 notes open in tabs].
+8. **Motivo depois de marcar [Reason after ticking].** In a vault where the layout row comes
+   unticked, tick it. Expected: the reason changes to "Marcado por você: será feito." [Ticked
+   by you: it will run.]; untick it and the original reason comes back.
+9. **Motivo da nota inicial [Home note reasons].** In step 2, **Abrir a nota inicial ao
+   iniciar** reads "Abre a nota inicial toda vez que o Obsidian começa." and the home note
+   setting row has its own reason, neither the language one.
+10. **Cartões dos presets [Preset cards].** In step 1, the text of **Essencial**,
+    **Escritor** and **Tudo** [Essentials, Writer, Everything] starts at the top of each card.
+13. **Aparece em [Appears in].** Create an entry from a selection of a name used in two
+    works. Expected: its "Aparece em" shows "contando…" [counting…] for a few seconds, then
+    "N obras · M menções", never "nenhuma obra ainda" [no works yet] first.
+14. **Nome completo no EPUB [Full name in the EPUB].** With **Nome do autor** [Author name]
+    "Claudio" and the surname "Davi", export a conto as EPUB. Expected: the title page reads
+    "por Claudio Davi"; the running header of a DOCX still uses "Davi".
+15. **Sumário uma vez [Contents once].** Preview the EPUB of a book. Expected: one "Sumário"
+    [Contents] heading, no "SUMÁRIO" divider above it.
+16. **Progresso de um livro [Progress for a book].** Open **Progresso** [Progress] from a
+    book and from a conto. Expected: no goal-coloured bars and no "Meta batida" [Goal met]
+    in the legend; the bars are labelled "Palavras neste livro" / "Palavras neste texto";
+    the streak card reads "… em toda a sua escrita" on one or two lines. Opened with no
+    book, the goal colour and legend entry are back.
+17. **Entrada nova numa aba [New entry in a tab].** Create an entry from a selection.
+    Expected: it opens in a new tab of the main area, not a split, and the cursor stays in
+    the chapter.
+18. **Aparece em no painel [Appears in, in the panel].** In the universe panel, click
+    "N obras" [N works] on an entry: the list opens. Click the rest of the row: the entry
+    note opens. The guide (O mundo, section 9) says the same.
+
 ## Open gates to check by eye
 
 - **G3**: after G2c the Features page and every section read as before the update.
