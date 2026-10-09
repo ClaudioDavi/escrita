@@ -1,11 +1,13 @@
-import { Modal, Notice, Setting, TFile, normalizePath, type App, type WorkspaceLeaf } from "obsidian";
+import { Modal, Notice, Setting, TFile, normalizePath, type App } from "obsidian";
 import type EscritaPlugin from "../main";
 import { lang, t } from "../i18n";
-import { HOME_TEMPLATE, homeAction, homePath, resolveCaseless, settingToSave } from "./home";
+import { HOME_TEMPLATE, homeAction, homePath, settingToSave } from "./home";
+import { markdownLeafFor } from "../ui/leaves";
+import { resolveHomeNote } from "../core/home-note";
 
-/** Name offered for a new home note: no accent, so it is safe on every file system. */
+/** Name offered for a new home note; the same names the setup and the defaults use. */
 export function offerName(): string {
-  return lang() === "pt-BR" ? "Inicio.md" : "Home.md";
+  return lang() === "pt-BR" ? "Início.md" : "Home.md";
 }
 
 class ConfirmCreateModal extends Modal {
@@ -47,16 +49,11 @@ function confirmCreate(app: App, path: string, unset: boolean): Promise<boolean>
 async function show(plugin: EscritaPlugin, file: TFile): Promise<void> {
   const { workspace } = plugin.app;
   if (workspace.getActiveFile()?.path === file.path) return;
-  let found: WorkspaceLeaf | null = null;
-  workspace.iterateAllLeaves((leaf) => {
-    if (found) return;
-    const state = leaf.getViewState().state as { file?: string } | undefined;
-    if (state?.file === file.path) found = leaf;
-  });
+  // only a markdown tab in the main area: the core Outline / Backlinks panels keep the last file in their state too
+  const found = markdownLeafFor(plugin.app, file.path);
   if (found) {
-    const leaf: WorkspaceLeaf = found;
-    await workspace.revealLeaf(leaf);
-    workspace.setActiveLeaf(leaf, { focus: true });
+    await workspace.revealLeaf(found);
+    workspace.setActiveLeaf(found, { focus: true });
     return;
   }
   await workspace.getLeaf(false).openFile(file);
@@ -76,9 +73,9 @@ async function create(plugin: EscritaPlugin, path: string): Promise<TFile | null
 /** Open the home note. With `create`, a missing note is offered (after a confirm). */
 export async function openHome(plugin: EscritaPlugin, opts: { create: boolean }): Promise<void> {
   const { vault } = plugin.app;
-  // case-insensitive, like creating a note: a "Home.md" answers the setting "home.md"
+  // exact, then NFC, then case-insensitive (core/home-note.ts): a "Home.md" answers the setting "home.md"
   const paths = vault.getFiles().map((f) => f.path);
-  const resolve = (p: string) => resolveCaseless(paths, normalizePath(p));
+  const resolve = (p: string) => resolveHomeNote(paths, normalizePath(p));
   const found = homeAction(plugin.settings.homeNote, (p) => resolve(p) !== null, offerName());
   const action = found.kind === "offer" ? found : { ...found, path: resolve(found.path) ?? found.path };
   if (action.kind === "offer") {
@@ -109,11 +106,11 @@ export async function startupOpen(plugin: EscritaPlugin): Promise<void> {
   const paths = plugin.app.vault.getFiles().map((f) => f.path);
   let path = homePath(plugin.settings.homeNote);
   if (!path) {
-    // an empty setting adopts an existing Home.md / Inicio.md (openHome saves it)
-    const action = homeAction("", (p) => resolveCaseless(paths, normalizePath(p)) !== null, offerName());
+    // an empty setting adopts an existing Home.md / Início.md / Inicio.md (openHome saves it)
+    const action = homeAction("", (p) => resolveHomeNote(paths, normalizePath(p)) !== null, offerName());
     if (action.kind !== "adopt") return;
     path = action.path;
   }
-  if (resolveCaseless(paths, normalizePath(path)) === null) return;
+  if (resolveHomeNote(paths, normalizePath(path)) === null) return;
   await openHome(plugin, { create: false });
 }

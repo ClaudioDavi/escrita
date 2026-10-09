@@ -5,7 +5,8 @@
 // folder through `ChapterFs`; core/books.ts adapts the real vault to it.
 
 import { folderList, folderListOf } from "./lists";
-import { readPiece, type Piece, type PieceProperties } from "./measure";
+import { effectivePiece, parseUnit, readChapterDefault, readPiece, type Piece, type PieceProperties, type PieceUnit } from "./measure";
+import { LANGUAGE_DEFAULTS, isDefaultsLanguage } from "./defaults";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, readStatus, stageOf, type Stage, type StageMapping } from "./stages";
 // one direction only: classify imports scope, scope never imports classify (no cycle at load)
 import { inFolder, NO_SCOPE, scopeFor, type Scope, type ScopeLookup, type ScopeMode, type ScopeSettings } from "./scope";
@@ -45,6 +46,11 @@ export interface VaultTree<F extends Named, D extends Named> {
  * so callers don't change.
  */
 export interface ClassifySettings extends PieceProperties {
+  /**
+   * The book note's property holding its chapters' default target (Q47). Optional: missing or
+   * blank means no book default, so a chapter's piece is its own.
+   */
+  chapterTargetProperty?: string;
   /** "Chapters", "Capítulos", or a nested path like "Drafts/Chapters" */
   chaptersFolder: string;
   /** raw folderList text; empty = the whole vault */
@@ -59,15 +65,14 @@ export interface ClassifySettings extends PieceProperties {
   /** the writer's words for each stage; defaults to DEFAULT_STAGES */
   stages?: StageMapping;
   /**
-   * Where submission notes live (SF 12; 0.8). Optional until the setting exists:
-   * task 1.6 reads it through submissionsRoot(), so missing or "" means
-   * DEFAULT_SUBMISSIONS_FOLDER, like the snapshots folder.
+   * Where submission notes live (SF 12; 0.8). Optional in the type: it is read through
+   * submissionsRoot(), so missing or "" means the default folder for `defaultsLanguage`,
+   * like the snapshots folder.
    */
   submissionsFolder?: string;
   /**
-   * Where export writes its files (Q3; 0.8). Optional until the setting exists:
-   * task 1.6 reads it through exportRoot(), so missing or "" means
-   * DEFAULT_EXPORT_FOLDER.
+   * Where export writes its files (Q3; 0.8). Optional in the type: it is read through
+   * exportRoot(), so missing or "" means the default folder for `defaultsLanguage`.
    */
   exportFolder?: string;
   /**
@@ -81,6 +86,8 @@ export interface ClassifySettings extends PieceProperties {
   defaultUniverseFolders?: string;
   /** the property on a work, chapter or entry that links its universe note */
   universeProperty?: string;
+  /** the install's default set (1.0): a blank export or submissions folder falls back to its words; missing is "en" */
+  defaultsLanguage?: string;
 }
 
 /** The snapshots folder when the setting is empty or unusable. */
@@ -144,8 +151,28 @@ export interface Placement<F extends Named, D extends Named> {
    * template. Independent of kind: a chapter can be untracked.
    */
   tracked: boolean;
-  /** readPiece(frontmatter) for any markdown file, chapters included; null otherwise. A standalone piece is `kind === "note" && piece`. */
+  /**
+   * The effective piece of a markdown file; null otherwise. For a chapter it is the note's own
+   * piece with the book's chapter default filled in (see `pieceSource`); for every other file it
+   * is `readPiece(frontmatter)`. A standalone piece is `kind === "note" && piece`.
+   */
   piece: Piece | null;
+  /**
+   * Where the piece's target comes from (1.0, IMPROVEMENTS 8). The rule, one for every
+   * surface (outline, explorer, goals modal, measurer): per field, a note's own target
+   * wins; a chapter without one takes its book's default (`chapterTargetProperty` on the
+   * book note, with the book's `unit` when the chapter sets none); `limit` and `deadline`
+   * are only ever the note's own. That is `effectivePiece` in core/measure.ts, applied here.
+   * - "own": the target is the note's own frontmatter.
+   * - "book": a chapter's target is its book's default (only `kind === "chapter"`).
+   * - null: no target (no piece, or a piece with only a limit, unit or deadline).
+   *
+   * Computed here from the book note's frontmatter, so a chapter with only a book default has
+   * a piece with source "book". A standalone piece stays `kind === "note" && piece`: book
+   * defaults reach chapters only. Cached counts keyed by the chapter's mtime drop when the
+   * book note's default changes (core/measurer.ts).
+   */
+  pieceSource: "own" | "book" | null;
   /**
    * The path is the snapshots folder or inside it (see snapshotsRoot). Such a
    * path is never tracked, never a piece and never part of a book: a file there
@@ -185,12 +212,19 @@ export interface Placement<F extends Named, D extends Named> {
 /**
  * The snapshots folder setting as a vault path: trimmed, backslashes and
  * repeated slashes turned into single slashes, edge slashes stripped. Empty (or
- * not a string) gives DEFAULT_SNAPSHOTS_FOLDER, so the result is never "" and
+ * not a string) gives the install's set's folder (`defaultsLanguage`;
+ * DEFAULT_SNAPSHOTS_FOLDER in English and without one), so the result is never "" and
  * never means the whole vault. The one place this normalization lives: settings,
  * classify and the snapshots module all go through it.
  */
-export function snapshotsRoot(setting: unknown): string {
-  return folderRoot(setting, DEFAULT_SNAPSHOTS_FOLDER);
+export function snapshotsRoot(setting: unknown, defaultsLanguage?: unknown): string {
+  // the install's set: `Escrita/Snapshots` in English (DEFAULT_SNAPSHOTS_FOLDER), `Escrita/Versões` in pt-BR
+  return folderRoot(setting, languageSet(defaultsLanguage).snapshotsFolder);
+}
+
+/** The install's default set for a blank folder setting (1.0); an unknown or missing language is "en". */
+function languageSet(defaultsLanguage: unknown): { exportFolder: string; submissionsFolder: string; snapshotsFolder: string } {
+  return LANGUAGE_DEFAULTS[isDefaultsLanguage(defaultsLanguage) ? defaultsLanguage : "en"];
 }
 
 function folderRoot(setting: unknown, fallback: string): string {
@@ -211,13 +245,13 @@ export function followFolderSetting(current: string, oldPath: string, newPath: s
 }
 
 /** The submissions folder setting as a vault path, normalized like snapshotsRoot; never "" (DEFAULT_SUBMISSIONS_FOLDER). */
-export function submissionsRoot(setting: unknown): string {
-  return folderRoot(setting, DEFAULT_SUBMISSIONS_FOLDER);
+export function submissionsRoot(setting: unknown, defaultsLanguage?: unknown): string {
+  return folderRoot(setting, languageSet(defaultsLanguage).submissionsFolder);
 }
 
 /** The export folder setting as a vault path, normalized like snapshotsRoot; never "" (DEFAULT_EXPORT_FOLDER). */
-export function exportRoot(setting: unknown): string {
-  return folderRoot(setting, DEFAULT_EXPORT_FOLDER);
+export function exportRoot(setting: unknown, defaultsLanguage?: unknown): string {
+  return folderRoot(setting, languageSet(defaultsLanguage).exportFolder);
 }
 
 /**
@@ -231,9 +265,9 @@ export function exportRoot(setting: unknown): string {
 export function classifyKey(s: ClassifySettings): string {
   return JSON.stringify([
     str(s.trackFolders), str(s.excludeFolders), str(s.chaptersFolder), str(s.chapterTemplate),
-    snapshotsRoot(s.snapshotsFolder), submissionsRoot(s.submissionsFolder), exportRoot(s.exportFolder),
+    snapshotsRoot(s.snapshotsFolder), submissionsRoot(s.submissionsFolder, s.defaultsLanguage), exportRoot(s.exportFolder, s.defaultsLanguage),
     str(s.statusProperty), s.stages ?? null,
-    str(s.targetProperty), str(s.limitProperty), str(s.unitProperty), str(s.deadlineProperty),
+    str(s.targetProperty), str(s.limitProperty), str(s.unitProperty), str(s.deadlineProperty), str(s.chapterTargetProperty),
   ]);
 }
 
@@ -247,13 +281,13 @@ export function scopeKey(s: Pick<ClassifySettings, "universeMode" | "universeNot
 }
 
 /** Whether `path` is the submissions folder or inside it. */
-export function inSubmissions(path: string, settings: Pick<ClassifySettings, "submissionsFolder">): boolean {
-  return inFolder(path, submissionsRoot(settings.submissionsFolder));
+export function inSubmissions(path: string, settings: Pick<ClassifySettings, "submissionsFolder" | "defaultsLanguage">): boolean {
+  return inFolder(path, submissionsRoot(settings.submissionsFolder, settings.defaultsLanguage));
 }
 
 /** Whether `path` is the export folder or inside it. */
-export function inExports(path: string, settings: Pick<ClassifySettings, "exportFolder">): boolean {
-  return inFolder(path, exportRoot(settings.exportFolder));
+export function inExports(path: string, settings: Pick<ClassifySettings, "exportFolder" | "defaultsLanguage">): boolean {
+  return inFolder(path, exportRoot(settings.exportFolder, settings.defaultsLanguage));
 }
 
 /** Whether `path` is the snapshots folder or inside it. */
@@ -396,6 +430,25 @@ function pieceOf(fm: Record<string, unknown> | undefined, settings: ClassifySett
   }
 }
 
+/**
+ * A chapter's effective piece (IMPROVEMENTS 8): its own piece with the book note's default
+ * target (and unit) filled in. A blank unit is no unit, so it never overrides the book's.
+ */
+function chapterPieceOf<F extends Named, D extends Named>(
+  tree: VaultTree<F, D>, book: BookOf<F, D>, fm: Record<string, unknown> | undefined,
+  own: Piece | null, settings: ClassifySettings,
+): { piece: Piece | null; source: "own" | "book" | null } {
+  try {
+    const prop = settings.chapterTargetProperty;
+    const def = prop ? readChapterDefault(frontmatterOf(tree, book.note), { chapterTargetProperty: prop, unitProperty: settings.unitProperty }) : null;
+    const raw = fm?.[settings.unitProperty];
+    const ownUnit: PieceUnit | null = raw === undefined || raw === null || (typeof raw === "string" && raw.trim() === "") ? null : parseUnit(raw);
+    return effectivePiece(own, def, ownUnit);
+  } catch {
+    return { piece: own, source: own?.target !== undefined ? "own" : null };
+  }
+}
+
 /** The one stage rule for works: only a tracked note or book note has one. */
 function stageFor(fm: Record<string, unknown> | undefined, tracked: boolean, settings: ClassifySettings): Stage | null {
   if (!tracked) return null;
@@ -466,7 +519,7 @@ function withScope<F extends Named, D extends Named>(
 export function classify<F extends Named, D extends Named>(
   tree: VaultTree<F, D>, settings: ClassifySettings, path: string | null,
 ): Placement<F, D> {
-  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, snapshot: false, stage: null, submission: false, export: false, scope: NO_SCOPE };
+  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, pieceSource: null, snapshot: false, stage: null, submission: false, export: false, scope: NO_SCOPE };
   if (typeof path !== "string" || path === "") return none;
   if (path === "/") return { ...none, kind: "folder" };
   try {
@@ -492,17 +545,19 @@ export function classify<F extends Named, D extends Named>(
       const tracked = markdown && isTracked(path, settings);
       const fm = markdown ? frontmatterOf(tree, file) : undefined;
       const piece = markdown ? pieceOf(fm, settings) : null;
+      const pieceSource = piece?.target !== undefined ? "own" as const : null;
       // The book note comes first: a book note inside another book's folder belongs to its own book.
       const own = markdown ? bookAt(tree, path.slice(0, -3), ch) : null;
       const read = markdown ? { fm } : undefined;
-      if (own) return withScope({ path, kind: "book-note", markdown, book: own, tracked, piece, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false }, tree, settings, read);
+      if (own) return withScope({ path, kind: "book-note", markdown, book: own, tracked, piece, pieceSource, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false }, tree, settings, read);
       const book = ancestorBook(tree, path, ch);
       if (book) {
         // compare against the handle's path, never the settings string
         const kind: Kind = markdown && parentOf(path) === book.chaptersFolder.path ? "chapter" : "book-file";
-        return withScope({ path, kind, markdown, book, tracked, piece, snapshot: false, stage: null, submission: false, export: false }, tree, settings, read);
+        const eff = kind === "chapter" ? chapterPieceOf(tree, book, fm, piece, settings) : { piece, source: pieceSource };
+        return withScope({ path, kind, markdown, book, tracked, piece: eff.piece, pieceSource: eff.source, snapshot: false, stage: null, submission: false, export: false }, tree, settings, read);
       }
-      return withScope({ path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false }, tree, settings, read);
+      return withScope({ path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, pieceSource, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false }, tree, settings, read);
     }
     if (tree.folder(path)) {
       const own = bookAt(tree, path, ch);

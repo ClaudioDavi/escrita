@@ -123,7 +123,8 @@ function textOf(v: unknown): string {
 
 /**
  * Who wrote it (Q2). The name comes from the `authorProperty` setting (`author`) on the work, else the
- * settings. The surname is the settings' own when the name is the settings' name, and
+ * settings, followed by the settings' surname when the name lacks it (the full name goes in the byline,
+ * the contact block and the file's author). The surname is the settings' own when the name is the settings' name, and
  * the name's last word otherwise (or when the setting is empty).
  */
 export function authorOf(
@@ -132,9 +133,14 @@ export function authorOf(
 ): Author {
   const key = settings.authorProperty.trim();
   const own = key ? textOf(frontmatter?.[key]) : "";
-  const name = own !== "" ? own : settings.authorName.trim();
   const configured = own !== "" ? "" : settings.authorSurname.trim();
-  const surname = configured !== "" ? configured : name.split(/\s+/).filter(Boolean).pop() ?? "";
+  const given = own !== "" ? own : settings.authorName.trim();
+  // the byline and the contact block show the full name: the settings' name plus the surname,
+  // unless the name already has it ("Ana Souza" + "de Souza" stays "Ana Souza")
+  const words = (x: string): string[] => x.toLowerCase().split(/\s+/).filter(Boolean);
+  const last = words(configured).pop();
+  const name = given !== "" && last !== undefined && !words(given).includes(last) ? `${given} ${configured}` : given;
+  const surname = configured !== "" ? configured : given.split(/\s+/).filter(Boolean).pop() ?? "";
   const contact = settings.contactLines.split(/\r?\n/).map((l) => l.trim()).filter((l) => l !== "");
   return { name, surname, contact };
 }

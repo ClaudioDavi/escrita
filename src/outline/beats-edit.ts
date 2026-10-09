@@ -239,3 +239,15 @@ export function insertFirstBeat(text: string, beatText: string): string {
   const gap = k > doc.body && !blank(lines[k - 1]) ? [""] : [];
   return join(doc, [...before, ...gap, beat, "", ...lines.slice(k)]);
 }
+
+/** An empty beat the outline just inserted: the chapter's text right before and right after. */
+export interface FreshInsert { before: string; after: string }
+
+/**
+ * Escape on a beat that was just created and never filled: the text to put back,
+ * or null when the chapter is no longer exactly what the insert produced (the
+ * writer or a sync changed it meanwhile, so nothing is touched).
+ */
+export function undoFreshBeat(current: string, fresh: FreshInsert): string | null {
+  return current === fresh.after ? fresh.before : null;
+}

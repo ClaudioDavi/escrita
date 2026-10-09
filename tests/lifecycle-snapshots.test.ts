@@ -72,11 +72,6 @@ function setup(): void {
   registry.init();
 }
 
-function turn(id: FeatureId, on: boolean): void {
-  plugin.settings.features = { ...plugin.settings.features, [id]: on };
-  registry.apply();
-}
-
 beforeEach(() => {
   vi.useFakeTimers();
   setup();
@@ -107,7 +102,7 @@ describe("snapshots lifecycle", () => {
     plugin.app.vault.trigger("modify", { path: "a.md" });
     expect(vi.getTimerCount()).toBe(1);
 
-    turn("snapshots", false);
+    plugin.turn("snapshots", false);
     expect(registry.isOn("snapshots")).toBe(false);
     expect(registry.isOn("stageSnapshot")).toBe(false);   // requires snapshots
     expect(plugin.commands.size).toBe(0);
@@ -124,8 +119,8 @@ describe("snapshots lifecycle", () => {
   it("loads again with one of each", () => {
     registry.apply();
     const listeners = plugin.liveListeners();
-    turn("snapshots", false);
-    turn("snapshots", true);
+    plugin.turn("snapshots", false);
+    plugin.turn("snapshots", true);
     expect([...plugin.commands.keys()].sort()).toEqual([...COMMANDS].sort());
     expect(plugin.liveListeners()).toBe(listeners);
     expect(plugin.followers.size).toBe(2);
@@ -136,11 +131,11 @@ describe("snapshots lifecycle", () => {
 
   it("the stage snapshot alone can be switched off and on", () => {
     registry.apply();
-    turn("stageSnapshot", false);
+    plugin.turn("stageSnapshot", false);
     expect(registry.isOn("snapshots")).toBe(true);
     expect(works.changes.size).toBe(0);
     expect(plugin.commands.size).toBe(4);
-    turn("stageSnapshot", true);
+    plugin.turn("stageSnapshot", true);
     expect(works.changes.size).toBe(1);
   });
 

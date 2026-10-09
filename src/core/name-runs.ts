@@ -5,7 +5,7 @@
 // count and the cross-work count always find the same runs. Neither module imports the
 // other; both import this.
 //
-// A run (task 1.3 writes it; the Wave 0 judge settled these rules):
+// A run (the rules):
 // - Words by the shared word rule (core/tokens.ts) that start with an uppercase letter,
 //   one after the other, separated only by spaces or tabs in the mask (never a line
 //   break, never punctuation: "Sr. Almeida" is two runs, "Sr" and "Almeida").

@@ -1,0 +1,450 @@
+{
+  "description": "Board 36 a: the scrubbed 0.9 settings (the words the writer changed are kept), existing folders and home note, works present. Examples, the language group, the features row and the layout come unticked, so with no tick changed the run touches no saved setting but trackFolders' addition; trackFolders gains Livros, never swapped; the writer's own words are kept.",
+  "choices": {
+    "writes": "both",
+    "language": "pt-BR",
+    "preset": "writer",
+    "universeMode": null,
+    "layout": "desk"
+  },
+  "settings": {
+    "fromFile": "../settings-0.9/expected-settings.json"
+  },
+  "vault": {
+    "folders": [
+      "Contos",
+      "Textos",
+      "Romances",
+      "Ideias",
+      "Romances/Livro de exemplo",
+      "Romances/Livro de exemplo/Capítulos",
+      "Modelos",
+      "Escrita",
+      "Universo",
+      "Universo/Personagens"
+    ],
+    "files": [
+      "Início.md",
+      "Contos/Conto de exemplo.md",
+      "Textos/Ensaio de exemplo.md",
+      "Romances/Livro de exemplo/Livro de exemplo.md",
+      "Romances/Livro de exemplo/Capítulos/01 Um.md",
+      "Modelos/Capítulo.md",
+      "Universo.md",
+      "Notas/Darlings.md"
+    ],
+    "noteCounts": {
+      "Contos": 12,
+      "Textos": 8,
+      "Romances": 3,
+      "Ideias": 5,
+      "Modelos": 2,
+      "Universo": 4,
+      "Universo/Personagens": 3
+    },
+    "openLeaves": 1,
+    "hasWorks": true
+  },
+  "expected": [
+    {
+      "kind": "folder",
+      "target": "Contos",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.folderExists",
+        "vars": {
+          "count": 12
+        }
+      }
+    },
+    {
+      "kind": "folder",
+      "target": "Livros",
+      "state": "new",
+      "tick": "folders",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.folderHasWorks"
+      }
+    },
+    {
+      "kind": "example",
+      "target": "Contos/Exemplo · A travessia.md",
+      "state": "new",
+      "tick": "examples",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exampleHasWorks"
+      }
+    },
+    {
+      "kind": "example",
+      "target": "Livros/Exemplo · O farol",
+      "state": "new",
+      "tick": "examples",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exampleHasWorks"
+      }
+    },
+    {
+      "kind": "example",
+      "target": "Livros/Exemplo · O farol.md",
+      "state": "new",
+      "tick": "examples",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exampleHasWorks"
+      }
+    },
+    {
+      "kind": "example",
+      "target": "Livros/Exemplo · O farol/Capítulos",
+      "state": "new",
+      "tick": "examples",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exampleHasWorks"
+      }
+    },
+    {
+      "kind": "example",
+      "target": "Livros/Exemplo · O farol/Capítulos/01 Chegada.md",
+      "state": "new",
+      "tick": "examples",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exampleHasWorks"
+      }
+    },
+    {
+      "kind": "example",
+      "target": "Livros/Exemplo · O farol/Capítulos/02 A tempestade.md",
+      "state": "new",
+      "tick": "examples",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exampleHasWorks"
+      }
+    },
+    {
+      "kind": "home",
+      "target": "Início.md",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exists"
+      }
+    },
+    {
+      "kind": "setting",
+      "target": "defaultsLanguage",
+      "state": "change",
+      "tick": "language",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingHasWorks"
+      },
+      "value": "pt-BR"
+    },
+    {
+      "kind": "setting",
+      "target": "stages",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingOwn"
+      },
+      "value": {
+        "idea": {
+          "words": "ideia",
+          "color": "#7d7972"
+        },
+        "draft": {
+          "words": "rascunho",
+          "color": "#9a968e"
+        },
+        "revision": {
+          "words": "revisao",
+          "color": "#e0b567"
+        },
+        "ready": {
+          "words": "pronto",
+          "color": "#8fb3d9"
+        },
+        "published": {
+          "words": "publicado",
+          "color": "#86c497"
+        }
+      }
+    },
+    {
+      "kind": "setting",
+      "target": "unnumberedTitles",
+      "state": "change",
+      "tick": "language",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingHasWorks"
+      },
+      "value": "Prólogo, Prefácio, Apresentação, Introdução, Nota do autor, Interlúdio, Epílogo, Posfácio"
+    },
+    {
+      "kind": "setting",
+      "target": "submissionResults",
+      "state": "change",
+      "tick": "language",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingHasWorks"
+      },
+      "value": "pendente, aceito, recusado, retirado"
+    },
+    {
+      "kind": "setting",
+      "target": "exportFolder",
+      "state": "change",
+      "tick": "language",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingHasWorks"
+      },
+      "value": "Escrita/Exportações"
+    },
+    {
+      "kind": "setting",
+      "target": "submissionsFolder",
+      "state": "change",
+      "tick": "language",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingHasWorks"
+      },
+      "value": "Escrita/Envios"
+    },
+    {
+      "kind": "setting",
+      "target": "darlingsNote",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingOwn"
+      },
+      "value": "Notas/Darlings.md"
+    },
+    {
+      "kind": "setting",
+      "target": "globalDarlingsNote",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingOwn"
+      },
+      "value": "Arquivo/Darlings.md"
+    },
+    {
+      "kind": "setting",
+      "target": "universeNote",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingOwn"
+      },
+      "value": "Universo.md"
+    },
+    {
+      "kind": "setting",
+      "target": "entryTypes",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingOwn"
+      },
+      "value": {
+        "character": {
+          "value": "personagem",
+          "folder": "Personagens",
+          "template": "Modelos/Personagem.md",
+          "label": "Personagem"
+        },
+        "place": {
+          "value": "lugar",
+          "folder": "Lugares",
+          "template": "Modelos/Lugar.md",
+          "label": "Lugar"
+        },
+        "object": {
+          "value": "objeto",
+          "folder": "Objetos",
+          "template": "",
+          "label": "Objeto"
+        },
+        "group": {
+          "value": "grupo",
+          "folder": "Grupos",
+          "template": "",
+          "label": "Grupo"
+        },
+        "event": {
+          "value": "evento",
+          "folder": "Eventos",
+          "template": "",
+          "label": "Evento"
+        }
+      }
+    },
+    {
+      "kind": "setting",
+      "target": "formValues",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingOwn"
+      },
+      "value": {
+        "shortStory": "conto",
+        "essay": "ensaio",
+        "novella": "novela",
+        "novel": "romance",
+        "poem": "poema",
+        "fragment": "fragmento"
+      }
+    },
+    {
+      "kind": "setting",
+      "target": "threadKeyword",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingOwn"
+      },
+      "value": "fio"
+    },
+    {
+      "kind": "setting",
+      "target": "threadClosedWord",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingOwn"
+      },
+      "value": "fechado"
+    },
+    {
+      "kind": "setting",
+      "target": "trackFolders",
+      "state": "change",
+      "tick": "folders",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.trackAddHasWorks",
+        "vars": {
+          "folders": "Livros"
+        }
+      },
+      "value": "Contos\nTextos\nRomances\nIdeias\nLivros"
+    },
+    {
+      "kind": "setting",
+      "target": "chaptersFolder",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingOwn"
+      },
+      "value": "Capítulos"
+    },
+    {
+      "kind": "setting",
+      "target": "lensLanguage",
+      "state": "change",
+      "tick": "language",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingHasWorks"
+      },
+      "value": "pt-BR"
+    },
+    {
+      "kind": "setting",
+      "target": "homeNote",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingSame"
+      },
+      "value": "Início.md"
+    },
+    {
+      "kind": "setting",
+      "target": "openHomeOnStartup",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingSame"
+      },
+      "value": true
+    },
+    {
+      "kind": "features",
+      "target": "features",
+      "state": "change",
+      "tick": "features",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.featuresHasWorks",
+        "vars": {
+          "preset": "writer"
+        }
+      },
+      "value": {
+        "features": {
+          "goals": true,
+          "outline": true,
+          "placeholders": true,
+          "darlings": true,
+          "typing": true,
+          "dialogueFocus": true,
+          "moveBlocks": true,
+          "templates": true,
+          "lens": true,
+          "snapshots": true,
+          "stageSnapshot": true,
+          "publish": true,
+          "export": true,
+          "submissions": true,
+          "desk": true,
+          "threads": false
+        },
+        "explorerCounts": true,
+        "spellcheckOnDemand": false,
+        "universeMode": "universe"
+      }
+    },
+    {
+      "kind": "layout",
+      "target": "layout",
+      "state": "new",
+      "tick": "layout",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.layoutHasWorks"
+      },
+      "value": "desk"
+    }
+  ]
+}

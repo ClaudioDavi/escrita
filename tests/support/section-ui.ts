@@ -1,6 +1,7 @@
 // A fake SettingsUi for tests that draw one module's settings section with the `Setting` stub.
 import { vi } from "vitest";
 import type { SettingsUi } from "../../src/core/module-context";
+import { defaultsFor } from "../../src/settings";
 
 export interface FakeUi {
   ui: SettingsUi;
@@ -9,11 +10,11 @@ export interface FakeUi {
   fields: { inputEl: HTMLInputElement }[];
 }
 
-export function fakeUi(): FakeUi {
+export function fakeUi(lang: "en" | "pt-BR" = "en"): FakeUi {
   const save = vi.fn(async () => {});
   const fields: FakeUi["fields"] = [];
   const ui = {
-    app: {}, save, redraw: vi.fn(), num: (v: string, fb: number) => (/^\d+$/.test(v) ? Number(v) : fb),
+    app: {}, save, defaults: () => defaultsFor(lang), redraw: vi.fn(), num: (v: string, fb: number) => (/^\d+$/.test(v) ? Number(v) : fb),
     saveOnCommit(c: { inputEl: HTMLInputElement; getValue(): string; setValue(v: string): unknown }, fallback: () => string, apply: (v: string) => void) {
       fields.push(c);
       c.inputEl.addEventListener("change", () => {

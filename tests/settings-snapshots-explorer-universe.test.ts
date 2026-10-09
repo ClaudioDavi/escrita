@@ -9,7 +9,7 @@ import { registerStrings, t } from "../src/i18n";
 import { coreStrings } from "../src/strings";
 import { snapshotsStrings } from "../src/snapshots/strings";
 import { universeStrings } from "../src/universe/strings";
-import { DEFAULT_SETTINGS, type EscritaSettings } from "../src/settings";
+import { DEFAULT_SETTINGS, defaultsFor, type EscritaSettings } from "../src/settings";
 import { snapshotsOffNotice, snapshotsSettingsSection } from "../src/snapshots/settings-ui";
 import { explorerSettingsSection } from "../src/explorer/settings-ui";
 import { universeSettingsSection } from "../src/universe/settings-ui";
@@ -28,6 +28,7 @@ function rig(over: Partial<EscritaSettings> = {}, on: string[] = ["universe", "t
   const ui = {
     app: { vault: { configDir: ".obsidian", getMarkdownFiles: () => [] } },
     save,
+    defaults: () => defaultsFor(settings.defaultsLanguage),
     saveOnCommit: (_c: unknown, fallback: () => string, apply: (v: string) => void) => { commits.push({ fallback, apply }); },
     redraw: () => {},
     num: (v: string, fb: number, min = 0) => { const n = parseInt(v, 10); return Number.isNaN(n) ? fb : Math.max(min, n); },
@@ -155,5 +156,37 @@ describe("plugin folder rows (export, submissions)", () => {
     expect(r.settings.submissionsFolder).toBe(DEFAULT_SETTINGS.submissionsFolder);
     r.commits[0].apply("Saida");
     expect(r.settings.exportFolder).toBe("Saida");
+  });
+});
+
+describe("a pt-BR install falls back to the pt-BR set (1.0 known issue: English defaults in the tab)", () => {
+  const pt = (over: Partial<EscritaSettings> = {}, on?: string[]) => rig({ ...defaultsFor("pt-BR"), defaultsLanguage: "pt-BR", ...over }, on);
+
+  it("ui.defaults() is the install's set", () => {
+    const r = pt();
+    expect(r.ui.defaults().threadClosedWord).toBe("fechada");
+    expect(r.ui.defaults().chaptersFolder).toBe("Capítulos");
+  });
+
+  it("clearing the thread words restores thread and the pt-BR closed word", () => {
+    const r = pt({}, ["threads"]);
+    threadsSettingsSection(r.el, r.ui, r.plugin);
+    expect(r.commits[0].fallback()).toBe("thread");
+    expect(r.commits[1].fallback()).toBe(defaultsFor("pt-BR").threadClosedWord);
+    expect(r.commits[1].fallback()).not.toBe("closed");
+  });
+
+  it("clearing the universe note restores Universo.md", () => {
+    const r = pt({ universeMode: "universe" });
+    universeSettingsSection(r.el, r.ui, r.plugin);
+    expect(r.commits.some((c) => c.fallback() === "Universo.md")).toBe(true);
+  });
+
+  it("clearing the export and submissions folders restores the pt-BR folders", async () => {
+    const { pluginFolderRows } = await import("../src/settings");
+    const r = pt();
+    pluginFolderRows(r.el, r.ui, r.settings, () => []);
+    expect(r.commits[0].fallback()).toBe(defaultsFor("pt-BR").exportFolder);
+    expect(r.commits[1].fallback()).toBe(defaultsFor("pt-BR").submissionsFolder);
   });
 });

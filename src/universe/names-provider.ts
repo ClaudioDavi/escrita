@@ -56,7 +56,7 @@ export class UniverseNamesProvider implements NamesProvider {
   private countsBump = 0;
   private countListeners = new Set<() => void>();
   private listeners = new Set<() => void>();
-  private global: { sig: string; table: TermTable } | null = null;
+  private allScopes: { sig: string; table: TermTable } | null = null;
   /** scope key -> its entries, signature and (while asked for) table; kept current by refresh() */
   private scopes = new Map<string, ScopeRec>();
   /** entries grouped by scope, valid until the next refresh() */
@@ -117,12 +117,12 @@ export class UniverseNamesProvider implements NamesProvider {
 
   /** One table over every entry, whatever its scope: what the mentions index matches with. */
   globalTable(): TermTable {
-    if (!this.global) {
+    if (!this.allScopes) {
       const sources = [...this.deps.entries()].map(sourceOf);
       const o = this.options();
-      this.global = { sig: sigOf(sources, o), table: this.compile(sources, o) };
+      this.allScopes = { sig: sigOf(sources, o), table: this.compile(sources, o) };
     }
-    return this.global.table;
+    return this.allScopes.table;
   }
 
   tableFor(path: string): TermTable {
@@ -225,16 +225,16 @@ export class UniverseNamesProvider implements NamesProvider {
     this.groups = null;
     const o = this.options();
     let changed = false;
-    if (this.global) {
+    if (this.allScopes) {
       const sources = [...this.deps.entries()].map(sourceOf);
       const sig = sigOf(sources, o);
-      if (sig !== this.global.sig) {
+      if (sig !== this.allScopes.sig) {
         const next = this.compile(sources, o);
-        if (next.signature !== this.global.table.signature) {
-          this.global.table = next;
+        if (next.signature !== this.allScopes.table.signature) {
+          this.allScopes.table = next;
           changed = true;
         }
-        this.global.sig = sig;
+        this.allScopes.sig = sig;
       }
     }
     if (this.scopes.size > 0) {

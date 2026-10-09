@@ -1,10 +1,11 @@
 // Dialogue focus — CodeMirror glue. Dims everything but speech (see dialogue.ts)
 // in the visible lines of notes where it's turned on. Zero work while off.
 
+import { dispatchWithRetry } from "../core/dispatch-retry";
 import { RangeSetBuilder, StateEffect, type EditorState, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 import { segmentDoc } from "../core/markdown";
-import { dimPlan, type DialogueOptions } from "./dialogue";
+import { dimPlan, type DialogueOptions } from "../core/dialogue";
 
 /** Dispatched to every editor to re-read the on/off state and options. */
 const refreshEffect = StateEffect.define<null>();
@@ -100,14 +101,12 @@ export class DialogueFocus {
 
   /** Make every editor re-read the toggle state and options. */
   refresh(): void {
+    // A dispatch can fail mid-update: retried once, and only a second failure drops the editor.
     for (const view of [...this.views]) {
-      try {
-        view.dispatch({ effects: refreshEffect.of(null) });
-      } catch (e) {
-        // a destroyed view that missed its destroy(): forget it
+      dispatchWithRetry(view, () => ({ effects: refreshEffect.of(null) }), () => this.views.has(view), (e) => {
         this.views.delete(view);
         console.error("Escrita: couldn't refresh dialogue focus", e);
-      }
+      });
     }
   }
 }

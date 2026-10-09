@@ -94,6 +94,14 @@ export function defaultUniverseSettings(): UniverseSettings {
   };
 }
 
+/** A copy sharing no object with `u` (the install's default set, 1.0). */
+function cloneUniverse(u: UniverseSettings): UniverseSettings {
+  const d = defaultUniverseSettings();
+  const entryTypes = {} as Record<EntryKind, EntryTypeSetting>;
+  for (const k of ENTRY_KINDS) entryTypes[k] = { ...u.entryTypes[k] };
+  return { ...d, ...u, entryTypes, formValues: { ...u.formValues } };
+}
+
 const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 
 /** A note path as typed: edge slashes stripped, `.md` added; blank gives the fallback. */
@@ -108,9 +116,9 @@ export function normalizeNotePath(v: string, fallback: string): string {
  * universe settings. A missing or wrong-typed value takes its default; a blank
  * name or folder does too. Unknown mode → off.
  */
-export function normalizeUniverse(raw: unknown): UniverseSettings {
+export function normalizeUniverse(raw: unknown, base?: UniverseSettings): UniverseSettings {
   const src = isRecord(raw) ? raw : {};
-  const d = defaultUniverseSettings();
+  const d = base ? cloneUniverse(base) : defaultUniverseSettings();
   const str = (v: unknown, fallback: string): string => (typeof v === "string" && v.trim() !== "" ? v.trim() : fallback);
   const entryTypes = isRecord(src.entryTypes) ? src.entryTypes : {};
   const forms = isRecord(src.formValues) ? src.formValues : {};

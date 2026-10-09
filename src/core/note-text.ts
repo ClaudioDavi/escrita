@@ -101,7 +101,7 @@ export function editorText(ed: EditorLike, afterWrite?: () => void, bound: () =>
         afterWrite?.();
         return Promise.resolve({ ok: true, before: cur, after: ed.getValue(), change, via: "editor" });
       } catch (e) {
-        return Promise.reject(e);
+        return Promise.reject(e instanceof Error ? e : new Error(String(e)));
       }
     },
   };

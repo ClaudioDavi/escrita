@@ -6,6 +6,7 @@
 import { Component, ItemView, Notice, type App, type Command, type TextAreaComponent, type TextComponent, type MarkdownPostProcessor, type MarkdownPostProcessorContext, type ViewCreator, type WorkspaceLeaf } from "obsidian";
 import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
+import type { EscritaSettings } from "../settings";
 import { t } from "../i18n";
 import type { FeatureId } from "./features";
 import type { Follower, IndexFile, IndexSpec, VaultIndex } from "./vault-index";
@@ -50,8 +51,7 @@ export interface ModuleContext {
 }
 
 /**
- * What the settings tab hands a module's `settingsSection` (IMPROVEMENTS 11; the
- * tab is task 2.1, the sections move in 2.2). Lifted from universe/settings-ui.ts.
+ * What the settings tab hands a module's `settingsSection` (IMPROVEMENTS 11).
  */
 export interface SettingsUi {
   app: App;
@@ -67,6 +67,12 @@ export interface SettingsUi {
    * field then shows what was kept, `apply(v)` stores it, and the settings save.
    */
   saveOnCommit(c: TextComponent | TextAreaComponent, fallback: () => string, apply: (v: string) => void): void;
+  /**
+   * The default set of the install's language (`defaultsFor(settings.defaultsLanguage)`, 1.0):
+   * what a cleared field falls back to and what a placeholder shows. Never DEFAULT_SETTINGS
+   * for a word-bearing setting: that is the English set, wrong in a pt-BR install.
+   */
+  defaults(): EscritaSettings;
   /** Draws the whole tab again (after a change that shows or hides rows). */
   redraw(): void;
   /** A number typed in a field: its digits, at least `min` (default 0); `fallback` when blank or not a number. */
@@ -98,8 +104,7 @@ export abstract class FeatureModule extends Component {
    * its own heading, except in a slot with shared rows (core/settings-order.ts `also`:
    * placeholders, editor, universe), where the core draws the heading and those rows.
    * Called only while the feature is loaded, in the tab's one order list (PLAN-0.8
-   * Q13), so an off feature's section is gone with it. Read from task 2.1 on; the
-   * sections move here in 2.2.
+   * Q13), so an off feature's section is gone with it.
    */
   settingsSection?(el: HTMLElement, ui: SettingsUi): void;
 
@@ -109,9 +114,46 @@ export abstract class FeatureModule extends Component {
    * Called after the switch is saved, so the feature has already unloaded: read
    * only what stays (plugin.data, settings, the vault), never this module's live
    * state. Returns translated text.
-   * Replaces settings.ts `offNotice` (task 2.2).
    */
   offNotice?(): Promise<string | null>;
+}
+
+/**
+ * A part of Escrita that is not one of the 19 features and never switches off (1.0: the
+ * setup, "Set up a writing vault"). It has no `FeatureId`, so it is not on the Features
+ * page, in a preset or in `settings.features`, and the registry never sees it.
+ *
+ * The seam (PLAN-1.0 0.1, ARCHITECTURE.md "Core modules"): main.ts constructs it after
+ * the registry has applied the switches and hands it to `startCoreModule`, which gives it
+ * its own `ModuleContext` (the same door every feature registers through, rule 8) and
+ * adds it as a child of the plugin, so it loads once now and unloads with the plugin.
+ * Subclasses implement `onload`/`onunload` and register only through `this.ctx`.
+ * A core module declares no slots: `ctx.view`, `ctx.editor`, `ctx.codeBlock` and
+ * `ctx.postProcessor` throw for it. One that ever needs a view gets `ModuleSlots`
+ * registered at plugin load, as the registry does, in a deliberate change to this seam.
+ * It reads other features only as soft dependencies (`plugin.features.isOn`).
+ */
+export abstract class CoreModule extends Component {
+  protected ctx!: ModuleContext;
+
+  /** Called once by `startCoreModule`, before load. */
+  attach(ctx: ModuleContext): void {
+    this.ctx = ctx;
+  }
+}
+
+/**
+ * Loads a core module for the plugin's life (main.ts, once per module, at the end of
+ * onload). The context is begun before the module loads; the plugin's unload unloads the
+ * module (a child) and then ends the context without its afterUnload callbacks, as
+ * `FeatureRegistry.unloadAll` does for the features.
+ */
+export function startCoreModule(plugin: EscritaPlugin, module: CoreModule): void {
+  const ctx = new ModuleContextImpl(plugin);
+  ctx.begin();
+  module.attach(ctx);
+  plugin.register(() => ctx.end(false));
+  plugin.addChild(module);
 }
 
 /** What a restored leaf of an off feature's view type shows until the layout is ready and it is detached (Q3). */
@@ -161,7 +203,7 @@ export class ModuleSlots {
       });
     }
     if (this.declared.postProcessor) {
-      p.registerMarkdownPostProcessor((el, ctx) => { this.post?.(el, ctx); });
+      p.registerMarkdownPostProcessor((el, ctx) => { void this.post?.(el, ctx); });
     }
     for (let i = 0; i < (this.declared.editors ?? 0); i++) {
       const arr: Extension[] = [];

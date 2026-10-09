@@ -80,7 +80,7 @@ export function linkMarkup(target: string, text: string, inTable = false): strin
  */
 export function linkFromGenerated(generated: string, linktext: string, text: string, inTable = false): string | null {
   if (generated === "" || text === "" || /[[\]\n\r]/.test(text)) return null;
-  if (!generated.startsWith("[[")) return inTable ? generated.replace(/(?<!\\)\|/g, "\\|") : generated;
+  if (!generated.startsWith("[[")) return inTable ? generated.replace(/\\?\|/g, (m) => (m.length === 2 ? m : "\\|")) : generated;
   return linkMarkup(linktext, text, inTable);
 }
 

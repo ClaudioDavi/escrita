@@ -40,11 +40,6 @@ beforeEach(() => {
   (plugin.app.metadataCache as unknown as { getFirstLinkpathDest: unknown }).getFirstLinkpathDest = () => null;
 });
 
-const turn = (on: boolean): void => {
-  plugin.settings.features = { ...plugin.settings.features, submissions: on };
-  registry.apply();
-};
-
 describe("submissions lifecycle", () => {
   it("loads with its command, one index and the file menu", () => {
     expect(registry.isOn("submissions")).toBe(true);
@@ -55,12 +50,12 @@ describe("submissions lifecycle", () => {
   });
 
   it("leaves nothing behind when switched off, and loads once more cleanly", () => {
-    turn(false);
+    plugin.turn("submissions", false);
     expect(plugin.commands.size).toBe(0);
     expect(plugin.liveListeners()).toBe(0);
     expect(plugin.indexAdded.every((h) => h.disposed)).toBe(true);
     expect(module.pending.list()).toEqual([]);
-    turn(true);
+    plugin.turn("submissions", true);
     expect(plugin.commands.size).toBe(1);
     expect(plugin.indexAdded.filter((h) => !h.disposed)).toHaveLength(1);
     expect(plugin.app.workspace.liveListeners("file-menu")).toBe(1);
@@ -110,7 +105,7 @@ describe("the pending port", () => {
     plugin.indexAdded[0].emitChange([]);
     expect(n).toBe(2);
     module.pending.onChange(() => { n++; });
-    turn(false);
+    plugin.turn("submissions", false);
     module.settingsChanged?.();
     expect(n).toBe(2);
   });

@@ -221,8 +221,9 @@ writes over the file without asking.
 In Settings › Escrita › Export:
 
 - **Author name** goes on the title page and the byline.
-- **Surname for the header** is the "Surname" in the header. Empty uses the last word of the
-  name.
+- **Surname for the header** is the "Surname" in the header. It is also added after the name
+  in the byline, the contact block and the file's author, unless the name already has it. So
+  "Ana" and "Souza" give "by Ana Souza". Empty uses the last word of the name.
 - **Contact lines**: address, email, phone, one per line, at the top of the title page.
 - **Author property** (`author` by default): a property on a note or a book's note that
   names the author for that work. It overrides the name above. For that work the surname is

@@ -27,13 +27,13 @@ function proseLinks(masked: string): { from: number; to: number; linkpath: strin
   const out: { from: number; to: number; linkpath: string }[] = [];
   for (const m of masked.matchAll(WIKILINK)) {
     if (m[1]) continue;
-    const target = m[2]!.split("|")[0]!.split("#")[0]!.trim();
-    if (target) out.push({ from: m.index!, to: m.index! + m[0].length, linkpath: target });
+    const target = m[2].split("|")[0].split("#")[0].trim();
+    if (target) out.push({ from: m.index, to: m.index + m[0].length, linkpath: target });
   }
   for (const m of masked.matchAll(MDLINK)) {
     if (m[1]) continue;
-    const target = mdTarget(m[3]!);
-    if (target) out.push({ from: m.index!, to: m.index! + m[0].length, linkpath: target });
+    const target = mdTarget(m[3]);
+    if (target) out.push({ from: m.index, to: m.index + m[0].length, linkpath: target });
   }
   return out.sort((a, b) => a.from - b.from);
 }
@@ -44,7 +44,7 @@ function mdTarget(raw: string): string {
   if (t.startsWith("<")) t = t.slice(1, t.indexOf(">") < 0 ? undefined : t.indexOf(">"));
   else t = t.replace(/\s+".*$/, "");
   if (/^[a-z][a-z0-9+.-]*:/i.test(t)) return "";
-  t = t.split("#")[0]!.replace(/\\([\\`*_{}[\]()#+\-.!<>])/g, "$1");
+  t = t.split("#")[0].replace(/\\([\\`*_{}[\]()#+\-.!<>])/g, "$1");
   try {
     t = decodeURIComponent(t);
   } catch {
@@ -60,7 +60,7 @@ export interface MentionCtx {
   resolve(linkpath: string, from: string): string | null;
   /** `chapter` is the chapter's 1-based position in its book (Chapter.index), not its number; null: not a chapter. */
   workOf(notePath: string): { work: string; chapter: number | null } | null;   // null: other notes
-  /** Position of a work in the Works tab's order (groupWorks then compareWorks, works-list.ts:71-84); 5.1 builds it from plugin.works. */
+  /** Position of a work in the Works tab's order (groupWorks then compareWorks, works-list.ts:71-84); the universe module builds it from plugin.works. */
   workRank(work: string): number;
 }
 
@@ -112,8 +112,8 @@ export function appearsIn(all: Iterable<[string, NoteMentions]>, ctx: MentionCtx
       notes: list.map((x) => x.row),
     };
     if (chapters.length) {
-      w.firstChapter = chapters[0]!.path;
-      w.lastChapter = chapters[chapters.length - 1]!.path;
+      w.firstChapter = chapters[0].path;
+      w.lastChapter = chapters[chapters.length - 1].path;
     }
     works.push(w);
   }
@@ -125,17 +125,17 @@ export function appearsIn(all: Iterable<[string, NoteMentions]>, ctx: MentionCtx
 export function mentionsSame(a: NoteMentions, b: NoteMentions): boolean {
   if (a.occurrences.length !== b.occurrences.length || a.links.length !== b.links.length) return false;
   for (let i = 0; i < a.occurrences.length; i++) {
-    const x = a.occurrences[i]!;
-    const y = b.occurrences[i]!;
+    const x = a.occurrences[i];
+    const y = b.occurrences[i];
     if (x.from !== y.from || x.to !== y.to || x.candidates.length !== y.candidates.length) return false;
     for (let k = 0; k < x.candidates.length; k++) {
-      const c = x.candidates[k]!;
-      const d = y.candidates[k]!;
+      const c = x.candidates[k];
+      const d = y.candidates[k];
       if (c.id !== d.id || c.exact !== d.exact || c.origin !== d.origin) return false;
     }
   }
   return a.links.every((l, i) => {
-    const m = b.links[i]!;
+    const m = b.links[i];
     return l.from === m.from && l.to === m.to && l.linkpath === m.linkpath;
   });
 }

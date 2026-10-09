@@ -8,7 +8,8 @@ import type { GoalsModule } from "./index";
 import { chartGeometry } from "./chart";
 import { fmtDay, fmtShortDay } from "./format";
 import { pacing, readNumberField, type Pacing } from "./pacing";
-import { paceInUnit, pieceBar } from "./piece";
+import { chartScope } from "./chart-scope";
+import { paceInUnit, pieceBar } from "../core/piece-bar";
 import { setWidth } from "./status-bar";
 import {
   addedOn, bookTotalSeries, dailyAverage, dailySeries, dayStates, deletedOn, goalMetSummary, streak, sumAdded,
@@ -219,7 +220,8 @@ export class ProgressModal extends Modal {
     const met = goalMetSummary(history, month, goal, off);
     streakTile.createDiv({
       cls: "escrita-tile-sub",
-      text: t("goals.tile.metOf", { n: fmt(met.met), days: fmt(met.of) }),
+      text: t(chartScope({ book: !!scope, piece: !!piece }).streakAllWriting ? "goals.tile.metOfAll" : "goals.tile.metOf",
+        { n: fmt(met.met), days: fmt(met.of) }),
     });
 
     this.renderChart(el, month, bookPath);
@@ -332,7 +334,9 @@ export class ProgressModal extends Modal {
 
     const wrap = parent.createDiv({ cls: "escrita-chart" });
     const width = Math.round(this.contentEl.clientWidth || 520);
+    const cs = chartScope({ book: !!this.bookScope, piece: !!this.pieceScope });
     const g = chartGeometry({ width, height: CHART_HEIGHT, values, goal, totals, off });
+    if (!cs.showGoalMet) for (const b of g.bars) b.met = false;
 
     const svg = wrap.createSvg("svg", {
       cls: "escrita-chart-svg",
@@ -400,9 +404,9 @@ export class ProgressModal extends Modal {
       i.createSpan({ cls: `escrita-legend-swatch ${swatch}` });
       i.createSpan({ text: label });
     };
-    item("is-bar", t("goals.legend.words"));
+    item("is-bar", t(cs.wordsKey));
     if (goal > 0) {
-      item("is-met", t("goals.legend.met"));
+      if (cs.showGoalMet) item("is-met", t("goals.legend.met"));
       item("is-goal", t("goals.legend.goal"));
     }
     if (totals) item("is-total", t(this.bookScope ? "goals.legend.total" : "goals.legend.pieceTotal"));

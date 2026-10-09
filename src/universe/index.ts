@@ -34,8 +34,7 @@ import { MentionsIndex } from "./mentions-index";
 import { NamesIndex, type NoteRuns } from "./names-index";
 import { NameMarks, SPELLCHECK_MARKS_WORK } from "./name-marks";
 import { UniverseNamesProvider } from "./names-provider";
-import { registerAppearsStrings } from "./strings-appears";
-import { keptOut, scopeFor, universeNotePath, universeRootOf, type Scope } from "../core/scope";
+import { UNIVERSE_NOTE_TEXT, keptOut, scopeFor, universeNotePath, universeRootOf, type Scope } from "../core/scope";
 import type { EntryKind, UniverseMode } from "./settings";
 import { inScope, type ThreadRef } from "./threads";
 import { formFor, type WorkInfo } from "./works-list";
@@ -100,7 +99,6 @@ export class UniverseModule extends FeatureModule {
 
   constructor(private plugin: EscritaPlugin) {
     super();
-    registerAppearsStrings();
   }
 
   /** Loaded while the mode is not off (the registry decides); the stateless helpers below work either way. */
@@ -413,7 +411,7 @@ export class UniverseModule extends FeatureModule {
   /**
    * The works of a scope (a universe, in practice): books and tracked standalone notes
    * with a known stage, entries excluded, with their stage and form (null form = "No form").
-   * Group and sort with groupWorks(); count words with plugin.measure; open with desk/open.openWork.
+   * Group and sort with groupWorks(); count words with plugin.measure; open with ui/open-work.openWork.
    */
   worksIn(scope: Scope): WorkInfo[] {
     if (scope.kind === "none") return [];
@@ -504,7 +502,7 @@ export class UniverseModule extends FeatureModule {
     const path = normalizePath(universeNotePath(p.settings.universeNote));
     await p.notes.ensureFolder(universeRootOf(path));
     // only what is missing: a note already there is returned untouched
-    const r = await p.notes.create(path, "---\nname:\ndescription:\n---\n", { exists: "return" });
+    const r = await p.notes.create(path, UNIVERSE_NOTE_TEXT, { exists: "return" });
     return { file: r.file, created: r.outcome === "created" };
   }
 
@@ -540,7 +538,7 @@ export class UniverseModule extends FeatureModule {
     const f = this.ctxFactory;
     if (!m || !f || !this.entriesIdx?.get(path) || this.scopeOf(path).kind === "none") return null;
     m.demand();
-    if (!m.isReady() || !this.entriesIdx.isReady()) return "counting";
+    if (!m.isCurrent() || !this.entriesIdx.isReady()) return "counting";
     return m.appearsIn(path, f.ctx(path));
   }
 

@@ -483,18 +483,15 @@ export class ExportModule extends FeatureModule {
   /** The notice after writing (board 26 e): the name and a way to the folder. */
   private done(file: TFile): void {
     const msg = t("export.done", { name: file.name });
-    const doc = typeof activeDocument !== "undefined" ? activeDocument : typeof document !== "undefined" ? document : null;
-    if (!doc) {
+    if (typeof createFragment === "undefined") {
       new Notice(msg);
       return;
     }
-    const frag = doc.createDocumentFragment();
-    frag.appendChild(doc.createTextNode(`${msg} `));
-    const a = doc.createElement("a");
-    a.textContent = t("export.done.show");
-    a.setAttribute("href", "#");
-    a.addEventListener("click", (e) => { e.preventDefault(); this.reveal(file); });
-    frag.appendChild(a);
+    const frag = createFragment((f) => {
+      f.appendText(`${msg} `);
+      const a = f.createEl("a", { text: t("export.done.show"), attr: { href: "#" } });
+      a.addEventListener("click", (e) => { e.preventDefault(); this.reveal(file); });
+    });
     new Notice(frag);
   }
 

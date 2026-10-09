@@ -41,7 +41,7 @@ function renameIn<T>(
 	// Remove first so only keys that are not moving can collide.
 	for (const [k] of moves) del(k);
 	moves.forEach(([, to], i) => {
-		const moved = values[i] as T;
+		const moved = values[i];
 		if (has(to)) set(to, merge ? merge(moved, get(to)) : moved);
 		else set(to, moved);
 	});
@@ -51,7 +51,7 @@ function renameIn<T>(
 export function renameKeys<T>(rec: Record<string, T>, oldPath: string, newPath: string, merge?: Merge<T>): boolean {
 	return renameIn(
 		Object.keys(rec),
-		(k) => rec[k] as T,
+		(k) => rec[k],
 		(k) => Object.prototype.hasOwnProperty.call(rec, k),
 		(k) => { delete rec[k]; },
 		(k, v) => { rec[k] = v; },

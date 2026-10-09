@@ -36,7 +36,8 @@ const WRITING_KINDS = new Set(["note", "chapter", "book-note"]);
 function filled(v: unknown): boolean {
   if (v === undefined || v === null) return false;
   if (Array.isArray(v)) return v.length > 0;
-  return String(v).trim() !== "";
+  if (typeof v === "string") return v.trim() !== "";
+  return true; // numbers, booleans and objects are never blank
 }
 
 function under(path: string, folder: string): boolean {

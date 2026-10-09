@@ -1,4 +1,4 @@
-// Pure helpers for the "Names" rows of the universe settings (0.7 task 4.5; no Obsidian
+// Pure helpers for the "Names" rows of the universe settings (0.7; no Obsidian
 // imports): which built-in titles to name in the extra titles description.
 
 import { matchLang } from "../core/names";

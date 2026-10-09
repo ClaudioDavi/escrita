@@ -17,7 +17,7 @@ import { writingDay } from "../core/dates";
 import { measureText } from "../core/measure";
 import { revertPlan, wholeText, type AnchoredChange, type Change } from "../core/note-text";
 import { t } from "../i18n";
-import { confirmAction } from "../outline/modals";
+import { confirmAction } from "../ui/confirm";
 import { createSnapshotFs } from "./fs";
 import { label as entryLabel, type SnapshotEntry, type SnapshotKind } from "./index-format";
 import { askName, pickPath } from "./modals";

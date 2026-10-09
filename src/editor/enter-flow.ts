@@ -11,7 +11,7 @@
 import { segment, type Markdown } from "../core/markdown";
 import { SCENE_BREAK, isSceneBreakAt } from "../core/markers";
 import type { ParagraphStyle } from "../settings";
-import { blockStateIn, bodyLineIn, inBlock } from "./context";
+import { blockStateIn, bodyLineIn, inBlock } from "../core/block-context";
 
 export type EnterDecision = "normal" | "break" | "chapter";
 

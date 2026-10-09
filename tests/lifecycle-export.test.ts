@@ -1,3 +1,4 @@
+import { DEFAULT_SETTINGS } from "../src/settings";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { TFile, noticeLog, resetSettingLog, settingLog } from "./support/obsidian";
 import { FeatureRegistry } from "../src/core/feature-registry";
@@ -202,7 +203,7 @@ describe("export lifecycle", () => {
   it("draws its settings section, one row per key", () => {
     resetSettingLog();
     const el = document.createElement("div");
-    module.settingsSection(el, { saveOnCommit: () => {}, save: async () => {}, redraw: () => {}, num: (v: string) => Number(v) } as unknown as SettingsUi);
+    module.settingsSection(el, { defaults: () => DEFAULT_SETTINGS, saveOnCommit: () => {}, save: async () => {}, redraw: () => {}, num: (v: string) => Number(v) } as unknown as SettingsUi);
     expect(settingLog.map((r) => r.name)).toEqual([
       "Export", "Left-out property", "Dedication property", "Epigraph property", "Author property",
       "Author name", "Surname for the header", "Contact lines", "Chapter heading",

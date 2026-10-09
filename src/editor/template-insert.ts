@@ -39,10 +39,11 @@ class TemplateModal extends FuzzySuggestModal<TFile> {
 
 /** The warning for no templates folder, with a button that opens Escrita's settings. */
 function noFolderNotice(plugin: EscritaPlugin): void {
-  const frag = activeDocument.createDocumentFragment();
-  frag.appendText(t("editor.template.noFolder"));
+  const frag = createFragment((f) => f.appendText(t("editor.template.noFolder")));
   const notice = new Notice(frag, 10000);
-  const button = notice.messageEl.createEl("button", { text: t("editor.template.openSettings"), cls: "escrita-notice-button" });
+  const messageEl = notice.messageEl as HTMLElement | undefined;
+  if (!messageEl) return;
+  const button = messageEl.createEl("button", { text: t("editor.template.openSettings"), cls: "escrita-notice-button" });
   button.addEventListener("click", () => {
     notice.hide();
     try {

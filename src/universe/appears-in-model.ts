@@ -42,7 +42,7 @@ export function countTip(ai: AppearsIn): string {
 export function chapterParts(basename: string): { n: number | null; title: string } {
   const m = /^\s*(\d+)\s*[-–—.:)]*\s*(.*)$/.exec(basename);
   if (!m) return { n: null, title: basename.trim() };
-  const title = m[2]!.trim();
+  const title = m[2].trim();
   return { n: Number(m[1]), title: title === "" ? basename.trim() : title };
 }
 
@@ -109,10 +109,10 @@ export function sameAppearsIn(a: AppearsIn | "counting", b: AppearsIn | "countin
   if (a === b) return true;
   if (a.total !== b.total || a.workCount !== b.workCount || a.works.length !== b.works.length || a.other.length !== b.other.length) return false;
   for (let i = 0; i < a.works.length; i++) {
-    const x = a.works[i]!;
-    const y = b.works[i]!;
+    const x = a.works[i];
+    const y = b.works[i];
     if (x.work !== y.work || x.count !== y.count || x.firstChapter !== y.firstChapter || x.lastChapter !== y.lastChapter) return false;
-    if (x.notes.length !== y.notes.length || !x.notes.every((n, k) => sameRow(n, y.notes[k]!))) return false;
+    if (x.notes.length !== y.notes.length || !x.notes.every((n, k) => sameRow(n, y.notes[k]))) return false;
   }
-  return a.other.every((n, k) => sameRow(n, b.other[k]!));
+  return a.other.every((n, k) => sameRow(n, b.other[k]));
 }

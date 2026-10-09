@@ -10,23 +10,33 @@ import { DeskBlock } from "./render";
 import { openHome, startupOpen } from "./home-note";
 import { dropKeys, renameKeys } from "../core/path-keys";
 import { deskOffNotice, deskSettingsSection } from "./settings-ui";
+import { WritingMode } from "./writing-mode";
+import type { WritingModeHost, WritingModePort } from "../core/writing-mode";
 
 /**
  * The writing desk (feature "desk"). While loaded it binds the `escrita-works` block
  * (the code block slot draws plain source while it is off), runs the left-off recorder,
  * and registers the "Open the home note" command and the cold-start open. Its data
  * follower keeps `data.leftOff` and `settings.homeNote` in step with renames and
- * deletes even while the desk is off.
+ * deletes even while the desk is off. It also owns writing mode (board 39), exposed as the
+ * `writingMode` port (core/writing-mode.ts) for the setup's layout.
  */
-export class DeskModule extends FeatureModule {
+export class DeskModule extends FeatureModule implements WritingModeHost {
   readonly id = "desk" as const;
   readonly slots = { codeBlocks: ["escrita-works"] } as const;
   private recorder: LeftOffRecorder;
   private blocks = new Set<DeskBlock>();
+  private mode: WritingMode;
 
   constructor(private plugin: EscritaPlugin) {
     super();
     this.recorder = new LeftOffRecorder(plugin);
+    this.mode = new WritingMode(plugin);
+  }
+
+  /** Writing mode, read by others through `writingModeOf(plugin.features)` while the desk is on. */
+  get writingMode(): WritingModePort {
+    return this.mode;
   }
 
   onload(): void {
@@ -35,6 +45,7 @@ export class DeskModule extends FeatureModule {
     // a cold start only: enabling the feature mid-session never swaps the active tab
     const coldStart = !p.app.workspace.layoutReady;
     this.recorder.load(this, ctx);
+    this.mode.load(ctx);
     ctx.codeBlock("escrita-works", (src, el, mdCtx) => {
       const block = new DeskBlock(p, el, src, this.recorder);
       this.blocks.add(block);
@@ -49,7 +60,7 @@ export class DeskModule extends FeatureModule {
     ctx.onLayoutReady(() => {
       const exists = (path: string) => p.app.vault.getAbstractFileByPath(path) !== null;
       if (pruneMissing(p.data.leftOff, exists)) p.requestSave();
-      if (coldStart) void startupOpen(p);
+      if (coldStart) void startupOpen(p).finally(() => this.mode.startup());
     });
     // Blocks already on screen: draw them now. After an unload the same re-draw runs
     // once the slot is unbound, so they fall back to plain source.
@@ -58,6 +69,7 @@ export class DeskModule extends FeatureModule {
   }
 
   onunload(): void {
+    this.mode.unload();
     this.recorder.unload();
     for (const b of [...this.blocks]) b.unload();
     this.blocks.clear();

@@ -3,7 +3,7 @@ import type { DayRecord } from "../src/data";
 import { dailyAverage, dayStates, goalMetSummary, streak, type History } from "../src/goals/tracker";
 import { afterWritingDays, pacing } from "../src/goals/pacing";
 import { chartGeometry } from "../src/goals/chart";
-import { paceInUnit, pieceBar } from "../src/goals/piece";
+import { paceInUnit, pieceBar } from "../src/core/piece-bar";
 import { measureText, pieceProgress, progressOf, readPiece } from "../src/core/measure";
 import { dayOffPredicate } from "../src/core/daysoff";
 import { lastDays } from "../src/core/dates";

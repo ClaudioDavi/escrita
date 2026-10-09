@@ -153,9 +153,14 @@ export function hexColor(v: unknown): string | null {
   return null;
 }
 
-/** Always a fresh, mutable deep copy; never the input and never DEFAULT_STAGES. */
-export function normalizeStages(v: unknown): StageMapping {
+/**
+ * Always a fresh, mutable deep copy; never the input and never DEFAULT_STAGES. A missing or
+ * blank word, or a missing colour entry, comes from `base` (the install's default set;
+ * DEFAULT_STAGES when omitted).
+ */
+export function normalizeStages(v: unknown, base?: StageMapping): StageMapping {
   const out = cloneDefaultStages();
+  if (base) for (const k of STAGES) out[k] = { ...base[k] };
   if (!v || typeof v !== "object" || Array.isArray(v)) return out;
   const src = v as Record<string, unknown>;
   for (const k of STAGES) {

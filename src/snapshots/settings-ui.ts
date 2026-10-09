@@ -1,7 +1,6 @@
 import { Setting } from "obsidian";
 import { fmt, plural, t } from "../i18n";
-import { DEFAULT_SETTINGS } from "../settings";
-import { DEFAULT_SNAPSHOTS_FOLDER, exportRoot, inFolder, snapshotsFolderProblem, snapshotsRoot, submissionsRoot } from "../core/classify";
+import { exportRoot, inFolder, snapshotsFolderProblem, snapshotsRoot, submissionsRoot } from "../core/classify";
 import { bookProblem, overlapProblem, type FolderProblem } from "../core/folder-problem";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
@@ -21,8 +20,8 @@ export function snapshotsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin
   const problemOf = (v: string): FolderProblem | null => {
     const first = snapshotsFolderProblem(v, ui.app.vault.configDir, s.trackFolders, () => false);
     if (first) return first;
-    const root = snapshotsRoot(v);
-    const overlap = overlapProblem(root, [exportRoot(s.exportFolder), submissionsRoot(s.submissionsFolder)]);
+    const root = snapshotsRoot(v, s.defaultsLanguage);
+    const overlap = overlapProblem(root, [exportRoot(s.exportFolder, s.defaultsLanguage), submissionsRoot(s.submissionsFolder, s.defaultsLanguage)]);
     if (overlap) return overlap;
     const inBook = bookProblem(root, plugin.books.allBooksEverywhere());
     if (inBook) return inBook;
@@ -30,7 +29,8 @@ export function snapshotsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin
       r !== s.snapshotsFolder && ui.app.vault.getMarkdownFiles().some((f) => inFolder(f.path, r)));
   };
   folder.addText((c) => {
-    c.setPlaceholder(DEFAULT_SNAPSHOTS_FOLDER).setValue(s.snapshotsFolder);
+    const fallback = snapshotsRoot("", s.defaultsLanguage);
+    c.setPlaceholder(fallback).setValue(s.snapshotsFolder);
     const show = (v: string) => {
       const problem = problemOf(v);
       c.inputEl.toggleClass("escrita-invalid", problem !== null);
@@ -39,9 +39,9 @@ export function snapshotsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin
       return problem;
     };
     c.onChange((v) => { show(v); }); // the warning follows the typing; the save waits for the commit
-    ui.saveOnCommit(c, () => DEFAULT_SNAPSHOTS_FOLDER, (v) => {
+    ui.saveOnCommit(c, () => fallback, (v) => {
       if (show(v)) return;
-      s.snapshotsFolder = snapshotsRoot(v);
+      s.snapshotsFolder = snapshotsRoot(v, s.defaultsLanguage);
     });
   });
   new Setting(el)
@@ -54,8 +54,8 @@ export function snapshotsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin
     .setDesc(t("settings.snapshotsKeepAuto.desc"))
     .addText((c) => {
       c.setValue(String(s.snapshotsKeepAuto));
-      ui.saveOnCommit(c, () => String(DEFAULT_SETTINGS.snapshotsKeepAuto), (v) => {
-        s.snapshotsKeepAuto = ui.num(v, DEFAULT_SETTINGS.snapshotsKeepAuto, 1);
+      ui.saveOnCommit(c, () => String(ui.defaults().snapshotsKeepAuto), (v) => {
+        s.snapshotsKeepAuto = ui.num(v, ui.defaults().snapshotsKeepAuto, 1);
         c.setValue(String(s.snapshotsKeepAuto));
       });
     });

@@ -2,7 +2,7 @@
 // colours and rules as a piece's bar in the goals tile, in the chapter's own unit.
 
 import type { Piece, PieceUnit, Progress } from "../core/measure";
-import { pieceBar } from "../goals/piece";
+import { pieceBar } from "../core/piece-bar";
 import { fmt, t, unitAmount } from "../i18n";
 
 export interface BarModel {

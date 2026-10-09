@@ -10,7 +10,7 @@ import { Notice, Setting } from "obsidian";
 import { locale, t } from "../i18n";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
-import { ENTRY_KINDS, defaultUniverseSettings, normalizeNotePath } from "./settings";
+import { ENTRY_KINDS, normalizeNotePath } from "./settings";
 import { builtinTitlesText } from "./names-settings";
 import { formValuesText, parseFormValues } from "./works-list";
 import { threadWordRows } from "./threads-settings-ui";
@@ -19,7 +19,7 @@ const stripSlashes = (p: string) => p.replace(/^\/+|\/+$/g, "");
 
 export function universeSettingsSection(containerEl: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
   const s = plugin.settings;
-  const d = defaultUniverseSettings();
+  const d = ui.defaults();
   const mode = s.universeMode;
   if (mode === "off") {
     if (plugin.features.isOn("threads")) threadWordRows(containerEl, ui, s);
@@ -51,7 +51,7 @@ export function universeSettingsSection(containerEl: HTMLElement, ui: SettingsUi
       .setName(t("universe.settings.folders"))
       .setDesc(t("universe.settings.folders.desc"))
       .addTextArea((c) => {
-        c.setPlaceholder("Short stories\nNovels").setValue(s.defaultUniverseFolders);
+        c.setPlaceholder(t("universe.settings.defaultFolders.example")).setValue(s.defaultUniverseFolders);
         c.inputEl.setAttr("aria-label", t("universe.settings.folders"));
         c.inputEl.addEventListener("change", () => { s.defaultUniverseFolders = c.getValue(); void ui.save(); });
       });
@@ -82,7 +82,7 @@ export function universeSettingsSection(containerEl: HTMLElement, ui: SettingsUi
         .setName(t("universe.settings.formFolders"))
         .setDesc(t("universe.settings.formFolders.desc"))
         .addTextArea((c) => {
-          c.setPlaceholder("Short stories: short story\nEssays: essay").setValue(s.formFolders);
+          c.setPlaceholder(t("universe.settings.formFolders.example")).setValue(s.formFolders);
           c.inputEl.setAttr("aria-label", t("universe.settings.formFolders"));
           c.inputEl.addEventListener("change", () => { s.formFolders = c.getValue(); void ui.save(); });
         });
@@ -146,7 +146,7 @@ export function universeSettingsSection(containerEl: HTMLElement, ui: SettingsUi
 /** "Names" (board 24, l): the underline switch, the extra titles and the three per-entry property names (collapsed). */
 function renderNameRows(plugin: EscritaPlugin, ui: SettingsUi, containerEl: HTMLElement): void {
   const s = plugin.settings;
-  const d = defaultUniverseSettings();
+  const d = ui.defaults();
   new Setting(containerEl).setName(t("universe.settings.names")).setHeading();
 
   new Setting(containerEl)

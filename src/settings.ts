@@ -2,7 +2,9 @@ import { App, Notice, PluginSettingTab, Setting, type ColorComponent, type TextA
 import type EscritaPlugin from "./main";
 import { lang, t } from "./i18n";
 import { listsPath } from "./lens/settings";
-import { cleanWeekdays } from "./core/merge";
+import { cleanWeekdays, mergeDefaults } from "./core/merge";
+import { migrateSettings } from "./core/migrate";
+import { PRESET_IDS, matchingPreset, presetChanges, presetSwitches, type PresetId } from "./core/feature-presets";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, STAGES, hexColor, normalizeStages, stageConflicts, writtenWord, type Stage, type StageMapping } from "./core/stages";
 import { FEATURE_IDS, FEATURE_PAGE, FEATURE_SPECS, cleanFeatures, wanted, type FeatureId } from "./core/features";
 import { switchesOf } from "./core/feature-registry";
@@ -12,6 +14,7 @@ import { defaultUniverseSettings, normalizeUniverse, type UniverseMode, type Uni
 import { DEFAULT_SNAPSHOTS_FOLDER, exportRoot, snapshotsRoot, submissionsRoot } from "./core/classify";
 import { holdsOwnNotes, pluginFolderProblem, type BookPaths } from "./core/folder-problem";
 import { addFolderField } from "./core/folder-setting";
+import { isDefaultsLanguage, languageOf, overlayDefaults, type DefaultsLanguage } from "./core/defaults";
 
 export type ParagraphStyle = "single" | "blank";
 export type Scope = "books" | "all";
@@ -36,6 +39,13 @@ export interface EscritaSettings extends UniverseSettings {
   /** path of the home note; empty = none */
   homeNote: string;
   openHomeOnStartup: boolean;
+  /**
+   * Enter writing mode when Obsidian starts (1.0, SF 10, board 39): only the note and the
+   * small goal counter. Beside `openHomeOnStartup`, part of the home block feature (`desk`,
+   * no switch of its own); the setup turns it on when the writer picks the writing mode
+   * layout. False by default; read only while the desk is on.
+   */
+  openInWritingMode: boolean;
   summaryProperty: string;
 
   // Goals
@@ -168,6 +178,17 @@ export interface EscritaSettings extends UniverseSettings {
   lensSkipQuotes: boolean;
   lensShowDialogue: boolean;
   lensShowReadability: boolean;
+
+  // Language (1.0, PLAN-1.0 "Q1 as built"; no settings row in 1.0)
+  /**
+   * The default set this install uses (core/defaults.ts): every word-bearing setting the
+   * writer never saved takes its value from this set, and a blank one is restored from
+   * it. "en" for a saved settings object without the key (any install from before 1.0),
+   * so a 0.9 writer keeps every English default they rely on. A fresh install takes
+   * Obsidian's language once (`languageOf`) and saves it on its first load (task 1.4);
+   * after that only the setup changes it. Never follows Obsidian's language by itself.
+   */
+  defaultsLanguage: DefaultsLanguage;
 }
 
 export const DEFAULT_SETTINGS: EscritaSettings = {
@@ -182,6 +203,7 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   draftNewNotes: true,
   homeNote: "",
   openHomeOnStartup: false,
+  openInWritingMode: false,
   summaryProperty: "summary",
 
   dailyGoal: 1000,
@@ -261,29 +283,45 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   lensShowDialogue: true,
   lensShowReadability: true,
 
+  defaultsLanguage: "en",
+
   ...defaultUniverseSettings(),
 };
 
+/**
+ * DEFAULT_SETTINGS with one language's default set laid over it (core/defaults.ts): what
+ * an install whose `defaultsLanguage` is `lang` falls back to for every key it never saved.
+ * A fresh object each call, sharing nothing with DEFAULT_SETTINGS. `defaultsFor("en")`
+ * equals DEFAULT_SETTINGS. Lives here, not in core/defaults.ts, so that file needs no
+ * value import from this one (see `overlayDefaults`).
+ */
+export function defaultsFor(lang: DefaultsLanguage): EscritaSettings {
+  return overlayDefaults(DEFAULT_SETTINGS, lang);
+}
+
 /** Settings as saved, with defaults filled in and list fields cleaned (used by loadAll). */
 export function normalizeSettings(s: EscritaSettings): EscritaSettings {
+  // 1.0 (Q1): an unknown language is the English set. Blank fields below come back from the install's set.
+  s.defaultsLanguage = isDefaultsLanguage(s.defaultsLanguage) ? s.defaultsLanguage : "en";
+  const d = defaultsFor(s.defaultsLanguage);
   s.weekdaysOff = cleanWeekdays(s.weekdaysOff);
   // Always a fresh copy: never share the frozen defaults with the live settings.
-  s.stages = normalizeStages(s.stages);
+  s.stages = normalizeStages(s.stages, d.stages);
   s.statusProperty = (typeof s.statusProperty === "string" ? s.statusProperty.trim() : "") || DEFAULT_STATUS_PROPERTY;
   s.homeNote = typeof s.homeNote === "string" ? s.homeNote.trim() : DEFAULT_SETTINGS.homeNote;
   if (typeof s.otherStatusColors !== "string") s.otherStatusColors = DEFAULT_SETTINGS.otherStatusColors;
   if (typeof s.draftNewNotes !== "boolean") s.draftNewNotes = DEFAULT_SETTINGS.draftNewNotes;
   for (const k of PROPERTY_KEYS) s[k] = (typeof s[k] === "string" ? s[k].trim() : "") || DEFAULT_SETTINGS[k];
-  s.snapshotsFolder = snapshotsRoot(s.snapshotsFolder);
+  s.snapshotsFolder = snapshotsRoot(s.snapshotsFolder, s.defaultsLanguage);
   // 0.8 folders: trimmed here; task 1.6 routes them through classify's exportRoot / submissionsRoot
   for (const k of ["exportFolder", "submissionsFolder"] as const) {
-    s[k] = (typeof s[k] === "string" ? s[k].trim().replace(/^\/+|\/+$/g, "") : "") || DEFAULT_SETTINGS[k];
+    s[k] = (typeof s[k] === "string" ? s[k].trim().replace(/^\/+|\/+$/g, "") : "") || d[k];
   }
-  s.submissionResults = (typeof s.submissionResults === "string" ? s.submissionResults.trim() : "") || DEFAULT_SETTINGS.submissionResults;
+  s.submissionResults = (typeof s.submissionResults === "string" ? s.submissionResults.trim() : "") || d.submissionResults;
   for (const k of ["authorName", "authorSurname", "contactLines", "chapterHeadingFormat"] as const) {
     s[k] = typeof s[k] === "string" ? s[k].trim() : "";
   }
-  s.unnumberedTitles = typeof s.unnumberedTitles === "string" ? s.unnumberedTitles.trim() : DEFAULT_SETTINGS.unnumberedTitles;
+  s.unnumberedTitles = typeof s.unnumberedTitles === "string" ? s.unnumberedTitles.trim() : d.unnumberedTitles;
   s.snapshotsKeepAuto = Number.isFinite(s.snapshotsKeepAuto) ? Math.max(1, Math.round(s.snapshotsKeepAuto)) : DEFAULT_SETTINGS.snapshotsKeepAuto;
   s.lensLanguage = s.lensLanguage === "pt-BR" || s.lensLanguage === "en" ? s.lensLanguage : "auto";
   s.lensListsNote = typeof s.lensListsNote === "string" ? listsPath(s.lensListsNote) : DEFAULT_SETTINGS.lensListsNote;
@@ -295,10 +333,32 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   // a blank scene break would vanish in the book: the default instead
   s.epubSceneBreak = (typeof s.epubSceneBreak === "string" ? s.epubSceneBreak.trim() : "") || DEFAULT_SETTINGS.epubSceneBreak;
   s.templatesFolder = typeof s.templatesFolder === "string" ? s.templatesFolder.trim().replace(/^\/+|\/+$/g, "") : "";
-  s.threadKeyword = (typeof s.threadKeyword === "string" ? s.threadKeyword.trim() : "") || DEFAULT_SETTINGS.threadKeyword;
+  s.threadKeyword = (typeof s.threadKeyword === "string" ? s.threadKeyword.trim() : "") || d.threadKeyword;
   s.features = cleanFeatures(s.features);
-  Object.assign(s, normalizeUniverse(s));
+  Object.assign(s, normalizeUniverse(s, d));
+  // the mode is on only when saved as true
+  s.openInWritingMode = s.openInWritingMode === true;
   return s;
+}
+
+/**
+ * Settings as `loadAll` loads them (PLAN-1.0 "Q1 as built", Q7). A saved settings object
+ * keeps its set: `migrateSettings` gives one without `defaultsLanguage` "en", so a 0.9
+ * install loads unchanged. No saved settings is a fresh install: it takes the set of
+ * `obsidianLocale` (`languageOf`) and the Writer features, and `fresh` tells the caller
+ * to save once, so the set never moves when Obsidian's language changes later.
+ */
+export function loadSettings(saved: unknown, obsidianLocale: string): { settings: EscritaSettings; fresh: boolean } {
+  const fresh = !saved || typeof saved !== "object" || Array.isArray(saved);
+  if (!fresh) {
+    const migrated = migrateSettings(saved);
+    const lang = (migrated as { defaultsLanguage: DefaultsLanguage }).defaultsLanguage;
+    return { settings: normalizeSettings(mergeDefaults(defaultsFor(lang), migrated)), fresh };
+  }
+  const lang = languageOf(obsidianLocale);
+  const settings = normalizeSettings(mergeDefaults(defaultsFor(lang), { defaultsLanguage: lang }));
+  Object.assign(settings, presetSwitches("writer", switchesOf(settings)));
+  return { settings: normalizeSettings(settings), fresh };
 }
 
 function clampInt(v: unknown, min: number, max: number, fallback: number): number {
@@ -325,7 +385,9 @@ export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "a
   goalProperty: "always", povProperty: "always", chapterTargetProperty: "always",
   trackFolders: "always", excludeFolders: "always",
   templatesFolder: ["templates", "universe"],
-  homeNote: ["desk"], openHomeOnStartup: ["desk"],
+  homeNote: ["desk"], openHomeOnStartup: ["desk"], openInWritingMode: ["desk"],
+  // shared core (it picks the fallback of every word-bearing setting); no row in 1.0
+  defaultsLanguage: "always",
   dailyGoal: ["goals"], dayEndsAt: ["goals", "darlings", "snapshots", "publish"],
   ignoreJumpsOver: ["goals"], sprintMinutes: ["goals"], sprintTarget: ["goals"], showStatusBar: ["goals"],
   weekdaysOff: ["goals"], datesOff: ["goals"],
@@ -390,25 +452,25 @@ export function pluginFolderRows(el: HTMLElement, ui: SettingsUi, s: EscritaSett
   addFolderField(
     new Setting(el).setName(t("export.settings.folder")).setDesc(t("export.settings.folder.desc")), ui,
     {
-      placeholder: DEFAULT_SETTINGS.exportFolder,
+      placeholder: ui.defaults().exportFolder,
       value: s.exportFolder,
       problemOf: (v) => pluginFolderProblem(
-        exportRoot(v), [submissionsRoot(s.submissionsFolder), snapshotsRoot(s.snapshotsFolder)],
-        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, exportRoot(s.exportFolder), s), books(),
+        exportRoot(v, s.defaultsLanguage), [submissionsRoot(s.submissionsFolder, s.defaultsLanguage), snapshotsRoot(s.snapshotsFolder, s.defaultsLanguage)],
+        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, exportRoot(s.exportFolder, s.defaultsLanguage), s), books(),
       ),
-      save: (v) => { s.exportFolder = exportRoot(v); },
+      save: (v) => { s.exportFolder = exportRoot(v, s.defaultsLanguage); },
     },
   );
   addFolderField(
     new Setting(el).setName(t("submissions.settings.folder")).setDesc(t("submissions.settings.folder.desc")), ui,
     {
-      placeholder: DEFAULT_SETTINGS.submissionsFolder,
+      placeholder: ui.defaults().submissionsFolder,
       value: s.submissionsFolder,
       problemOf: (v) => pluginFolderProblem(
-        submissionsRoot(v), [exportRoot(s.exportFolder), snapshotsRoot(s.snapshotsFolder)],
-        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, submissionsRoot(s.submissionsFolder), s), books(),
+        submissionsRoot(v, s.defaultsLanguage), [exportRoot(s.exportFolder, s.defaultsLanguage), snapshotsRoot(s.snapshotsFolder, s.defaultsLanguage)],
+        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, submissionsRoot(s.submissionsFolder, s.defaultsLanguage), s), books(),
       ),
-      save: (v) => { s.submissionsFolder = submissionsRoot(v); },
+      save: (v) => { s.submissionsFolder = submissionsRoot(v, s.defaultsLanguage); },
     },
   );
 }
@@ -427,6 +489,7 @@ export class EscritaSettingTab extends PluginSettingTab {
     return {
       app: this.app,
       save,
+      defaults: () => defaultsFor(this.plugin.settings.defaultsLanguage),
       saveOnCommit: (c: TextComponent | TextAreaComponent, fallback: () => string, apply: (v: string) => void) => {
         c.inputEl.addEventListener("change", () => {
           const v = c.getValue().trim() || fallback();
@@ -511,7 +574,7 @@ export class EscritaSettingTab extends PluginSettingTab {
       if (desc) row.setDesc(desc);
       row.addText((c) => {
         c.setPlaceholder(placeholder).setValue(s[key]);
-        ui.saveOnCommit(c, () => DEFAULT_SETTINGS[key], (v) => { s[key] = v; });
+        ui.saveOnCommit(c, () => ui.defaults()[key], (v) => { s[key] = v; });
       });
     };
     new Setting(el).setName(t("settings.shared")).setHeading();
@@ -527,7 +590,7 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setName(t("settings.trackFolders"))
       .setDesc(t("settings.trackFolders.desc"))
       .addTextArea((c) => {
-        c.setPlaceholder("Fiction\nNovels").setValue(s.trackFolders);
+        c.setPlaceholder(t("settings.trackFolders.example")).setValue(s.trackFolders);
         ui.saveOnCommit(c, () => "", (v) => { s.trackFolders = v; });
       });
     new Setting(el)
@@ -546,8 +609,8 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setName(t("settings.chaptersFolder"))
       .setDesc(t("settings.chaptersFolder.desc"))
       .addText((c) => {
-        c.setPlaceholder("Chapters").setValue(s.chaptersFolder);
-        ui.saveOnCommit(c, () => DEFAULT_SETTINGS.chaptersFolder, (v) => { s.chaptersFolder = v; });
+        c.setPlaceholder(ui.defaults().chaptersFolder).setValue(s.chaptersFolder);
+        ui.saveOnCommit(c, () => ui.defaults().chaptersFolder, (v) => { s.chaptersFolder = v; });
       });
     new Setting(el)
       .setName(t("settings.chapterTemplate"))
@@ -576,19 +639,19 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setName(t("settings.unnumberedTitles"))
       .setDesc(t("settings.unnumberedTitles.desc"))
       .addTextArea((c) => {
-        c.setPlaceholder("Prologue, Interlude, Epilogue").setValue(s.unnumberedTitles);
+        c.setPlaceholder(t("settings.unnumberedTitles.example")).setValue(s.unnumberedTitles);
         ui.saveOnCommit(c, () => "", (v) => { s.unnumberedTitles = v; });
       });
     new Setting(el)
       .setName(t("settings.statusProperty"))
       .setDesc(t("settings.statusProperty.desc"))
       .addText((c) => {
-        c.setPlaceholder("status").setValue(s.statusProperty);
-        ui.saveOnCommit(c, () => DEFAULT_STATUS_PROPERTY, (v) => { s.statusProperty = v; });
+        c.setPlaceholder(ui.defaults().statusProperty).setValue(s.statusProperty);
+        ui.saveOnCommit(c, () => ui.defaults().statusProperty, (v) => { s.statusProperty = v; });
       })
       .addText((c) => {
-        c.setPlaceholder("summary").setValue(s.summaryProperty);
-        ui.saveOnCommit(c, () => "summary", (v) => { s.summaryProperty = v; });
+        c.setPlaceholder(ui.defaults().summaryProperty).setValue(s.summaryProperty);
+        ui.saveOnCommit(c, () => ui.defaults().summaryProperty, (v) => { s.summaryProperty = v; });
       });
   }
 
@@ -616,6 +679,8 @@ export class EscritaSettingTab extends PluginSettingTab {
         });
         d.selectEl.setAttr("aria-label", t("settings.language"));
       });
+
+    this.presetBlock(containerEl, ui);
 
     for (const { group, ids } of FEATURE_PAGE) {
       containerEl.createDiv({ cls: "escrita-feature-group", text: t(`settings.features.group.${group}`), attr: { role: "heading", "aria-level": "3" } });
@@ -674,6 +739,68 @@ export class EscritaSettingTab extends PluginSettingTab {
         if (id === "explorerCounts" && on) this.drawModule("explorerCounts", containerEl, ui);
       }
     }
+  }
+
+  /**
+   * The presets (board 38): a label ("Custom" unless the switches match one), three buttons,
+   * and a confirm step that lists what turns off and on. Nothing is saved before Apply. Only
+   * this block redraws while asking, so the page keeps its scroll. The setup link shows only
+   * while there is no home note.
+   */
+  private presetBlock(containerEl: HTMLElement, ui: SettingsUi): void {
+    const s = this.plugin.settings;
+    const block = containerEl.createDiv({ cls: "escrita-presets" });
+    let asking: PresetId | null = null;
+    const name = (id: PresetId) => t(`settings.features.preset.${id}`);
+    const order = FEATURE_PAGE.flatMap((g) => g.ids);
+    const list = (ids: FeatureId[]) => ids.length
+      ? [...ids].sort((a, b) => order.indexOf(a) - order.indexOf(b)).map((id) => t(`settings.features.${id}`)).join(", ")
+      : t("settings.features.preset.nothing");
+
+    const draw = () => {
+      block.empty();
+      const current = matchingPreset(switchesOf(s));
+      const head = block.createDiv({ cls: "escrita-presets-head" });
+      head.createSpan({ cls: "escrita-presets-title", text: t("settings.features.preset.label") });
+      head.createSpan({ cls: "escrita-tag escrita-presets-state", text: current ? name(current) : t("settings.features.preset.custom") });
+      const row = block.createDiv({ cls: "escrita-presets-row", attr: { role: "group", "aria-label": t("settings.features.preset.group") } });
+      for (const id of PRESET_IDS) {
+        const b = row.createEl("button", { cls: "escrita-preset-btn", text: name(id) });
+        b.toggleClass("is-active", current === id || asking === id);
+        b.setAttr("aria-pressed", String(current === id));
+        b.addEventListener("click", () => { asking = id; draw(); });
+      }
+      if (asking) {
+        const target = asking;
+        const changes = presetChanges(switchesOf(s), target);
+        if (changes.off.length + changes.on.length === 0) {
+          block.createDiv({ cls: "setting-item-description", text: t("settings.features.preset.already", { name: name(target) }) });
+        } else {
+          const box = block.createDiv({ cls: "escrita-presets-confirm", attr: { role: "group", "aria-label": t("settings.features.preset.confirmGroup") } });
+          box.createDiv({ cls: "escrita-presets-ask", text: t("settings.features.preset.confirm", { name: name(target) }) });
+          for (const [key, ids] of [["off", changes.off], ["on", changes.on]] as const) {
+            const line = box.createDiv({ cls: "escrita-presets-change" });
+            line.createSpan({ cls: "escrita-presets-kind", text: t(`settings.features.preset.${key}`) });
+            line.createSpan({ text: list(ids) });
+          }
+          const note = [t("settings.features.preset.kept"), target === "everything" ? t("settings.features.preset.universe") : ""].filter(Boolean).join(" ");
+          box.createDiv({ cls: "setting-item-description", text: note });
+          const btns = box.createDiv({ cls: "escrita-presets-btns" });
+          btns.createEl("button", { text: t("settings.features.preset.cancel") })
+            .addEventListener("click", () => { asking = null; draw(); });
+          btns.createEl("button", { cls: "mod-cta", text: t("settings.features.preset.apply") })
+            .addEventListener("click", () => {
+              Object.assign(s, presetSwitches(target, switchesOf(s)));
+              void ui.save().then(() => this.display());
+            });
+        }
+      }
+      if (!this.plugin.setup.hasHomeNote()) {
+        block.createEl("button", { cls: "escrita-link escrita-presets-setup", text: t("settings.features.setupLink") })
+          .addEventListener("click", () => this.plugin.setup.open());
+      }
+    };
+    draw();
   }
 
   /** Turning off a feature that keeps data says what stays and where (board FeaturesStates, state 1). */
@@ -763,7 +890,7 @@ export class EscritaSettingTab extends PluginSettingTab {
         // is never stored: it shows the previous (or default) words again.
         const commit = () => {
           if (c.getValue().trim() === "") {
-            if (s.stages[k].words.trim() === "") s.stages[k].words = DEFAULT_STAGES[k].words;
+            if (s.stages[k].words.trim() === "") s.stages[k].words = ui.defaults().stages[k].words;
             c.setValue(s.stages[k].words);
             showWarnings();
             return;
@@ -790,7 +917,7 @@ export class EscritaSettingTab extends PluginSettingTab {
           s.stages[k].color = "";
           // Reset the input too, so picking the same color again fires a change.
           // The empty state is the dashed swatch; the input holds a neutral grey so black can still be picked.
-          (picker as ColorComponent | null)?.setValue(EMPTY_SWATCH);
+          (picker)?.setValue(EMPTY_SWATCH);
           paint();
           await ui.save();
         });
@@ -809,7 +936,7 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setName(t("settings.otherStatusColors"))
       .setDesc(t("settings.otherStatusColors.desc"))
       .addTextArea((c) => {
-        c.setPlaceholder("paused: #6e6b66").setValue(s.otherStatusColors);
+        c.setPlaceholder(t("settings.otherStatusColors.example")).setValue(s.otherStatusColors);
         c.inputEl.addClass("escrita-mono");
         c.inputEl.setAttr("aria-label", t("settings.otherStatusColors"));
         ui.saveOnCommit(c, () => "", (v) => { s.otherStatusColors = v; });

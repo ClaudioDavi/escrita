@@ -5,12 +5,14 @@ desligar os que não usa. Um recurso desligado não é carregado: não acrescent
 painéis, itens de menu nem trabalho em segundo plano. Os seus dados ficam, e voltam quando
 você liga o recurso de novo.
 
-Outras páginas: [Escrita](writing.md), [Publicação](publishing.md) e [O mundo](the-world.md).
+Outras páginas: [Primeiros passos](getting-started.md), [Escrita](writing.md), [Publicação](publishing.md) e [O mundo](the-world.md).
 
 ## A página Recursos
 
 Abra Configurações › Escrita. A seção **Recursos** fica no topo. Ela tem:
 
+- **Ponto de partida**: três botões de predefinição e uma etiqueta. Veja "Pontos de partida"
+  abaixo.
 - **Idioma da escrita**. Automático segue o idioma do Obsidian: qualquer português dá pt-BR e
   qualquer inglês dá inglês. Outro idioma dá nenhum. A lente de revisão e o reconhecimento de
   nomes leem esse idioma. (Antes ele ficava na seção Revisão.)
@@ -24,15 +26,105 @@ Abra Configurações › Escrita. A seção **Recursos** fica no topo. Ela tem:
 | Revisão | Lente de revisão · Versões · Darlings |
 | Acompanhamento | Versão a cada estágio · Bloco de obras e onde você parou |
 | Publicação | Checagem de publicação · Exportar · Envios |
-| O mundo | Universo compartilhado · Fios |
+| O mundo | Universo compartilhado · Threads |
 
 Três interruptores eram configurações antes da 0.7, e agora ficam só aqui: **Contagens no
 explorador**, **Ortografia sob demanda** e o modo do **Universo compartilhado**. A linha do
 universo é uma lista (Desligado, Por livro, Universo) em vez de um interruptor, porque o modo
 é o interruptor.
 
-Quando você atualiza, todos os recursos ficam ligados, então nada some até você escolher.
-Exportar e Envios são os dois interruptores que a 0.8 acrescenta, no grupo Publicação.
+Quando você atualiza de uma versão anterior, todos os recursos continuam ligados, então
+nada some até você escolher. Uma instalação nova começa no ponto de partida Escritor (abaixo).
+
+## Pontos de partida
+
+Você não precisa acertar dezenove interruptores um a um. Acima deles, **Ponto de partida**
+tem três botões: **Essencial**, **Escritor** e **Tudo**. Cada um é uma lista de recursos. Uma
+predefinição é só um ponto de partida, nunca um modo: o Escrita não guarda qual botão você
+apertou, e depois dela você pode mudar qualquer interruptor.
+
+| Ponto de partida | Interruptores que liga |
+|---|---|
+| Essencial (9) | Metas e sprints · Esboço e beats fantasmas · Marcadores · Enter e tipografia · Lente de revisão · Darlings · Versões · Exportar · Bloco de obras e onde você parou |
+| Escritor (16) | Tudo do Essencial, mais Foco no diálogo · Mover parágrafo ou cena · Inserir de um modelo · Contagens no explorador · Versão a cada estágio · Checagem de publicação · Envios |
+| Tudo (18) | Todos os interruptores: acrescenta ao Escritor a Ortografia sob demanda e as Threads |
+
+Uma predefinição desliga todo interruptor que não está na lista dela. Apertar um botão ainda
+não muda nada. Abre uma etapa de confirmação, **Aplicar "Escritor"?**, com duas linhas:
+**Desliga** e **Liga**, cada uma com os interruptores que mudariam. Aperte **Aplicar** para
+salvar, ou **Cancelar** para deixar tudo como está. Se os interruptores já combinam, a página
+diz: Já está em "Escritor". Nada muda. E não há o que confirmar. A nota abaixo das listas
+lembra que os dados de quem desliga ficam guardados (veja "Que dados ficam", abaixo).
+
+**A etiqueta.** Ao lado do título, uma etiqueta pequena diz com qual ponto de partida os seus
+interruptores combinam agora: Essencial, Escritor ou Tudo. Se não combinam com nenhum, porque
+você mudou um interruptor ou veio de uma versão antiga, a etiqueta diz **Personalizado**.
+Personalizado não é problema e nada muda sozinho. Só diz que o conjunto é seu. A etiqueta é
+calculada toda vez que a página é desenhada, a partir dos interruptores.
+
+**Uma predefinição nunca muda o universo.** A linha do Universo compartilhado é um modo
+(Desligado, Por livro, Universo), e um modo move pastas, então é sempre escolha sua, na seção
+Universo. A predefinição deixa o modo como está, nunca o lista na confirmação e o ignora ao
+calcular a etiqueta. Por isso Tudo diz "18" aqui: o universo é o décimo nono interruptor, e a
+preparação o conta como "19 de 19" porque o oferece como escolha separada (**Mundo
+compartilhado**). Ao escolher Tudo, uma lembrança abaixo das listas diz que o modo do universo
+continua o que está.
+
+**Instalação nova e atualização.** Uma instalação nova começa no Escritor. Uma instalação que
+já tem configurações do Escrita mantém cada interruptor como estava: atualizar não desliga
+nada. Uma instalação 0.9 com todos os interruptores ligados aparece como **Tudo**. Uma com os
+padrões antigos aparece como **Personalizado**, porque a ortografia sob demanda vem desligada
+por padrão.
+
+**O link da preparação.** Abaixo dos três botões, um link discreto, **Preparar o cofre para
+escrever**, abre a preparação, que também pode escolher um ponto de partida, criar pastas e
+notas de exemplo e definir o layout. Ele só aparece enquanto você não tem nota inicial. Depois
+que tiver uma, use o comando de mesmo nome. A preparação é explicada em
+[Primeiros passos](getting-started.md).
+
+## O idioma dos padrões
+
+O Escrita escreve algumas palavras nas suas notas e lê outras como nomes de pastas e notas: as
+palavras dos estágios, a pasta dos capítulos, os títulos que não levam número de capítulo, os
+resultados de um envio, as pastas de exportações, envios e versões, a nota do universo e as
+palavras dos tipos, os valores de forma e as palavras das threads. Tudo isso são configurações, e
+elas partem de um conjunto de padrões num idioma. Desde a 1.0 há dois conjuntos, **English** e
+**Português (Brasil)**. A preparação mostra a escolha como **Idioma dos padrões**.
+
+- **Uma instalação nova usa o idioma do Obsidian**, uma vez: qualquer português escolhe o
+  conjunto brasileiro, qualquer outro idioma escolhe o inglês. A escolha é salva, então mudar
+  o idioma do Obsidian depois não mexe nas suas palavras.
+- **Uma instalação que já tem configurações continua em inglês.** Atualizar da 0.9 não muda
+  nenhuma palavra, porque o seu cofre já depende delas.
+- **Depois, só a preparação muda o idioma**, e só quando você marca essa opção.
+
+O que o conjunto brasileiro contém:
+
+| Configuração | English | Português (Brasil) |
+|---|---|---|
+| Palavras dos estágios | idea, draft, revision, ready, published | ideia, rascunho, revisão, pronto, publicado |
+| Pasta dos capítulos | Chapters | Capítulos |
+| Capítulos sem número | Prologue, Preface, Foreword, Introduction, Interlude, Epilogue, Afterword | Prólogo, Prefácio, Apresentação, Introdução, Nota do autor, Interlúdio, Epílogo, Posfácio |
+| Resultados de envio | pending, accepted, rejected, withdrawn | pendente, aceito, recusado, retirado |
+| Pasta das exportações | Escrita/Exports | Escrita/Exportações |
+| Pasta dos envios | Escrita/Submissions | Escrita/Envios |
+| Pasta das versões | Escrita/Snapshots | Escrita/Versões |
+| Pastas ignoradas | Templates | Modelos |
+| Nota do universo | Universe.md | Universo.md |
+| Tipos de entrada e pastas | character (Characters), place (Places), object (Objects), group (Groups), event (Events) | personagem (Personagens), lugar (Lugares), objeto (Objetos), grupo (Grupos), evento (Eventos) |
+| Valores de forma | short story, essay, novella, novel, poem, fragment | conto, ensaio, novela, romance, poema, fragmento |
+| Palavras das threads | thread, closed | thread, fechada |
+
+As notas de darlings mantêm o nome `Darlings.md` nos dois. Os **nomes das propriedades**
+(`status`, `target`, `type` e as demais) não estão em nenhum conjunto: são chaves nas suas
+notas e continuam em inglês. Todo valor continua sendo uma configuração que você pode mudar, e
+números e interruptores são iguais nos dois conjuntos. A pasta das versões e a pasta ignorada
+só são definidas numa instalação nova. A preparação nunca as muda, porque apontam para lugares
+que já existem.
+
+Esta é uma configuração diferente do **Idioma da escrita**. O idioma da escrita decide quais listas
+de palavras a lente de revisão e o reconhecimento de nomes leem. O idioma dos padrões decide
+as palavras que o Escrita escreve no seu cofre.
 
 ## O que cada interruptor desliga
 
@@ -56,7 +148,7 @@ Exportar e Envios são os dois interruptores que a 0.8 acrescenta, no grupo Publ
 | Exportar | Sem os comandos **Exportar…** e **Exportar de novo**, sem item no menu do arquivo (nem **Criar uma coleção…**) e sem a seção Exportação nas configurações. A linha da pasta das exportações continua. |
 | Envios | Sem o comando nem o item de menu **Registrar envio**, sem a contagem de pendentes no bloco de obras e sem a seção Envios nas configurações. A linha da pasta dos envios continua. |
 | Universo compartilhado | Sem painel, sem comandos do universo, sem "Aparece em", sem marcas de nomes nem nomes na lente. |
-| Fios | Sem comandos de fio, sinal na margem nem aba no painel. |
+| Threads | Sem comandos de thread, sinal na margem nem aba no painel. |
 
 Ao desligar um recurso, um aviso curto diz o que fica e onde.
 
@@ -74,7 +166,7 @@ Nada é apagado quando você desliga um recurso.
 - **Lente de revisão**: a lista "Não são nomes" fica nas configurações.
 - **Exportar**: as notas de coleção são notas comuns e ficam. Os arquivos já gravados (EPUB também) ficam na pasta das exportações. As suas escolhas para cada obra (formato, modelo, capítulos) e a última exportação ficam nos dados do Escrita, e acompanham renomeações e mudanças de lugar com o recurso desligado. Ligue de novo e "Exportar de novo" ainda conhece o último arquivo.
 - **Envios**: as notas de envio ficam onde estão, na pasta dos envios. O aviso diz o nome da pasta e quantas notas há. São notas comuns: com o recurso desligado elas continuam sem entrar nas metas e sem virar obras. Se você já usa esse nome de pasta para outra coisa, mude a pasta nas configurações.
-- **Fios**: os marcadores ficam nas suas notas; as datas em que cada um foi visto pela
+- **Threads**: os marcadores ficam nas suas notas; as datas em que cada um foi visto pela
   primeira vez ficam nos dados.
 - **Universo**: as entradas são notas comuns, então nunca são tocadas. As cores escolhidas
   para os pontos de vista ficam nos dados.

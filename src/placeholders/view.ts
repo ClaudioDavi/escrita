@@ -4,8 +4,9 @@ import type { Book } from "../core/books";
 import { fmt, t } from "../i18n";
 import { inBook } from "../core/classify";
 import { displayName, orderPaths, parentPath, type IndexedMarker } from "./logic";
+import { VIEW_TYPES } from "../core/view-types";
 
-export const PLACEHOLDERS_VIEW = "escrita-placeholders";
+export const PLACEHOLDERS_VIEW = VIEW_TYPES.placeholders;
 
 type ScopeChoice = "book" | "all";
 
@@ -92,7 +93,7 @@ export class PlaceholdersView extends ItemView {
   private restoreFocus(key: string): void {
     const find = (k: string): HTMLElement | null => {
       for (const node of Array.from(this.contentEl.querySelectorAll(`[${FOCUS_KEY}]`))) {
-        if (node instanceof HTMLElement && node.getAttribute(FOCUS_KEY) === k) return node;
+        if (node.instanceOf(HTMLElement) && node.getAttribute(FOCUS_KEY) === k) return node;
       }
       return null;
     };

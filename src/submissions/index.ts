@@ -12,7 +12,7 @@ import { SubmissionModal } from "./modal";
 import { submissionsOffNotice, submissionsSettingsSection } from "./settings-ui";
 import {
   parseWorkLink, pendingList, pendingValue, propsKey, propsOf, recentMarkets, rowOf, sameRow, submissionPath, submissionText, workFor,
-  type PlacementLike, type SubmissionRow,
+  type SubmissionRow,
 } from "./logic";
 
 /**
@@ -45,7 +45,7 @@ export class SubmissionsModule extends FeatureModule {
       name: "submissions",
       mode: "metadata",
       include: (f) => f.extension === "md" && inSubmissions(f.path, s()),
-      compute: (f) => rowOf(plugin.app.metadataCache.getFileCache(f)?.frontmatter as Record<string, unknown> | undefined, propsOf(s())),
+      compute: (f) => rowOf(plugin.app.metadataCache.getFileCache(f)?.frontmatter, propsOf(s())),
       same: sameRow,
       settingsKey: () => `${submissionsRoot(s().submissionsFolder)}|${propsKey(propsOf(s()))}`,
     });
@@ -149,7 +149,7 @@ export class SubmissionsModule extends FeatureModule {
   // --- recording ------------------------------------------------------------
 
   private choose(file: TFile) {
-    return workFor(this.plugin.books.classify(file) as unknown as PlacementLike, file.basename);
+    return workFor(this.plugin.books.classify(file), file.basename);
   }
 
   async record(file: TFile | null): Promise<void> {

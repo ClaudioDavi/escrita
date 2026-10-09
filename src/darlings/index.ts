@@ -8,6 +8,7 @@ import { t } from "../i18n";
 import { writingDay } from "../core/dates";
 import { chapterTitle } from "../core/book";
 import { FolderBlockedError, NoteExistsError } from "../core/notes";
+import { wholeText } from "../core/note-text";
 import {
   alreadyRestored, appendEntry, appendText, baseName, findRestoreOffset, formatEntry,
   matchLineEndings, newId, parseEntries, planCut, removeEntry, restoreText, withMd,
@@ -229,7 +230,7 @@ export class DarlingsModule extends FeatureModule {
       note = await this.ensureNote(notePath);
       const link = app.metadataCache.fileToLinktext(file, note.path, true);
       const date = writingDay(new Date(), this.plugin.settings.dayEndsAt);
-      await app.vault.process(note, (data) => {
+      await this.writeNote(note, (data) => {
         id = newId(new Set(parseEntries(data).map((e) => e.id)));
         const meta = { id, from: file.path, date, before: plan.before, after: plan.after, pre: plan.pre, post: plan.post };
         return appendEntry(data, formatEntry(meta, passage, link));
@@ -248,7 +249,7 @@ export class DarlingsModule extends FeatureModule {
       // only one left.
       if (now.includes(passage)) {
         try {
-          await app.vault.process(note, (d) => removeEntry(d, id));
+          await this.writeNote(note, (d) => removeEntry(d, id));
           new Notice(t("darlings.notice.changedNothing"));
         } catch (err) {
           console.error("Escrita: could not undo the darling copy", err);
@@ -321,13 +322,23 @@ export class DarlingsModule extends FeatureModule {
   }
 
   /**
+   * A whole-text transform of the darlings note through the note text port: the editor
+   * when the note is open (undo works, unsaved text is kept), else vault.process. The
+   * transform runs against the current text, so nothing written in between is lost.
+   */
+  private async writeNote(note: TFile, transform: (text: string) => string): Promise<void> {
+    const res = await this.plugin.notes.text(note).apply((cur) => wholeText(cur, transform(cur)));
+    if (!res.ok) throw new Error(`could not write ${note.path}`);
+  }
+
+  /**
    * Remove a darling after its passage went back into a note. When that fails
    * the passage is in both places, so say so instead of inviting a retry that
    * would paste it again. True when removed.
    */
   private async dropEntry(note: TFile, id: string, title: string): Promise<boolean> {
     try {
-      await this.plugin.app.vault.process(note, (d) => removeEntry(d, id));
+      await this.writeNote(note, (d) => removeEntry(d, id));
       return true;
     } catch (err) {
       console.error("Escrita: could not remove restored darling", err);
@@ -438,7 +449,7 @@ export class DarlingsModule extends FeatureModule {
       onConfirm: async () => {
         const note = this.noteFile(notePath);
         if (!note) return;
-        await this.plugin.app.vault.process(note, (d) => removeEntry(d, e.id));
+        await this.writeNote(note, (d) => removeEntry(d, e.id));
         this.refreshViews();
       },
     }).open();

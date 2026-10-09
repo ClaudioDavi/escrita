@@ -317,7 +317,7 @@ export interface PlaceholderSpecDeps {
   marker(): string;
   /** folders to leave out: the exclude folders and the snapshots root */
   exclude(): string[];
-  settingsKey?(): string;
+  settingsKey?: () => string;
 }
 
 /** The placeholder index: content mode, markdown outside the excluded folders. */

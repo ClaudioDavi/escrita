@@ -1,11 +1,9 @@
 import { Plugin, TFile, debounce, setTooltip } from "obsidian";
-import { DEFAULT_SETTINGS, EscritaSettingTab, normalizeSettings, type EscritaSettings } from "./settings";
-import type { EscritaData, PublishRecord } from "./data";
-import { cleanExportChoices, cleanReadPositions } from "./data";
-import { mergeDefaults } from "./core/merge";
-import { migrateSettings } from "./core/migrate";
+import { EscritaSettingTab, loadSettings, type EscritaSettings } from "./settings";
+import type { EscritaData } from "./data";
+import { cleanExportChoices, cleanReadPositions, cleanSetupOffered } from "./data";
 import { cleanLeftOff } from "./core/left-off";
-import { registerStrings } from "./i18n";
+import { locale, registerStrings } from "./i18n";
 import { coreStrings } from "./strings";
 import { BookService } from "./core/books";
 import { Measurer } from "./core/measurer";
@@ -45,7 +43,7 @@ import { cleanDismissed } from "./lens/dismiss";
 import { cleanSeen } from "./universe/first-seen";
 import { FeatureRegistry } from "./core/feature-registry";
 import type { FeatureId } from "./core/features";
-import type { FeatureModule } from "./core/module-context";
+import { startCoreModule, type FeatureModule } from "./core/module-context";
 import { NamesPort } from "./core/names-source";
 import { TypingFeature, DialogueFocusFeature, MoveBlocksFeature, SpellcheckFeature, TemplatesFeature } from "./editor/features";
 import { StageSnapshotFeature } from "./snapshots/stage-feature";
@@ -57,6 +55,10 @@ import { universeStrings } from "./universe/strings";
 import { universeViewStrings } from "./universe/view-strings";
 import { universeCreateStrings } from "./universe/create-strings";
 import { universeMigrateStrings } from "./universe/migrate-strings";
+import { appearsStrings } from "./universe/strings-appears";
+import { SetupModule } from "./setup";
+import { setupStrings } from "./setup/strings";
+import { setupLayoutStrings } from "./setup/layout-strings";
 
 /** How long after a note is created before its status is checked: templates land first. */
 const DRAFT_DELAY_MS = 1500;
@@ -98,6 +100,8 @@ export default class EscritaPlugin extends Plugin {
   lens!: LensModule;
   universe!: UniverseModule;
   threads!: ThreadsFeature;
+  /** "Set up a writing vault": a core module, always loaded (ARCHITECTURE.md, "Core modules"). */
+  setup!: SetupModule;
 
   /** Persist data soon; for frequent writes such as word tracking. */
   requestSave = debounce(() => { void this.persist(); }, 2000, true);
@@ -107,7 +111,8 @@ export default class EscritaPlugin extends Plugin {
       coreStrings, goalsStrings, outlineStrings, placeholdersStrings, darlingsStrings, editorStrings, publishStrings,
       exportStrings, submissionsStrings,
       explorerStrings, snapshotsStrings, deskStrings, lensStrings,
-      universeStrings, universeViewStrings, universeCreateStrings, universeMigrateStrings,
+      universeStrings, universeViewStrings, universeCreateStrings, universeMigrateStrings, appearsStrings,
+      setupStrings, setupLayoutStrings,
     ]) {
       registerStrings(s);
     }
@@ -167,6 +172,9 @@ export default class EscritaPlugin extends Plugin {
     this.features = new FeatureRegistry(this, modules);
     this.features.init();
     this.features.apply();
+    // Core modules: after the switches are applied, so they can read features.isOn.
+    this.setup = new SetupModule(this);
+    startCoreModule(this, this.setup);
 
     this.addSettingTab(new EscritaSettingTab(this.app, this));
 
@@ -221,19 +229,23 @@ export default class EscritaPlugin extends Plugin {
 
   private async loadAll(): Promise<void> {
     const raw = ((await this.loadData()) ?? {}) as Partial<EscritaData>;
-    this.settings = normalizeSettings(mergeDefaults(DEFAULT_SETTINGS, migrateSettings(raw.settings)));
+    const { settings, fresh } = loadSettings(raw.settings, locale());
+    this.settings = settings;
     this.data = {
       version: 1,
       settings: this.settings,
       history: isRecord(raw.history) ? raw.history : {},
-      publish: isRecord(raw.publish) ? (raw.publish as Record<string, PublishRecord>) : {},
+      publish: isRecord(raw.publish) ? (raw.publish) : {},
       leftOff: cleanLeftOff(raw.leftOff),
       lensDismissed: cleanDismissed(raw.lensDismissed),
       threadSeen: cleanSeen(raw.threadSeen),
       povColors: cleanPovColors(raw.povColors),
       exportChoices: cleanExportChoices(raw.exportChoices),
       readPosition: cleanReadPositions(raw.readPosition),
+      setupOffered: cleanSetupOffered(raw),
     };
+    // A fresh install saves once, so its default set never follows Obsidian's language later.
+    if (fresh) await this.persist();
   }
 
   private async persist(): Promise<void> {

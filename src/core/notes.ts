@@ -18,8 +18,7 @@
 //       Creates each missing folder of `path`; throws FolderBlockedError when
 //       a segment is a file.
 //   plugin.notes.create(path, data, { exists }) → Promise<CreateResult>
-//       Find-or-create a note or a binary file (0.8, IMPROVEMENTS 17; filled by
-//       task 1.7). One tested policy for an existing file instead of seven.
+//       Find-or-create a note or a binary file (0.8, IMPROVEMENTS 17). One tested policy for an existing file instead of seven.
 
 import { MarkdownView, TFile, TFolder, normalizePath, type App } from "obsidian";
 import { editorText, findPathIgnoringCase, toArrayBuffer, uniquePath, vaultText, type FileData, type NoteText } from "./note-text";

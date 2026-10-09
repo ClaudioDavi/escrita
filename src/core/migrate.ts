@@ -7,13 +7,15 @@ import {
   type Stage, type StageMapping,
 } from "./stages";
 
+import { isDefaultsLanguage } from "./defaults";
+
 const norm = (s: string): string => s.normalize("NFC").trim().toLowerCase();
 const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 
 export function migrateStages(legacy: unknown): { stages: StageMapping; otherStatusColors: string } {
   const src = isRecord(legacy) ? legacy : {};
   const stages = cloneDefaultStages();
-  const str = (k: string): string => (typeof src[k] === "string" ? (src[k] as string).trim() : "");
+  const str = (k: string): string => (typeof src[k] === "string" ? (src[k]).trim() : "");
 
   const published = str("publishedValue");
   const unpublished = str("unpublishedValue");
@@ -59,9 +61,11 @@ export function migrateStages(legacy: unknown): { stages: StageMapping; otherSta
 
 export function migrateSettings(raw: unknown): unknown {
   if (!isRecord(raw)) return raw;
-  if (isRecord(raw.stages)) return raw;
-  const { stages, otherStatusColors } = migrateStages(raw);
-  const kept = typeof raw.otherStatusColors === "string" ? raw.otherStatusColors : "";
-  return { ...raw, stages, otherStatusColors: otherStatusColors || kept };
+  // 1.0 (Q1): a saved install without the key keeps the English defaults it relies on.
+  const withLang = isDefaultsLanguage(raw.defaultsLanguage) ? raw : { ...raw, defaultsLanguage: "en" };
+  if (isRecord(withLang.stages)) return withLang;
+  const { stages, otherStatusColors } = migrateStages(withLang);
+  const kept = typeof withLang.otherStatusColors === "string" ? withLang.otherStatusColors : "";
+  return { ...withLang, stages, otherStatusColors: otherStatusColors || kept };
 }
 

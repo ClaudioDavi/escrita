@@ -2,7 +2,7 @@
 // record, CRC-32. No compression, no dependency. Pure, no Obsidian imports.
 // A DOCX is a zip of a few small XML parts, so a manuscript stays a few hundred KB.
 // Gate G0a checked that LibreOffice and Google Docs open the result; Word and
-// Pages are checked before release. Filled by task 1.4; tests read the output
+// Pages are checked before release. Tests read the output
 // back with tests/support/zip-reader.ts.
 
 export interface ZipEntry {

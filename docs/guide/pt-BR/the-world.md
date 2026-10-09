@@ -1,11 +1,11 @@
-# O mundo: o universo compartilhado, "Aparece em", fios e modelos
+# O mundo: o universo compartilhado, "Aparece em", threads e modelos
 
 Como usar o universo (0.6), o que a 0.7 acrescenta e como configurar tudo. O README lista
 cada recurso e cada configuração; este guia percorre os recursos na ordem em que você os
 encontra. Outras páginas: [Recursos e configurações](features-and-settings.md) e
 [Escrita](writing.md). Os nomes aparecem em português (pt-BR), como na interface.
 
-Tudo aqui é opcional. O universo vem desligado, fios e modelos não fazem nada até você usar,
+Tudo aqui é opcional. O universo vem desligado, threads e modelos não fazem nada até você usar,
 e nenhum recurso escreve numa nota sem um clique.
 
 ## 1. Escolha um modo
@@ -16,7 +16,7 @@ seção Universo:
 
 | Modo | Escolha quando | Onde ficam as entradas |
 |---|---|---|
-| **Desligado** (padrão) | Você não quer personagens e lugares acompanhados | Em lugar nenhum. O universo não é carregado: sem painel, sem comandos do universo, sem "Aparece em". Os fios continuam funcionando. |
+| **Desligado** (padrão) | Você não quer personagens e lugares acompanhados | Em lugar nenhum. O universo não é carregado: sem painel, sem comandos do universo, sem "Aparece em". As threads continuam funcionando. |
 | **Por livro** | Cada romance tem o seu elenco | Dentro de cada livro: `<Livro>/Personagens/`, `<Livro>/Lugares/`… |
 | **Universo** | Histórias compartilham personagens e lugares | Numa pasta compartilhada, ao lado da nota do universo |
 
@@ -37,8 +37,8 @@ esconde as coisas; suas entradas continuam no cofre.
    tipos, mas não acrescentar nem remover.
 4. **Propriedade de forma e Forma por pasta**: que tipo de obra uma nota é (conto, ensaio,
    novela, romance, poema, fragmento), usado para agrupar a aba Obras. Veja a seção 6.
-5. **Palavra dos fios** e a palavra de fechado: as palavras nos marcadores de fio. Veja a
-   seção 7.
+5. **Palavra das threads** e a palavra de fechada: as palavras nos marcadores de thread. Veja
+   a seção 7.
 
 ### Escolhendo as pastas no universo: só a ficção que se passa no seu mundo
 
@@ -116,7 +116,7 @@ entradas podem mudar de lugar livremente.
 3. Escolha o tipo e, se quiser, acrescente outro apelido. Deixe marcado **Transformar esta
    ocorrência em link** para transformar o texto selecionado em link (um desfazer remove).
 4. **Criar** faz a nota na pasta do tipo, a partir do modelo, com as propriedades de tipo e
-   `universe` definidas (no modo por livro, sem `universe`). Ela abre ao lado.
+   `universe` definidas (no modo por livro, sem `universe`). Ela abre numa nova aba, sem tirar você do texto.
 
 Se já existir uma entrada com esse nome ou apelido, a janela oferece **Abrir** ou **Só
 linkar aqui**. O Escrita nunca sobrescreve uma nota.
@@ -127,9 +127,11 @@ num universo vazio.
 ### Encontre e use as entradas
 
 A aba **Entradas** do painel agrupa as entradas por tipo. A busca encontra nomes e
-`aliases`, ignorando acentos e maiúsculas. Clique com o botão direito numa entrada para
-**Abrir**, **Abrir ao lado**, **Inserir link na nota** (no cursor, na última nota que você
-editou) e **Mostrar no explorador**.
+`aliases`, ignorando acentos e maiúsculas. Cada entrada tem um menu com **Abrir**, **Abrir ao lado**,
+**Inserir link na nota** (no cursor, na última nota que você editou) e **Mostrar no
+explorador**. Abra-o com o botão direito, ou com o botão **⋯** (Mais ações) na ponta direita
+da linha. O botão aparece quando o ponteiro está sobre a linha ou a linha tem o foco do
+teclado, e fica sempre visível no celular e no tablet, onde não há botão direito.
 
 ### Remova uma entrada
 
@@ -168,7 +170,7 @@ título.
 
 - **Entradas**: seção 3. Cada entrada com menções mostra "N obras" ao lado; a seção 9 explica
   a contagem e a lista embaixo dela.
-- **Fios**: seção 7.
+- **Threads**: seção 7.
 - **Obras**: seção 6.
 
 ## 6. Obras e a forma delas
@@ -189,32 +191,32 @@ Obras sem nenhuma das duas ficam em **Sem forma**. Nada é escrito nas suas nota
 As palavras de forma são um campo separado por vírgulas, nesta ordem: conto, ensaio, novela,
 romance, poema, fragmento. Exemplo: `conto, ensaio, novela, romance, poema, fragmento`.
 
-## 7. Fios abertos
+## 7. Threads abertas
 
-Um **fio** é uma ponta solta plantada numa história para uma história futura. É um
+Uma **thread** é uma ponta solta plantada numa história para uma história futura. É um
 comentário, então nunca aparece no modo de leitura nem numa exportação:
 
 ```
-%% fio: quem escreveu as cartas? %%
+%% thread: quem escreveu as cartas? %%
 ```
 
-- **Plantar um fio**: comando ou menu do editor. Insere o marcador no cursor; o texto
+- **Plantar uma thread**: comando ou menu do editor. Insere o marcador no cursor; o texto
   selecionado é copiado para dentro dele e continua na sua prosa.
-- **Veja os fios**: aba **Fios** do painel, agrupados por obra, com a data em que cada fio
-  foi visto pela primeira vez (guardada nos dados do plugin, nunca na nota). Com o universo
-  desligado, use **Mostrar fios abertos**, que lista os fios das suas obras acompanhadas. No
-  modo por livro, o painel mostra os fios do livro.
-- **Feche um**: o círculo no painel, ou clique com o botão direito no marcador no editor e
-  escolha **Fechar o fio…**. Se quiser, diga qual obra responde. O marcador vira
-  `%% fio fechado: … → [[A Casa]] %%`. **Reabrir o fio** desfaz. Escrever a forma fechada à
+- **Veja as threads**: aba **Threads** do painel, agrupadas por obra, com a data em que cada
+  thread foi vista pela primeira vez (guardada nos dados do plugin, nunca na nota). Com o
+  universo desligado, use **Mostrar threads abertas**, que lista as threads das suas obras
+  acompanhadas. No modo por livro, o painel mostra as threads do livro.
+- **Feche uma**: o círculo no painel, ou clique com o botão direito no marcador no editor e
+  escolha **Fechar a thread…**. Se quiser, diga qual obra responde. O marcador vira
+  `%% thread fechada: … → [[A Casa]] %%`. **Reabrir a thread** desfaz. Escrever a forma fechada à
   mão também funciona.
 
 Fechar só escreve se o marcador ainda estiver exatamente como o painel leu. Se você o editou
 nesse meio-tempo, nada muda e a lista é atualizada.
 
-**As palavras são configurações.** A palavra do fio (padrão `thread`) e a palavra de fechado
-(padrão `closed`) podem ser qualquer uma, por exemplo `fio` e `fechado`, dando `%% fio: … %%`
-e `%% fio fechado: … %%`.
+**As palavras são configurações.** A palavra da thread (padrão `thread`) e a palavra de
+fechada (padrão `fechada` numa instalação em português, `closed` em inglês) podem ser
+qualquer uma, por exemplo `fio` e `fechado`, dando `%% fio: … %%` e `%% fio fechado: … %%`.
 
 ## 8. Inserir de um modelo
 
@@ -233,7 +235,7 @@ menções no seu texto sozinho. Você não marca nada e nada é escrito nas suas
 ### Onde você vê
 
 - **No painel.** Na aba Entradas, uma entrada com menções mostra "N obras" ao lado do nome.
-  Clique na linha para abrir a lista: cada obra com a contagem de menções e a forma, e, num
+  Clique em "N obras" para abrir a lista (clicar na linha abre a nota da entrada): cada obra com a contagem de menções e a forma, e, num
   livro, o primeiro e o último capítulo que a mencionam ("primeira no cap. 2, última no cap.
   9"). Um grupo chamado **Outras notas** vem depois das obras: outras entradas, a nota do
   universo e notas avulsas que estão no universo. Ele começa fechado.
@@ -433,15 +435,15 @@ Propriedade de forma:   forma                 (conto, ensaio, novela, romance, p
 Forma por pasta:        Contos: conto
                         Textos: ensaio
                         Romances: romance
-Palavra do fio:         fio
-Palavra de fechado:     fechado
+Palavra da thread:      fio
+Palavra de fechada:     fechado
 Pasta de modelos:       Modelos
 Títulos extras:         (nenhum: os títulos em português já vêm inclusos)
 Sublinhar nomes:        ligado
 ```
 
-Os ensaios em `Textos/` ficam fora do universo, mas ainda recebem a forma, e os fios deles
-continuam aparecendo em **Mostrar fios abertos**. Um ensaio em `Contos/` que não se passa no
+Os ensaios em `Textos/` ficam fora do universo, mas ainda recebem a forma, e as threads deles
+continuam aparecendo em **Mostrar threads abertas**. Um ensaio em `Contos/` que não se passa no
 seu mundo ganha `universe: false`.
 
 ## Quando algo parece errado
@@ -454,7 +456,7 @@ seu mundo ganha `universe: false`.
 | "Criar entrada do universo" diz que a nota não está num universo | A nota não cumpre nenhuma regra da seção 2 | Use **Adicionar ao …** no painel, ou acrescente a pasta dela |
 | Faltam comandos do universo | O modo está Desligado (o recurso não está carregado) | Escolha Por livro ou Universo na página Recursos |
 | Uma obra está em "Sem forma" | Sem propriedade de forma e sem linha de "Forma por pasta" que combine | Acrescente a linha da pasta, ou a propriedade |
-| Fechar um fio diz que mudou | O marcador foi editado depois que a lista foi lida | Nada foi alterado; tente de novo a partir da lista atualizada |
+| Fechar uma thread diz que mudou | O marcador foi editado depois que a lista foi lida | Nada foi alterado; tente de novo a partir da lista atualizada |
 | Uma nota que você esperava não aparece em "Aparece em", na aba Obras nem nos nomes | Ela tem `universe: false`, ou está fora do universo da entrada | Tire `universe: false`, ou confira as regras da seção 2 |
 | Um nome não é contado | Está em minúsculas no texto, a entrada diferencia maiúsculas, ou a palavra está na lista de ignorar da entrada | Veja a seção 9 |
 | As contagens dizem "contando…" | A primeira contagem depois de abrir o Obsidian ainda está rodando | Espere alguns segundos; ela roda em segundo plano |

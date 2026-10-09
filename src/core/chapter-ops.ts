@@ -6,6 +6,7 @@ import { t } from "../i18n";
 import { ChapterError, retitledName } from "./chapter-plan";
 import { SerialQueue, createChapter, renumberChapters, type ChapterFs } from "./chapter-engine";
 import { writtenWord } from "./stages";
+import { resolveTemplate } from "./records";
 import type { EscritaSettings } from "../settings";
 
 /** The status a new chapter gets when its template has none, or none when the writer turned it off. */
@@ -98,9 +99,9 @@ export class ChapterOps {
       template: async () => {
         const p = settings.chapterTemplate.trim();
         if (!p) return null;
-        const f = app.vault.getAbstractFileByPath(normalizePath(p))
-          ?? app.vault.getAbstractFileByPath(normalizePath(`${p}.md`));
-        if (!(f instanceof TFile)) return null;
+        const isMd = (x: unknown): x is TFile => x instanceof TFile && x.extension === "md";
+        const f = resolveTemplate(normalizePath(p), (q) => app.vault.getAbstractFileByPath(q), isMd);
+        if (!f) return null;
         try {
           return await app.vault.cachedRead(f);
         } catch (e) {

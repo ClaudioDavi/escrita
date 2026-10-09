@@ -8,10 +8,6 @@ let plugin: FakePlugin;
 let mod: PlaceholdersModule;
 let registry: FeatureRegistry;
 
-function turn(on: boolean): void {
-  plugin.settings.features = { ...plugin.settings.features, placeholders: on };
-}
-
 beforeEach(() => {
   plugin = fakePlugin();
   mod = new PlaceholdersModule(plugin.asPlugin);
@@ -44,7 +40,7 @@ describe("placeholders lifecycle", () => {
   it("unload leaves nothing registered, and the data stays", () => {
     plugin.data.history = { keep: "me" } as never;
     registry.apply();
-    turn(false);
+    plugin.turn("placeholders", false);
     registry.apply();
     expect(plugin.commands.size).toBe(0);
     expect(plugin.drawn.size).toBe(0);
@@ -61,9 +57,9 @@ describe("placeholders lifecycle", () => {
 
   it("a second load registers one of each (no double push)", () => {
     registry.apply();
-    turn(false);
+    plugin.turn("placeholders", false);
     registry.apply();
-    turn(true);
+    plugin.turn("placeholders", true);
     registry.apply();
     expect([...plugin.commands.keys()].sort()).toEqual([...COMMANDS].sort());
     expect(plugin.indexAdded).toHaveLength(2);
@@ -79,11 +75,11 @@ describe("placeholders lifecycle", () => {
     registry.apply();
     plugin.indexAdded[0].emitChange([]);
     expect(calls).toBe(1);
-    turn(false);
+    plugin.turn("placeholders", false);
     registry.apply();
     plugin.indexAdded[0].emitChange([]);
     expect(calls).toBe(1);
-    turn(true);
+    plugin.turn("placeholders", true);
     registry.apply();
     plugin.indexAdded[1].emitChange([]);
     expect(calls).toBe(2);

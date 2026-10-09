@@ -1,7 +1,7 @@
-// Strings the 5.1 wiring of "Appears in" needs: the phone's "more" row and the form
+// Strings the wiring of "Appears in" needs: the phone's "more" row and the form
 // words that follow a work's name (singular; view-strings.ts has the plural group heads).
 
-import { registerStrings, type Strings } from "../i18n";
+import type { Strings } from "../i18n";
 
 export const appearsStrings: Strings = {
   en: {
@@ -23,8 +23,3 @@ export const appearsStrings: Strings = {
     "universe.appears.form.fragment": "fragmento",
   },
 };
-
-/** Called once by the universe module (main.ts registers the other dictionaries; this file is owned by 5.1). */
-export function registerAppearsStrings(): void {
-  registerStrings(appearsStrings);
-}

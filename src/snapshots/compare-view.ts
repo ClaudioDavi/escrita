@@ -75,7 +75,14 @@ export class CompareView extends ItemView {
     if (next.notePath !== this.state.notePath || next.a !== this.state.a || next.b !== this.state.b) this.expanded.clear();
     this.state = next;
     await super.setState(state, result);
+    this.updateTitle();
     await this.refresh();
+  }
+
+  /** The tab and the header title are read before the state arrives (and after a restart): ask for them again. */
+  private updateTitle(): void {
+    (this.leaf as WorkspaceLeaf & { updateHeader?: () => void }).updateHeader?.();
+    (this as { titleEl?: HTMLElement }).titleEl?.setText(this.getDisplayText());
   }
 
   async onOpen(): Promise<void> {
@@ -88,6 +95,7 @@ export class CompareView extends ItemView {
     this.registerEvent(vault.on("rename", (f, oldPath) => {
       if (oldPath === this.state.notePath) {
         this.state = { ...this.state, notePath: f.path };
+        this.updateTitle();
         this.requestRefresh();
       } else if (this.state.notePath.startsWith(`${oldPath}/`)) {
         this.state = { ...this.state, notePath: f.path + this.state.notePath.slice(oldPath.length) };
@@ -95,6 +103,7 @@ export class CompareView extends ItemView {
       }
     }));
     this.register(this.module.store.onChange((p) => { if (p === this.state.notePath) this.requestRefresh(); }));
+    this.updateTitle();
   }
 
   async onClose(): Promise<void> {
@@ -270,10 +279,12 @@ export class CompareView extends ItemView {
     const shown = this.shown;
     if (!change || !this.canRevert() || shown === undefined) return;
     const b = el.createEl("button", { cls: "escrita-compare-useold", text: t("snapshots.compare.useOld") });
-    b.addEventListener("click", async () => {
+    b.addEventListener("click", () => {
       b.disabled = true;
-      await this.module.revertBlock(file, change, shown, [this.state.a]);
-      await this.refresh();
+      void (async () => {
+        await this.module.revertBlock(file, change, shown, [this.state.a]);
+        await this.refresh();
+      })();
     });
   }
 

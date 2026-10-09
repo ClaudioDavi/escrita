@@ -1,6 +1,7 @@
 import { MarkdownView, Notice, TFile, type WorkspaceLeaf } from "obsidian";
 import type EscritaPlugin from "../main";
 import { t } from "../i18n";
+import { writingModeOf } from "../core/writing-mode";
 import { bookTarget, firstUnwrittenBeatOffset, spotPosition, type LeftOff } from "../core/left-off";
 
 /**
@@ -9,6 +10,8 @@ import { bookTarget, firstUnwrittenBeatOffset, spotPosition, type LeftOff } from
  * the first chapter with an unwritten beat, else the last chapter at its end.
  */
 export async function openWork(plugin: EscritaPlugin, path: string, newTab: boolean): Promise<void> {
+  // In writing mode there is no tab bar: "Continue" replaces the note in the same tab (board 39 a).
+  if (writingModeOf(plugin.features)?.isActive()) newTab = false;
   const file = plugin.app.vault.getAbstractFileByPath(path);
   if (!(file instanceof TFile)) {
     new Notice(t("desk.notice.missing", { path }));

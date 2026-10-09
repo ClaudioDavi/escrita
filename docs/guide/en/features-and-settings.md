@@ -4,12 +4,13 @@ Escrita has many features, and most writers use a few. Since 0.7 you can turn of
 you don't use. A feature that is off isn't loaded: it adds no commands, panels, menu items or
 background work. Your data stays, and comes back when you turn the feature on again.
 
-Other pages: [Writing](writing.md), [Publishing](publishing.md) and [The world](the-world.md).
+Other pages: [Getting started](getting-started.md), [Writing](writing.md), [Publishing](publishing.md) and [The world](the-world.md).
 
 ## The Features page
 
 Open Settings › Escrita. The **Features** section is at the top. It has:
 
+- **Starting point**: three preset buttons and a label. See "Starting points" below.
 - **Writing language** (Idioma da escrita). Automatic follows Obsidian's language: any
   Portuguese gives pt-BR and any English gives English. Another language gives none. The
   revision lens and the matching of names read it. (It used to be in the Revision section.)
@@ -28,7 +29,96 @@ Three switches were settings before 0.7, and they are now only here: **Word coun
 explorer**, **Spellcheck on demand** and the **Shared universe** mode. The universe row is a
 dropdown (Off, Per book, Universe) instead of a switch, because the mode is the switch.
 
-When you update, every feature is on, so nothing disappears until you choose. Export and Submissions are the two switches 0.8 adds, in the Publishing group.
+When you update from an earlier version, every feature stays on, so nothing disappears until
+you choose. A new install starts on the Writer starting point (below).
+
+## Starting points
+
+You don't have to set nineteen switches one by one. Above them, **Starting point**
+(Ponto de partida) has three buttons: **Essentials**, **Writer** and **Everything**. Each one
+is a list of features. A preset is only a starting point, never a mode: Escrita doesn't
+remember which button you pressed, and after it you can change any switch.
+
+| Starting point | Switches it turns on |
+|---|---|
+| Essentials (9) | Goals and sprints · Outline and ghost beats · Placeholders · Enter flow and smart typography · Revision lens · Darlings · Snapshots · Export · Works block and where you left off |
+| Writer (16) | Everything in Essentials, plus Dialogue focus · Move a paragraph or scene · Insert from a template · Word counts in the explorer · Snapshot at each stage · Publish check · Submissions |
+| Everything (18) | Every switch, which adds Spellcheck on demand and Threads to Writer |
+
+A preset turns off every switch that isn't in its list. Pressing one doesn't change anything
+yet. It opens a confirm step, **Apply "Writer"?**, with two lines: **Turns off** and **Turns
+on**, each naming the switches that would change. Press **Apply** to save them, or **Cancel**
+to leave everything as it is. If the switches already match, the page says "Already on
+Writer. Nothing changes." and there is nothing to confirm. The note under the lists reminds
+you that the data of what turns off stays saved (see "What data stays" below).
+
+**The label.** Beside the title, a small tag names the starting point your switches match
+right now: Essentials, Writer or Everything. If they match none of them, because you changed
+one switch or came from an older version, the tag says **Custom** (Personalizado). Custom is
+not a problem and nothing changes by itself. It only says the set is yours. The tag is worked
+out each time the page draws, from the switches.
+
+**The universe is never changed by a preset.** The Shared universe row is a mode (Off, Per
+book, Universe), and a mode moves folders, so it is always your own choice, in the Universe
+section. A preset leaves it as it is, never lists it in the confirm step, and ignores it when
+it works out the label. That is why Everything says "18" here: the universe is the nineteenth
+switch, and the setup counts it as "19 of 19" because it offers it as a separate choice
+(**Shared world**). Choosing Everything adds a reminder under the lists that the universe mode
+stays as it is.
+
+**A new install and an update.** A new install starts on Writer. An install that already
+has Escrita settings keeps every switch as it was: nothing is turned off by updating. A 0.9
+install with every switch on reads **Everything**. One on its old defaults reads **Custom**,
+because spellcheck on demand is off by default.
+
+**The setup link.** Below the three buttons, a quiet link, **Set up a writing vault**
+(Preparar o cofre para escrever), runs the setup, which can also choose a starting point,
+create folders and example notes, and set the layout. It shows only while you have no home
+note. Once you have one, use the command of the same name. The setup is explained in
+[Getting started](getting-started.md).
+
+## The language of the defaults
+
+Escrita writes some words into your notes and reads others as folder and note names: the
+stage words, the chapters folder, the titles that take no chapter number, the results of a
+submission, the folders for exports, submissions and snapshots, the universe note and its
+type words, the form values and the thread words. These are all settings, and they start from
+a set of defaults in one language. Since 1.0 there are two sets, **English** and **Português
+(Brasil)**. The setup shows the choice as **Language of the defaults** (Idioma dos padrões).
+
+- **A new install takes Obsidian's language**, once: any Portuguese picks the Brazilian set,
+  anything else picks English. The choice is then saved, so changing Obsidian's language later
+  doesn't move your words.
+- **An install that already has settings keeps English.** Updating from 0.9 changes no word,
+  because your vault already relies on those words.
+- **Only the setup changes it afterwards**, and only when you tick it.
+
+What the Brazilian set holds:
+
+| Setting | English | Português (Brasil) |
+|---|---|---|
+| Stage words | idea, draft, revision, ready, published | ideia, rascunho, revisão, pronto, publicado |
+| Chapters folder | Chapters | Capítulos |
+| Chapters without a number | Prologue, Preface, Foreword, Introduction, Interlude, Epilogue, Afterword | Prólogo, Prefácio, Apresentação, Introdução, Nota do autor, Interlúdio, Epílogo, Posfácio |
+| Submission results | pending, accepted, rejected, withdrawn | pendente, aceito, recusado, retirado |
+| Export folder | Escrita/Exports | Escrita/Exportações |
+| Submissions folder | Escrita/Submissions | Escrita/Envios |
+| Snapshots folder | Escrita/Snapshots | Escrita/Versões |
+| Folders to ignore | Templates | Modelos |
+| Universe note | Universe.md | Universo.md |
+| Entry types and their folders | character (Characters), place (Places), object (Objects), group (Groups), event (Events) | personagem (Personagens), lugar (Lugares), objeto (Objetos), grupo (Grupos), evento (Eventos) |
+| Form values | short story, essay, novella, novel, poem, fragment | conto, ensaio, novela, romance, poema, fragmento |
+| Thread words | thread, closed | thread, fechada |
+
+The darlings notes keep the name `Darlings.md` in both. **Property names** (`status`, `target`,
+`type` and the rest) are not in either set: they are keys in your notes and stay English.
+Every value is still a setting you can change, and numbers and switches are the same in both
+sets. The snapshots folder and the excluded folder are set only for a new install. The setup
+never changes them, because they name places that already exist.
+
+This is a different setting from **Writing language**. The writing language decides which
+word lists the revision lens and the name matching read. The language of the defaults decides
+the words Escrita writes into your vault.
 
 ## What each switch turns off
 

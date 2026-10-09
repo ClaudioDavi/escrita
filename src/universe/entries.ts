@@ -34,7 +34,7 @@ const nfc = (s: string) => s.normalize("NFC").trim().toLowerCase();
 
 /** The entry kind a type property value names, or null. Case, spacing and a first list item are forgiven. */
 export function kindOf(value: unknown, types: UniverseSettings["entryTypes"]): EntryKind | null {
-  const v = Array.isArray(value) ? value[0] : value;
+  const v = Array.isArray(value) ? (value as unknown[])[0] : value;
   if (typeof v !== "string" && typeof v !== "number") return null;
   const word = nfc(String(v));
   if (word === "") return null;
@@ -58,7 +58,7 @@ export function aliasesOf(fm: Record<string, unknown> | undefined): string[] {
 
 /** A YAML boolean, or the string "true"/"false" (trimmed, any case); anything else is `fallback`. */
 export function boolOf(value: unknown, fallback: boolean): boolean {
-  const v = Array.isArray(value) ? value[0] : value;
+  const v = Array.isArray(value) ? (value as unknown[])[0] : value;
   if (typeof v === "boolean") return v;
   if (typeof v === "string") {
     const w = v.trim().toLowerCase();
@@ -109,7 +109,10 @@ export function classifyKeyOf(s: Partial<ClassifySettings>): string {
 
 /** Whether the note is a template (the templates folder, an entry template or the chapter template). */
 export function isTemplatePath(path: string, s: Pick<EntriesSettings, "templatesFolder" | "chapterTemplate" | "entryTypes">): boolean {
-  const norm = (p: string) => p.trim().replace(/^\/+/, "").replace(/(?<!\.md)$/i, ".md");
+  const norm = (p: string) => {
+    const q = p.trim().replace(/^\/+/, "");
+    return /\.md$/i.test(q) ? q : `${q}.md`;
+  };
   if (s.templatesFolder.trim() !== "" && inFolder(path, s.templatesFolder)) return true;
   const templates = [s.chapterTemplate, ...ENTRY_KINDS.map((k) => s.entryTypes[k].template)];
   return templates.some((p) => p.trim() !== "" && norm(p) === path);

@@ -3,7 +3,7 @@
 // core/markdown decides: D18): enough to keep Enter, Enter, Enter and smart typography out of frontmatter,
 // code, math and multi-line comments without depending on the editor's syntax tree.
 
-import { segment, type Markdown } from "../core/markdown";
+import type { Markdown } from "./markdown";
 
 export interface BlockState {
   /** inside the YAML frontmatter (including its closing line) */

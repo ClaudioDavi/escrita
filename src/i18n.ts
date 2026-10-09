@@ -2,7 +2,7 @@
 // dictionary (the source of truth) and translations keyed by locale.
 // Adding a language = adding one key to each strings file.
 
-import { moment } from "obsidian";
+import { getLanguage, moment } from "obsidian";
 import { pluralKey, unitKey, type PieceUnit } from "./core/measure";
 
 export type Dict = Record<string, string>;
@@ -14,13 +14,13 @@ export function registerStrings(s: Strings): void {
   for (const [lang, d] of Object.entries(s)) dicts[lang] = Object.assign(dicts[lang] ?? {}, d);
 }
 
-/** The raw Obsidian locale ("es", "pt-br"), with no fallback to a language Escrita has strings for. */
+/** Obsidian's interface language ("es", "pt-BR"), with no fallback to a language Escrita has strings for. */
 export function locale(): string {
-  return moment.locale() || "en";
+  return getLanguage() || "en";
 }
 
 export function lang(): string {
-  const l = (moment.locale() || "en").toLowerCase();
+  const l = locale().toLowerCase();
   if (l.startsWith("pt")) return "pt-BR";
   const exact = Object.keys(dicts).find((k) => k.toLowerCase() === l);
   if (exact) return exact;

@@ -1,0 +1,275 @@
+{
+  "description": "Board 36 b: the vault and settings left by empty-en after its run, three leaves open. Nothing is written: every item is kept except the layout row, which writes nothing and comes unticked because several leaves are open; itemsToRun is empty.",
+  "choices": {
+    "writes": "both",
+    "language": "en",
+    "preset": "writer",
+    "universeMode": null,
+    "layout": "desk"
+  },
+  "settings": {
+    "base": "en",
+    "overrides": {
+      "features": {
+        "goals": true,
+        "outline": true,
+        "placeholders": true,
+        "darlings": true,
+        "typing": true,
+        "dialogueFocus": true,
+        "moveBlocks": true,
+        "templates": true,
+        "lens": true,
+        "snapshots": true,
+        "stageSnapshot": true,
+        "publish": true,
+        "export": true,
+        "submissions": true,
+        "desk": true,
+        "threads": false
+      },
+      "spellcheckOnDemand": false,
+      "explorerCounts": true,
+      "lensLanguage": "en",
+      "homeNote": "Home.md",
+      "openHomeOnStartup": true
+    }
+  },
+  "vault": {
+    "folders": [
+      "Stories",
+      "Books",
+      "Books/Example · The lighthouse",
+      "Books/Example · The lighthouse/Chapters"
+    ],
+    "files": [
+      "Stories/Example · The crossing.md",
+      "Books/Example · The lighthouse.md",
+      "Books/Example · The lighthouse/Chapters/01 Arrival.md",
+      "Books/Example · The lighthouse/Chapters/02 The storm.md",
+      "Home.md"
+    ],
+    "noteCounts": {
+      "Stories": 1,
+      "Books": 3,
+      "Books/Example · The lighthouse": 3,
+      "Books/Example · The lighthouse/Chapters": 2
+    },
+    "openLeaves": 3,
+    "hasWorks": true
+  },
+  "expected": [
+    {
+      "kind": "folder",
+      "target": "Stories",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.folderExists",
+        "vars": {
+          "count": 1
+        }
+      }
+    },
+    {
+      "kind": "folder",
+      "target": "Books",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.folderExists",
+        "vars": {
+          "count": 3
+        }
+      }
+    },
+    {
+      "kind": "example",
+      "target": "Stories/Example · The crossing.md",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exists"
+      }
+    },
+    {
+      "kind": "example",
+      "target": "Books/Example · The lighthouse",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exists"
+      }
+    },
+    {
+      "kind": "example",
+      "target": "Books/Example · The lighthouse.md",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exists"
+      }
+    },
+    {
+      "kind": "example",
+      "target": "Books/Example · The lighthouse/Chapters",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exists"
+      }
+    },
+    {
+      "kind": "example",
+      "target": "Books/Example · The lighthouse/Chapters/01 Arrival.md",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exists"
+      }
+    },
+    {
+      "kind": "example",
+      "target": "Books/Example · The lighthouse/Chapters/02 The storm.md",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exists"
+      }
+    },
+    {
+      "kind": "home",
+      "target": "Home.md",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.exists"
+      }
+    },
+    {
+      "kind": "setting",
+      "target": "defaultsLanguage",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingSame"
+      },
+      "value": "en"
+    },
+    {
+      "kind": "setting",
+      "target": "trackFolders",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.trackAll"
+      },
+      "value": ""
+    },
+    {
+      "kind": "setting",
+      "target": "chaptersFolder",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingSame"
+      },
+      "value": "Chapters"
+    },
+    {
+      "kind": "setting",
+      "target": "lensLanguage",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingSame"
+      },
+      "value": "en"
+    },
+    {
+      "kind": "setting",
+      "target": "homeNote",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingSame"
+      },
+      "value": "Home.md"
+    },
+    {
+      "kind": "setting",
+      "target": "openHomeOnStartup",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingSame"
+      },
+      "value": true
+    },
+    {
+      "kind": "features",
+      "target": "features",
+      "state": "kept",
+      "tick": null,
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.featuresSame",
+        "vars": {
+          "preset": "writer"
+        }
+      },
+      "value": {
+        "features": {
+          "goals": true,
+          "outline": true,
+          "placeholders": true,
+          "darlings": true,
+          "typing": true,
+          "dialogueFocus": true,
+          "moveBlocks": true,
+          "templates": true,
+          "lens": true,
+          "snapshots": true,
+          "stageSnapshot": true,
+          "publish": true,
+          "export": true,
+          "submissions": true,
+          "desk": true,
+          "threads": false
+        },
+        "explorerCounts": true,
+        "spellcheckOnDemand": false,
+        "universeMode": "off"
+      }
+    },
+    {
+      "kind": "layout",
+      "target": "layout",
+      "state": "new",
+      "tick": "layout",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.layoutTabs",
+        "vars": {
+          "leaves": 3
+        }
+      },
+      "value": "desk"
+    }
+  ]
+}

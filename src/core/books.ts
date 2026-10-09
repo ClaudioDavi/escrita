@@ -35,7 +35,7 @@ export class BookService {
       file: (p) => { const f = get(p); return f instanceof TFile ? f : null; },
       folder: (p) => { const f = get(p); return f instanceof TFolder && !f.isRoot() ? f : null; },
       folders: () => this.app.vault.getAllLoadedFiles().filter((f): f is TFolder => f instanceof TFolder && !f.isRoot()),
-      frontmatter: (f) => this.app.metadataCache.getFileCache(f)?.frontmatter as Record<string, unknown> | undefined,
+      frontmatter: (f) => this.app.metadataCache.getFileCache(f)?.frontmatter,
       resolve: (link, from) => this.app.metadataCache.getFirstLinkpathDest(linkText(link) ?? link, from)?.path ?? null,
     };
   }
@@ -85,7 +85,7 @@ export class BookService {
 
   /** Frontmatter of a file from the metadata cache (may be undefined right after creation). */
   frontmatter(file: TFile): Record<string, unknown> {
-    return (this.app.metadataCache.getFileCache(file)?.frontmatter ?? {}) as Record<string, unknown>;
+    return (this.app.metadataCache.getFileCache(file)?.frontmatter ?? {});
   }
 }
 
@@ -142,14 +142,14 @@ export function bookSource(
  * as Obsidian resolves them from that note (`getFirstLinkpathDest`). A link to a file
  * that isn't Markdown, or to the collection note itself, is missing. Null when the note
  * has no `collectionProperty`. Export asks this once about the active note (Q28) and
- * reads its stories from the answer (`storyChapters`). Task 1.7.
+ * reads its stories from the answer (`storyChapters`).
  */
 export function collectionAt(
   app: App,
   note: TFile,
   settings: () => Pick<EscritaSettings, "collectionProperty">,
 ): Collection | null {
-  const fm = app.metadataCache.getFileCache(note)?.frontmatter as Record<string, unknown> | undefined;
+  const fm = app.metadataCache.getFileCache(note)?.frontmatter;
   return collectionOf(fm, settings().collectionProperty, (link) => {
     const dest = app.metadataCache.getFirstLinkpathDest(link, note.path);
     return dest instanceof TFile && dest.extension === "md" && dest.path !== note.path ? dest.path : null;

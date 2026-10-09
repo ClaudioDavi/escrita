@@ -51,6 +51,7 @@ function tabWith(off: FeatureId[] = [], modules: Partial<Record<FeatureId, Parti
   const plugin = {
     settings, saveSettings: saves, data: { history: {}, leftOff: {} },
     books: { allBooks: () => [] },
+    setup: { hasHomeNote: () => true, open: () => {} },
     features: { isOn: (id: FeatureId) => loaded.has(id), get: (id: FeatureId) => (loaded.has(id) ? modules[id] : undefined) },
   };
   for (const [id, draw] of Object.entries(OWNED) as [FeatureId, Draw][]) {
@@ -200,5 +201,16 @@ describe("saveOnCommit", () => {
     expect(ui.num("1,500", 9)).toBe(1500);
     expect(ui.num("", 9)).toBe(9);
     expect(ui.num("3", 9, 50)).toBe(50);
+  });
+});
+
+describe("makeUi().defaults()", () => {
+  it("follows the install's defaultsLanguage, not the English schema", () => {
+    const { tab, settings } = tabWith();
+    const ui = (tab as unknown as { makeUi(): import("../src/core/module-context").SettingsUi }).makeUi();
+    expect(ui.defaults().chaptersFolder).toBe("Chapters");
+    settings.defaultsLanguage = "pt-BR";
+    expect(ui.defaults().chaptersFolder).toBe("Capítulos");
+    expect(ui.defaults().threadClosedWord).toBe("fechada");
   });
 });

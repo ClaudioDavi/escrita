@@ -29,12 +29,12 @@ export interface HubEvents<F extends IndexFile = IndexFile> {
 export interface IndexHubOptions {
   /** the snapshots folder, as a vault path */
   snapshotsRoot(): string;
-  onError?(path: string, error: unknown): void;
+  onError?: (path: string, error: unknown) => void;
   /** quiet time before a settings change rebuilds (default 500 ms) */
   settingsMs?: number;
   /** how long a metadata build waits for `resolved` (default 5000 ms) */
   fallbackMs?: number;
-  /** passed to every index; a spec's own `settleMs` wins (IndexSpec.settleMs, read from task 1.1 on) */
+  /** passed to every index; a spec's own `settleMs` wins (IndexSpec.settleMs) */
   settleMs?: number;
   batch?: number;
 }
@@ -94,7 +94,7 @@ export class IndexHub<F extends IndexFile = IndexFile> {
       onDemand: () => this.demand(entry),
     });
     const entry: Entry<F> = {
-      spec: spec as IndexSpec<F, unknown>,
+      spec: spec,
       index: index as VaultIndex<F, unknown>,
       started: false,
       demanded: spec.start !== "demand",

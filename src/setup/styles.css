@@ -1,0 +1,234 @@
+/* The setup (1.0, task 2.2): the first-run notice and the two-step modal. Obsidian variables only. */
+.modal.escrita-setup-modal {
+  width: 560px;
+  max-width: 94vw;
+}
+.escrita-setup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+}
+.escrita-setup-steps {
+  display: flex;
+  gap: var(--size-4-2);
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+.escrita-setup-steps .is-on {
+  color: var(--text-accent);
+}
+.escrita-setup-heading {
+  font-weight: var(--font-semibold);
+}
+.escrita-setup-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+}
+.escrita-setup-label {
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+}
+.escrita-setup-hint {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+}
+.escrita-setup-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+}
+.escrita-setup-chip {
+  min-height: 32px;
+  padding: 0 var(--size-4-3);
+  border-radius: var(--radius-l);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+.escrita-setup-chip.is-on,
+.escrita-setup-card.is-on {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+  border-color: var(--interactive-accent);
+}
+.escrita-setup-select {
+  min-height: 32px;
+  align-self: flex-start;
+}
+.escrita-setup-cards {
+  display: flex;
+  gap: var(--size-4-2);
+}
+.escrita-setup-card {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 96px;
+  height: auto;
+  padding: var(--size-4-2) var(--size-4-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: var(--size-4-1);
+  text-align: left;
+  white-space: normal;
+  background: var(--background-secondary);
+  box-shadow: none;
+  border: 1px solid var(--background-modifier-border);
+}
+.escrita-setup-card span {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+}
+.escrita-setup-scroll {
+  max-height: min(60vh, 470px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: var(--size-4-1);
+}
+.escrita-setup-scroll > * {
+  flex-shrink: 0;
+}
+.escrita-setup-group {
+  padding: var(--size-4-2) 0 2px;
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.escrita-setup-row {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+  gap: var(--size-4-2);
+  min-height: 32px;
+  padding: 2px 0;
+}
+.escrita-setup-row.is-off .escrita-setup-body {
+  color: var(--text-faint);
+}
+.escrita-setup-lead {
+  flex: 0 0 32px;
+  display: flex;
+  justify-content: center;
+}
+.escrita-setup-mark {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+.escrita-setup-ck {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+}
+.escrita-setup-box {
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--text-faint);
+  border-radius: var(--radius-s);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.escrita-setup-box.is-on {
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+}
+.escrita-setup-box.is-on::after {
+  content: "";
+  width: 8px;
+  height: 4px;
+  border-left: 2px solid var(--text-on-accent);
+  border-bottom: 2px solid var(--text-on-accent);
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+.escrita-setup-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: 6px;
+  line-height: var(--line-height-normal);
+}
+.escrita-setup-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-4-1);
+}
+.escrita-setup-path {
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+  overflow-wrap: anywhere;
+}
+.escrita-setup-pill {
+  padding: 0 var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-l);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.escrita-setup-pill.is-example {
+  color: var(--color-green);
+}
+.escrita-setup-value,
+.escrita-setup-reason {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.escrita-setup-screens {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  padding: var(--size-4-2) 0;
+}
+.escrita-setup-summary {
+  padding: var(--size-4-2) var(--size-4-3);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+}
+.escrita-setup-buttons {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+}
+.escrita-setup-buttons button,
+.escrita-setup-notice-buttons button {
+  min-height: 32px;
+}
+.escrita-setup-notice-text {
+  line-height: var(--line-height-normal);
+}
+.escrita-setup-notice-buttons {
+  display: flex;
+  gap: var(--size-4-2);
+  margin-top: var(--size-4-2);
+}
+
+/* Phone width: the cards become a list, one per row. */
+@media (max-width: 600px) {
+  .escrita-setup-cards {
+    flex-direction: column;
+  }
+  .escrita-setup-card {
+    min-height: 32px;
+  }
+}

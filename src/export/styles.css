@@ -395,7 +395,8 @@
   object-fit: cover;
 }
 .escrita-export-contents-title {
-  margin: 0 0 8px;
+  margin-top: 28px;
+  margin-bottom: 8px;
   text-align: center;
   font-weight: bold;
 }

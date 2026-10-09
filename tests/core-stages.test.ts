@@ -190,10 +190,11 @@ describe("migrateSettings", () => {
     expect(migrateSettings(once)).toBe(once);
     expect(migrateSettings(JSON.parse(JSON.stringify(once)))).toEqual(once);
   });
-  it("returns non-records untouched and records with stages as-is", () => {
+  it("returns non-records untouched and records with stages as-is (plus the default set)", () => {
     for (const v of [undefined, null, "x", 3, [1]]) expect(migrateSettings(v)).toBe(v);
     const has = { stages: { idea: {} } };
-    expect(migrateSettings(has)).toBe(has);
+    // 1.0: only the install's default set is added (Q1); the stages are left as they are
+    expect(migrateSettings(has)).toEqual({ ...has, defaultsLanguage: "en" });
   });
   it("pipeline: legacy keys survive, stages are the author's and fresh", () => {
     const defaults = { stages: DEFAULT_STAGES, otherStatusColors: "", publishedValue: "published", unpublishedValue: "ready", statusColors: "x = #000000" };

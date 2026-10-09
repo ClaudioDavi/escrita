@@ -1,7 +1,7 @@
 // Unlinked mentions (0.9, U 2.5; PLAN-0.9 Q1, Q17). Pure: no Obsidian or CodeMirror
 // imports. From one note's mentions (the mentions index, no new read) and the entries
 // the note already links, the places where an entry is named without a link. The Works
-// tab lists them under the active work, each with a Link button (task 2.2).
+// tab lists them under the active work, each with a Link button.
 //
 // A note that links an entry anywhere lists no unlinked mention of it: the writer links
 // the first one, and the rest are fine as plain text.
@@ -18,7 +18,7 @@ import type { NoteMentions } from "./mentions";
 const LINKS = /!?\[\[[^\]\n]*\]\]|!?\[[^\]\n]*\]\([^)\n]*\)/g;
 
 function linkSpans(text: string): { from: number; to: number }[] {
-  return [...text.matchAll(LINKS)].map((m) => ({ from: m.index!, to: m.index! + m[0].length }));
+  return [...text.matchAll(LINKS)].map((m) => ({ from: m.index, to: m.index + m[0].length }));
 }
 
 /** Whether `[from, to)` touches a link or embed written in `text`. */

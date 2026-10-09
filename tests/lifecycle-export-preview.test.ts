@@ -138,7 +138,7 @@ describe("the EPUB preview (0.9, release review)", () => {
       epub: { sceneBreak: "* * *", contentsLabel: "Sumário", coverUrl: null, cover: true },
       zone: (k: string) => k,
     });
-    expect([...paper.querySelectorAll(".escrita-export-zone")].map(text)).toEqual(["cover", "dedication", "epigraph", "contents"]);
+    expect([...paper.querySelectorAll(".escrita-export-zone")].map(text)).toEqual(["cover", "dedication", "epigraph"]);
     const kids = [...paper.children].map((c) => c.className);
     const contents = kids.indexOf("escrita-export-contents");
     expect(contents).toBeGreaterThan(-1);

@@ -13,6 +13,18 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   `src/core/chapter-ops.ts` with its pure helpers `src/core/chapter-engine.ts` and `src/core/chapter-plan.ts`). If you need a change there, say so in your final
   report instead. `src/core/classify.ts` and `src/core/books.ts` are shared core
   that every module reads; change them only as a deliberate core-level refactor.
+- **Shared helpers** (1.0, IMPROVEMENTS 13). A helper that more than one module uses is not
+  in any module's folder. Pure ones are in `src/core/`: `block-context.ts` (`blockStateIn`,
+  `bodyLineIn`, `inBlock`, `inlineProtected`; from the editor), `dialogue.ts` (`dialogueInDoc`,
+  `dimPlan`; from the editor) with `typography.ts` (the quote tables `dialogue.ts` reads;
+  from the editor), and `piece-bar.ts` (`pieceBar`, `paceInUnit`; was `goals/piece.ts`).
+  Helpers that open a modal or a leaf are in `src/ui/`: `confirm.ts` (`confirmAction`; was
+  `outline/modals.ts`) and `open-work.ts` (`openWork`; was `desk/open.ts`). `src/ui/` may
+  import `obsidian` and `core/*`, never a module folder. So the module dependency list holds
+  only runtime calls (ports, `features.isOn`), not imports. `export` does not import
+  `publish/checks`: the shared readiness checks are `core/readiness.ts`. `ui/confirm.ts`
+  reads the string `outline.cancel`; all string files are registered at load, so it resolves
+  with the outline off.
 - **Entry point.** A feature is a `FeatureModule` (`core/module-context.ts`) built in
   `main.ts` and loaded and unloaded by the `FeatureRegistry` from the writer's switches.
 - **Plugin services** (on `this.plugin`): `settings` (see `src/settings.ts` —
@@ -148,6 +160,19 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
     `modifyBinary` and `readBinary` are public Vault API, so writing a `.docx` needs no
     exception. `submissions/index.ts` casts a `classify` result to its own `PlacementLike`
     type, which is a narrowing of Escrita's own type, not an Obsidian internal.)
+  - **Guidelines lint (1.0, `npm run lint`, `eslint.config.mjs`).** `eslint-plugin-obsidianmd`
+    runs the rules the review bot runs, over `src/`, with zero warnings allowed, in CI.
+    The review config rejects inline `eslint-disable` for its own rules, so none is used:
+    the few rules left off are scoped to one file in `eslint.config.mjs`, and each is here.
+    The bot's own run may still report these:
+    - `src/settings.ts`: `settings-tab/prefer-setting-definitions` and
+      `@typescript-eslint/no-deprecated` (`display()`). The declarative settings API
+      (`getSettingDefinitions`) needs Obsidian 1.13 and `minAppVersion` is 1.8.7, and the
+      tab draws module sections that load and unload at runtime.
+    - `src/ui/confirm.ts`: `no-deprecated` for `ButtonComponent.setWarning`;
+      `setDestructive` is newer than `minAppVersion`.
+    - `src/snapshots/fs.ts`: `prefer-file-manager-trash-file`, the empty snapshot folder
+      removal listed above.
   - **Writes into a note's text go through `plugin.notes`** (the editor when the note is
     open in source or Live Preview, else `vault.process`), never straight to
     `vault.process`. **The editor-writes rule (0.8):** an edit at the cursor of the editor
@@ -275,6 +300,12 @@ drives it with an in-memory tree. The result:
   kind: a chapter in an excluded folder is still a chapter.
 - `piece`: `readPiece` of the frontmatter for any markdown file, chapters included.
   A standalone piece is `kind === "note" && piece`.
+- `pieceSource` (1.0, IMPROVEMENTS 8): where the piece's target comes from, `"own"`,
+  `"book"` (a chapter's book default, `chapterTargetProperty` on the book note) or null
+  (no target). The rule is `effectivePiece` in `core/measure.ts`, per field: the note's own
+  target wins, `limit` and `deadline` are only its own. In 1.0 Wave 0 the field is set
+  from today's `piece`; task 1.1 computes the book default in classify and makes `piece`
+  the effective piece, so the outline, the explorer and the goals status bar agree.
 - `snapshot`: the path is the snapshots folder or inside it (`inSnapshots`). Such a
   path is never a book, a chapter or tracked, even when the folder sits inside a book
   (a snapshot folder is named like its note, `x.md/`). The outline and the explorer
@@ -373,7 +404,7 @@ caches per immutable document object (a CodeMirror `Text` is one per version).
 The consumers take either a text or a `Markdown` (`parseBeats`, `parsePlaceholders`,
 `outline/model.scanBeats`, `placeholders/logic.placeholderSpans`,
 `editor/enter-flow.decideEnter`/`trailingBreakKeep`, `publish/checks.unclosedComment`,
-`editor/context.blockStateIn`, `wordcount.countSelection`), and every editor
+`core/block-context.blockStateIn`, `wordcount.countSelection`), and every editor
 feature passes `segmentDoc(state.doc)`, so ghost beats, placeholder pills,
 typography, the Enter flow and the selection count share one pass per document
 version. `runChecks` segments once and hands the result to each check. `segment`
@@ -390,7 +421,7 @@ closer matters; each rule has a test in `tests/markdown.test.ts`):
 1. **Frontmatter** only when line 0 is `---` and a later line is `---` or `...`
    (trailing blanks allowed). No closer → no span (counts and markers read it as
    body) and `unclosedFrontmatter` is set; the editor alone treats that as "all
-   properties" (`editor/context.bodyLineIn`).
+   properties" (`core/block-context.bodyLineIn`).
 2. **Fences** at the start of a line that starts in prose: ≤3 spaces, then 3+
    backticks or tildes (a backtick info string can't contain a backtick). Closer:
    ≤3 spaces, same char, at least as long, only blanks after. Unclosed → to the end.
@@ -418,13 +449,13 @@ closer matters; each rule has a test in `tests/markdown.test.ts`):
    comment, code or frontmatter, or after other text on a line, opens nothing.
    `Markdown.inMath(line)` says whether a line starts inside a math block (the line after
    the opener up to and including the one with the closing `$$`; false for the opener
-   line and out of range). The editor reads it (`editor/context.ts`) and keeps no math rule
+   line and out of range). The editor reads it (`core/block-context.ts`) and keeps no math rule
    of its own.
 
 Block spans end at the end of their closer's line; the line break after is prose.
 Not segmented: 4-space indented code, fences inside quotes or lists, multi-line inline
 code.
-`editor/context.inlineProtected` keeps its own backtick loop on purpose: it
+`core/block-context.inlineProtected` keeps its own backtick loop on purpose: it
 predicts a span that is still being typed, which is not a parse.
 
 Parity with Obsidian's Reading view was checked by hand on 2026-10-05 (gate G0c), and
@@ -1187,7 +1218,7 @@ measurer, the vault index and the notes service are core and always on.
 - **Soft dependencies.** A module that can work without another asks
   `plugin.features.isOn(id)` at the point of use and degrades: publish takes no snapshot
   when snapshots is off; the outline shows no placeholder count when placeholders is off;
-  the desk's `open` ignores "where you left off" when the desk is off; the desk shows the pending
+  the desk's `openWork` (`ui/open-work.ts`) ignores "where you left off" when the desk is off; the desk shows the pending
   submissions count only while submissions is on; the universe's Works
   tab and the threads command read the threads and universe switches. A hard dependency is
   `requires` in the spec (the stage snapshot needs snapshots) and `wanted` drops the
@@ -1210,6 +1241,111 @@ measurer, the vault index and the notes service are core and always on.
   module's `offNotice()` text saying what stays (the saved snapshots and where, the word
   lists note, the days of history, the cut passages, the submission notes). Each module draws
   its own section; see "Settings tab".
+
+## Core modules (`core/module-context.ts` `CoreModule`, 1.0)
+
+A part of Escrita that is not one of the 19 features and never switches off is a
+`CoreModule` (a `Component`). The first is the setup ("Set up a writing vault", `src/setup/`,
+SF 10). It has no `FeatureId`: it is not on the Features page, in a preset, in
+`settings.features` or in the registry.
+
+- **The seam.** `main.ts` constructs it at the end of `onload`, after
+  `features.apply()`, and calls `startCoreModule(plugin, module)`. That gives the module its
+  own `ModuleContextImpl` (no slots), begins it, registers `ctx.end(false)` on the plugin
+  and adds the module as a child of the plugin, so it loads once, right away, and unloads
+  with the plugin before its context ends. Rule 8 holds: the module registers its command,
+  its first-run notice (`ctx.onLayoutReady`) and anything else through `this.ctx`, the same
+  door the features use, and never calls the plugin's `register*` or `addCommand` itself.
+- **Why not a feature.** A feature can be switched off, and the setup must always be in the
+  palette (Q5); a twentieth id would also show a switch, count in the presets and need a
+  data follower story it doesn't have.
+- **No slots.** `ctx.view`, `ctx.editor`, `ctx.codeBlock` and `ctx.postProcessor` throw for a
+  core module. The setup needs a modal and a notice, not a view. A core module that ever
+  needs a view gets `ModuleSlots` registered at plugin load, as the registry does, in a
+  deliberate change to this seam.
+- **Other features.** A core module reads features only as soft dependencies
+  (`plugin.features.isOn`, `features.get`) and imports no module folder (IMPROVEMENTS 13,
+  done in 1.0: the helpers it needs are in `core/` and `src/ui/`).
+- **Its data.** The setup keeps one flag, `data.setupOffered` (`cleanSetupOffered` in
+  `data.ts`): saved booleans win; absent, it is true for an install from before 1.0 (saved
+  settings exist) and false for a fresh install. Not a setting.
+
+## Default sets (`core/defaults.ts`, 1.0)
+
+The word-bearing settings (stage words, folders, unnumbered titles, submission results,
+the universe's words: `WORD_KEYS`) have one default set per language, `en` and `pt-BR`
+(`LANGUAGE_DEFAULTS`). Property names are never in a set: they stay English. Every other key
+comes from `DEFAULT_SETTINGS`, which stays English and equals the `en` set.
+`defaultsFor(lang)` (in `settings.ts`, over the pure `overlayDefaults`) is `DEFAULT_SETTINGS`
+with the set laid over it, a fresh object each call. The setting `defaultsLanguage` names
+the set an install uses: "en" for any install from before 1.0, Obsidian's language
+(`languageOf(locale())`) for a fresh install, saved on its first load and changed only by
+the setup. Loading merges the saved settings over `defaultsFor(defaultsLanguage)`, and
+`normalizeSettings` restores a blank field from the same set (task 1.4). `SETUP_NAMES` holds
+the names the setup gives what it creates (home note, folders, examples).
+
+`INSTALL_KEYS` (`snapshotsFolder`, `excludeFolders`) are in both sets but are not word keys:
+a fresh install takes them from its set (pt-BR: `Escrita/Versões`, `Modelos`) and a blank
+snapshots folder comes back from it (`snapshotsRoot(setting, defaultsLanguage)`), but the
+setup never lists or moves them, because they name where things already are.
+
+## Feature presets (`core/feature-presets.ts`, 1.0)
+
+Three starting points for the Features page and the setup: `PRESET_IDS` (`essentials`,
+`writer`, `everything`) and `PRESETS`, the list of features each switches on. Pure; not to be
+confused with `core/presets.ts`, the manuscript presets of the export. Essentials is 9
+features, Writer 16, Everything 18 (19 with the universe, which no preset touches: its switch
+is `universeMode`, the writer's separate answer, because it moves folders). Each list is
+closed under `requires`.
+
+- `presetSwitches(id, current)` returns the switches after the preset, a new object. It
+  writes an explicit boolean for every feature, so `data.json` says what the preset chose,
+  and copies `universeMode` from `current`.
+- `matchingPreset(switches)` returns the preset whose lists equal the switches, or null:
+  the Features page then says "Custom". Nothing records which preset was picked; a preset is
+  a starting point, never a mode.
+- `presetChanges(current, id)` returns `{ off, on }`, what applying it would change, for the
+  confirm step on the Features page and the setup's features row.
+
+A fresh install with no setup run starts on Writer; an existing install keeps its switches.
+
+## The setup (`src/setup/`, 1.0)
+
+`SetupModule` (a core module, see above) registers the command "Set up a writing vault" and
+the first-run notice. The work is split so the Obsidian side stays thin:
+
+- `plan.ts` (pure): `planSetup(choices, vault, settings, ticks)` returns one list of
+  `SetupItem`s in run order (folders, examples, the home note, settings, layout). The preview
+  draws this list and the run executes it, so what the writer saw is what happens. Rules: an
+  existing path (in any letter case) is `kept`, never written; a saved setting changes only
+  under a tick (the ticks are `examples`, `home`, `startup`, `language`, `features`,
+  `layout`); a track folder is added, never swapped.
+- `run.ts` (pure, over `RunPorts`): executes the ticked items. Every note goes through
+  `notes.create` with `exists: "return"`; settings are saved once, after the files, and
+  skipped if a folder failed; a failure is reported and nothing is undone.
+- `examples.ts` and `home-text.ts` hold the example texts and the home note's text, in the
+  setup's chosen language (`en` or `pt-BR`), not the interface's.
+- `layout.ts` (with the pure `layout-plan.ts`): `applyLayout(plugin, layout)`, public
+  workspace calls only, never closes a leaf. `desk` puts the home note in front, the outline
+  and the lens on the right; `focus` enters writing mode. Panel ids come from `VIEW_TYPES`.
+- `modal.ts`: the two steps (what you write, language and preset; then the preview with its
+  ticks). `src/ui/` holds the shared modal and leaf helpers (`confirm.ts`, `open-work.ts`).
+
+## Wave 2 ports and view ids (1.0)
+
+- **Writing mode** (`core/writing-mode.ts`): the desk provides `writingMode`
+  (`WritingModePort`); others read it through `writingModeOf(plugin.features)`, null while
+  the desk is off. The setup's "focus" layout enters it. The mode itself is
+  `desk/writing-mode.ts`: the body class `escrita-writing-mode` plus public calls that
+  collapse the sidebars; `exit` reopens only the ones it collapsed. A quiet exit button, the
+  goal counter only while goals are on, two commands (enter, exit), the setting
+  `openInWritingMode`. It writes nothing to the vault.
+- **Daily progress** (`core/daily-progress.ts`): the goals module provides `dailyProgress`
+  (today's words and the daily goal, notified whenever the status bar redraws); writing
+  mode's counter reads it through `dailyProgressOf(plugin.features)`, null while goals are off.
+- **View ids** (`core/view-types.ts` `VIEW_TYPES`): the outline, lens, placeholders and
+  universe panels' ids, from which each module defines its own constant. Code that only
+  places a panel (the setup's layout) reads them here and imports no module folder.
 
 ## Module specs
 
@@ -1250,7 +1386,7 @@ measurer, the vault index and the notes service are core and always on.
   since start (tracked files); ticks every second via `registerInterval` updating the status bar;
   target reached → Notice once; time up → Notice with words, minutes, words/hour; stop
   early from the status bar or command. Sprint state is not persisted across reloads.
-- **Targets per piece** (`core/measure.ts`, display helpers in `src/goals/piece.ts`):
+- **Targets per piece** (`core/measure.ts`, display helpers in `src/core/piece-bar.ts`):
   any note can have `target`, `limit`, `unit` (`words` | `characters` |
   `characters-no-spaces`; names from `targetProperty`/`limitProperty`/`unitProperty`)
   and `deadline`. `readPiece` returns null when none is set. `pieceProgress` gives the
@@ -1486,7 +1622,7 @@ measurer, the vault index and the notes service are core and always on.
   in the same leaf with the cursor at the end. Everything else → return false (normal
   Enter). Decision logic as a pure, tested function over `(lines, cursorLine,
   paragraphStyle)` returning `"normal" | "break" | "chapter"`.
-- **Smart typography** (`src/editor/typography.ts`, when `smartTypography` and the scope
+- **Smart typography** (`src/core/typography.ts`, when `smartTypography` and the scope
   matches): `EditorView.inputHandler`, skipping code (inline/fenced), frontmatter, math
   and link targets (use `syntaxTree` from `@codemirror/language`, which Obsidian
   provides): `--` → `—`, except at the start of a line (could become `---`); with
@@ -1789,7 +1925,7 @@ scans its files).
   One token list over that mask (`core/tokens`) feeds every rule and every number, so
   rates, the dialogue share and readability share one denominator ("words the lens
   read"); a small difference from the status bar count is expected. The lens imports the
-  editor's pure `editor/dialogue.dialogueInDoc` and `editor/context` (`blockStateIn`,
+  editor's pure `core/dialogue.dialogueInDoc` and `core/block-context` (`blockStateIn`,
   `inBlock`, `bodyLineIn`) read-only; they are pure, the universe won't need them, and
   their signatures must not change for the lens's sake.
 - **Rules and kinds** (`rules-stem.ts`, `rules-words.ts`, `types.ts`). Six rules, ids
@@ -1914,7 +2050,7 @@ scans its files).
   includes `plugin.names.version()`, and a change calls `invalidate()`. The lens never
   imports the universe.
 - **Boundaries.** `lens` imports `core/*` and, read-only, `editor/dialogue` and
-  `editor/context`; core never imports the lens. The pure files import neither `obsidian`
+  `core/block-context`; core never imports the lens. The pure files import neither `obsidian`
   nor `i18n`: `types`, `syllables`, `readability`, `lists`, `lang`, `dismiss`, `lexicon`,
   `rules-words`, `rules-stem`, `measures`, `panel-model`, `session`, `analyze`,
   `marks-model`, `lists-edit`.
@@ -2001,7 +2137,7 @@ logic lives in core (`stages`, `works`, `left-off`); the desk draws and records.
   linking to its note. The block follows the submissions feature (`features.onChange`, then it
   rebinds `onChange` of the port) and redraws when the list changes. With submissions off the
   count and its trace are gone.
-- **Opening a work** (`open.ts`). A note opens at its left-off spot, else the first
+- **Opening a work** (`ui/open-work.ts`, was `desk/open.ts`; with writing mode on it stays in the same tab). A note opens at its left-off spot, else the first
   unwritten beat, else the end (`noteSpot`). A book opens the chapter edited last, else the
   first chapter with an unwritten beat, else the last chapter at its end (`bookTarget`).
   Reading view scrolls to the line instead of moving a cursor.
@@ -2016,7 +2152,7 @@ logic lives in core (`stages`, `works`, `left-off`); the desk draws and records.
   files that no longer exist are pruned at layout ready.
 - **Home note** (`home.ts` pure, `home-note.ts`). Setting `homeNote` (a vault path; `.md`
   added when missing; empty by default). The command "Open the home note" (no hotkey)
-  opens it; with the setting empty it adopts an existing `Home.md` or `Inicio.md` and
+  opens it; with the setting empty it adopts an existing `Home.md`, `Início.md` or the older `Inicio.md` and
   never overwrites, and saves it as the setting so open on startup and rename tracking
   follow it; if the note doesn't exist it asks, then creates it holding an empty
   works block (a failure shows a Notice and logs the error). The setting follows a rename

@@ -1,9 +1,9 @@
 {
   "id": "escrita",
   "name": "Escrita",
-  "version": "0.9.0",
-  "minAppVersion": "1.7.2",
-  "description": "For fiction writers: an outline with ghost scene beats, daily and book word goals, sprints, placeholders and darlings.",
+  "version": "1.0.0",
+  "minAppVersion": "1.8.7",
+  "description": "Write and revise fiction: an outline with scene beats, goals, a revision lens, a shared world, and manuscript export to DOCX and EPUB.",
   "author": "Claudio Davi",
   "authorUrl": "https://claudiodavi.com",
   "isDesktopOnly": false
