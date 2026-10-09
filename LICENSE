@@ -1,9 +1,7 @@
 MIT License
 
 Copyright (c) 2026 Claudio Davi
-
-Portions of the design and logic are adapted from NEO
-(https://github.com/hughhowey/neo), Copyright (c) 2026 Hugh Howey, MIT License.
+Copyright (c) 2026 Hugh Howey (portions adapted from NEO, https://github.com/hughhowey/neo)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
