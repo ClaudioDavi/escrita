@@ -452,7 +452,7 @@ export function pluginFolderRows(el: HTMLElement, ui: SettingsUi, s: EscritaSett
   addFolderField(
     new Setting(el).setName(t("export.settings.folder")).setDesc(t("export.settings.folder.desc")), ui,
     {
-      placeholder: DEFAULT_SETTINGS.exportFolder,
+      placeholder: ui.defaults().exportFolder,
       value: s.exportFolder,
       problemOf: (v) => pluginFolderProblem(
         exportRoot(v, s.defaultsLanguage), [submissionsRoot(s.submissionsFolder, s.defaultsLanguage), snapshotsRoot(s.snapshotsFolder, s.defaultsLanguage)],
@@ -464,7 +464,7 @@ export function pluginFolderRows(el: HTMLElement, ui: SettingsUi, s: EscritaSett
   addFolderField(
     new Setting(el).setName(t("submissions.settings.folder")).setDesc(t("submissions.settings.folder.desc")), ui,
     {
-      placeholder: DEFAULT_SETTINGS.submissionsFolder,
+      placeholder: ui.defaults().submissionsFolder,
       value: s.submissionsFolder,
       problemOf: (v) => pluginFolderProblem(
         submissionsRoot(v, s.defaultsLanguage), [exportRoot(s.exportFolder, s.defaultsLanguage), snapshotsRoot(s.snapshotsFolder, s.defaultsLanguage)],
@@ -489,6 +489,7 @@ export class EscritaSettingTab extends PluginSettingTab {
     return {
       app: this.app,
       save,
+      defaults: () => defaultsFor(this.plugin.settings.defaultsLanguage),
       saveOnCommit: (c: TextComponent | TextAreaComponent, fallback: () => string, apply: (v: string) => void) => {
         c.inputEl.addEventListener("change", () => {
           const v = c.getValue().trim() || fallback();
@@ -573,7 +574,7 @@ export class EscritaSettingTab extends PluginSettingTab {
       if (desc) row.setDesc(desc);
       row.addText((c) => {
         c.setPlaceholder(placeholder).setValue(s[key]);
-        ui.saveOnCommit(c, () => DEFAULT_SETTINGS[key], (v) => { s[key] = v; });
+        ui.saveOnCommit(c, () => ui.defaults()[key], (v) => { s[key] = v; });
       });
     };
     new Setting(el).setName(t("settings.shared")).setHeading();
@@ -608,8 +609,8 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setName(t("settings.chaptersFolder"))
       .setDesc(t("settings.chaptersFolder.desc"))
       .addText((c) => {
-        c.setPlaceholder("Chapters").setValue(s.chaptersFolder);
-        ui.saveOnCommit(c, () => DEFAULT_SETTINGS.chaptersFolder, (v) => { s.chaptersFolder = v; });
+        c.setPlaceholder(ui.defaults().chaptersFolder).setValue(s.chaptersFolder);
+        ui.saveOnCommit(c, () => ui.defaults().chaptersFolder, (v) => { s.chaptersFolder = v; });
       });
     new Setting(el)
       .setName(t("settings.chapterTemplate"))
@@ -645,12 +646,12 @@ export class EscritaSettingTab extends PluginSettingTab {
       .setName(t("settings.statusProperty"))
       .setDesc(t("settings.statusProperty.desc"))
       .addText((c) => {
-        c.setPlaceholder(DEFAULT_SETTINGS.statusProperty).setValue(s.statusProperty);
-        ui.saveOnCommit(c, () => DEFAULT_STATUS_PROPERTY, (v) => { s.statusProperty = v; });
+        c.setPlaceholder(ui.defaults().statusProperty).setValue(s.statusProperty);
+        ui.saveOnCommit(c, () => ui.defaults().statusProperty, (v) => { s.statusProperty = v; });
       })
       .addText((c) => {
-        c.setPlaceholder(DEFAULT_SETTINGS.summaryProperty).setValue(s.summaryProperty);
-        ui.saveOnCommit(c, () => "summary", (v) => { s.summaryProperty = v; });
+        c.setPlaceholder(ui.defaults().summaryProperty).setValue(s.summaryProperty);
+        ui.saveOnCommit(c, () => ui.defaults().summaryProperty, (v) => { s.summaryProperty = v; });
       });
   }
 
@@ -889,7 +890,7 @@ export class EscritaSettingTab extends PluginSettingTab {
         // is never stored: it shows the previous (or default) words again.
         const commit = () => {
           if (c.getValue().trim() === "") {
-            if (s.stages[k].words.trim() === "") s.stages[k].words = DEFAULT_STAGES[k].words;
+            if (s.stages[k].words.trim() === "") s.stages[k].words = ui.defaults().stages[k].words;
             c.setValue(s.stages[k].words);
             showWarnings();
             return;
