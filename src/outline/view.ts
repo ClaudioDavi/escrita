@@ -10,7 +10,7 @@ import { guardedEdit } from "../core/note-text";
 import { statusColor } from "../core/stages";
 import { fmt, plural, t, unitAmount } from "../i18n";
 import { noteProgress, readChapterDefault, type Piece, type Progress } from "../core/measure";
-import { appendBeat, insertBeat, insertFirstBeat, isBlankBody, moveBeatOut, removeBeat, setBeatText } from "./beats-edit";
+import { appendBeat, insertBeat, insertFirstBeat, isBlankBody, moveBeatOut, removeBeat, setBeatText, undoFreshBeat, type FreshInsert } from "./beats-edit";
 import {
   beatLetter, chapterAsBeatText, decideKey, decideNoteKey, dropIndex, moveItem, resolveTarget,
   type ActiveFile, type Field, type KeyAction, type OutlineTarget,
@@ -147,6 +147,8 @@ export class OutlineView extends ItemView {
   /** a "new chapter" line opened between chapters: the chapter it sits before */
   private draftBefore: TFile | null = null;
   private pendingFocus: FocusTarget | null = null;
+  /** The empty beat just made by Enter / "Add beat" and not yet typed into: Escape takes it back out. */
+  private fresh: { path: string; beat: number; insert: FreshInsert } | null = null;
   private dirty = false;
   private busy = false;
   private token = 0;
@@ -632,8 +634,13 @@ export class OutlineView extends ItemView {
     if (this.busy) return;
     this.busy = true;
     try {
-      const ok = await this.run(() => this.editText(file, (text) => insertFirstBeat(text, "")));
-      if (ok) this.pendingFocus = { kind: "beat", file, beat: 0, caret: "end" };
+      const tr = this.tracked((text) => insertFirstBeat(text, ""));
+      const ok = await this.run(() => this.editText(file, tr.fn));
+      const insert = tr.insert();
+      if (ok) {
+        this.fresh = insert ? { path: file.path, beat: 0, insert } : null;
+        this.pendingFocus = { kind: "beat", file, beat: 0, caret: "end" };
+      }
     } finally {
       this.busy = false;
     }
@@ -811,7 +818,12 @@ export class OutlineView extends ItemView {
     });
     el.addEventListener("drop", (e) => e.preventDefault());
     el.addEventListener("keydown", (e) => this.onKey(e, el));
-    el.addEventListener("blur", () => { void this.commit(el); });
+    el.addEventListener("blur", () => {
+      // leaving the beat for real (not a re-render dropping it) makes it the writer's
+      const line = this.lines.get(el);
+      if (el.isConnected && line?.row && this.fresh && line.row.file.path === this.fresh.path && line.beat === this.fresh.beat) this.fresh = null;
+      void this.commit(el);
+    });
     return el;
   }
 
@@ -1124,6 +1136,21 @@ export class OutlineView extends ItemView {
     await this.plugin.notes.text(file).apply(guardedEdit(null, edit));
   }
 
+  /**
+   * Take back the empty beat (and the scene breaks) an Enter just wrote, but only
+   * while the chapter is exactly as the insert left it; otherwise leave it (rule 1).
+   */
+  private async undoFresh(file: TFile, insert: FreshInsert): Promise<void> {
+    await this.run(() => this.plugin.notes.text(file).apply(guardedEdit(null, (text) => undoFreshBeat(text, insert))));
+    this.dirty = true;
+  }
+
+  /** Wrap an inserting edit so the text before and after it is kept for `fresh`. */
+  private tracked(edit: (text: string) => string): { fn: (text: string) => string; insert: () => FreshInsert | null } {
+    let rec: FreshInsert | null = null;
+    return { fn: (text) => { const after = edit(text); rec = { before: text, after }; return after; }, insert: () => rec };
+  }
+
   private changedMessage(): string {
     return t(this.note ? "outline.note.changed" : "outline.beatChanged");
   }
@@ -1146,6 +1173,10 @@ export class OutlineView extends ItemView {
     if (e.key === "Escape") {
       // Cancel the edit: restore the text (an unsaved new line just goes away).
       e.preventDefault();
+      const pending = this.fresh;
+      const fresh = pending && line.field === "beat" && line.row && line.beat === pending.beat && line.row.file.path === pending.path ? pending : null;
+      this.fresh = null;
+      if (fresh && line.row) void this.undoFresh(line.row.file, fresh.insert);
       if (line.field === "new") el.empty();
       else el.setText(el.dataset.original ?? "");
       el.blur();
@@ -1261,12 +1292,15 @@ export class OutlineView extends ItemView {
         if (!row || line.beat === undefined) return;
         await this.commit(el);
         const i = line.beat;
-        const ok = await this.run(() => this.editBeats(row.file, i, undefined, (text) => {
+        const tr = this.tracked((text) => {
           if (!parseBeats(text)[i]) throw new Error(this.changedMessage());
           return insertBeat(text, action.before ? i - 1 : i, "");
-        }));
+        });
+        const ok = await this.run(() => this.editBeats(row.file, i, undefined, tr.fn));
         if (!ok) return;
-        this.pendingFocus = { kind: "beat", file: row.file, beat: action.before ? i : i + 1, caret: "start" };
+        const made = action.before ? i : i + 1, insert = tr.insert();
+        this.fresh = insert ? { path: row.file.path, beat: made, insert } : null;
+        this.pendingFocus = { kind: "beat", file: row.file, beat: made, caret: "start" };
         break;
       }
       case "removeBeat": {
@@ -1391,12 +1425,17 @@ export class OutlineView extends ItemView {
   /** Add an empty beat at the end of a chapter and focus it. */
   private async addBeat(file: TFile): Promise<void> {
     let index = -1;
-    const ok = await this.run(() => this.editText(file, (text) => {
+    const tr = this.tracked((text) => {
       const out = appendBeat(text, "");
       index = parseBeats(out).length - 1;
       return out;
-    }));
-    if (ok && index >= 0) this.pendingFocus = { kind: "beat", file, beat: index, caret: "end" };
+    });
+    const ok = await this.run(() => this.editText(file, tr.fn));
+    const insert = tr.insert();
+    if (ok && index >= 0) {
+      this.fresh = insert ? { path: file.path, beat: index, insert } : null;
+      this.pendingFocus = { kind: "beat", file, beat: index, caret: "end" };
+    }
     await this.refresh(true);
   }
 
