@@ -95,7 +95,7 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
-### 1.1.0 (2026-10-11)
+### 1.0.2 (2026-10-11)
 
 Escrita is in Obsidian's community plugins list. Nothing changes in how Escrita works.
 
