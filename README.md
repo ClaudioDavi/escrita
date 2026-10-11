@@ -95,6 +95,13 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
+### 1.1.0 (2026-10-11)
+
+Escrita is in Obsidian's community plugins list. Nothing changes in how Escrita works.
+
+- Install: the README and the getting-started guides (English and Português) link to [Escrita in the community plugins list](https://obsidian.md/plugins?id=escrita).
+- The English README and guides say "short story" where they said "conto". Portuguese example values (a `Contos` folder, the `conto` form) are unchanged.
+
 ### 1.0.1 (2026-10-09)
 
 Fixes from Obsidian's review of the plugin for the community directory. Nothing changes in how Escrita works.
