@@ -24,7 +24,7 @@ Outras páginas: [Recursos e configurações](features-and-settings.md), [Escrit
 
 O Escrita pede o Obsidian **1.8.7 ou mais novo**. Funciona no computador e no celular.
 
-- **Pela lista de plugins da comunidade**, quando o Escrita for aceito lá: abra Configurações ›
+- **Pela [lista de plugins da comunidade](https://obsidian.md/plugins?id=escrita)**: abra Configurações ›
   Plugins da comunidade › Procurar, busque "Escrita", instale e ative.
 - **Com o BRAT**: instale o plugin BRAT, escolha "Add a beta plugin" e digite
   `ClaudioDavi/escrita`.

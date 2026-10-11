@@ -24,7 +24,7 @@ In Settings › Escrita, **Stages** has one row per stage, **Words for Idea**, *
 Draft** and so on. Type your words separated by commas. The first word is the one Escrita
 writes (when you publish, or when a new note starts as a draft); the others count too. Words
 match ignoring capitals. The defaults are `idea`, `draft`, `revision`, `ready` and
-`published`. A conto written in Portuguese might use `ideia`, `rascunho`, `revisão`, `pronto`
+`published`. A short story written in Portuguese might use `ideia`, `rascunho`, `revisão`, `pronto`
 and `publicado`.
 
 - **A word in two stages.** If you type the same word under two stages, the first stage wins,

@@ -61,7 +61,7 @@ beat stays in the file: it works as an invisible scene heading.
 Run **Add a beat to this chapter** (in a chapter's editor) to put a beat in it. In the outline,
 click a beat's letter to go to it. The menu on a beat has **Remove beat (keeps the prose)**.
 
-Outside a book, the panel shows the beats of the note you are in (a conto, an essay), with its
+Outside a book, the panel shows the beats of the note you are in (a short story, an essay), with its
 length against its target or limit. A note with no beats offers **Add the first beat**.
 
 ### Ghost beats
@@ -150,7 +150,7 @@ folds them back.
 
 ## A target for every chapter
 
-A chapter can have its own `target`, `limit`, `unit` and `deadline`, just like a conto. When
+A chapter can have its own `target`, `limit`, `unit` and `deadline`, just like a short story. When
 a chapter has a target, a thin **bar** under its title shows how far it is, in the chapter's
 own unit. The bar uses the same colours as the bars in the progress tile.
 
@@ -178,7 +178,7 @@ goals (the status bar and the counts they draw) all use that answer. So a chapte
 - **The unit.** A chapter's own `unit` wins. Without one (an empty `unit` counts as none), the
   book note's `unit` is used, and without that, words. So `unit: characters` on the book note
   counts all its chapters in characters, and a chapter can still choose its own.
-- **Only chapters inherit.** A conto or an essay outside a book has no book above it, so it
+- **Only chapters inherit.** A short story or an essay outside a book has no book above it, so it
   takes nothing. The book note itself uses its own `goal` (in Goals, below), not `chapterTarget`.
 - **No target, no bar.** A book with no `chapterTarget` and chapters without a target shows no
   bars and no target in the explorer or the status bar.
@@ -237,14 +237,14 @@ Run **Open progress**, or click the counter in the status bar. The window shows:
 - **Book**: the book's total against its goal, with the chapters counted.
 - **Streak**: days in a row that you wrote (days off do not break it). It always counts all your writing, even when the window is open for one book or piece.
 - **This week**: your average a day.
-- **This piece**: for a conto or an essay, its length against its target or limit.
+- **This piece**: for a short story or an essay, its length against its target or limit.
 
 Below the tiles there is a 30-day chart of words a day, with the book's running total. Opened for one book or piece, the bars are the words in that book or piece, and they are not coloured for the daily goal. Under it
 is **pacing**: the words a day you need to meet the deadline, and the date you finish at your
 7-day average. Pacing counts only your writing days. If the deadline has passed, or you haven't
 added anything for a week, it says so instead of guessing.
 
-Open from a chapter or a book note, the window shows the book. Open from a conto or an essay
+Open from a chapter or a book note, the window shows the book. Open from a short story or an essay
 with a target, limit or deadline, it shows that piece.
 
 ### The status bar
@@ -275,7 +275,7 @@ over**, **Default sprint** (minutes, then target words), **Show progress in the 
 **Weekdays off** and **Dates off** (one per line, as YYYY-MM-DD). **Book goal property** and the
 four piece properties below are in Properties and folders.
 
-## Give one piece a target: a conto or an essay
+## Give one piece a target: a short story or an essay
 
 Any note can have its own length goal, not just books. In its properties, set:
 
@@ -350,7 +350,7 @@ What "a normal gap" means is the setting **Paragraphs are separated by**: **A bl
 (standard Markdown, so you press Enter three times after the last line) or **A single line
 break** (twice). In a chapter, one more Enter after a scene break at the end of the note makes
 the **next chapter**: Escrita creates it after the current one, titled "Untitled", and opens it
-in place of this tab. A conto gets scene breaks only. Nothing happens inside properties, code or
+in place of this tab. A short story gets scene breaks only. Nothing happens inside properties, code or
 comments.
 
 **Insert scene break** puts a break at the cursor with the blank lines around it set right. It

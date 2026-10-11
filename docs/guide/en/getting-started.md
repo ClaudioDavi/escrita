@@ -1,6 +1,6 @@
 # Getting started
 
-This page takes you from installing Escrita to a first conto and a first book. You can do
+This page takes you from installing Escrita to a first short story and a first book. You can do
 it with one command, **Set up a writing vault**, which shows you everything before it creates
 anything. Or you can skip the command and do it by hand: the last two parts of the page
 show how.
@@ -16,7 +16,7 @@ Other pages: [Features and settings](features-and-settings.md), [Writing](writin
 - [The examples](#the-examples)
 - [The home note](#the-home-note)
 - [Two layouts: the writing desk and writing mode](#two-layouts-the-writing-desk-and-writing-mode)
-- [Your first conto, by hand](#your-first-conto-by-hand)
+- [Your first short story, by hand](#your-first-short-story-by-hand)
 - [Your first book, by hand](#your-first-book-by-hand)
 - [Commands and settings on this page](#commands-and-settings-on-this-page)
 
@@ -24,7 +24,7 @@ Other pages: [Features and settings](features-and-settings.md), [Writing](writin
 
 Escrita needs Obsidian **1.8.7 or later**. It works on desktop and on phones.
 
-- **From the community plugins list**, once Escrita is accepted there: open Settings ›
+- **From the [community plugins list](https://obsidian.md/plugins?id=escrita)**: open Settings ›
   Community plugins › Browse, search for "Escrita", then install and enable it.
 - **With BRAT**: install the BRAT plugin, choose "Add a beta plugin", and enter
   `ClaudioDavi/escrita`.
@@ -64,7 +64,7 @@ The window has two steps. Nothing is written until you press **Create** in the s
 ### Step 1: choices
 
 - **What do you write?** **Short fiction**, **A novel** or **Both**. Short fiction makes a
-  folder for contos and essays (`Stories`). A novel makes a folder for books (`Books`), where
+  folder for short stories and essays (`Stories`). A novel makes a folder for books (`Books`), where
   each book gets a subfolder. Both makes the two.
 - **Language of the defaults.** **English** or **Português (Brasil)**. It starts on
   Obsidian's language. It decides only the words Escrita writes into notes and uses as names:
@@ -89,7 +89,7 @@ and **·** is a setting that changes.
 | Group | What it lists |
 |---|---|
 | **Folders** | `Stories` and/or `Books`. A folder that already exists is used as it is, and the row says how many notes are in it. If you keep a list of track folders, a new folder is added to it (see below). |
-| **Examples** | The example conto and the example book, if you want them (see [the examples](#the-examples)). |
+| **Examples** | The example short story and the example book, if you want them (see [the examples](#the-examples)). |
 | **Settings** | Every setting the setup would change, with its value, and every one it leaves alone, with the reason. |
 | **Home note** | `Home.md` (`Início.md` in Portuguese), with the works block. |
 | **Layout** | **Arrange the screen once**, with two cards: the writing desk and writing mode. |
@@ -160,7 +160,7 @@ The examples show each feature working, so you can look before you write. The na
 **Example ·** (**Exemplo ·** in Portuguese) and each note has `example: true` in its
 properties, so they are safe to delete whenever you like. The home note says so too.
 
-**A conto**, in your stories folder (with short fiction or both): *Example · The crossing* (*Exemplo · A travessia*).
+**A short story**, in your stories folder (with short fiction or both): *Example · The crossing* (*Exemplo · A travessia*).
 
 - A target of 2,000 words and the draft status.
 - Two beats (`%% beat: … %%`), so the outline has something to show.
@@ -232,9 +232,9 @@ starts in the mode. Writing mode writes nothing to your vault, and leaving it br
 what it hid. Its commands, its setting and how it sits next to a zen plugin are in
 [Tracking](tracking.md#write-with-only-the-note-writing-mode).
 
-## Your first conto, by hand
+## Your first short story, by hand
 
-You don't need the setup for this. A conto is any note.
+You don't need the setup for this. A short story is any note.
 
 1. Make a note where you want it, for example `Stories/The crossing.md`. If you have a list of
    track folders (Settings › Escrita, **Folders to track**), make it inside one. If the list is
@@ -259,7 +259,7 @@ You don't need the setup for this. A conto is any note.
    `%% XXX: the name of the town %%` is a placeholder for something you don't know yet.
    **Insert placeholder** adds one at the cursor. Both are Obsidian comments, so Reading view
    hides them.
-5. Open the home note. With the status in a stage and the note in a tracked folder, the conto
+5. Open the home note. With the status in a stage and the note in a tracked folder, the short story
    is a work, and the block lists it with its length against the target.
 
 When you finish, change the status to the next stage. How to revise and publish it is in
@@ -289,7 +289,7 @@ number (`01 Arrival.md`). Escrita keeps the numbers in order when you add, remov
 chapters.
 
 Then open the outline. **New chapter…** (or Enter) adds a chapter, and in a chapter a line
-`%% beat: … %%` is a beat. The book note's `status` is a stage word, as for a conto, so the
+`%% beat: … %%` is a beat. The book note's `status` is a stage word, as for a short story, so the
 book shows in the home block.
 
 The outline, chapter targets and the rest are in [Writing](writing.md).

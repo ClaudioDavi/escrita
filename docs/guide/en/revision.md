@@ -1,6 +1,6 @@
 # Revision
 
-This page is for the second draft: reread a conto, cut what doesn't earn its place, keep
+This page is for the second draft: reread a short story, cut what doesn't earn its place, keep
 what you cut, and be able to go back. Three parts of Escrita help, and none of them changes
 your text without a click from you:
 
@@ -14,7 +14,7 @@ Features, under Revision: **Revision lens**, **Snapshots** and **Darlings**. Tur
 its commands, panel and menu items go away. Your data stays (the word lists note, the
 snapshot files, the darlings note).
 
-## Revise a conto
+## Revise a short story
 
 A way to use the three parts together:
 
@@ -63,7 +63,7 @@ have one (it says "Selection"):
   Flesch adapted by Martins (1996). For English it is Flesch. A very short text says how many
   words and sentences it needs first.
 - **Rules · whole note**: one row per rule with its count and the rate **per 1,000 words**, so
-  a short conto and a long chapter can be compared. Each row has previous and next buttons that
+  a short story and a long chapter can be compared. Each row has previous and next buttons that
   select the match ("3 / 12").
 
 The syllable count is approximate on purpose. The lens skips headings, math blocks and, by
@@ -235,7 +235,7 @@ Settings › Escrita › **Darlings**:
 | Setting | What it does |
 |---|---|
 | **Darlings note inside a book** | The path of the note, inside the book's folder. `Darlings.md` by default. |
-| **Darlings note for everything else** | The note for contos, essays and any note that isn't in a book. `Darlings.md` by default, a path from the vault's top level. |
+| **Darlings note for everything else** | The note for short stories, essays and any note that isn't in a book. `Darlings.md` by default, a path from the vault's top level. |
 
 It is a plain note you own. Each darling is a passage with its source in a heading, a
 comment that holds the data Escrita needs, and your text exactly as you wrote it.

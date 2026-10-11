@@ -1,7 +1,7 @@
 # Publishing
 
 This page covers what happens when a work leaves your desk: checking a note before you
-publish it, exporting a conto, a book or a collection as a manuscript or an EPUB, publishing a book chapter by chapter, and keeping track of where you
+publish it, exporting a short story, a book or a collection as a manuscript or an EPUB, publishing a book chapter by chapter, and keeping track of where you
 sent it. Escrita never sends anything anywhere. It checks, it writes a file, and it
 records what you tell it.
 
@@ -10,7 +10,7 @@ Other pages: [Features and settings](features-and-settings.md), [Writing](writin
 check**, **Export** and **Submissions**.
 
 - [Check a note and mark it published](#check-a-note-and-mark-it-published)
-- [Send a conto to a magazine](#send-a-conto-to-a-magazine)
+- [Send a short story to a magazine](#send-a-short-story-to-a-magazine)
 - [Export a note or a book](#export-a-note-or-a-book)
 - [Export an EPUB](#export-an-epub)
 - [Export a collection of stories](#export-a-collection-of-stories)
@@ -52,13 +52,13 @@ first (**Before publishing**). It needs the status property to be set in the set
 **Unpublish this note** is offered for a published note. It puts the earlier status back, or
 your word for the ready stage if Escrita doesn't know the earlier one.
 
-## Send a conto to a magazine
+## Send a short story to a magazine
 
 The usual path, with the three parts together:
 
-1. Finish the conto and clear what blocks it. **Publish this note** is optional, and
+1. Finish the short story and clear what blocks it. **Publish this note** is optional, and
    "published" may not be the right word before the magazine answers; you can skip it.
-2. Open the conto and run **Export…**. Choose **DOCX** and the template for the magazine:
+2. Open the short story and run **Export…**. Choose **DOCX** and the template for the magazine:
    **Shunn** for an English market, **pt-BR** for a Brazilian one. Press **Preview** to look
    at it, then **Export**.
 3. Send the file from the export folder.
@@ -75,7 +75,7 @@ file already in the export folder.
 
 The window is titled **Export “Title”**. What it exports depends on where you opened it:
 
-- From a note outside a book (a conto, an essay): that note.
+- From a note outside a book (a short story, an essay): that note.
 - From a book's note: the whole book.
 - From a chapter: a **What** row offers **This chapter** or **The whole book**. The first
   time, it is on **The whole book**.
@@ -359,7 +359,7 @@ A line says what it will create: "Creates … with …, …". **Record** needs a
 date.
 
 **Which work it picks.** From a chapter or a book note, the work is the book. From a note
-outside a book, it is that note, when it is tracked and has a stage (a conto marked
+outside a book, it is that note, when it is tracked and has a stage (a short story marked
 `rascunho`, say). A note without a stage says "… isn't a work: give it a stage to record a
 submission." A submission note, an export, a snapshot or a note that isn't Markdown says
 "Open a story or a book to record a submission."
