@@ -10,12 +10,8 @@
 // the loaded features is left out when the rows are built (`rowShown(key, this.loaded)`), never
 // hidden with `visible`: the tab rebuilds on every change of the loaded set, the switches and the
 // language of the defaults, so the build is always current.
-//
-// The adapter (until the Wave 1 ports of PLAN-1.0.3 are merged): a module still on
-// `settingsSection` is one `customRow` that runs its drawing code into the row, heading included
-// when the slot has no core part, so it looks and behaves as before.
 
-import { App, Notice, PluginSettingTab, Setting, SettingGroup, type ColorComponent, type SettingDefinitionGroup, type SettingDefinitionItem, type SettingDefinitionRender, type SettingGroupItem, type TextAreaComponent, type TextComponent } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting, type ColorComponent, type SettingDefinitionGroup, type SettingDefinitionItem, type SettingDefinitionRender, type SettingGroupItem, type TextAreaComponent, type TextComponent } from "obsidian";
 import type EscritaPlugin from "./main";
 import { lang, t } from "./i18n";
 import { PRESET_IDS, matchingPreset, presetChanges, presetSwitches, type PresetId } from "./core/feature-presets";
@@ -140,7 +136,7 @@ export class EscritaSettingTab extends PluginSettingTab {
         return this.slotPart(slot, ui);
       } catch (err) {
         console.error(`Escrita: the ${slot.id} settings failed`, err);
-        return { slot, blocks: [], drawsHeading: false };
+        return { slot, blocks: [] };
       }
     }));
   }
@@ -168,17 +164,14 @@ export class EscritaSettingTab extends PluginSettingTab {
   private slotPart(slot: SectionSlot, ui: SettingsUi): SlotPart {
     const core = this.coreBlocks(slot, ui);
     const mod = this.moduleBlocks(slot.feature, ui);
-    const blocks = slot.id === "editor" ? [...mod.blocks, ...(core ?? [])] : [...(core ?? []), ...mod.blocks];
-    // A module still on `settingsSection` draws its own heading, unless the core's part holds it.
-    return { slot, blocks, drawsHeading: mod.legacy && core === null };
+    const blocks = slot.id === "editor" ? [...mod, ...(core ?? [])] : [...(core ?? []), ...mod];
+    return { slot, blocks };
   }
 
-  /** A module's blocks while it is loaded; `legacy` when they are the adapter's row of its `settingsSection`. */
-  private moduleBlocks(id: FeatureId | null, ui: SettingsUi): { blocks: SettingsBlock[]; legacy: boolean } {
+  /** A module's blocks while it is loaded. */
+  private moduleBlocks(id: FeatureId | null, ui: SettingsUi): SettingsBlock[] {
     const mod = id !== null && this.loaded.has(id) ? this.plugin.features.get<FeatureModule>(id) : undefined;
-    if (mod?.settingsItems) return { blocks: mod.settingsItems(ui), legacy: false };
-    if (id !== null && mod?.settingsSection) return { blocks: [{ items: [adapterRow((el) => this.drawModule(id, el, ui))] }], legacy: true };
-    return { blocks: [], legacy: false };
+    return mod?.settingsItems?.(ui) ?? [];
   }
 
   /** The rows the core draws in a slot, or null for a slot that is only a module's. */
@@ -216,17 +209,6 @@ export class EscritaSettingTab extends PluginSettingTab {
       case "universe": return [];
       default: return null;
     }
-  }
-
-  /**
-   * A module still on `settingsSection` inside the adapter: its section, or, for a module already
-   * on `settingsItems` that the adapter's Features page row asks for, its items as plain rows.
-   */
-  private drawModule(id: FeatureId, el: HTMLElement, ui: SettingsUi): void {
-    if (!this.loaded.has(id)) return;
-    const mod = this.plugin.features.get<FeatureModule>(id);
-    if (mod?.settingsItems) drawBlocks(el, mod.settingsItems(ui));
-    else mod?.settingsSection?.(el, ui);
   }
 
   /** Names and folders several features read: always shown (Q13). */
@@ -398,7 +380,7 @@ export class EscritaSettingTab extends PluginSettingTab {
 
         // The explorer's own rows sit right under its switch while it is on and loaded (Q13).
         if (id === "explorerCounts" && want.has(id)) {
-          items.push(...this.moduleBlocks("explorerCounts", ui).blocks.flatMap((b) => b.items));
+          items.push(...this.moduleBlocks("explorerCounts", ui).flatMap((b) => b.items));
         }
       }
       blocks.push({ heading: featureGroupHeading(group), items });
@@ -632,22 +614,15 @@ function listJoin(items: string[]): string {
   return items.slice(0, -1).join(", ") + and + items[items.length - 1];
 }
 
-/** What one slot gives the tab: its blocks, and whether its own drawing code draws the slot's heading (the adapter). */
+/** What one slot gives the tab: its blocks. */
 export interface SlotPart {
   slot: Pick<SectionSlot, "heading">;
   blocks: readonly SettingsBlock[];
-  drawsHeading: boolean;
-}
-
-/** The adapter's row: a module's `settingsSection`, run into one custom row. Not searched. */
-function adapterRow(draw: (el: HTMLElement) => void): ReturnType<typeof customRow> {
-  return customRow("", draw, { cls: "escrita-adapter-row" });
 }
 
 /**
- * The groups of the tab, in slot order (Q4). Each slot with a heading starts a group under it,
- * unless its own drawing code still draws the heading (the adapter); a slot without one
- * continues the group above. A block with a heading becomes a group of its own. Empty slots
+ * The groups of the tab, in slot order (Q4). Each slot with a heading starts a group under it;
+ * a slot without one continues the group above. A block with a heading becomes a group of its own. Empty slots
  * and groups are left out, but an empty slot's heading still opens the rows of a slot without
  * one after it: the thread words with the universe off sit under the universe's heading.
  */
@@ -656,10 +631,10 @@ export function slotGroups(parts: readonly SlotPart[]): SettingDefinitionGroup[]
   let current: SettingDefinitionGroup | null = null;
   /** The heading the next group opens under: the last slot heading, until a group opens. */
   let opening: string | undefined;
-  for (const { slot, blocks, drawsHeading } of parts) {
+  for (const { slot, blocks } of parts) {
     if (slot.heading !== null) {
       current = null;
-      opening = drawsHeading ? undefined : t(slot.heading);
+      opening = t(slot.heading);
     }
     if (blocks.every((b) => b.items.length === 0)) continue;
     for (const b of blocks) {
@@ -674,24 +649,4 @@ export function slotGroups(parts: readonly SlotPart[]): SettingDefinitionGroup[]
     }
   }
   return groups.filter((g) => (g.items?.length ?? 0) > 0);
-}
-
-/**
- * Draws a module's blocks as plain rows into an element, the way Obsidian renders a row (name,
- * description, render, visibility): how a module on `settingsItems` shows inside an adapter row.
- * Goes with the adapter.
- */
-function drawBlocks(el: HTMLElement, blocks: readonly SettingsBlock[]): void {
-  const group = new SettingGroup(createDiv());   // detached: a render callback may ask for its group
-  for (const b of blocks) {
-    if (b.heading) new Setting(el).setName(b.heading).setHeading();
-    for (const item of b.items) {
-      if ("type" in item || !item.render) continue;   // pages and control rows are not used (Q3)
-      const row = new Setting(el).setName(item.name);
-      if (item.desc) row.setDesc(item.desc);
-      item.render(row, group);
-      const visible = typeof item.visible === "function" ? item.visible() : item.visible ?? true;
-      row.settingEl.toggle(visible);
-    }
-  }
 }

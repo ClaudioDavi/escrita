@@ -79,9 +79,6 @@
   align-items: center;
   padding: var(--size-4-1) 0 var(--size-4-1) var(--size-4-4);
 }
-.escrita-universe-props[hidden] {
-  display: none;
-}
 .escrita-universe-props input {
   min-height: 32px;
   width: 100%;

@@ -70,9 +70,8 @@ describe("sectionOrder (PLAN-0.8 Q13)", () => {
   });
 });
 
-// A module with a settings section and no slot would never draw (0.8: export and submissions
-// were missed until this guard). Scans each feature class in src/ for its id and settingsSection
-// or settingsItems.
+// A module with settings rows and no slot would never draw (0.8: export and submissions
+// were missed until this guard). Scans each feature class in src/ for its id and settingsItems.
 describe("every settings section has a slot", () => {
   // drawn elsewhere: the explorer's rows sit under its switch on the Features page
   const ELSEWHERE = new Set<string>(["explorerCounts"]);
@@ -83,7 +82,7 @@ describe("every settings section has a slot", () => {
     const text = readFileSync(f, "utf8");
     for (const cls of text.split(/\bclass\s+/).slice(1)) {
       const id = /readonly id(?::\s*FeatureId)?\s*=\s*"([A-Za-z]+)"/.exec(cls)?.[1];
-      if (id && /\bsettings(?:Section|Items)\s*\(/.test(cls.split(/\bclass\s+/)[0]!)) withSection.push(id);
+      if (id && /\bsettingsItems\s*\(/.test(cls.split(/\bclass\s+/)[0]!)) withSection.push(id);
     }
   }
 

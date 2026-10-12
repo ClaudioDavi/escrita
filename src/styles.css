@@ -114,17 +114,12 @@ body.is-mobile .escrita-swatch-clear {
 }
 
 /* Settings rows (PLAN-1.0.3): a custom row draws its own content in place of the name and the
-   control. The adapter's row holds a section still drawn as before (until Wave 1), whose own
-   rows keep their padding. */
+   control. */
 .setting-item.escrita-custom-row {
   display: block;
 }
 .setting-item.escrita-custom-row:empty {
   display: none;
-}
-.setting-item.escrita-adapter-row {
-  padding: 0;
-  border: none;
 }
 
 /* Settings: the Features page (board 21). Rows are Obsidian settings; the switch is a
@@ -132,14 +127,6 @@ body.is-mobile .escrita-swatch-clear {
 .escrita-features-desc,
 .escrita-shared-desc {
   padding-bottom: var(--size-4-2);
-}
-.escrita-feature-group {
-  padding: var(--size-4-5) 0 var(--size-4-2);
-  font-size: var(--font-ui-smaller);
-  font-weight: var(--font-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
 }
 .escrita-feature-row .setting-item-name {
   display: flex;

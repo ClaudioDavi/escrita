@@ -50,18 +50,11 @@ const OWNED: Partial<Record<FeatureId, [ns: object, prefix: string]>> = {
   lens: [lensUi, "lens"], desk: [deskUi, "desk"],
 };
 
-/**
- * A module's part from its settings-ui file: `<prefix>SettingsItems(ui, plugin)` once ported,
- * else `<prefix>SettingsSection(el, ui, plugin)`. Found by name, so the Wave 1 ports of
- * PLAN-1.0.3 (tasks B, C, D) rename or drop the section function without touching this file.
- */
+/** A module's part from its settings-ui file: `<prefix>SettingsItems(ui, plugin)`, found by name. */
 function fromUi(ns: object, prefix: string, plugin: unknown): Partial<FeatureModule> {
-  const fns = ns as Record<string, unknown>;
-  const items = fns[`${prefix}SettingsItems`];
+  const items = (ns as Record<string, unknown>)[`${prefix}SettingsItems`];
   if (typeof items === "function") return { settingsItems: (ui) => (items as (ui: SettingsUi, plugin: unknown) => SettingsBlock[])(ui, plugin) };
-  const section = fns[`${prefix}SettingsSection`];
-  if (typeof section === "function") return { settingsSection: (el, ui) => (section as (el: HTMLElement, ui: SettingsUi, plugin: unknown) => void)(el, ui, plugin) };
-  throw new Error(`${prefix}: no ${prefix}SettingsItems or ${prefix}SettingsSection`);
+  throw new Error(`${prefix}: no ${prefix}SettingsItems`);
 }
 
 function tabWith(off: FeatureId[] = [], modules: Partial<Record<FeatureId, Partial<FeatureModule>>> = {}): Fake {
@@ -167,10 +160,10 @@ describe("the tab draws from the order list", () => {
     expect(names().filter((n) => n === t("settings.features.submissions"))).toHaveLength(1);
   });
 
-  it("a module's own settingsSection is called instead of the legacy one", () => {
-    const own = vi.fn();
-    openTab(tabWith([], { lens: { settingsSection: own } }).tab);
-    expect(own).toHaveBeenCalledTimes(1);
+  it("a module's own settingsItems is called instead of its settings-ui file's", () => {
+    const own = vi.fn((): SettingsBlock[] => []);
+    openTab(tabWith([], { lens: { settingsItems: own } }).tab);
+    expect(own).toHaveBeenCalled();
     expect(headings()).not.toContain(t("settings.lens"));
   });
 });
@@ -242,9 +235,9 @@ describe("slotGroups", () => {
 
   it("a slot without a heading continues the group above; a block with one opens its own group", () => {
     expect(shape([
-      { slot: { heading: "settings.books" }, blocks: rows("Chapters folder"), drawsHeading: false },
-      { slot: { heading: null }, blocks: rows("Day ends at"), drawsHeading: false },
-      { slot: { heading: "settings.lens" }, blocks: [...rows("Echo"), { heading: "Rules", items: rows("Adverbs")[0].items }], drawsHeading: false },
+      { slot: { heading: "settings.books" }, blocks: rows("Chapters folder") },
+      { slot: { heading: null }, blocks: rows("Day ends at") },
+      { slot: { heading: "settings.lens" }, blocks: [...rows("Echo"), { heading: "Rules", items: rows("Adverbs")[0].items }] },
     ])).toEqual([
       [t("settings.books"), ["Chapters folder", "Day ends at"]],
       [t("settings.lens"), ["Echo"]],
@@ -254,9 +247,9 @@ describe("slotGroups", () => {
 
   it("after an empty slot, a slot without a heading opens under the empty slot's heading (threads with the universe off)", () => {
     expect(shape([
-      { slot: { heading: "settings.snapshots" }, blocks: rows("Snapshots folder"), drawsHeading: false },
-      { slot: { heading: "universe.settings" }, blocks: [], drawsHeading: false },
-      { slot: { heading: null }, blocks: rows("Thread word"), drawsHeading: false },
+      { slot: { heading: "settings.snapshots" }, blocks: rows("Snapshots folder") },
+      { slot: { heading: "universe.settings" }, blocks: [] },
+      { slot: { heading: null }, blocks: rows("Thread word") },
     ])).toEqual([
       [t("settings.snapshots"), ["Snapshots folder"]],
       [t("universe.settings"), ["Thread word"]],

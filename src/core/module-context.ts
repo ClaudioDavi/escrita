@@ -51,10 +51,7 @@ export interface ModuleContext {
   afterUnload(cb: () => void): void;
 }
 
-/**
- * What the settings tab hands a module's `settingsItems` (and `settingsSection`, until every
- * module has moved; IMPROVEMENTS 11, PLAN-1.0.3).
- */
+/** What the settings tab hands a module's `settingsItems` (IMPROVEMENTS 11, PLAN-1.0.3). */
 export interface SettingsUi {
   app: App;
   /**
@@ -105,20 +102,12 @@ export abstract class FeatureModule extends Component {
   dataFollowers?(): Follower[];
 
   /**
-   * Draws this module's rows of the settings tab into `el` (IMPROVEMENTS 11), with
-   * its own heading, except in a slot with shared rows (core/settings-order.ts `also`:
-   * placeholders, editor, universe), where the core draws the heading and those rows.
-   * Called only while the feature is loaded, in the tab's one order list (PLAN-0.8
-   * Q13), so an off feature's section is gone with it.
-   */
-  settingsSection?(el: HTMLElement, ui: SettingsUi): void;
-
-  /**
    * This module's rows of the settings tab (PLAN-1.0.3 Q4), built with the helpers of
    * ui/settings-rows.ts. The tab draws the slot's heading (core/settings-order.ts) and puts the
    * first block under it; a block with a heading becomes a group of its own. Called when the
    * tab builds its rows (at plugin load and on each update()), only while the feature is
-   * loaded. Takes the place of `settingsSection`: a module has one or the other.
+   * loaded, in the tab's one order list (PLAN-0.8 Q13), so an off feature's rows are gone
+   * with it.
    */
   settingsItems?(ui: SettingsUi): SettingsBlock[];
 

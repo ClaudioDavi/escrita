@@ -181,7 +181,7 @@ export function renderDefinitions(items: readonly SettingDefinitionItem[], el: H
  * whole tab is opened (`openTab`).
  */
 export function renderBlocks(blocks: readonly SettingsBlock[], el: HTMLElement = document.createElement("div")): { el: HTMLElement; groups: RenderedGroup[] } {
-  const groups = renderDefinitions(slotGroups([{ slot: { heading: null }, blocks, drawsHeading: false }]), el);
+  const groups = renderDefinitions(slotGroups([{ slot: { heading: null }, blocks }]), el);
   return { el, groups };
 }
 
