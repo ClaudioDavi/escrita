@@ -93,8 +93,12 @@ export interface FolderRowOptions extends RowOptions {
 
 const classes = (cls: string | undefined): string[] => (cls ?? "").split(" ").filter(Boolean);
 
-/** The definition every helper builds on: name, description and visibility, then `draw` at each render. */
-function row(o: RowOptions, draw: (setting: Setting) => void | (() => void)): SettingDefinitionRender {
+/**
+ * A named, searchable row whose `draw` fills the control area of the row (the Features page, the
+ * stage rows). Name, description and visibility are the helpers' own. Contrast with `customRow`,
+ * which empties the whole row first. Returns `draw`'s cleanup, run before the next render.
+ */
+export function drawnRow(o: RowOptions, draw: (setting: Setting) => void | (() => void)): SettingDefinitionRender {
   const desc = o.desc;
   const def: SettingDefinitionRender = {
     name: o.name,
@@ -122,32 +126,35 @@ function commitField(ui: SettingsUi, c: TextComponent | TextAreaComponent, o: Te
   ui.saveOnCommit(c, fallback, (v) => {
     o.set(v);
     c.setValue(o.get());
-  });
+  }, o.get);
 }
 
 /** A one-line text field, saved when the writer commits it (blur or Enter). */
 export function textRow(ui: SettingsUi, o: TextRowOptions): SettingDefinitionRender {
-  return row(o, (s) => { s.addText((c) => commitField(ui, c, o)); });
+  return drawnRow(o, (s) => { s.addText((c) => commitField(ui, c, o)); });
 }
 
 /** A text area, saved when the writer commits it. */
 export function textAreaRow(ui: SettingsUi, o: TextRowOptions): SettingDefinitionRender {
-  return row(o, (s) => { s.addTextArea((c) => commitField(ui, c, o)); });
+  return drawnRow(o, (s) => { s.addTextArea((c) => commitField(ui, c, o)); });
 }
 
 /** A toggle, saved at once. */
 export function toggleRow(ui: SettingsUi, o: ToggleRowOptions): SettingDefinitionRender {
-  return row(o, (s) => {
-    s.addToggle((c) => c.setValue(o.get()).onChange(async (v) => {
-      o.set(v);
-      await ui.save();
-    }));
+  return drawnRow(o, (s) => {
+    s.addToggle((c) => {
+      c.setValue(o.get()).onChange(async (v) => {
+        o.set(v);
+        await ui.save();
+      });
+      if (o.name) c.toggleEl.setAttr("aria-label", o.name);
+    });
   });
 }
 
 /** A dropdown, saved at once. The values may be numbers: the row turns the chosen option back into one. */
 export function dropdownRow<T extends string | number>(ui: SettingsUi, o: DropdownRowOptions<T>): SettingDefinitionRender {
-  return row(o, (s) => {
+  return drawnRow(o, (s) => {
     s.addDropdown((d) => {
       for (const [value, label] of o.options) d.addOption(String(value), label);
       d.setValue(String(o.get()));
@@ -168,7 +175,7 @@ export function dropdownRow<T extends string | number>(ui: SettingsUi, o: Dropdo
  * number. The field then shows what was kept.
  */
 export function numberRow(ui: SettingsUi, o: NumberRowOptions): SettingDefinitionRender {
-  return row(o, (s) => {
+  return drawnRow(o, (s) => {
     s.addText((c) => {
       c.inputEl.inputMode = "numeric";
       if (o.placeholder !== undefined) c.setPlaceholder(o.placeholder);
@@ -178,7 +185,7 @@ export function numberRow(ui: SettingsUi, o: NumberRowOptions): SettingDefinitio
       ui.saveOnCommit(c, () => String(o.get()), (v) => {
         o.set(Math.min(o.max, Math.max(o.min, ui.num(v, o.get(), o.min))));
         c.setValue(String(o.get()));
-      });
+      }, o.get);
     });
     if (o.unit) s.controlEl.createSpan({ cls: "setting-item-description", text: o.unit });
   });
@@ -189,8 +196,8 @@ export function numberRow(ui: SettingsUi, o: NumberRowOptions): SettingDefinitio
  * stays and a warning under the name says why, following the typing (addFolderField).
  */
 export function folderRow(ui: SettingsUi, o: FolderRowOptions): SettingDefinitionRender {
-  return row(o, (s) => {
-    addFolderField(s, ui, { placeholder: o.placeholder, value: o.get(), problemOf: o.problemOf, problemText: o.problemText, save: o.set });
+  return drawnRow(o, (s) => {
+    addFolderField(s, ui, { placeholder: o.placeholder, value: o.get(), read: o.get, problemOf: o.problemOf, problemText: o.problemText, save: o.set });
   });
 }
 
@@ -200,7 +207,7 @@ export function folderRow(ui: SettingsUi, o: FolderRowOptions): SettingDefinitio
  * name keeps the row out of search; a name lets the search find and land on it.
  */
 export function customRow(name: string, draw: (el: HTMLElement) => void | (() => void), o: Omit<RowOptions, "name"> = {}): SettingDefinitionRender {
-  const def = row({ ...o, name }, (s) => {
+  const def = drawnRow({ ...o, name }, (s) => {
     s.settingEl.empty();
     s.settingEl.addClass("escrita-custom-row");
     return draw(s.settingEl);

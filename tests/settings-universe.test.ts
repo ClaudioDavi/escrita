@@ -161,7 +161,8 @@ describe("the universe section's blocks", () => {
     const folders = rowNamed(groups, t("universe.settings.folders"))!.setting.components[0];
     commit(folders, " Worlds ");
     expect(r.settings.defaultUniverseFolders).toBe("Worlds");
-    expect(save).toHaveBeenCalledTimes(2);
+    // the cleared note gives the value already stored, so only the folders write
+    expect(save).toHaveBeenCalledTimes(1);
   });
 
   it("the types table keeps its inputs, labels and change-saves", () => {
@@ -187,6 +188,11 @@ describe("the universe section's blocks", () => {
     tpl.value = "";
     tpl.dispatchEvent(new Event("change"));
     expect(r.settings.entryTypes.character.template).toBe("");
+    // a cell committed with the value it already holds writes nothing
+    const before = save.mock.calls.length;
+    folder.value = DEFAULT_SETTINGS.entryTypes.character.folder;
+    folder.dispatchEvent(new Event("change"));
+    expect(save.mock.calls.length).toBe(before);
   });
 
   it("the type property clears to the install's default", () => {
@@ -216,6 +222,9 @@ describe("the universe section's blocks", () => {
     ignore.value = "";
     ignore.dispatchEvent(new Event("change"));
     expect(r.settings.ignoreProperty).toBe(DEFAULT_SETTINGS.ignoreProperty);
+    expect(save).toHaveBeenCalledTimes(2);
+    ignore.value = DEFAULT_SETTINGS.ignoreProperty;
+    ignore.dispatchEvent(new Event("change"));
     expect(save).toHaveBeenCalledTimes(2);
   });
 

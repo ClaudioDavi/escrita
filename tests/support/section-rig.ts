@@ -9,7 +9,7 @@ import type { SettingsUi } from "../../src/core/module-context";
 import { DEFAULT_SETTINGS, defaultsFor, type EscritaSettings } from "../../src/settings";
 import { settingLog } from "./obsidian";
 
-export type Commit = { fallback: () => string; apply: (v: string) => void };
+export type Commit = { fallback: () => string; apply: (v: string) => void; read?: () => unknown };
 
 export function rig(over: Partial<EscritaSettings> = {}, on: string[] = ["universe", "threads"]) {
   const settings = { ...DEFAULT_SETTINGS, stages: structuredClone(DEFAULT_SETTINGS.stages), entryTypes: structuredClone(DEFAULT_SETTINGS.entryTypes), ...over } as EscritaSettings;
@@ -19,7 +19,7 @@ export function rig(over: Partial<EscritaSettings> = {}, on: string[] = ["univer
     app: { vault: { configDir: ".obsidian", getMarkdownFiles: () => [] } },
     save,
     defaults: () => defaultsFor(settings.defaultsLanguage),
-    saveOnCommit: (_c: unknown, fallback: () => string, apply: (v: string) => void) => { commits.push({ fallback, apply }); },
+    saveOnCommit: (_c: unknown, fallback: () => string, apply: (v: string) => void, read?: () => unknown) => { commits.push({ fallback, apply, read }); },
     redraw: () => {},
     num: (v: string, fb: number, min = 0) => { const n = parseInt(v, 10); return Number.isNaN(n) ? fb : Math.max(min, n); },
   } as unknown as SettingsUi;

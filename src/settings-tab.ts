@@ -23,7 +23,7 @@ import type { FeatureModule, SettingsUi } from "./core/module-context";
 import type { UniverseMode } from "./universe/settings";
 import { exportRoot, snapshotsRoot, submissionsRoot } from "./core/classify";
 import { holdsOwnNotes, pluginFolderProblem, type BookPaths } from "./core/folder-problem";
-import { customRow, dropdownRow, folderRow, noteRow, textAreaRow, textRow, toggleRow, type SettingsBlock, type TextKey } from "./ui/settings-rows";
+import { customRow, drawnRow, dropdownRow, folderRow, noteRow, textAreaRow, textRow, toggleRow, type SettingsBlock, type TextKey } from "./ui/settings-rows";
 import { defaultsFor, digitsNumber, rowShown, setFeature, type EscritaSettings, type ParagraphStyle, type QuoteStyle } from "./settings";
 
 /** What the color input holds while a stage has no color (not black, so black is a real choice). */
@@ -73,23 +73,32 @@ export function featureGroupHeading(group: FeatureGroup): string {
   return t(`settings.features.group.${group}`);
 }
 
-/**
- * A row drawn by hand (the Features page, the stage rows, the status properties): a name, a
- * description that may be a function read at each render, then `draw`. Obsidian sets the name and
- * the description first, as for the helpers of ui/settings-rows.ts.
- */
-function plainRow(o: { name: string; desc?: string | (() => string); cls?: string }, draw: (setting: Setting) => void | (() => void)): SettingDefinitionRender {
-  const text = typeof o.desc === "function" ? o.desc() : o.desc;
-  const def: SettingDefinitionRender = {
-    name: o.name,
-    render: (setting) => {
-      if (typeof o.desc === "function") setting.setDesc(o.desc());
-      if (o.cls) setting.settingEl.addClass(o.cls);
-      return draw(setting);
+/** The status property, then the summary property, two fields in one row (as goals' sprint row composes two). */
+function statusAndSummaryRow(ui: SettingsUi, s: EscritaSettings): SettingDefinitionRender {
+  const status = textRow(ui, {
+    name: t("settings.statusProperty"),
+    desc: t("settings.statusProperty.desc"),
+    key: "statusProperty",
+    placeholder: ui.defaults().statusProperty,
+    get: () => s.statusProperty,
+    set: (v) => { s.statusProperty = v; },
+  });
+  // Only its field is drawn (into the status row), so the name is just the field's label.
+  const summary = textRow(ui, {
+    name: t("settings.summaryProperty"),
+    key: "summaryProperty",
+    placeholder: ui.defaults().summaryProperty,
+    get: () => s.summaryProperty,
+    set: (v) => { s.summaryProperty = v; },
+  });
+  return {
+    ...status,
+    render: (setting, group) => {
+      const a = status.render?.(setting, group);
+      const b = summary.render?.(setting, group);
+      return () => { a?.(); b?.(); };
     },
   };
-  if (text) def.desc = text;
-  return def;
 }
 
 export class EscritaSettingTab extends PluginSettingTab {
@@ -110,12 +119,15 @@ export class EscritaSettingTab extends PluginSettingTab {
       app: this.app,
       save,
       defaults: () => defaultsFor(this.plugin.settings.defaultsLanguage),
-      saveOnCommit: (c: TextComponent | TextAreaComponent, fallback: () => string, apply: (v: string) => void) => {
-        c.inputEl.addEventListener("change", () => {
-          const v = c.getValue().trim() || fallback();
-          c.setValue(v);
+      saveOnCommit: (c: TextComponent | TextAreaComponent | HTMLInputElement, fallback: () => string, apply: (v: string) => void, read?: () => unknown) => {
+        const input = c instanceof HTMLInputElement ? c : c.inputEl;
+        const show = (v: string) => { if (c instanceof HTMLInputElement) c.value = v; else c.setValue(v); };
+        input.addEventListener("change", () => {
+          const v = (c instanceof HTMLInputElement ? c.value : c.getValue()).trim() || fallback();
+          show(v);
+          const before = read?.();
           apply(v);
-          void save();
+          if (!read || read() !== before) void save();
         });
       },
       redraw: () => this.update(),
@@ -276,17 +288,7 @@ export class EscritaSettingTab extends PluginSettingTab {
         get: () => s.unnumberedTitles,
         set: (v) => { s.unnumberedTitles = v; },
       }),
-      // two fields in one row: the status property and the summary property
-      plainRow({ name: t("settings.statusProperty"), desc: t("settings.statusProperty.desc") }, (row) => {
-        row.addText((c) => {
-          c.setPlaceholder(ui.defaults().statusProperty).setValue(s.statusProperty);
-          ui.saveOnCommit(c, () => ui.defaults().statusProperty, (v) => { s.statusProperty = v; });
-        });
-        row.addText((c) => {
-          c.setPlaceholder(ui.defaults().summaryProperty).setValue(s.summaryProperty);
-          ui.saveOnCommit(c, () => ui.defaults().summaryProperty, (v) => { s.summaryProperty = v; });
-        });
-      }),
+      statusAndSummaryRow(ui, s),
     ];
   }
 
@@ -322,7 +324,7 @@ export class EscritaSettingTab extends PluginSettingTab {
     for (const { group, ids } of FEATURE_PAGE) {
       const items: SettingGroupItem[] = [];
       if (group === "desk") {
-        items.push(plainRow({ name: t("settings.features.stages"), desc: t("settings.features.stages.desc"), cls: "escrita-feature-row" }, (row) => {
+        items.push(drawnRow({ name: t("settings.features.stages"), desc: t("settings.features.stages.desc"), cls: "escrita-feature-row" }, (row) => {
           row.nameEl.createSpan({ cls: "escrita-tag", text: t("settings.features.alwaysOn") });
         }));
       }
@@ -346,7 +348,7 @@ export class EscritaSettingTab extends PluginSettingTab {
           continue;
         }
 
-        items.push(plainRow({ name, desc: desc(id), cls: "escrita-feature-row" }, (row) => {
+        items.push(drawnRow({ name, desc: desc(id), cls: "escrita-feature-row" }, (row) => {
           const now = wanted(switchesOf(s));
           const needs = spec.requires?.find((r) => !now.has(r));
           const on = now.has(id);
@@ -507,7 +509,7 @@ export class EscritaSettingTab extends PluginSettingTab {
       }
     };
 
-    const stageRow = (k: Stage) => plainRow({ name: t(`stage.${k}`), cls: "escrita-stage-row" }, (setting) => {
+    const stageRow = (k: Stage) => drawnRow({ name: t(`stage.${k}`), cls: "escrita-stage-row" }, (setting) => {
       const stage = t(`stage.${k}`).toLowerCase();
       let swatch: HTMLInputElement | null = null;
       let clear: HTMLButtonElement | null = null;
@@ -517,30 +519,18 @@ export class EscritaSettingTab extends PluginSettingTab {
         clear?.toggle(!!color);
         swatch?.setAttr("aria-label", color ? t("settings.stages.color", { stage }) : t("settings.stages.noColor"));
       };
-      const saveWords = async (v: string) => {
-        if (v === s.stages[k].words) return;
-        s.stages[k].words = v;
-        showWarnings();
-        await ui.save();
-      };
       setting.addText((c) => {
         c.setValue(s.stages[k].words);
         c.inputEl.addClass("escrita-stage-words");
         c.inputEl.setAttr("aria-label", t("settings.stages.words", { stage }));
         // Saved when the writer commits the field (Enter or leaving it), never per key. An empty field
         // is never stored: it shows the previous (or default) words again.
-        const commit = () => {
-          if (c.getValue().trim() === "") {
-            if (s.stages[k].words.trim() === "") s.stages[k].words = ui.defaults().stages[k].words;
-            c.setValue(s.stages[k].words);
-            showWarnings();
-            return;
-          }
-          void saveWords(c.getValue());
-        };
-        c.inputEl.addEventListener("change", commit);
-        // Also on blur, so a value typed and left is never lost.
-        c.inputEl.addEventListener("blur", commit);
+        ui.saveOnCommit(
+          c,
+          () => (s.stages[k].words.trim() === "" ? ui.defaults().stages[k].words : s.stages[k].words),
+          (v) => { s.stages[k].words = v; showWarnings(); },
+          () => s.stages[k].words,
+        );
       });
       let picker: ColorComponent | null = null;
       setting.addColorPicker((c) => {

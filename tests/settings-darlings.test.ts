@@ -29,7 +29,8 @@ describe("darlings settings items", () => {
     expect(save).toHaveBeenCalledTimes(1);
     commit(fields[1], "");
     expect(p.settings.globalDarlingsNote).toBe("Darlings.md");
-    expect(save).toHaveBeenCalledTimes(2);
+    // the blank field gives the value already stored, so nothing is written
+    expect(save).toHaveBeenCalledTimes(1);
   });
 
   it("a pt-BR install's cleared field falls back to the pt-BR default", () => {

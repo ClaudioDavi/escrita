@@ -91,6 +91,7 @@ describe("submissions settings items", () => {
     expect(p.settings.submissionWorkProperty).toBe("piece");
     commit(work, "");
     expect(p.settings.submissionWorkProperty).toBe(DEFAULT_SETTINGS.submissionWorkProperty);
-    expect(save).toHaveBeenCalledTimes(3);
+    // the rejected name changes nothing, so the first commit writes nothing; "piece" and the blank commit do
+    expect(save).toHaveBeenCalledTimes(2);
   });
 });

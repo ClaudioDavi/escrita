@@ -9,33 +9,13 @@ import { lensLang } from "./lang";
 import { RULES } from "./types";
 
 /**
- * The same ui, but a committed text field saves only when `read()` changed: committing the value
- * the setting already holds (a list path that cleans to itself, a number that clamps back) writes
- * nothing, as these fields always did.
- */
-function savingWhenChanged(ui: SettingsUi, read: () => unknown): SettingsUi {
-  return {
-    ...ui,
-    saveOnCommit: (c, fallback, apply) => {
-      c.inputEl.addEventListener("change", () => {
-        const v = c.getValue().trim() || fallback();
-        c.setValue(v);
-        const before = read();
-        apply(v);
-        if (read() !== before) void ui.save();
-      });
-    },
-  };
-}
-
-/**
  * The Lens section's rows, under the heading the tab draws: its description, the lists note and
  * the numbers, then the "Rules" and "Measures" blocks, each a group of its own.
  */
 export function lensSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): SettingsBlock[] {
   const s = plugin.settings;
 
-  const lists = textRow(savingWhenChanged(ui, () => s.lensListsNote), {
+  const lists = textRow(ui, {
     name: t("settings.lens.lists"),
     desc: t("settings.lens.lists.desc"),
     cls: "escrita-lens-stack",
@@ -54,7 +34,7 @@ export function lensSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): Settin
   };
 
   const number = (key: "lensEchoWindow" | "lensLongSentence", name: string, min: number, max: number) =>
-    numberRow(savingWhenChanged(ui, () => s[key]), {
+    numberRow(ui, {
       name: t(`settings.lens.${name}`),
       desc: t(`settings.lens.${name}.desc`),
       min, max,
@@ -110,7 +90,7 @@ export function lensSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): Settin
             s.lensRulesOn = on;
           },
         }),
-        textAreaRow(savingWhenChanged(ui, () => s.notNames), {
+        textAreaRow(ui, {
           name: t("settings.lens.notNames"),
           desc: t("settings.lens.notNames.desc"),
           get: () => s.notNames,

@@ -64,8 +64,10 @@ export interface SettingsUi {
    * `change` event), not at every key, so typing a folder name doesn't reload
    * features per letter. The value is trimmed; blank becomes `fallback()`; the
    * field then shows what was kept, `apply(v)` stores it, and the settings save.
+   * `c` may be a plain `<input>` (a table cell). With `read`, the settings save only when
+   * `read()` differs across `apply`, so committing the value already held writes nothing.
    */
-  saveOnCommit(c: TextComponent | TextAreaComponent, fallback: () => string, apply: (v: string) => void): void;
+  saveOnCommit(c: TextComponent | TextAreaComponent | HTMLInputElement, fallback: () => string, apply: (v: string) => void, read?: () => unknown): void;
   /**
    * The default set of the install's language (`defaultsFor(settings.defaultsLanguage)`, 1.0):
    * what a cleared field falls back to and what a placeholder shows. Never DEFAULT_SETTINGS

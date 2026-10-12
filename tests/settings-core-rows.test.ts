@@ -156,7 +156,8 @@ describe("shared names and folders, books, the writing day", () => {
     expect(settings.chaptersFolder).toBe("Capítulos");
     commit(field(open.groups(), t("settings.trackFolders")), "");
     expect(settings.trackFolders).toBe("");
-    expect(saves).toHaveBeenCalledTimes(3);
+    // the first two commits leave the stored value as it was (it already is the default), so they write nothing
+    expect(saves).toHaveBeenCalledTimes(1);
   });
 
   it("the books group, with the writing day after its rows while a feature reads it", () => {
@@ -186,6 +187,14 @@ describe("shared names and folders, books, the writing day", () => {
     expect(status.components).toHaveLength(2);
     commit(status.components[1] as never, "");
     expect(settings.summaryProperty).toBe(DEFAULT_SETTINGS.summaryProperty);
+    commit(status.components[0] as never, "");
+    expect(settings.statusProperty).toBe(DEFAULT_SETTINGS.statusProperty);
+    // both fields are labeled and show the defaults as placeholders
+    const [first, second] = status.components as unknown as { inputEl: HTMLInputElement }[];
+    expect(first.inputEl.getAttribute("aria-label")).toBe(t("settings.statusProperty"));
+    expect(second.inputEl.getAttribute("aria-label")).toBe(t("settings.summaryProperty"));
+    expect(first.inputEl.placeholder).toBe(DEFAULT_SETTINGS.statusProperty);
+    expect(second.inputEl.placeholder).toBe(DEFAULT_SETTINGS.summaryProperty);
   });
 });
 

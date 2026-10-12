@@ -120,7 +120,7 @@ class StubControl {
   }
   setValue(v: unknown): this { this.value = v; if (this.inputEl && typeof v === "string") this.inputEl.value = v; return this; }
   getValue(): unknown { return this.inputEl && typeof this.value === "string" ? this.inputEl.value : this.value; }
-  setPlaceholder(): this { return this; }
+  setPlaceholder(p?: string): this { if (this.inputEl && p !== undefined) this.inputEl.placeholder = p; return this; }
   setDisabled(): this { return this; }
   setIcon(): this { return this; }
   setTooltip(): this { return this; }

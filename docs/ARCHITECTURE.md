@@ -1156,15 +1156,23 @@ module internals (`tests/settings-imports.test.ts`: only shared core, top-level 
   `numberRow` (one parser, `digitsNumber`), `folderRow` (with an optional `problemOf`, used by
   the folder rows and snapshots), `noteRow` (a description paragraph, not searched) and
   `customRow(name, draw)` (empties the row and draws into it, for the presets block and the
-  universe's tables). `textRow` takes its fallback and placeholder from `ui.defaults()`, so a
+  universe's tables). `drawnRow(o, draw)` is the base they build on and is exported for rows
+  that fill the control area by hand (the Features page, the stage rows): a named, searchable row
+  whose `draw` fills the control area, unlike `customRow`, which empties the row. Two fields in one
+  row are two rows composed (goals' sprint row, the status and summary properties). Every
+  helper passes its `get` to `saveOnCommit`, so committing a value that did not change writes
+  nothing. `textRow` takes its fallback and placeholder from `ui.defaults()`, so a
   cleared field shows the default of the install's language, not English. A row with a name is
   found by the search; row names are unique within a group (Obsidian logs an error and
   mis-matches rows otherwise), and `tests/support/definitions.ts` fails on a duplicate.
 - **`SettingsUi`** is what a section gets: `app`, `defaults()` (`defaultsFor` the install's
   `defaultsLanguage`), `save()` (saves now, then applies the switches and fans out
-  `settingsChanged`), `saveOnCommit(component, fallback, apply)` (a text field saves on blur or
+  `settingsChanged`), `saveOnCommit(component, fallback, apply, read?)` (a text field saves on blur or
   Enter, not per key, so typing a folder name doesn't reload features per letter; the value is
-  trimmed, blank becomes the fallback, and the field shows what was kept), `redraw()` (calls the
+  trimmed, blank becomes the fallback, and the field shows what was kept; the component may be
+  a plain `<input>`, for table cells; with `read`, the settings save only if `read()` changed
+  across `apply`). This is the one commit, trim, fallback and save path of the tab: no section
+  keeps its own `change` listener for a text field, `redraw()` (calls the
   tab's `update()`) and `num(v, fallback, min)`.
 - **When the rows are rebuilt.** Obsidian computes the definitions when the tab is added and on
   each `update()`, never when the tab opens. So the tab calls `update()` only when the

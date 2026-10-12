@@ -307,6 +307,37 @@ describe("saveOnCommit", () => {
     expect(f.input.value).toBe("Chapters");
   });
 
+  it("with read, an unchanged value writes nothing and a changed one saves", () => {
+    const { tab, saves } = tabWith();
+    const ui = (tab as unknown as { makeUi(): import("../src/core/module-context").SettingsUi }).makeUi();
+    const f = field();
+    let stored = "a";
+    ui.saveOnCommit(f.c as never, () => "a", (v) => { stored = v.toLowerCase(); }, () => stored);
+    f.input.value = " A ";
+    f.input.dispatchEvent(new Event("change"));
+    expect(stored).toBe("a");
+    expect(saves).not.toHaveBeenCalled();
+    f.input.value = "b";
+    f.input.dispatchEvent(new Event("change"));
+    expect(stored).toBe("b");
+    expect(saves).toHaveBeenCalledTimes(1);
+  });
+
+  it("takes a plain input: trims, falls back, shows what was kept", () => {
+    const { tab, saves } = tabWith();
+    const ui = (tab as unknown as { makeUi(): import("../src/core/module-context").SettingsUi }).makeUi();
+    const input = document.createElement("input");
+    const applied: string[] = [];
+    ui.saveOnCommit(input, () => "dflt", (v) => applied.push(v));
+    input.value = "  x ";
+    input.dispatchEvent(new Event("change"));
+    input.value = " ";
+    input.dispatchEvent(new Event("change"));
+    expect(applied).toEqual(["x", "dflt"]);
+    expect(input.value).toBe("dflt");
+    expect(saves).toHaveBeenCalledTimes(2);
+  });
+
   it("num keeps the digits, at least min, and the fallback for a field with no digit", () => {
     const ui = (tabWith().tab as unknown as { makeUi(): import("../src/core/module-context").SettingsUi }).makeUi();
     expect(ui.num("1,500", 9)).toBe(1500);

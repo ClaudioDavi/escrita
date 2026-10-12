@@ -11,7 +11,7 @@ import { Notice, type Setting, type SettingDefinitionRender, type SettingGroupIt
 import { locale, t } from "../i18n";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
-import { customRow, noteRow, textAreaRow, textRow, type SettingsBlock } from "../ui/settings-rows";
+import { customRow, noteRow, textAreaRow, textRow, toggleRow, type SettingsBlock } from "../ui/settings-rows";
 import { ENTRY_KINDS, normalizeNotePath } from "./settings";
 import { builtinTitlesText } from "./names-settings";
 import { formValuesText, parseFormValues } from "./works-list";
@@ -100,11 +100,8 @@ function formItems(ui: SettingsUi, plugin: EscritaPlugin, mode: "perBook" | "uni
         c.setPlaceholder(formValuesText(d.formValues)).setValue(formValuesText(s.formValues));
         c.inputEl.addClass("escrita-universe-wide");
         c.inputEl.setAttr("aria-label", t("universe.settings.form.values"));
-        c.inputEl.addEventListener("change", () => {
-          s.formValues = parseFormValues(c.getValue(), s.formValues);
-          c.setValue(formValuesText(s.formValues));
-          void ui.save();
-        });
+        // blank or unreadable text keeps the saved values (parseFormValues)
+        ui.saveOnCommit(c, () => formValuesText(s.formValues), (v) => { s.formValues = parseFormValues(v, s.formValues); c.setValue(formValuesText(s.formValues)); }, () => formValuesText(s.formValues));
       });
     }));
     items.push(textAreaRow(ui, {
@@ -165,12 +162,7 @@ function typesTable(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): voi
       cell.createSpan({ cls: "escrita-types-cell-label", text: t(`universe.settings.types.${col}`) });
       const input = cell.createEl("input", { type: "text", attr: { placeholder, spellcheck: "false", "aria-label": `${name}: ${t(`universe.settings.types.${col}`)}` } });
       input.value = type[col];
-      input.addEventListener("change", () => {
-        const v = input.value.trim() || fallback();
-        input.value = v;
-        apply(v);
-        void ui.save();
-      });
+      ui.saveOnCommit(input, fallback, apply, () => type[col]);
     };
     field("value", d.entryTypes[k].value, (v) => { type.value = v; }, () => d.entryTypes[k].value);
     field("folder", d.entryTypes[k].folder, (v) => { type.folder = stripSlashes(v); }, () => d.entryTypes[k].folder);
@@ -186,16 +178,12 @@ function namesItems(ui: SettingsUi, plugin: EscritaPlugin): SettingGroupItem[] {
   let expanded = false;
   let blockRow: HTMLElement | null = null;
   return [
-    {
+    toggleRow(ui, {
       name: t("universe.settings.underline"),
       desc: t("universe.settings.underline.desc"),
-      render: (setting) => {
-        setting.addToggle((c) => {
-          c.setValue(s.underlineNames).onChange(async (v) => { s.underlineNames = v; await ui.save(); });
-          c.toggleEl.setAttr("aria-label", t("universe.settings.underline"));
-        });
-      },
-    },
+      get: () => s.underlineNames,
+      set: (v) => { s.underlineNames = v; },
+    }),
     textAreaRow(ui, {
       name: t("universe.settings.titles"),
       desc: () => t("universe.settings.titles.desc", { list: builtinTitlesText(s.lensLanguage, locale(), (list) => t("universe.settings.titles.also", { list })) }),
@@ -238,12 +226,7 @@ function propertyInputs(block: HTMLElement, ui: SettingsUi, plugin: EscritaPlugi
     block.createSpan({ cls: "setting-item-description", text: t(`universe.settings.props.${key}`) });
     const input = block.createEl("input", { type: "text", attr: { placeholder: d[prop], spellcheck: "false", "aria-label": t(`universe.settings.props.${key}.label`) } });
     input.value = s[prop];
-    input.addEventListener("change", () => {
-      const v = input.value.trim() || d[prop];
-      input.value = v;
-      s[prop] = v;
-      void ui.save();
-    });
+    ui.saveOnCommit(input, () => d[prop], (v) => { s[prop] = v; }, () => s[prop]);
   };
   row("caseSensitive", "caseSensitiveProperty");
   row("ignore", "ignoreProperty");

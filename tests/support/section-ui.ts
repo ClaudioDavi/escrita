@@ -15,13 +15,16 @@ export function fakeUi(lang: "en" | "pt-BR" = "en"): FakeUi {
   const fields: FakeUi["fields"] = [];
   const ui = {
     app: {}, save, defaults: () => defaultsFor(lang), redraw: vi.fn(), num: digitsNumber,
-    saveOnCommit(c: { inputEl: HTMLInputElement; getValue(): string; setValue(v: string): unknown }, fallback: () => string, apply: (v: string) => void) {
-      fields.push(c);
-      c.inputEl.addEventListener("change", () => {
-        const v = c.getValue().trim() || fallback();
-        c.setValue(v);
+    saveOnCommit(c: { inputEl: HTMLInputElement; getValue(): string; setValue(v: string): unknown } | HTMLInputElement, fallback: () => string, apply: (v: string) => void, read?: () => unknown) {
+      const plain = c instanceof HTMLInputElement;
+      const input = plain ? c : c.inputEl;
+      fields.push({ inputEl: input });
+      input.addEventListener("change", () => {
+        const v = (plain ? c.value : c.getValue()).trim() || fallback();
+        if (plain) c.value = v; else c.setValue(v);
+        const before = read?.();
         apply(v);
-        void save();
+        if (!read || read() !== before) void save();
       });
     },
   } as unknown as SettingsUi;
