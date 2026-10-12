@@ -65,8 +65,8 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   writer's switches at runtime, and a module registers everything through its
   `ModuleContext`, never straight on the plugin. A module must unload cleanly and its
   path-keyed data must follow renames through a data follower even while it is off.
-  ARCHITECTURE.md, "Modules and feature switches". Each module draws its own settings
-  section (`settingsSection` in its `settings-ui.ts`); the order of all sections is one
+  ARCHITECTURE.md, "Modules and feature switches". Each module returns its own settings
+  blocks (`settingsItems` in its `settings-ui.ts`, drawn by the declarative tab `src/settings-tab.ts` with the row helpers in `src/ui/settings-rows.ts`); the order of all sections is one
   list in `core/settings-order.ts`, and `settings.ts` imports no module internals.
 - **Shared services on `plugin`** (use them; never re-derive):
   - `books.classify(x)`: what a file is (chapter, book note, note…), its book,

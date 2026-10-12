@@ -22,7 +22,7 @@ Outras páginas: [Recursos e configurações](features-and-settings.md), [Escrit
 
 ## Instalar o Escrita
 
-O Escrita pede o Obsidian **1.8.7 ou mais novo**. Funciona no computador e no celular.
+O Escrita pede o Obsidian **1.13 ou mais novo**. Funciona no computador e no celular.
 
 - **Pela [lista de plugins da comunidade](https://obsidian.md/plugins?id=escrita)**: abra Configurações ›
   Plugins da comunidade › Procurar, busque "Escrita", instale e ative.

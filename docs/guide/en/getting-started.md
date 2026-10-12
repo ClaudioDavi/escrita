@@ -22,7 +22,7 @@ Other pages: [Features and settings](features-and-settings.md), [Writing](writin
 
 ## Install Escrita
 
-Escrita needs Obsidian **1.8.7 or later**. It works on desktop and on phones.
+Escrita needs Obsidian **1.13 or later**. It works on desktop and on phones.
 
 - **From the [community plugins list](https://obsidian.md/plugins?id=escrita)**: open Settings ›
   Community plugins › Browse, search for "Escrita", then install and enable it.

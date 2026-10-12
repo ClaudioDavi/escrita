@@ -6,6 +6,18 @@ background work. Your data stays, and comes back when you turn the feature on ag
 
 Other pages: [Getting started](getting-started.md), [Writing](writing.md), [Publishing](publishing.md) and [The world](the-world.md).
 
+## Finding a setting
+
+Escrita's settings are in Obsidian's settings search (Obsidian 1.13 or later). Open Settings,
+type in the search box at the top, and every Escrita row that matches shows up. For example,
+type "chapters folder" to find that row. Click a result and Obsidian lands on it. Rows of a
+feature that is off don't show, because the feature isn't loaded.
+
+Each section of Escrita's tab is a card under its own heading: Features, Properties and
+folders, Books, Goals, Publishing · the check, Export, Submissions, Outline, Placeholders,
+Darlings, Editor, Revision · the lens, Stages, Home note, Snapshots and Universe. A section
+of a feature that is off is gone until you turn the feature on.
+
 ## The Features page
 
 Open Settings › Escrita. The **Features** section is at the top. It has:
@@ -256,7 +268,9 @@ doing, and they clear when you restart:
 
 ## Minimum Obsidian version
 
-Removing commands at runtime needs Obsidian **1.7.2** or later. Escrita 0.7 and later ask for it.
+Escrita 1.0.3 and later need Obsidian **1.13** or later, for the settings search. An older
+Obsidian keeps the last version it could run (1.0.2). Before that, removing commands at runtime
+needed 1.7.2, which Escrita 0.7 asked for.
 
 ## When something looks wrong
 

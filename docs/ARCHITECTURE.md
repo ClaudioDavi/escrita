@@ -165,12 +165,6 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
     The review config rejects inline `eslint-disable` for its own rules, so none is used:
     the few rules left off are scoped to one file in `eslint.config.mjs`, and each is here.
     The bot's own run may still report these:
-    - Until 1.0.3 ships (PLAN-1.0.3 Wave 2): `no-unsupported-api` and
-      `settings-tab/require-display` read `minAppVersion` 1.13.0 from their options, not from
-      `manifest.json` (1.8.7), since the tab is declarative (`getSettingDefinitions`, no
-      `display()`). The release raises `minAppVersion` and drops the options.
-    - `src/ui/confirm.ts`: `no-deprecated` for `ButtonComponent.setWarning`;
-      `setDestructive` is newer than `minAppVersion`.
     - `src/snapshots/fs.ts`: `prefer-file-manager-trash-file`, the empty snapshot folder
       removal listed above.
   - **`moment` calls go through `src/ui/day.ts`** (`parseDay`, `fromTime`). The bot's type
@@ -1109,48 +1103,89 @@ or capture the writer's notes.
   plugin's own: `holdsOwnNotes`, which never objects to the folder already saved). `books` is
   `BookService.allBooksEverywhere()`, which lists books even inside a plugin folder.
   `pluginFolders(settings)` gives the three roots.
-- `addFolderField(row, ui, { placeholder, value, problemOf, save, problemText? })` draws the text field:
-  the value is saved only when it passes (on commit, through `ui.saveOnCommit`), otherwise the
+- `addFolderField(row, ui, { placeholder, value, problemOf, save, problemText? })` draws the text field
+  (the `folderRow` helper wraps it): the value is saved only when it passes (on commit, through `ui.saveOnCommit`), otherwise the
   saved value stays and a warning under the row says why (`folderProblemText`). No notices
   while typing.
 - The export and submissions rows (`pluginFolderRows` in `settings-tab.ts`, through
-  `addFolderField` and `pluginFolderProblem`) sit in the always-shown "Properties and folders"
+  `folderRow` and `pluginFolderProblem`) sit in the always-shown "Properties and folders"
   section, so they stay with the feature off, because the folders still apply (classify skips
   them). The snapshots row stays in the snapshots section and builds its check from the same
   pieces (`snapshotsFolderProblem`, `overlapProblem` against the other two folders,
   `bookProblem`). Each folder follows a rename of itself or of a folder holding it, through a
   data follower in its module (`ExportModule`, `SubmissionsModule`, snapshots).
 
-## Settings tab (`core/settings-order.ts`, `core/module-context.ts`, 0.8, IMPROVEMENTS 11)
+## Settings tab (`src/settings-tab.ts`, `core/settings-order.ts`, `core/module-context.ts`, `src/ui/settings-rows.ts`; 0.8, rewritten in 1.0.3, IMPROVEMENTS 11, 36 and 51)
 
-Each module draws its own settings section; `settings.ts` draws the core ones and imports no
-module's internals (`tests/settings-imports.test.ts`: only shared core, top-level files and
+The tab is declarative (Obsidian 1.13+), so Escrita's rows show in Obsidian's settings search.
+`EscritaSettingTab` (`src/settings-tab.ts`) implements `getSettingDefinitions()` and has no
+`display()`. Obsidian draws the tab from the definitions it returns. `settings.ts` keeps the
+schema, defaults, loading and visibility rules (`rowShown`, `SETTING_FEATURES`) and imports no
+module internals (`tests/settings-imports.test.ts`: only shared core, top-level files and
 `<module>/settings.ts`).
 
-- **One order list.** `SECTION_ORDER` in `core/settings-order.ts` names the core and module
-  sections together (`features`, `shared`, `books`, `dayEnds`, `goals`, `publish`, `export`,
-  `submissions`, `outline`, `placeholders`, `darlings`, `editor`, `lens`, `stages`, `desk`,
-  `snapshots`, `universe`, `threads`), in the order the tab had before 0.8. A slot has the
-  `feature` that draws it (null for shared core) and optional `also`: other features that read
-  a row the core draws there (the placeholder marker is read by publish too). `sectionOrder(loaded)`
-  returns the slots to draw: core always, a module's slot while it is loaded, and a slot with
-  `also` while any of those is loaded (the core part only).
-- **The module's part.** `FeatureModule.settingsSection(el, ui)` draws the rows (each module
-  keeps them in `<module>/settings-ui.ts`), and `FeatureModule.offNotice()` returns what the
-  Features page says when the feature is switched off and keeps data (read after the switch is
-  saved, so only what stays). A section is gone with its module. The tab reaches a module
-  through `features.get<FeatureModule>(id)`.
-- **`SettingsUi`** is what a section gets: `app`, `save()` (saves now, then applies the switches
-  and fans out `settingsChanged`), `saveOnCommit(component, fallback, apply)` (a text field
-  saves on blur or Enter, not per key, so typing a folder name doesn't reload features per
-  letter; the value is trimmed, blank becomes the fallback, and the field shows what was kept),
-  `redraw()` and `num(v, fallback, min)`.
+- **One order list, with headings.** `SECTION_ORDER` in `core/settings-order.ts` names the core
+  and module slots together (`features`, `shared`, `books`, `dayEnds`, `goals`, `publish`,
+  `export`, `submissions`, `outline`, `placeholders`, `darlings`, `editor`, `lens`, `stages`,
+  `desk`, `snapshots`, `universe`, `threads`). A slot has the `feature` that draws it (null for
+  shared core), optional `also` (other features that read a row the core draws there) and a
+  `heading`: the i18n key of its group heading, or null when its rows continue the group above
+  (the writing day under Books, the thread words under the Universe). Headings are unique,
+  because Obsidian matches groups by heading on re-render. `sectionOrder(loaded)` returns the
+  slots to draw: core always, a module's slot while it is loaded, and a slot with `also` while
+  any of those is loaded (the core part only).
+- **`getSettingDefinitions()`** reads the loaded set, walks `sectionOrder(loaded)` and makes
+  one group per slot: the core's rows for the slot (`coreBlocks`), then the module's blocks.
+  A slot whose heading is null joins the previous group (`slotGroups`); an empty slot's heading
+  carries to the next slot without one. A part that throws costs its own rows, not the
+  plugin's load. A row that depends on the loaded features is left out when the rows are built
+  (`rowShown`), not hidden with `visible`.
+- **The module's part.** `FeatureModule.settingsItems(ui): SettingsBlock[]` (it replaced
+  `settingsSection(el, ui)`, now gone; each module keeps its rows in `<module>/settings-ui.ts`, as
+  `<prefix>SettingsItems`). `SettingsBlock` is `{ heading?, items }`: the first block goes
+  under the slot's heading, a block with its own heading becomes a group (the lens's "Rules"
+  and "Measures", the universe's "Types" and "Names"), and one without continues the group
+  above. `FeatureModule.offNotice()` returns what the Features page says when the feature is
+  switched off and keeps data (read after the switch is saved, so only what stays). A section
+  is gone with its module. The tab reaches a module through `features.get<FeatureModule>(id)`.
+- **Row helpers** (`src/ui/settings-rows.ts`; imports only `obsidian` and core types). Each
+  returns a `SettingDefinitionRender` (a row with a `render` callback, not Obsidian's `control`
+  rows, which save through `saveData` and skip `saveSettings()` and the commit-on-blur rule):
+  `textRow`, `textAreaRow`, `toggleRow`, `dropdownRow` (converts number values itself),
+  `numberRow` (one parser, `digitsNumber`), `folderRow` (with an optional `problemOf`, used by
+  the folder rows and snapshots), `noteRow` (a description paragraph, not searched) and
+  `customRow(name, draw)` (empties the row and draws into it, for the presets block and the
+  universe's tables). `textRow` takes its fallback and placeholder from `ui.defaults()`, so a
+  cleared field shows the default of the install's language, not English. A row with a name is
+  found by the search; row names are unique within a group (Obsidian logs an error and
+  mis-matches rows otherwise), and `tests/support/definitions.ts` fails on a duplicate.
+- **`SettingsUi`** is what a section gets: `app`, `defaults()` (`defaultsFor` the install's
+  `defaultsLanguage`), `save()` (saves now, then applies the switches and fans out
+  `settingsChanged`), `saveOnCommit(component, fallback, apply)` (a text field saves on blur or
+  Enter, not per key, so typing a folder name doesn't reload features per letter; the value is
+  trimmed, blank becomes the fallback, and the field shows what was kept), `redraw()` (calls the
+  tab's `update()`) and `num(v, fallback, min)`.
+- **When the rows are rebuilt.** Obsidian computes the definitions when the tab is added and on
+  each `update()`, never when the tab opens. So the tab calls `update()` only when the
+  structure changes: `structure()` is a string of the loaded features, the switches,
+  `defaultsLanguage` and `lensLanguage`, and `refresh()` calls `update()` only if it differs
+  from what the rows were built from. `refresh()` runs after every registry apply
+  (`features.onApplied`, wired in `main.ts`, so a command-palette change or the setup also
+  reaches an open tab) and after the Features page saves, so one change rebuilds once. A text
+  field's commit changes none of these and never rebuilds, which would otherwise rebuild the
+  rows below the field while the writer tabs through them.
 - **Shared rows live in core.** A row several features read (the property names, the folders,
   the placeholder marker, the editor's paragraph and quote style) is drawn once by the core, and
   `SETTING_FEATURES` in `settings.ts` says which features keep it shown.
-- **Guard test.** `tests/settings-order.test.ts` finds every class with a `FeatureId` and a
-  `settingsSection` and requires a slot for it (the explorer's rows sit under its switch on the
-  Features page), so a new section that forgets its slot fails the build.
+- **Core parts.** The Features page (language, the presets block as a `customRow` that
+  redraws only itself while asking, one group per feature group, the switches as `addSwitch`
+  inside rows, the explorer's rows right after its switch), the stages (one row per stage; the
+  duplicate-word warning is drawn inside the row), and the folder rows (below).
+- **Guard tests.** `tests/settings-order.test.ts` finds every class with a `FeatureId` and a
+  `settingsItems` and requires a slot for it, so a new section that forgets its slot fails the
+  build. `tests/settings-tab.test.ts` opens the whole tab (a name clash with the core's rows of
+  a slot shows there) and `tests/settings-tab-update.test.ts` checks that a feature load or
+  unload updates once and a text commit never does.
 
 ## Modules and feature switches (`core/features.ts`, `core/feature-registry.ts`, `core/module-context.ts`, 0.7)
 
@@ -1175,7 +1210,7 @@ measurer, the vault index and the notes service are core and always on.
 - **`FeatureModule`.** Constructed once. Subclasses implement `onload`/`onunload`, never
   `load`/`unload`; the registry calls them. It has a `slots` field (below), an optional
   `settingsChanged()` (fanned out to loaded modules only), an optional `dataFollowers()`,
-  and, since 0.8, an optional `settingsSection(el, ui)` and `offNotice()` (see "Settings
+  and, since 0.8, an optional `settingsItems(ui)` and `offNotice()` (see "Settings
   tab"). `registry.get<T>(id)` returns the module while it is loaded, for a soft dependency
   that needs more than `isOn` (the settings tab, and the desk reading the submissions'
   `pending` port).

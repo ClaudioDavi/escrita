@@ -246,25 +246,6 @@ interface lives. Test through the interface.
   behaviour and a node body (for the monospace path spans); delete the copies. `common.cancel`
   and `common.missing` in `src/strings.ts`. `reportError` moves to `src/ui/`.
 
-### 36. Settings rows, with fallbacks from the install's defaults
-
-**Strength:** strong · **Pairs with:** known issue "English defaults in the settings tab"
-
-- **Problem.** `SettingsUi` offers almost nothing, so each section builds its rows by hand: 18
-  toggle rows, 36 `saveOnCommit` text rows, 4 hand-built number fields in
-  `goals/settings-ui.ts:15-37`, three integer parsers (`settings.ts:364` `clampInt`, `:438`
-  `digitsNumber`, the lens's own), 10 raw `change` listeners that skip `saveOnCommit`
-  (`universe/settings-ui.ts`, `lens/settings-ui.ts`), and three local row helpers
-  (`settings.ts:570`, `export/settings-ui.ts:14`, the lens's `numberRow`). The fallbacks and
-  placeholders read the English `DEFAULT_SETTINGS`, which is the known issue.
-  `snapshots/settings-ui.ts:15-47` re-implements `addFolderField`.
-- **Change.** `SettingsUi.defaults()` returns `defaultsFor(settings.defaultsLanguage)`.
-  `src/ui/settings-rows.ts` has `toggleRow`, `textRow` and `numberRow { min, max }`, keyed by
-  setting name and taking their fallback from `defaults()`. `addFolderField` takes an optional
-  problem text so snapshots uses it. Sections become lists of rows.
-- **Wins.** About 40% fewer lines in the section files; one place for commit, trim and
-  fallback.
-
 ### 37. Split `settings.ts`, and module strings follow their sections
 
 **Strength:** medium · **Pairs with:** candidates 11 and 20 (done)
@@ -510,23 +491,6 @@ interface lives. Test through the interface.
   `tests/support/obsidian.ts`.
 - `VaultTree` fakes in 7 files. Add `tests/support/fake-tree.ts`.
 
-### 51. The settings tab on the declarative settings API
-
-**Strength:** medium · **Pairs with:** candidates 36 and 37 · **Needs:** mockups first (rule 7)
-
-- **Problem.** The community review bot reports that `EscritaSettingTab` doesn't implement
-  `getSettingDefinitions()`, so its settings don't show up in Obsidian's settings search
-  (1.13.0+). It also flags `display()` as deprecated. Both rules are turned off for
-  `settings.ts` in `eslint.config.mjs`, but the bot's own run still reports them (review of
-  2026-10-12).
-- **Change.** Raise `minAppVersion` to 1.13.0. Build the tab from `getSettingDefinitions()`:
-  one group per section in `sectionOrder`, with `control` rows for plain toggles, text and
-  dropdowns, and `render` rows for the Features page, the presets block and folder fields.
-  Use `visible` for rows that depend on loaded features. Replace `redraw` with `update()` or
-  `refreshDomState()`. Remove `display()` and both lint exceptions. Doing candidate 36 first
-  turns the sections into lists of rows, which makes this mostly mechanical.
-- **Wins.** Settings search finds Escrita's rows, and two documented exceptions go away.
-
 ## Measured and set aside
 
 ### 12. Content indexes share one read and one segmentation per file
@@ -560,6 +524,8 @@ Found by the review of 2026-10-08. Each is small; fix them before the refactors.
 
 | Version | Improvement |
 |---|---|
+| 1.0.3 | The settings tab on Obsidian's declarative settings API (candidate 51): `EscritaSettingTab` implements `getSettingDefinitions()` in `src/settings-tab.ts`, one group per slot of `core/settings-order.ts` under the slot's heading, so Escrita's rows show in the settings search; `display()` and the `settings.ts` lint exceptions are gone, `minAppVersion` is 1.13.0, and the tab rebuilds (`update()`) only on a change of structure (`refresh()`, `features.onApplied`) |
+| 1.0.3 | Settings rows, with fallbacks from the install's defaults (candidate 36): `FeatureModule.settingsItems` returns `SettingsBlock[]`, built with `textRow`, `toggleRow`, `dropdownRow`, `numberRow`, `folderRow`, `noteRow` and `customRow` in `src/ui/settings-rows.ts`; one number parser (`digitsNumber`), snapshots shares `folderRow`, and a cleared field falls back to `ui.defaults()` of the install's language in every section (the known issue "English defaults in the settings tab" is closed). `ui/confirm.ts` uses `setDestructive` |
 | 1.0.0 | Known issues from the review of 2026-10-08: the settings tab falls back to the install's language set (`SettingsUi.defaults()`, the first slice of candidate 36); one home note lookup for the desk and the setup (`core/home-note.ts`, exact, then NFC, then case-insensitive; pt-BR offers `Início.md` and still adopts `Inicio.md`; the setup no longer plans a second home note); darlings write through `plugin.notes`; dialogue focus and the name marks retry a failed dispatch once (`core/dispatch-retry.ts`, the failure-policy slice of candidate 38); "Appears in" strings registered in `main.ts` and in the parity test; saved-data cleaners skip `__proto__` (`core/records.ts`); the chapter template resolves to a Markdown file; `FakePlugin.turn` (part of candidate 50); stale plan-task comments in core |
 | 1.0.0 | Shared helpers out of module folders (candidate 13): `core/block-context.ts`, `core/dialogue.ts`, `core/typography.ts` and `core/piece-bar.ts` in core; `ui/confirm.ts` and `ui/open-work.ts` in a shared `src/ui/`. Moved, not rewritten; export needs no `publish/checks` (it uses `core/readiness.ts`), so the module dependency list holds only runtime calls |
 | 1.0.0 | One rule for a note's effective piece (candidate 8): `books.classify(x).piece` is the piece with the book's chapter default filled in, and `pieceSource` (`"own"`, `"book"` or null) says where it came from (`effectivePiece` in `core/measure.ts`, applied in `core/classify.ts`); the measurer, the outline rows, the explorer and the goals status bar read it (the progress window shows a chapter's book, not its piece), so a chapter's target agrees everywhere |

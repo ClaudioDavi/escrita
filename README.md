@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/ClaudioDavi/escrita/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ClaudioDavi/escrita?color=B5532F&label=release"></a>
-  <img alt="Obsidian 1.8.7 or later" src="https://img.shields.io/badge/Obsidian-1.8.7%2B-7C3AED">
+  <img alt="Obsidian 1.13 or later" src="https://img.shields.io/badge/Obsidian-1.13%2B-7C3AED">
   <img alt="Desktop and mobile" src="https://img.shields.io/badge/desktop%20%26%20mobile-yes-5A7A48">
   <img alt="No network, no AI" src="https://img.shields.io/badge/network-none-2B211C">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/github/license/ClaudioDavi/escrita?color=7A5A48"></a>
@@ -29,7 +29,7 @@ Escrita is inspired by [NEO](https://github.com/hughhowey/neo) by Hugh Howey (MI
 
 ## Install
 
-It needs Obsidian **1.8.7 or later**. It works on desktop and on phones.
+It needs Obsidian **1.13 or later**. It works on desktop and on phones.
 
 - **[Community plugins](https://obsidian.md/plugins?id=escrita)**: open Settings → Community plugins → Browse, search for "Escrita", then install and enable it.
 - **With BRAT**: install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin, choose "Add a beta plugin", and enter `ClaudioDavi/escrita`.
@@ -94,6 +94,16 @@ To try your build, link or copy the repository folder into a test vault's `.obsi
 To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updates `manifest.json` and `versions.json`), commit, then push a tag with the bare version number (for example `git tag 0.1.1 && git push --tags`). The release workflow builds the plugin and drafts a GitHub release with `main.js`, `manifest.json` and `styles.css`; publish the draft when it looks right.
 
 ## Changelog
+
+### 1.0.3 (unreleased)
+
+Escrita's settings now appear in Obsidian's settings search. Nothing else changes in how Escrita works.
+
+- **Settings search**: type in the search box at the top of Obsidian's settings and every Escrita row is found, with a click that lands on it. Each section is a group card under its heading.
+- Upgrade notes:
+  - Escrita now needs Obsidian 1.13 or later (`minAppVersion`). Obsidian does not offer this update to an older app, which keeps 1.0.2.
+  - Your settings and switches are unchanged.
+- Under the hood: the settings rows come from one set of row helpers, and a cleared field falls back to the default of your install's language in every section. Two section headings are now fully in one language: "Revision · the lens" and "Publishing · the check" (in Portuguese, "Revisão · a lente" and "Publicação · a checagem").
 
 ### 1.0.2 (2026-10-11)
 

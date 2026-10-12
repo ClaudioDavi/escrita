@@ -7,6 +7,19 @@ você liga o recurso de novo.
 
 Outras páginas: [Primeiros passos](getting-started.md), [Escrita](writing.md), [Publicação](publishing.md) e [O mundo](the-world.md).
 
+## Achar uma configuração
+
+As configurações do Escrita aparecem na busca de configurações do Obsidian (Obsidian 1.13 ou
+mais novo). Abra as Configurações, digite na caixa de busca no topo e toda linha do Escrita que
+combinar aparece. Por exemplo, digite "pasta de capítulos" para achar essa linha. Clique num
+resultado e o Obsidian leva você até ela. As linhas de um recurso desligado não aparecem,
+porque o recurso não está carregado.
+
+Cada seção da aba do Escrita é um cartão sob o próprio título: Recursos, Propriedades e pastas,
+Livros, Metas, Publicação · a checagem, Exportação, Envios, Esboço, Marcadores, Darlings, Editor,
+Revisão · a lente, Estágios, Nota inicial, Versões e Universo. A seção de um recurso desligado
+some até você ligar o recurso de novo.
+
 ## A página Recursos
 
 Abra Configurações › Escrita. A seção **Recursos** fica no topo. Ela tem:
@@ -268,8 +281,9 @@ somem quando você reinicia:
 
 ## Versão mínima do Obsidian
 
-Remover comandos durante o uso exige o Obsidian **1.7.2** ou mais novo. A 0.7 do Escrita e as
-seguintes pedem essa versão.
+A partir da 1.0.3, o Escrita exige o Obsidian **1.13** ou mais novo, por causa da busca de
+configurações. Um Obsidian mais antigo continua com a última versão que ele consegue rodar
+(1.0.2). Antes disso, remover comandos durante o uso exigia a 1.7.2, que a 0.7 do Escrita pedia.
 
 ## Quando algo parece errado
 

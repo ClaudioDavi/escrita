@@ -143,7 +143,7 @@ helpers and their tests. The `settingsItems` contract and `SettingsBlock`. Headi
 Wave 1 finishes, modules still on `settingsSection` keep drawing through a temporary adapter
 (one `render` row per module), so every commit builds.
 
-**Wave 1, ports (Sonnet, four tasks in parallel, one owner per file):**
+**Wave 1, ports (done 2026-10-12; Sonnet, four tasks in parallel, one owner per file):**
 
 | Task | Owns |
 |---|---|
@@ -175,7 +175,7 @@ Rules for every task (from the Wave 0 review):
 Task A also removes the adapter once B–D merge. **Judge (Opus):** reads the diff against
 this plan, the row names per group, and the behaviors in "Tests".
 
-**Wave 2, release (Sonnet, then an Opus review):**
+**Wave 2, release (done 2026-10-12, except the release mechanics; Sonnet, then an Opus review):**
 
 - `manifest.json` and `versions.json` (1.13.0); `eslint.config.mjs` exceptions removed.
 - `docs/ARCHITECTURE.md`: the settings tab section, and the exceptions list.
@@ -186,6 +186,22 @@ this plan, the row names per group, and the behaviors in "Tests".
 - The author confirms two section headings (judge fix, Wave 1): the lens's "Revisão · a lente" /
   "Revision · the lens" (board 40), and the publish check's "Publicação · a checagem" /
   "Publishing · the check" (same pattern, not on the board). The Features page groups stay plain.
+
+## Results
+
+- **Wave 0** (contracts) and **Wave 1** (the four ports, merged; the temporary adapter is gone;
+  judge fixes and review nits committed): every module returns `settingsItems`; the tab is
+  `src/settings-tab.ts` with `getSettingDefinitions`, no `display()`; `confirm.ts` uses
+  `setDestructive`; the `settings.ts` and `confirm.ts` lint exceptions are gone.
+- **Wave 2** (docs and manifest): `minAppVersion` is 1.13.0 in `manifest.json` (the version is
+  still 1.0.2); the two `minAppVersion` options are out of `eslint.config.mjs`; ARCHITECTURE.md
+  ("Settings tab", "Documented exceptions"), CONTEXT.md, IMPROVEMENTS.md (36 and 51 in "Done"),
+  ROADMAP.md, the README changelog and the guide's "Features and settings" page (English and
+  pt-BR) describe the new tab. `versions.json` gets its 1.0.3 entry (1.13.0) from `npm version`
+  at release, after the by-hand checks (G3).
+- **Section headings accepted by the author on 2026-10-12:** "Revisão · a lente" /
+  "Revision · the lens" and "Publicação · a checagem" / "Publishing · the check". The Features
+  page groups stay plain.
 
 ## By-hand checks (G3, Obsidian 1.14.4, `~/projects/website/escrita/`)
 
