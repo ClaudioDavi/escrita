@@ -1,6 +1,7 @@
 // The order of the settings tab (PLAN-0.8 Q13, IMPROVEMENTS 11): one list that names the
 // core sections and the modules' sections together, in today's visual order. Pure data and
-// one function, no Obsidian imports. settings.ts draws what `sectionOrder` returns.
+// one function, no Obsidian imports. The tab (settings-tab.ts) makes one group per slot that
+// `sectionOrder` returns, under the slot's heading (PLAN-1.0.3 Q4).
 
 import type { FeatureId } from "./features";
 
@@ -11,14 +12,18 @@ export type SectionId =
 
 export interface SectionSlot {
   id: SectionId;
+  /**
+   * The i18n key of the slot's group heading (PLAN-1.0.3 Q4). Null: the slot's rows continue
+   * the group above, as they sit today (the writing day under Books, the thread words under
+   * the Universe). Headings are unique: Obsidian matches groups by heading on re-render.
+   */
+  heading: string | null;
   /** The module that draws the slot's rows; null = shared core, always drawn. */
   feature: FeatureId | null;
   /**
    * Other features that read a row the core draws in this slot (a "shared row": the
    * placeholder marker is read by publish too). The slot still draws, its core part
-   * only, while any of them is loaded and the module is not. In a slot with `also` the
-   * core draws the heading, so the module's section draws its rows only; in every other
-   * slot the module's section draws its own heading.
+   * only, while any of them is loaded and the module is not.
    */
   also?: readonly FeatureId[];
 }
@@ -31,24 +36,24 @@ export interface SectionSlot {
  * only with the universe off.
  */
 export const SECTION_ORDER: readonly SectionSlot[] = [
-  { id: "features", feature: null },
-  { id: "shared", feature: null },
-  { id: "books", feature: null },
-  { id: "dayEnds", feature: null },
-  { id: "goals", feature: "goals" },
-  { id: "publish", feature: "publish" },
-  { id: "export", feature: "export" },
-  { id: "submissions", feature: "submissions" },
-  { id: "outline", feature: "outline" },
-  { id: "placeholders", feature: "placeholders", also: ["publish"] },
-  { id: "darlings", feature: "darlings" },
-  { id: "editor", feature: "typing", also: ["dialogueFocus", "moveBlocks", "lens"] },
-  { id: "lens", feature: "lens" },
-  { id: "stages", feature: null },
-  { id: "desk", feature: "desk" },
-  { id: "snapshots", feature: "snapshots" },
-  { id: "universe", feature: "universe", also: ["threads"] },
-  { id: "threads", feature: "threads" },
+  { id: "features", heading: "settings.features", feature: null },
+  { id: "shared", heading: "settings.shared", feature: null },
+  { id: "books", heading: "settings.books", feature: null },
+  { id: "dayEnds", heading: null, feature: null },
+  { id: "goals", heading: "settings.goals", feature: "goals" },
+  { id: "publish", heading: "settings.publishing", feature: "publish" },
+  { id: "export", heading: "export.settings.heading", feature: "export" },
+  { id: "submissions", heading: "submissions.settings.heading", feature: "submissions" },
+  { id: "outline", heading: "settings.outline", feature: "outline" },
+  { id: "placeholders", heading: "settings.placeholders", feature: "placeholders", also: ["publish"] },
+  { id: "darlings", heading: "settings.darlings", feature: "darlings" },
+  { id: "editor", heading: "settings.editor", feature: "typing", also: ["dialogueFocus", "moveBlocks", "lens"] },
+  { id: "lens", heading: "settings.lens", feature: "lens" },
+  { id: "stages", heading: "settings.stages", feature: null },
+  { id: "desk", heading: "settings.homeNoteHeading", feature: "desk" },
+  { id: "snapshots", heading: "settings.snapshots", feature: "snapshots" },
+  { id: "universe", heading: "universe.settings", feature: "universe", also: ["threads"] },
+  { id: "threads", heading: null, feature: "threads" },
 ];
 
 /** The slots to draw with these features loaded, in order: core always, a module's while it is loaded. */

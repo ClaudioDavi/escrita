@@ -134,6 +134,8 @@ class StubControl {
 
 export class Setting {
   readonly row: SettingRow = { name: "", desc: "", heading: false };
+  /** The controls added, in order (Obsidian's `components`): a test reaches a toggle or a dropdown here and `fire`s it. */
+  components: StubControl[] = [];
   settingEl: HTMLElement = undefined as unknown as HTMLElement;
   nameEl: HTMLElement = undefined as unknown as HTMLElement;
   descEl: HTMLElement = undefined as unknown as HTMLElement;
@@ -153,7 +155,17 @@ export class Setting {
   setHeading(): this { this.row.heading = true; return this; }
   private control(cb?: (c: never) => unknown): this {
     // Callbacks run only where there is a DOM: node tests that build a Setting get the old no-op.
-    if (typeof document !== "undefined" && cb) cb(new StubControl() as never);
+    if (typeof document !== "undefined" && cb) {
+      const c = new StubControl();
+      this.components.push(c);
+      cb(c as never);
+    }
+    return this;
+  }
+  /** Obsidian's clear(): empties the control element and forgets the controls (a re-render does this before `render`). */
+  clear(): this {
+    this.controlEl?.replaceChildren();
+    this.components = [];
     return this;
   }
   addText(cb?: (c: never) => unknown): this { return this.control(cb); }
@@ -164,9 +176,43 @@ export class Setting {
   addTextArea(cb?: (c: never) => unknown): this { return this.control(cb); }
   addColorPicker(cb?: (c: never) => unknown): this { return this.control(cb); }
 }
+/**
+ * A group of settings (Obsidian 1.11+): a group element holding a list element the rows go in.
+ * A heading is logged as a heading row of `settingLog`, so a test reads the same headings
+ * whether a section draws its own or the tab's group draws it.
+ */
+export class SettingGroup {
+  groupEl: HTMLElement = undefined as unknown as HTMLElement;
+  listEl: HTMLElement = undefined as unknown as HTMLElement;
+  private headingRow: SettingRow | null = null;
+  constructor(containerEl?: HTMLElement) {
+    if (typeof document !== "undefined") {
+      this.groupEl = document.createElement("div");
+      this.groupEl.className = "setting-group";
+      this.listEl = this.groupEl.appendChild(document.createElement("div"));
+      this.listEl.className = "setting-items";
+      containerEl?.appendChild(this.groupEl);
+    }
+  }
+  setHeading(text: string): this {
+    if (this.headingRow) this.headingRow.name = text;
+    else if (text) settingLog.push(this.headingRow = { name: text, desc: "", heading: true });
+    return this;
+  }
+  addClass(...classes: string[]): this { this.groupEl?.classList.add(...classes); return this; }
+  addSetting(cb: (s: Setting) => void): this { cb(new Setting(this.listEl)); return this; }
+  addSearch(): this { return this; }
+  addExtraButton(): this { return this; }
+}
+
 export class PluginSettingTab {
   containerEl: unknown = {};
+  /** What getSettingDefinitions() returned at the last update() (Obsidian 1.13+). */
+  settingItems: unknown[] = [];
   constructor(public app?: unknown, public plugin?: unknown) {}
+  getSettingDefinitions(): unknown[] { return []; }
+  /** Obsidian's update() recomputes the rows and re-renders an open tab; tests/support/definitions.ts adds the re-render. */
+  update(): void { this.settingItems = this.getSettingDefinitions(); }
 }
 
 export class View extends Component {

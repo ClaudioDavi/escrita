@@ -1,5 +1,6 @@
-// IMPROVEMENTS 11: settings.ts stops importing modules. It may import shared core, the
-// settings of a module (`<module>/settings.ts`: types, defaults, normalization; no Obsidian code).
+// IMPROVEMENTS 11: settings.ts stops importing modules, and so does the tab (settings-tab.ts, 1.0.3).
+// They may import shared core and ui, and the settings of a module (`<module>/settings.ts`: types,
+// defaults, normalization; no Obsidian code).
 
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "fs";
@@ -18,16 +19,18 @@ function importsOf(file: string): string[] {
 /** What the specifier points at, from src/ ("./lens/lists" -> "lens/lists"). */
 const fromSrc = (spec: string) => spec.replace(/^\.\//, "");
 
-describe("settings.ts imports", () => {
-  const specs = importsOf("settings.ts").map(fromSrc);
+for (const file of ["settings.ts", "settings-tab.ts"]) {
+  describe(`${file} imports`, () => {
+    const specs = importsOf(file).map(fromSrc);
 
-  it("reaches no module's internals", () => {
-    const bad = specs.filter((spec) => {
-      const [dir, rest] = spec.split("/");
-      if (dir === "core" || spec === "main" || spec === "i18n" || !rest) return false;   // shared core and top-level files
-      if (rest === "settings") return false;                                              // <module>/settings.ts
-      return true;
+    it("reaches no module's internals", () => {
+      const bad = specs.filter((spec) => {
+        const [dir, rest] = spec.split("/");
+        if (dir === "core" || dir === "ui" || spec === "main" || spec === "i18n" || !rest) return false;   // shared core, shared ui and top-level files
+        if (rest === "settings") return false;                                                           // <module>/settings.ts
+        return true;
+      });
+      expect(bad).toEqual([]);
     });
-    expect(bad).toEqual([]);
   });
-});
+}

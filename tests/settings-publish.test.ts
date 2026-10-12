@@ -4,10 +4,11 @@ import { registerStrings, t } from "../src/i18n";
 import { coreStrings } from "../src/strings";
 import { DEFAULT_SETTINGS } from "../src/settings";
 import { publishSettingsSection } from "../src/publish/settings-ui";
-import { outlineSettingsSection } from "../src/outline/settings-ui";
+import { outlineSettingsItems } from "../src/outline/settings-ui";
 import { placeholdersSettingsSection } from "../src/placeholders/settings-ui";
 import { resetSettingLog, settingLog } from "./support/obsidian";
 import { commit, fakeUi } from "./support/section-ui";
+import { renderBlocks, rowNamed } from "./support/definitions";
 
 beforeAll(() => registerStrings(coreStrings));
 beforeEach(() => resetSettingLog());
@@ -34,11 +35,24 @@ describe("publish settings section", () => {
   });
 });
 
-describe("outline settings section", () => {
-  it("draws the heading and the ghost beats row", () => {
-    outlineSettingsSection(div(), fakeUi().ui, plugin());
-    expect(settingLog.map((r) => r.name)).toEqual(["settings.outline", "settings.ghostBeats"].map((k) => t(k)));
-    expect(settingLog[0].heading).toBe(true);
+describe("outline settings items", () => {
+  it("are the ghost beats row, with no heading (the tab draws the slot's)", () => {
+    const blocks = outlineSettingsItems(fakeUi().ui, plugin());
+    expect(blocks.map((b) => b.heading)).toEqual([undefined]);
+    renderBlocks(blocks);
+    expect(settingLog.map((r) => r.name)).toEqual([t("settings.ghostBeats")]);
+    expect(settingLog[0].heading).toBe(false);
+  });
+
+  it("the toggle stores and saves at once", async () => {
+    const p = plugin() as { settings: { ghostBeats: boolean } };
+    const { ui, save } = fakeUi();
+    const { groups } = renderBlocks(outlineSettingsItems(ui, p as never));
+    const toggle = rowNamed(groups, t("settings.ghostBeats"))!.setting.components[0];
+    expect(toggle.value).toBe(p.settings.ghostBeats);
+    await toggle.fire(!p.settings.ghostBeats);
+    expect(p.settings.ghostBeats).toBe(!DEFAULT_SETTINGS.ghostBeats);
+    expect(save).toHaveBeenCalledTimes(1);
   });
 });
 

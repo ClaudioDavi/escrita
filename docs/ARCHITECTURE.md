@@ -165,14 +165,14 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
     The review config rejects inline `eslint-disable` for its own rules, so none is used:
     the few rules left off are scoped to one file in `eslint.config.mjs`, and each is here.
     The bot's own run may still report these:
-    - `src/settings.ts`: `settings-tab/prefer-setting-definitions` and
-      `@typescript-eslint/no-deprecated` (`display()`). The declarative settings API
-      (`getSettingDefinitions`) needs Obsidian 1.13 and `minAppVersion` is 1.8.7, and the
-      tab draws module sections that load and unload at runtime.
+    - Until 1.0.3 ships (PLAN-1.0.3 Wave 2): `no-unsupported-api` and
+      `settings-tab/require-display` read `minAppVersion` 1.13.0 from their options, not from
+      `manifest.json` (1.8.7), since the tab is declarative (`getSettingDefinitions`, no
+      `display()`). The release raises `minAppVersion` and drops the options.
     - `src/ui/confirm.ts`: `no-deprecated` for `ButtonComponent.setWarning`;
       `setDestructive` is newer than `minAppVersion`.
     - `src/snapshots/fs.ts`: `prefer-file-manager-trash-file`, the empty snapshot folder
-      removal listed above. The settings exception is planned away in IMPROVEMENTS 51.
+      removal listed above.
   - **`moment` calls go through `src/ui/day.ts`** (`parseDay`, `fromTime`). The bot's type
     check resolves `moment(...)` as `any`, which raises `no-unsafe-*` warnings at every call
     (review of 2026-10-12). The wrapper casts `moment` once to the small typed slice Escrita
@@ -1109,11 +1109,11 @@ or capture the writer's notes.
   plugin's own: `holdsOwnNotes`, which never objects to the folder already saved). `books` is
   `BookService.allBooksEverywhere()`, which lists books even inside a plugin folder.
   `pluginFolders(settings)` gives the three roots.
-- `addFolderField(row, ui, { placeholder, value, problemOf, save })` draws the text field:
+- `addFolderField(row, ui, { placeholder, value, problemOf, save, problemText? })` draws the text field:
   the value is saved only when it passes (on commit, through `ui.saveOnCommit`), otherwise the
   saved value stays and a warning under the row says why (`folderProblemText`). No notices
   while typing.
-- The export and submissions rows (`pluginFolderRows` in `settings.ts`, through
+- The export and submissions rows (`pluginFolderRows` in `settings-tab.ts`, through
   `addFolderField` and `pluginFolderProblem`) sit in the always-shown "Properties and folders"
   section, so they stay with the feature off, because the folders still apply (classify skips
   them). The snapshots row stays in the snapshots section and builds its check from the same

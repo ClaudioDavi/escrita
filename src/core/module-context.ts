@@ -11,6 +11,7 @@ import { t } from "../i18n";
 import type { FeatureId } from "./features";
 import type { Follower, IndexFile, IndexSpec, VaultIndex } from "./vault-index";
 import type { DecorationId, Drawer } from "./explorer-decorations";
+import type { SettingsBlock } from "../ui/settings-rows";
 
 /** A code block processor: what `registerMarkdownCodeBlockProcessor` takes. */
 export type CodeBlockHandler = (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => void | Promise<void>;
@@ -51,7 +52,8 @@ export interface ModuleContext {
 }
 
 /**
- * What the settings tab hands a module's `settingsSection` (IMPROVEMENTS 11).
+ * What the settings tab hands a module's `settingsItems` (and `settingsSection`, until every
+ * module has moved; IMPROVEMENTS 11, PLAN-1.0.3).
  */
 export interface SettingsUi {
   app: App;
@@ -73,7 +75,10 @@ export interface SettingsUi {
    * for a word-bearing setting: that is the English set, wrong in a pt-BR install.
    */
   defaults(): EscritaSettings;
-  /** Draws the whole tab again (after a change that shows or hides rows). */
+  /**
+   * Builds the tab's rows again and re-renders it if it is open (the tab's `update()`): after
+   * a change that adds or removes rows. Never after a text field commits (PLAN-1.0.3 Q5).
+   */
   redraw(): void;
   /** A number typed in a field: its digits, at least `min` (default 0); `fallback` when blank or not a number. */
   num(v: string, fallback: number, min?: number): number;
@@ -107,6 +112,15 @@ export abstract class FeatureModule extends Component {
    * Q13), so an off feature's section is gone with it.
    */
   settingsSection?(el: HTMLElement, ui: SettingsUi): void;
+
+  /**
+   * This module's rows of the settings tab (PLAN-1.0.3 Q4), built with the helpers of
+   * ui/settings-rows.ts. The tab draws the slot's heading (core/settings-order.ts) and puts the
+   * first block under it; a block with a heading becomes a group of its own. Called when the
+   * tab builds its rows (at plugin load and on each update()), only while the feature is
+   * loaded. Takes the place of `settingsSection`: a module has one or the other.
+   */
+  settingsItems?(ui: SettingsUi): SettingsBlock[];
 
   /**
    * What the Features page says when the writer turns this feature off and it

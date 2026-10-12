@@ -21,10 +21,11 @@ import { readChapterDefault } from "../core/measure";
 import { assignColors, povValue, renamePovKey, type PovColor } from "./pov";
 import { CreateBookModal } from "./modals";
 import { confirmAction } from "../ui/confirm";
+import type { SettingsBlock } from "../ui/settings-rows";
 import { OUTLINE_VIEW, OutlineView, str } from "./view";
 import { READER_VIEW, ReaderView } from "./reader-view";
 import { dropPositions, movePositions } from "./reader-plan";
-import { outlineSettingsSection } from "./settings-ui";
+import { outlineSettingsItems } from "./settings-ui";
 
 /** Default goal written into a new book's note. */
 
@@ -356,5 +357,5 @@ export class OutlineModule extends FeatureModule {
     reportError(e);
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { outlineSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return outlineSettingsItems(ui, this.plugin); }
 }

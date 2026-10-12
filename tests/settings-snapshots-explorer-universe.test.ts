@@ -145,7 +145,7 @@ describe("universe and threads sections", () => {
 
 describe("plugin folder rows (export, submissions)", () => {
   it("refuse a folder that holds the writer's files of any kind, not only notes", async () => {
-    const { pluginFolderRows } = await import("../src/settings");
+    const { pluginFolderRows } = await import("../src/settings-tab");
     const r = rig();
     (r.ui.app.vault as unknown as { getFiles: () => { path: string }[] }).getFiles = () => [{ path: "Manuscritos/A Casa (Shunn).docx" }];
     pluginFolderRows(r.el, r.ui, r.settings, () => []);
@@ -183,7 +183,7 @@ describe("a pt-BR install falls back to the pt-BR set (1.0 known issue: English 
   });
 
   it("clearing the export and submissions folders restores the pt-BR folders", async () => {
-    const { pluginFolderRows } = await import("../src/settings");
+    const { pluginFolderRows } = await import("../src/settings-tab");
     const r = pt();
     pluginFolderRows(r.el, r.ui, r.settings, () => []);
     expect(r.commits[0].fallback()).toBe(defaultsFor("pt-BR").exportFolder);

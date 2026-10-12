@@ -3,6 +3,10 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { FEATURE_IDS, type FeatureId } from "../src/core/features";
 import { SECTION_ORDER, sectionOrder } from "../src/core/settings-order";
+import { coreStrings } from "../src/strings";
+import { exportStrings } from "../src/export/strings";
+import { submissionsStrings } from "../src/submissions/strings";
+import { universeStrings } from "../src/universe/strings";
 
 const all = new Set<FeatureId>(FEATURE_IDS);
 const without = (...ids: FeatureId[]) => new Set([...FEATURE_IDS].filter((i) => !ids.includes(i)));
@@ -48,6 +52,17 @@ describe("sectionOrder (PLAN-0.8 Q13)", () => {
     }
   });
 
+  it("gives each slot a heading key, unique, or null to continue the group above (PLAN-1.0.3 Q4)", () => {
+    const keys = SECTION_ORDER.map((s) => s.heading).filter((h): h is string => h !== null);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(SECTION_ORDER[0].heading).not.toBeNull();
+    expect(SECTION_ORDER.filter((s) => s.heading === null).map((s) => s.id)).toEqual(["dayEnds", "threads"]);
+    const tables = [coreStrings, exportStrings, submissionsStrings, universeStrings];
+    for (const k of keys) {
+      for (const lang of ["en", "pt-BR"] as const) expect(tables.some((s) => s[lang][k]), `${k} (${lang})`).toBe(true);
+    }
+  });
+
   it("does not change its input", () => {
     const loaded = new Set<FeatureId>(["goals"]);
     sectionOrder(loaded);
@@ -56,7 +71,8 @@ describe("sectionOrder (PLAN-0.8 Q13)", () => {
 });
 
 // A module with a settings section and no slot would never draw (0.8: export and submissions
-// were missed until this guard). Scans each feature class in src/ for its id and settingsSection.
+// were missed until this guard). Scans each feature class in src/ for its id and settingsSection
+// or settingsItems.
 describe("every settings section has a slot", () => {
   // drawn elsewhere: the explorer's rows sit under its switch on the Features page
   const ELSEWHERE = new Set<string>(["explorerCounts"]);
@@ -67,7 +83,7 @@ describe("every settings section has a slot", () => {
     const text = readFileSync(f, "utf8");
     for (const cls of text.split(/\bclass\s+/).slice(1)) {
       const id = /readonly id(?::\s*FeatureId)?\s*=\s*"([A-Za-z]+)"/.exec(cls)?.[1];
-      if (id && /\bsettingsSection\s*\(/.test(cls.split(/\bclass\s+/)[0]!)) withSection.push(id);
+      if (id && /\bsettings(?:Section|Items)\s*\(/.test(cls.split(/\bclass\s+/)[0]!)) withSection.push(id);
     }
   }
 

@@ -35,4 +35,7 @@ if (typeof HTMLElement !== "undefined") {
   proto.setAttr = function (this: HTMLElement, k: string, v: string): void { this.setAttribute(k, v); };
   proto.setCssStyles = function (this: HTMLElement, styles: Record<string, string>): void { Object.assign(this.style, styles); };
   proto.toggle = function (this: HTMLElement, show: boolean): void { this.style.display = show ? "" : "none"; };
+  // Obsidian's global createDiv: a detached div
+  const g = globalThis as unknown as Record<string, unknown>;
+  g.createDiv ??= (o?: string | ElOptions) => applyOptions(document.createElement("div"), o);
 }

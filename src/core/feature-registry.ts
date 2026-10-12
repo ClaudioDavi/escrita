@@ -30,6 +30,7 @@ export class FeatureRegistry {
   private entries: Entry[] = [];
   private loaded = new Set<FeatureId>();
   private listeners = new Set<(id: FeatureId, on: boolean) => void>();
+  private appliedListeners = new Set<() => void>();
   private applying = false;
   private again = false;
   private closed = false;
@@ -81,6 +82,9 @@ export class FeatureRegistry {
         try { cb(id, on); } catch (err) { console.error("Escrita: a feature listener failed", err); }
       }
     }
+    for (const cb of [...this.appliedListeners]) {
+      try { cb(); } catch (err) { console.error("Escrita: a feature listener failed", err); }
+    }
   }
 
   isOn(id: FeatureId): boolean {
@@ -96,6 +100,17 @@ export class FeatureRegistry {
   onChange(cb: (id: FeatureId, on: boolean) => void): () => void {
     this.listeners.add(cb);
     return () => { this.listeners.delete(cb); };
+  }
+
+  /**
+   * Runs `cb` once at the end of every apply(), whether or not a feature changed, after the
+   * `onChange` listeners: for a watcher of what the switches decide as a whole, such as the
+   * settings tab, which compares the loaded set and the switches with what its rows were built
+   * from and rebuilds them only on a change (PLAN-1.0.3 Q5). Returns the unsubscribe.
+   */
+  onApplied(cb: () => void): () => void {
+    this.appliedListeners.add(cb);
+    return () => { this.appliedListeners.delete(cb); };
   }
 
   /** Fans out to loaded modules only. */

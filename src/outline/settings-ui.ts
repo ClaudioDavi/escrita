@@ -1,14 +1,19 @@
-import { Setting } from "obsidian";
 import { t } from "../i18n";
 import type EscritaPlugin from "../main";
 import type { SettingsUi } from "../core/module-context";
+import { toggleRow, type SettingsBlock } from "../ui/settings-rows";
 
-export function outlineSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
+/** The Outline section's rows, under the heading the tab draws: ghost beats. */
+export function outlineSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): SettingsBlock[] {
   const s = plugin.settings;
-  new Setting(el).setName(t("settings.outline")).setHeading();
-  new Setting(el)
-    .setName(t("settings.ghostBeats"))
-    .setDesc(t("settings.ghostBeats.desc"))
-    .addToggle((c) => c.setValue(s.ghostBeats)
-      .onChange(async (v) => { s.ghostBeats = v; await ui.save(); }));
+  return [{
+    items: [
+      toggleRow(ui, {
+        name: t("settings.ghostBeats"),
+        desc: t("settings.ghostBeats.desc"),
+        get: () => s.ghostBeats,
+        set: (v) => { s.ghostBeats = v; },
+      }),
+    ],
+  }];
 }

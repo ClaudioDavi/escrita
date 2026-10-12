@@ -1,5 +1,6 @@
 import { Plugin, TFile, debounce, setTooltip } from "obsidian";
-import { EscritaSettingTab, loadSettings, type EscritaSettings } from "./settings";
+import { loadSettings, type EscritaSettings } from "./settings";
+import { EscritaSettingTab } from "./settings-tab";
 import type { EscritaData } from "./data";
 import { cleanExportChoices, cleanReadPositions, cleanSetupOffered } from "./data";
 import { cleanLeftOff } from "./core/left-off";
@@ -176,7 +177,11 @@ export default class EscritaPlugin extends Plugin {
     this.setup = new SetupModule(this);
     startCoreModule(this, this.setup);
 
-    this.addSettingTab(new EscritaSettingTab(this.app, this));
+    // Obsidian builds the tab's rows here and on its update() only: a change of the loaded features
+    // or the switches rebuilds them (PLAN-1.0.3 Q5).
+    const tab = new EscritaSettingTab(this.app, this);
+    this.addSettingTab(tab);
+    this.register(this.features.onApplied(() => tab.refresh()));
 
     // A note the writer creates in a tracked folder starts in the draft stage. Only after
     // the layout is ready (the vault fires "create" for every file while it loads), and a

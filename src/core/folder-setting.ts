@@ -18,12 +18,17 @@ export function folderProblemText(p: FolderProblem): string {
 
 /**
  * A folder text field that saves only a value that passes `problemOf`. Otherwise the saved value stays
- * and a warning under the setting says why (no notices while typing).
+ * and a warning under the setting says why (no notices while typing): `problemText`, or the shared
+ * warnings of `folderProblemText`.
  */
 export function addFolderField(
   row: Setting, ui: SettingsUi,
-  o: { placeholder: string; value: string; problemOf: (v: string) => FolderProblem | null; save: (v: string) => void },
+  o: {
+    placeholder: string; value: string; problemOf: (v: string) => FolderProblem | null; save: (v: string) => void;
+    problemText?: (p: FolderProblem) => string;
+  },
 ): void {
+  const text = o.problemText ?? folderProblemText;
   const hint = row.descEl.createDiv({ cls: "escrita-setting-warning" });
   hint.toggle(false);
   row.addText((c) => {
@@ -31,7 +36,7 @@ export function addFolderField(
     const show = (v: string): boolean => {
       const problem = o.problemOf(v);
       c.inputEl.toggleClass("escrita-invalid", problem !== null);
-      hint.setText(problem ? folderProblemText(problem) : "");
+      hint.setText(problem ? text(problem) : "");
       hint.toggle(problem !== null);
       return problem !== null;
     };

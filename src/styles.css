@@ -112,6 +112,20 @@ body.is-mobile .escrita-swatch-clear {
   height: 40px;
 }
 
+/* Settings rows (PLAN-1.0.3): a custom row draws its own content in place of the name and the
+   control. The adapter's row holds a section still drawn as before (until Wave 1), whose own
+   rows keep their padding. */
+.setting-item.escrita-custom-row {
+  display: block;
+}
+.setting-item.escrita-custom-row:empty {
+  display: none;
+}
+.setting-item.escrita-adapter-row {
+  padding: 0;
+  border: none;
+}
+
 /* Settings: the Features page (board 21). Rows are Obsidian settings; the switch is a
    button so the touch target is 48x32 (44 on a phone) while the track keeps its size. */
 .escrita-features-desc,

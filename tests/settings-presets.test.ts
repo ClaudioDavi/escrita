@@ -8,8 +8,10 @@ import { presetSwitches } from "../src/core/feature-presets";
 import { switchesOf } from "../src/core/feature-registry";
 import { registerStrings, t } from "../src/i18n";
 import { coreStrings } from "../src/strings";
-import { DEFAULT_SETTINGS, EscritaSettingTab } from "../src/settings";
+import { DEFAULT_SETTINGS } from "../src/settings";
+import { EscritaSettingTab } from "../src/settings-tab";
 import { resetSettingLog } from "./support/obsidian";
+import { openTab } from "./support/definitions";
 
 beforeAll(() => registerStrings(coreStrings));
 beforeEach(() => resetSettingLog());
@@ -26,9 +28,7 @@ function page(opts: { home?: boolean; preset?: "essentials" | "writer" | "everyt
     features: { isOn: (_id: FeatureId) => true, get: () => undefined },
   };
   const tab = new EscritaSettingTab(new App() as never, plugin as never);
-  tab.containerEl = document.createElement("div");
-  tab.display();
-  const el = tab.containerEl as HTMLElement;
+  const { el } = openTab(tab);
   const btn = (label: string) => [...el.querySelectorAll("button")].find((b) => b.textContent === label) as HTMLButtonElement;
   return { settings, saves, open, el, btn };
 }

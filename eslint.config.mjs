@@ -15,17 +15,15 @@ export default defineConfig([
         tsconfigRootDir: import.meta.dirname,
       },
     },
-    rules: {},
+    rules: {
+      // 1.0.3 needs Obsidian 1.13 (the declarative settings tab, PLAN-1.0.3). manifest.json's
+      // minAppVersion moves to 1.13.0 at release (Wave 2); drop these two options then.
+      "obsidianmd/no-unsupported-api": ["error", { minAppVersion: "1.13.0" }],
+      "obsidianmd/settings-tab/require-display": ["warn", { minAppVersion: "1.13.0" }],
+    },
   },
   // Documented exceptions (ARCHITECTURE.md, "Documented exceptions"). Inline disables of
   // these rules are rejected by the review config, so each one is scoped to its file here.
-  {
-    files: ["src/settings.ts"],
-    rules: {
-      "obsidianmd/settings-tab/prefer-setting-definitions": "off",
-      "@typescript-eslint/no-deprecated": "off",
-    },
-  },
   { files: ["src/ui/confirm.ts"], rules: { "@typescript-eslint/no-deprecated": "off" } },
   { files: ["src/snapshots/fs.ts"], rules: { "obsidianmd/prefer-file-manager-trash-file": "off" } },
 ]);
