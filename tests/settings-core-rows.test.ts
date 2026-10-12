@@ -10,6 +10,11 @@ import type { FeatureModule } from "../src/core/module-context";
 import { STAGES } from "../src/core/stages";
 import { registerStrings, t } from "../src/i18n";
 import { coreStrings } from "../src/strings";
+import { lensStrings } from "../src/lens/strings";
+import { exportStrings } from "../src/export/strings";
+import { submissionsStrings } from "../src/submissions/strings";
+import { universeStrings } from "../src/universe/strings";
+import { SECTION_ORDER } from "../src/core/settings-order";
 import { DEFAULT_SETTINGS, defaultsFor, type EscritaSettings } from "../src/settings";
 import { EscritaSettingTab, featureGroupHeading } from "../src/settings-tab";
 import { toggleRow } from "../src/ui/settings-rows";
@@ -60,14 +65,25 @@ describe("the Features page", () => {
     }
   });
 
-  it("a group heading never repeats another heading of the tab", () => {
-    const sectionHeadings = ["settings.publishing", "settings.lens", "settings.goals", "settings.stages"].map((k) => t(k));
-    for (const id of FEATURE_GROUPS) expect(sectionHeadings).not.toContain(featureGroupHeading(id));
-    expect(featureGroupHeading("revision")).toBe(`${t("settings.features")}: ${t("settings.features.group.revision")}`);
-    expect(featureGroupHeading("writing")).toBe(t("settings.features.group.writing"));
+  it("a Features page group heading is the group's plain name (board 40)", () => {
+    for (const id of FEATURE_GROUPS) expect(featureGroupHeading(id)).toBe(t(`settings.features.group.${id}`));
   });
 
-  it("the language dropdown saves, then redraws the rows (the gerund rule is named for it)", async () => {
+  it("no heading of the tab repeats another, in either language (Obsidian matches groups by heading)", () => {
+    const keys = [
+      ...SECTION_ORDER.flatMap((slot) => (slot.heading === null ? [] : [slot.heading])),
+      ...FEATURE_GROUPS.map((g) => `settings.features.group.${g}`),
+      "settings.lens.rules", "settings.lens.measures", "universe.settings.types", "universe.settings.names",
+    ];
+    for (const language of ["en", "pt-BR"]) {
+      const dict = Object.assign({}, ...[coreStrings, lensStrings, exportStrings, submissionsStrings, universeStrings].map((s) => s[language])) as Record<string, string>;
+      const texts = keys.map((k) => dict[k]);
+      expect(texts.every((x) => typeof x === "string" && x !== ""), language).toBe(true);
+      expect(new Set(texts).size, `${language}: ${texts.join(" | ")}`).toBe(keys.length);
+    }
+  });
+
+  it("the language dropdown saves, then rebuilds the rows once (the lens's rows are named for it)", async () => {
     const { open, tab, settings, saves } = build();
     const update = vi.spyOn(tab, "update");
     await field(open.groups(), t("settings.language")).fire("pt-BR");

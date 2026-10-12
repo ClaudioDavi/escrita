@@ -403,7 +403,7 @@ is refused.
 
 ## Settings
 
-**Publishing** (Settings › Escrita):
+**Publishing · the check** (Settings › Escrita):
 
 | Setting | What it does |
 |---|---|

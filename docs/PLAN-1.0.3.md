@@ -164,7 +164,7 @@ Rules for every task (from the Wave 0 review):
   without a heading joins the group above), so a duplicate row name fails there. A clash with
   the core's rows of the slot shows in `settings-tab.test.ts`, which opens the whole tab.
 - Rows are built when the tab rebuilds, not when it opens. The tab rebuilds when the loaded
-  features, the switches or `defaultsLanguage` change, so a placeholder or fallback read from
+  features, the switches, `defaultsLanguage` or `lensLanguage` change, so a placeholder or fallback read from
   `ui.defaults()` while building is current. Anything else a row reads must be read in
   `render` (or passed as a function).
 - Task A: the universe slot's core part is only its heading. Once ported it has no rows, and
@@ -183,6 +183,9 @@ this plan, the row names per group, and the behaviors in "Tests".
 - `docs/ROADMAP.md`: the 1.0.3 row.
 - README changelog with an upgrade note: "needs Obsidian 1.13 or later".
 - The guide's "Features and settings" page (English and pt-BR): settings search.
+- The author confirms two section headings (judge fix, Wave 1): the lens's "Revisão · a lente" /
+  "Revision · the lens" (board 40), and the publish check's "Publicação · a checagem" /
+  "Publishing · the check" (same pattern, not on the board). The Features page groups stay plain.
 
 ## By-hand checks (G3, Obsidian 1.14.4, `~/projects/website/escrita/`)
 

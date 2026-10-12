@@ -116,7 +116,7 @@ can choose one. Crutch words, name variants, long sentences and the dialogue sha
 
 ### Settings for the lens
 
-In Settings › Escrita › **Revision**:
+In Settings › Escrita › **Revision · the lens**:
 
 | Setting | What it does |
 |---|---|

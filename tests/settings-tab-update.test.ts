@@ -116,6 +116,22 @@ describe("the tab rebuilds on a change of structure, once", () => {
     expect(r.update).toHaveBeenCalledTimes(1);
   });
 
+  it("the lens's language (the setup can change it alone): the lens's rows are named for it", async () => {
+    const r = rig();
+    expect(r.plugin.settings.lensLanguage).toBe("auto");
+    r.plugin.settings.lensLanguage = "pt-BR";
+    await r.plugin.saveSettings();
+    expect(r.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("the language dropdown on the Features page rebuilds once", async () => {
+    const r = rig();
+    const dropdown = rowNamed(r.open.groups(), t("settings.language"))!.setting.components[0] as unknown as { fire(v: unknown): Promise<void> };
+    await dropdown.fire("pt-BR");
+    expect(r.plugin.settings.lensLanguage).toBe("pt-BR");
+    expect(r.update).toHaveBeenCalledTimes(1);
+  });
+
   it("never after a text field commits", async () => {
     const r = rig();
     const field = rowNamed(r.open.groups(), "Words")!.setting.components[0] as unknown as { inputEl: HTMLInputElement };

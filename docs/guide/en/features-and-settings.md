@@ -198,7 +198,7 @@ These settings belong to a feature. They hide when that feature is off.
 
 | Setting | Feature | What it does |
 |---|---|---|
-| Names without an entry (a rule, in the Revision section) | Revision lens | Off by default. Marks recurring capitalized names that have no entry. Needs a universe mode. |
+| Names without an entry (a rule, in the Revision · the lens section) | Revision lens | Off by default. Marks recurring capitalized names that have no entry. Needs a universe mode. |
 | Not names | Revision lens | Words the rule never marks, one per line. **Dismiss** in the lens panel adds a word. |
 | Cover property | Export | The book note's property that links the EPUB cover (JPEG or PNG). `cover`. |
 | EPUB scene break | Export | The line an EPUB shows between scenes. `* * *`. |

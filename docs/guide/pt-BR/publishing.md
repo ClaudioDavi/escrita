@@ -410,7 +410,7 @@ a pasta nas configurações. Uma pasta que já tem arquivos seus é recusada.
 
 ## Configurações
 
-**Publicação** (Configurações › Escrita):
+**Publicação · a checagem** (Configurações › Escrita):
 
 | Configuração | O que faz |
 |---|---|

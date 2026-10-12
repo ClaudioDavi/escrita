@@ -121,7 +121,7 @@ parte de diálogo continuam funcionando.
 
 ### Configurações da lente
 
-Em Configurações › Escrita › **Revisão**:
+Em Configurações › Escrita › **Revisão · a lente**:
 
 | Configuração | O que faz |
 |---|---|

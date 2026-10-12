@@ -8,8 +8,8 @@
 //
 // Every core slot is built here with the row helpers (ui/settings-rows.ts). A row that depends on
 // the loaded features is left out when the rows are built (`rowShown(key, this.loaded)`), never
-// hidden with `visible`: the tab rebuilds on every change of the loaded set, the switches and the
-// language of the defaults, so the build is always current.
+// hidden with `visible`: the tab rebuilds on every change of the loaded set, the switches, the
+// language of the defaults and the lens's language, so the build is always current.
 
 import { App, Notice, PluginSettingTab, Setting, type ColorComponent, type SettingDefinitionGroup, type SettingDefinitionItem, type SettingDefinitionRender, type SettingGroupItem, type TextAreaComponent, type TextComponent } from "obsidian";
 import type EscritaPlugin from "./main";
@@ -18,7 +18,7 @@ import { PRESET_IDS, matchingPreset, presetChanges, presetSwitches, type PresetI
 import { STAGES, hexColor, stageConflicts, writtenWord, type Stage } from "./core/stages";
 import { FEATURE_IDS, FEATURE_PAGE, FEATURE_SPECS, wanted, type FeatureGroup, type FeatureId } from "./core/features";
 import { switchesOf } from "./core/feature-registry";
-import { SECTION_ORDER, sectionOrder, type SectionSlot } from "./core/settings-order";
+import { sectionOrder, type SectionSlot } from "./core/settings-order";
 import type { FeatureModule, SettingsUi } from "./core/module-context";
 import type { UniverseMode } from "./universe/settings";
 import { exportRoot, snapshotsRoot, submissionsRoot } from "./core/classify";
@@ -65,14 +65,12 @@ export function pluginFolderRows(ui: SettingsUi, s: EscritaSettings, books: () =
 }
 
 /**
- * The heading of a Features page group (Writing, Revision, ...). Obsidian matches groups by
- * heading, so it can't repeat another heading of the tab: the Revision and Publishing groups
- * would repeat the lens's and publishing's sections, and read "Features: Revision" instead.
+ * The heading of a Features page group (Writing, Revision, ...), plain as on board 40. Obsidian
+ * matches groups by heading, so no section repeats one: the lens's section is "Revision · the
+ * lens" and the publish check's "Publishing · the check" (tests/settings-core-rows.test.ts).
  */
 export function featureGroupHeading(group: FeatureGroup): string {
-  const name = t(`settings.features.group.${group}`);
-  const taken = SECTION_ORDER.some((slot) => slot.heading !== null && t(slot.heading) === name);
-  return taken ? `${t("settings.features")}: ${name}` : name;
+  return t(`settings.features.group.${group}`);
 }
 
 /**
@@ -143,10 +141,11 @@ export class EscritaSettingTab extends PluginSettingTab {
 
   /**
    * Rebuilds the rows (`update()`) when the loaded features, the switches (the universe mode
-   * among them) or the language of the defaults (the setup; rows read placeholders and
-   * fallbacks from it when built) differ from what they were built from. Called after every registry apply
-   * (main.ts) and after the Features page saves, so one change rebuilds once, and a text
-   * commit, which changes neither, never does.
+   * among them), the language of the defaults (the setup; rows read placeholders and
+   * fallbacks from it when built) or the lens's language (its rule names, the adverb rule's
+   * description and the lists placeholder; the setup or the Features page) differ from what
+   * they were built from. Called after every registry apply (main.ts) and after the Features
+   * page saves, so one change rebuilds once, and a text commit, which changes none, never does.
    */
   refresh(): void {
     if (this.structure() !== this.builtFrom) this.update();
@@ -154,7 +153,7 @@ export class EscritaSettingTab extends PluginSettingTab {
 
   private structure(): string {
     const s = this.plugin.settings;
-    return JSON.stringify([FEATURE_IDS.filter((id) => this.plugin.features.isOn(id)), switchesOf(s), s.defaultsLanguage]);
+    return JSON.stringify([FEATURE_IDS.filter((id) => this.plugin.features.isOn(id)), switchesOf(s), s.defaultsLanguage, s.lensLanguage]);
   }
 
   /**
@@ -309,7 +308,7 @@ export class EscritaSettingTab extends PluginSettingTab {
     const blocks: SettingsBlock[] = [{
       items: [
         noteRow(t("settings.features.desc"), "escrita-features-desc"),
-        dropdownRow(afterSave(() => ui.redraw()), {   // the gerund rule is named for the language
+        dropdownRow(afterSave(() => this.refresh()), {   // the lens's rows are named for the language
           name: t("settings.language"),
           desc: t("settings.language.desc"),
           options: [["auto", t("settings.language.auto")], ["pt-BR", t("settings.language.pt")], ["en", t("settings.language.en")]],

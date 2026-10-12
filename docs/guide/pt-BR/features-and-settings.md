@@ -206,7 +206,7 @@ Estas configurações pertencem a um recurso. Elas se escondem quando o recurso 
 
 | Configuração | Recurso | O que faz |
 |---|---|---|
-| Nomes sem entrada (uma regra, na seção Revisão) | Lente de revisão | Desligada por padrão. Marca nomes recorrentes com inicial maiúscula que não têm entrada. Precisa de um modo de universo. |
+| Nomes sem entrada (uma regra, na seção Revisão · a lente) | Lente de revisão | Desligada por padrão. Marca nomes recorrentes com inicial maiúscula que não têm entrada. Precisa de um modo de universo. |
 | Não são nomes | Lente de revisão | Palavras que a regra nunca marca, uma por linha. **Dispensar** no painel da lente acrescenta uma palavra. |
 | Propriedade da capa | Exportar | A propriedade da nota do livro que liga a capa do EPUB (JPEG ou PNG). `cover`. |
 | Separador de cena no EPUB | Exportar | A linha que o EPUB mostra entre cenas. `* * *`. |
