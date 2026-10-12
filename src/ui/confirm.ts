@@ -30,8 +30,7 @@ class ConfirmModal extends Modal {
       .addButton((b) => {
         b.setButtonText(this.confirmText).onClick(() => { this.answered = true; this.close(); });
         if (!this.warning) b.setCta();
-        // the class setWarning (deprecated) adds; setDestructive needs Obsidian 1.13 and minAppVersion is lower
-        else b.buttonEl.addClass("mod-warning");
+        else b.setDestructive();
       });
   }
 

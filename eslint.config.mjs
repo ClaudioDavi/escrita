@@ -24,6 +24,5 @@ export default defineConfig([
   },
   // Documented exceptions (ARCHITECTURE.md, "Documented exceptions"). Inline disables of
   // these rules are rejected by the review config, so each one is scoped to its file here.
-  { files: ["src/ui/confirm.ts"], rules: { "@typescript-eslint/no-deprecated": "off" } },
   { files: ["src/snapshots/fs.ts"], rules: { "obsidianmd/prefer-file-manager-trash-file": "off" } },
 ]);
