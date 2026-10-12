@@ -129,6 +129,8 @@ follow the loaded features without a rebuild.
 - **G2** (before release): `npm run lint` clean with only `snapshots/fs.ts`'s exception
   left, and the bot's config (no per-file exceptions) reporting nothing but that one.
 - **G3** (before release): the by-hand checks below, in the author's Obsidian 1.14.4.
+  The author called the release on 2026-10-12. **G2 passed** the same day: `npm run lint` is
+  clean, and the config with no per-file exceptions reports nothing.
 
 ## Waves
 

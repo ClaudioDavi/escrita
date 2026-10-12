@@ -95,7 +95,7 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
-### 1.0.3 (unreleased)
+### 1.0.3 (2026-10-12)
 
 Escrita's settings now appear in Obsidian's settings search. Nothing else changes in how Escrita works.
 
