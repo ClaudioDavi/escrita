@@ -25,7 +25,8 @@ import { isInside } from "./paths";
 import { SharedFolderError, SnapshotStore, type SnapshotFs, type TakeResult } from "./store";
 import { SNAPSHOTS_VIEW, SnapshotsView } from "./view";
 import { COMPARE_VIEW, CompareView, type CompareMode } from "./compare-view";
-import { snapshotsOffNotice, snapshotsSettingsSection } from "./settings-ui";
+import { snapshotsOffNotice, snapshotsSettingsItems } from "./settings-ui";
+import type { SettingsBlock } from "../ui/settings-rows";
 
 export { SNAPSHOTS_VIEW } from "./view";
 export { COMPARE_VIEW } from "./compare-view";
@@ -546,6 +547,6 @@ export class SnapshotsModule extends FeatureModule {
     if (next !== null) this.shownPath = next;
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { snapshotsSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return snapshotsSettingsItems(ui, this.plugin); }
   offNotice(): Promise<string | null> { return snapshotsOffNotice(this.plugin); }
 }
