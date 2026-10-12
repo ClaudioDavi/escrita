@@ -9,6 +9,8 @@ import type { FeatureModule, SettingsUi } from "../src/core/module-context";
 import { toggleRow, type SettingsBlock } from "../src/ui/settings-rows";
 import { registerStrings, t } from "../src/i18n";
 import { coreStrings } from "../src/strings";
+import { exportStrings } from "../src/export/strings";
+import { submissionsStrings } from "../src/submissions/strings";
 import { DEFAULT_SETTINGS, type EscritaSettings } from "../src/settings";
 import { EscritaSettingTab, featureGroupHeading, slotGroups } from "../src/settings-tab";
 import { FEATURE_GROUPS } from "../src/core/features";
@@ -24,10 +26,12 @@ import * as darlingsUi from "../src/darlings/settings-ui";
 import * as editorUi from "../src/editor/settings-ui";
 import * as lensUi from "../src/lens/settings-ui";
 import * as deskUi from "../src/desk/settings-ui";
+import * as exportUi from "../src/export/settings-ui";
+import * as submissionsUi from "../src/submissions/settings-ui";
 import { resetSettingLog, settingLog } from "./support/obsidian";
 import { openTab } from "./support/definitions";
 
-beforeAll(() => registerStrings(coreStrings));
+beforeAll(() => { registerStrings(coreStrings); registerStrings(exportStrings); registerStrings(submissionsStrings); });
 beforeEach(() => resetSettingLog());
 
 interface Fake {
@@ -48,6 +52,7 @@ const OWNED: Partial<Record<FeatureId, [ns: object, prefix: string]>> = {
   universe: [universeUi, "universe"], threads: [threadsUi, "threads"],
   darlings: [darlingsUi, "darlings"], typing: [editorUi, "typing"],
   lens: [lensUi, "lens"], desk: [deskUi, "desk"],
+  export: [exportUi, "export"], submissions: [submissionsUi, "submissions"],
 };
 
 /** A module's part from its settings-ui file: `<prefix>SettingsItems(ui, plugin)`, found by name. */
@@ -82,7 +87,8 @@ const names = () => settingLog.map((r) => r.name);
 describe("the tab draws from the order list", () => {
   it("with every feature loaded, the headings come in today's order", () => {
     openTab(tabWith().tab);
-    const want = ["settings.features", ...groupHeadings, "settings.shared", "settings.books", "settings.goals", "settings.publishing", "settings.outline",
+    const want = ["settings.features", ...groupHeadings, "settings.shared", "settings.books", "settings.goals", "settings.publishing",
+      "export.settings.heading", "submissions.settings.heading", "settings.outline",
       "settings.placeholders", "settings.darlings", "settings.editor", "settings.lens", "settings.lens.rules", "settings.lens.measures",
       "settings.stages", "settings.homeNoteHeading", "settings.snapshots", "universe.settings", "universe.settings.types", "universe.settings.names"];
     expect(headings()).toEqual(want.map((k) => (k.startsWith("group:") ? featureGroupHeading(k.slice(6) as never) : t(k))));
@@ -156,14 +162,15 @@ describe("the tab draws from the order list", () => {
 
   it("the Features page has one row each for export and submissions, and no placeholder row", () => {
     openTab(tabWith().tab);
-    expect(names().filter((n) => n === t("settings.features.export"))).toHaveLength(1);
-    expect(names().filter((n) => n === t("settings.features.submissions"))).toHaveLength(1);
+    const rows = settingLog.filter((r) => !r.heading).map((r) => r.name);
+    expect(rows.filter((n) => n === t("settings.features.export"))).toHaveLength(1);
+    expect(rows.filter((n) => n === t("settings.features.submissions"))).toHaveLength(1);
   });
 
   it("a module's own settingsItems is called instead of its settings-ui file's", () => {
     const own = vi.fn((): SettingsBlock[] => []);
     openTab(tabWith([], { lens: { settingsItems: own } }).tab);
-    expect(own).toHaveBeenCalled();
+    expect(own).toHaveBeenCalledTimes(1);
     expect(headings()).not.toContain(t("settings.lens"));
   });
 });

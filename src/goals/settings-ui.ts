@@ -50,8 +50,9 @@ function sprintRow(ui: SettingsUi, plugin: EscritaPlugin): SettingDefinitionRend
     get: () => s.sprintMinutes,
     set: (v) => { s.sprintMinutes = v; },
   });
+  // Only its field is drawn (into the minutes row), so the name is just the field's label.
   const target = numberRow(ui, {
-    name: t("settings.sprintMinutes"),
+    name: t("goals.sprint.target"),
     min: 0, max: MAX,
     get: () => s.sprintTarget,
     set: (v) => { s.sprintTarget = v; },
