@@ -10,7 +10,8 @@ import { toggleRow, type SettingsBlock } from "../src/ui/settings-rows";
 import { registerStrings, t } from "../src/i18n";
 import { coreStrings } from "../src/strings";
 import { DEFAULT_SETTINGS, type EscritaSettings } from "../src/settings";
-import { EscritaSettingTab, slotGroups } from "../src/settings-tab";
+import { EscritaSettingTab, featureGroupHeading, slotGroups } from "../src/settings-tab";
+import { FEATURE_GROUPS } from "../src/core/features";
 import * as goalsUi from "../src/goals/settings-ui";
 import * as outlineUi from "../src/outline/settings-ui";
 import * as placeholdersUi from "../src/placeholders/settings-ui";
@@ -81,15 +82,17 @@ function tabWith(off: FeatureId[] = [], modules: Partial<Record<FeatureId, Parti
 }
 
 const headings = () => settingLog.filter((r) => r.heading).map((r) => r.name);
+/** The Features page's group headings, as `want` below names them. */
+const groupHeadings = FEATURE_GROUPS.map((g) => `group:${g}`);
 const names = () => settingLog.map((r) => r.name);
 
 describe("the tab draws from the order list", () => {
   it("with every feature loaded, the headings come in today's order", () => {
     openTab(tabWith().tab);
-    const want = ["settings.features", "settings.shared", "settings.books", "settings.goals", "settings.publishing", "settings.outline",
+    const want = ["settings.features", ...groupHeadings, "settings.shared", "settings.books", "settings.goals", "settings.publishing", "settings.outline",
       "settings.placeholders", "settings.darlings", "settings.editor", "settings.lens", "settings.lens.rules", "settings.lens.measures",
       "settings.stages", "settings.homeNoteHeading", "settings.snapshots", "universe.settings", "universe.settings.types", "universe.settings.names"];
-    expect(headings()).toEqual(want.map((k) => t(k)));
+    expect(headings()).toEqual(want.map((k) => (k.startsWith("group:") ? featureGroupHeading(k.slice(6) as never) : t(k))));
   });
 
   it("turning a feature off removes its section", () => {
@@ -106,7 +109,8 @@ describe("the tab draws from the order list", () => {
 
   it("the core sections stay when every module is off", () => {
     openTab(tabWith([...FEATURE_IDS]).tab);
-    expect(headings()).toEqual(["settings.features", "settings.shared", "settings.books", "settings.stages"].map((k) => t(k)));
+    // the Features page lists every feature, loaded or not, in its groups
+    expect(headings()).toEqual([t("settings.features"), ...FEATURE_GROUPS.map(featureGroupHeading), ...["settings.shared", "settings.books", "settings.stages"].map((k) => t(k))]);
   });
 
   it("the export and submissions folders draw in the shared section with both features off (the classifier reads them)", () => {
@@ -200,7 +204,7 @@ describe("the declarative tab (PLAN-1.0.3)", () => {
     expect(group?.rows.map((r) => r.def.name)).toEqual([t("settings.ghostBeats")]);
   });
 
-  it("a module on settingsItems in a slot the adapter still draws shows under the core's rows", () => {
+  it("a module on settingsItems in a slot with a core part shows under the core's rows", () => {
     const items = (ui: SettingsUi): SettingsBlock[] => [{ items: [toggleRow(ui, { name: "Dots", get: () => true, set: () => {} })] }];
     openTab(tabWith([], { placeholders: { settingsItems: items } }).tab);
     const n = names();

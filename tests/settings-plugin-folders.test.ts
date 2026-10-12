@@ -9,6 +9,7 @@ import { DEFAULT_SETTINGS, defaultsFor } from "../src/settings";
 import { pluginFolderRows } from "../src/settings-tab";
 import { resetSettingLog } from "./support/obsidian";
 import { ptRig, rig } from "./support/section-rig";
+import { renderBlocks } from "./support/definitions";
 
 beforeAll(() => registerStrings(coreStrings));
 beforeEach(() => resetSettingLog());
@@ -17,7 +18,7 @@ describe("plugin folder rows (export, submissions)", () => {
   it("refuse a folder that holds the writer's files of any kind, not only notes", () => {
     const r = rig();
     (r.ui.app.vault as unknown as { getFiles: () => { path: string }[] }).getFiles = () => [{ path: "Manuscritos/A Casa (Shunn).docx" }];
-    pluginFolderRows(r.el, r.ui, r.settings, () => []);
+    renderBlocks([{ items: pluginFolderRows(r.ui, r.settings, () => []) }], r.el);
     expect(r.commits).toHaveLength(2);
     r.commits[0].apply("Manuscritos");
     expect(r.settings.exportFolder).toBe(DEFAULT_SETTINGS.exportFolder);
@@ -29,7 +30,7 @@ describe("plugin folder rows (export, submissions)", () => {
 
   it("clearing the export and submissions folders restores the pt-BR folders on a pt-BR install", () => {
     const r = ptRig();
-    pluginFolderRows(r.el, r.ui, r.settings, () => []);
+    renderBlocks([{ items: pluginFolderRows(r.ui, r.settings, () => []) }], r.el);
     expect(r.commits[0].fallback()).toBe(defaultsFor("pt-BR").exportFolder);
     expect(r.commits[1].fallback()).toBe(defaultsFor("pt-BR").submissionsFolder);
   });

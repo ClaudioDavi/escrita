@@ -83,8 +83,9 @@ input[type="color"].escrita-swatch.escrita-swatch-empty::-moz-color-swatch {
   height: 32px;
   justify-content: center;
 }
+/* The duplicate-word warning sits inside its stage row (the row's description). */
 .escrita-stage-warning {
-  margin: 0 0 var(--size-4-2);
+  margin: var(--size-4-1) 0 0;
 }
 textarea.escrita-mono {
   width: 302px;
