@@ -46,7 +46,8 @@ import { rowsOf, type UnlinkedRow } from "./unlinked-link";
 import { addUniverseEditorMenuItems, createEntryFromSelection, inSource } from "./create";
 import { addMigrateFileMenuItem, migrateActiveBook } from "./migrate";
 import { UNIVERSE_VIEW, UniverseView, activateThreadsView, activateUniverseView } from "./view";
-import { universeSettingsSection } from "./settings-ui";
+import type { SettingsBlock } from "../ui/settings-rows";
+import { universeSettingsItems } from "./settings-ui";
 
 /** A universe the vault knows: the settings' one, and any other a work or entry links to. */
 export interface UniverseInfo {
@@ -632,5 +633,5 @@ export class UniverseModule extends FeatureModule {
     }));
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { universeSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return universeSettingsItems(ui, this.plugin); }
 }

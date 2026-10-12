@@ -18,7 +18,8 @@ import {
 } from "./logic";
 import { ExportModal, askExists, askWhere, type BookOptions, type ExportHost, type ModalState } from "./modal";
 import { presetById, presetForLanguage } from "../core/presets";
-import { exportSettingsSection } from "./settings-ui";
+import type { SettingsBlock } from "../ui/settings-rows";
+import { exportSettingsItems } from "./settings-ui";
 import { buildExport, needsConfirm, sourceKindOf, withWarning, type Built, type ExportPlan, type PartPlan } from "./source";
 import { onFilesMenu } from "./collection-menu";
 import { docxWriter } from "./writers/docx";
@@ -101,7 +102,7 @@ export class ExportModule extends FeatureModule {
     }));
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { exportSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return exportSettingsItems(ui, this.plugin); }
 
   // ------------------------------------------------------------------ what can be exported
 

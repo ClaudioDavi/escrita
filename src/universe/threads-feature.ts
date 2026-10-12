@@ -14,7 +14,8 @@ import { collectThreads, inScope, threadsSpec, type NoteThreads, type ThreadRef 
 import type { Scope } from "../core/scope";
 import { addThreadsEditorMenuItems, closeThreadAtCursor, inSource, plantThread, threadAtCursor, threadMarkerExtension } from "./create";
 import { THREADS_VIEW, ThreadsView } from "./view";
-import { threadsSettingsSection } from "./threads-settings-ui";
+import type { SettingsBlock } from "../ui/settings-rows";
+import { threadsSettingsItems } from "./threads-settings-ui";
 
 export class ThreadsFeature extends FeatureModule {
   readonly id = "threads" as const;
@@ -129,5 +130,5 @@ export class ThreadsFeature extends FeatureModule {
     });
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { threadsSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return threadsSettingsItems(ui, this.plugin); }
 }

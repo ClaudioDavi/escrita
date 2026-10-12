@@ -11,6 +11,7 @@ import type { ExportChoice } from "../src/data";
 import { exportStrings } from "../src/export/strings";
 import type { ExportHost, ExportModalOptions, ModalState } from "../src/export/modal";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
+import { renderBlocks } from "./support/definitions";
 
 // The modal is replaced by one that records what it was opened with; the "file exists" dialog answers on cue.
 const modal = vi.hoisted(() => ({ opened: [] as unknown[], answer: "cancel" as "cancel" | "both" | "replace", asked: [] as unknown[][], where: true, whereAsked: [] as unknown[][] }));
@@ -200,16 +201,17 @@ describe("export lifecycle", () => {
     expect(p.followers.size).toBe(1);
   });
 
-  it("draws its settings section, one row per key", () => {
+  it("draws its settings rows, one per key, under the heading the tab draws", () => {
     resetSettingLog();
-    const el = document.createElement("div");
-    module.settingsSection(el, { defaults: () => DEFAULT_SETTINGS, saveOnCommit: () => {}, save: async () => {}, redraw: () => {}, num: (v: string) => Number(v) } as unknown as SettingsUi);
+    const blocks = module.settingsItems({ defaults: () => DEFAULT_SETTINGS, saveOnCommit: () => {}, save: async () => {}, redraw: () => {}, num: (v: string) => Number(v) } as unknown as SettingsUi);
+    expect(blocks.map((b) => b.heading)).toEqual([undefined]);
+    renderBlocks(blocks);
     expect(settingLog.map((r) => r.name)).toEqual([
-      "Export", "Left-out property", "Dedication property", "Epigraph property", "Author property",
+      "Left-out property", "Dedication property", "Epigraph property", "Author property",
       "Author name", "Surname for the header", "Contact lines", "Chapter heading",
       "Cover property", "EPUB scene break", "Collection property",
     ]);
-    expect(settingLog[0].heading).toBe(true);
+    expect(settingLog.some((r) => r.heading)).toBe(false);
   });
 });
 

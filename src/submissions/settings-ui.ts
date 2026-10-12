@@ -1,39 +1,43 @@
-import { Setting } from "obsidian";
 import { fmt, plural, t } from "../i18n";
 import { inFolder, submissionsRoot } from "../core/classify";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
+import { textRow, type SettingsBlock } from "../ui/settings-rows";
 import { duplicateProp, propsOf, resultValues } from "./logic";
 
-/** The Submissions section: the result values (the first one is "pending") and the property names. The folder is drawn by the core (settings.ts, pluginFolderRows). */
-export function submissionsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
+/** The Submissions section's rows, under the heading the tab draws: the result values (the first one is "pending") and the property names. The folder is drawn by the core (settings-tab.ts, pluginFolderRows). */
+export function submissionsSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): SettingsBlock[] {
   const s = plugin.settings;
-  new Setting(el).setName(t("submissions.settings.heading")).setHeading();
-  new Setting(el)
-    .setName(t("submissions.settings.results"))
-    .setDesc(t("submissions.settings.results.desc"))
-    .addText((c) => {
-      c.setPlaceholder(ui.defaults().submissionResults).setValue(s.submissionResults);
-      ui.saveOnCommit(c, () => ui.defaults().submissionResults, (v) => { s.submissionResults = resultValues(v).join(", "); });
-    });
   const props = [
     ["Work", "submissionWorkProperty"], ["Market", "submissionMarketProperty"], ["Sent", "submissionSentProperty"],
     ["Result", "submissionResultProperty"], ["Responded", "submissionRespondedProperty"],
   ] as const;
-  for (const [name, key] of props) {
-    new Setting(el)
-      .setName(t(`submissions.settings.prop${name}`))
-      .setDesc(t(`submissions.settings.prop${name}.desc`))
-      .addText((c) => {
-        c.setPlaceholder(ui.defaults()[key]).setValue(s[key]);
-        ui.saveOnCommit(c, () => ui.defaults()[key], (v) => {
+  return [{
+    items: [
+      textRow(ui, {
+        name: t("submissions.settings.results"),
+        desc: t("submissions.settings.results.desc"),
+        key: "submissionResults",
+        placeholder: ui.defaults().submissionResults,
+        get: () => s.submissionResults,
+        set: (v) => { s.submissionResults = resultValues(v).join(", "); },
+      }),
+      ...props.map(([name, key]) => textRow(ui, {
+        name: t(`submissions.settings.prop${name}`),
+        desc: t(`submissions.settings.prop${name}.desc`),
+        key,
+        placeholder: ui.defaults()[key],
+        get: () => s[key],
+        // A name another property already uses is not stored; the field then shows the saved one again.
+        set: (v) => {
           const next = v.trim() || ui.defaults()[key];
           const all = propsOf(s);
-          if (duplicateProp(all, name.toLowerCase() as keyof typeof all, next)) { c.setValue(s[key]); return; }
+          if (duplicateProp(all, name.toLowerCase() as keyof typeof all, next)) return;
           s[key] = next;
-        });
-      });
-  }
+        },
+      })),
+    ],
+  }];
 }
 
 /** What stays when the feature is turned off: the notes in the folder (read from the vault, not from live state). */
