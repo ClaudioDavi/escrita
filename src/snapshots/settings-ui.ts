@@ -1,22 +1,17 @@
-import { Setting } from "obsidian";
 import { fmt, plural, t } from "../i18n";
 import { exportRoot, inFolder, snapshotsFolderProblem, snapshotsRoot, submissionsRoot } from "../core/classify";
 import { bookProblem, overlapProblem, type FolderProblem } from "../core/folder-problem";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
+import { folderRow, textRow, toggleRow, type SettingsBlock } from "../ui/settings-rows";
 
 /**
- * The Snapshots section. The folder is saved only when it passes snapshotsFolderProblem;
- * otherwise the saved value stays and a warning under the setting says why (no notices while typing).
+ * The Snapshots section's rows, under the heading the tab draws. The folder is saved only when
+ * it passes snapshotsFolderProblem; otherwise the saved value stays and a warning under the
+ * setting says why (no notices while typing).
  */
-export function snapshotsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
+export function snapshotsSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): SettingsBlock[] {
   const s = plugin.settings;
-  new Setting(el).setName(t("settings.snapshots")).setHeading();
-  const folder = new Setting(el)
-    .setName(t("settings.snapshotsFolder"))
-    .setDesc(t("settings.snapshotsFolder.desc"));
-  const hint = folder.descEl.createDiv({ cls: "escrita-setting-warning" });
-  hint.toggle(false);
   const problemOf = (v: string): FolderProblem | null => {
     const first = snapshotsFolderProblem(v, ui.app.vault.configDir, s.trackFolders, () => false);
     if (first) return first;
@@ -28,37 +23,34 @@ export function snapshotsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin
     return snapshotsFolderProblem(v, ui.app.vault.configDir, s.trackFolders, (r) =>
       r !== s.snapshotsFolder && ui.app.vault.getMarkdownFiles().some((f) => inFolder(f.path, r)));
   };
-  folder.addText((c) => {
-    const fallback = snapshotsRoot("", s.defaultsLanguage);
-    c.setPlaceholder(fallback).setValue(s.snapshotsFolder);
-    const show = (v: string) => {
-      const problem = problemOf(v);
-      c.inputEl.toggleClass("escrita-invalid", problem !== null);
-      hint.setText(problem ? snapshotsProblemText(problem) : "");
-      hint.toggle(problem !== null);
-      return problem;
-    };
-    c.onChange((v) => { show(v); }); // the warning follows the typing; the save waits for the commit
-    ui.saveOnCommit(c, () => fallback, (v) => {
-      if (show(v)) return;
-      s.snapshotsFolder = snapshotsRoot(v, s.defaultsLanguage);
-    });
-  });
-  new Setting(el)
-    .setName(t("settings.snapshotBeforeFirstEdit"))
-    .setDesc(t("settings.snapshotBeforeFirstEdit.desc"))
-    .addToggle((c) => c.setValue(s.snapshotBeforeFirstEdit)
-      .onChange(async (v) => { s.snapshotBeforeFirstEdit = v; await ui.save(); }));
-  new Setting(el)
-    .setName(t("settings.snapshotsKeepAuto"))
-    .setDesc(t("settings.snapshotsKeepAuto.desc"))
-    .addText((c) => {
-      c.setValue(String(s.snapshotsKeepAuto));
-      ui.saveOnCommit(c, () => String(ui.defaults().snapshotsKeepAuto), (v) => {
-        s.snapshotsKeepAuto = ui.num(v, ui.defaults().snapshotsKeepAuto, 1);
-        c.setValue(String(s.snapshotsKeepAuto));
-      });
-    });
+  return [{
+    items: [
+      folderRow(ui, {
+        name: t("settings.snapshotsFolder"),
+        desc: t("settings.snapshotsFolder.desc"),
+        placeholder: snapshotsRoot("", s.defaultsLanguage),
+        get: () => s.snapshotsFolder,
+        set: (v) => { s.snapshotsFolder = snapshotsRoot(v, s.defaultsLanguage); },
+        problemOf,
+        problemText: snapshotsProblemText,
+      }),
+      toggleRow(ui, {
+        name: t("settings.snapshotBeforeFirstEdit"),
+        desc: t("settings.snapshotBeforeFirstEdit.desc"),
+        get: () => s.snapshotBeforeFirstEdit,
+        set: (v) => { s.snapshotBeforeFirstEdit = v; },
+      }),
+      // A text row, not a numberRow: a cleared or wordless field goes back to the default (20),
+      // where a numberRow would keep the stored number.
+      textRow(ui, {
+        name: t("settings.snapshotsKeepAuto"),
+        desc: t("settings.snapshotsKeepAuto.desc"),
+        get: () => String(s.snapshotsKeepAuto),
+        set: (v) => { s.snapshotsKeepAuto = ui.num(v, ui.defaults().snapshotsKeepAuto, 1); },
+        fallback: () => String(ui.defaults().snapshotsKeepAuto),
+      }),
+    ],
+  }];
 }
 
 function snapshotsProblemText(p: FolderProblem): string {

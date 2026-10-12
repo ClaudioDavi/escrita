@@ -25,7 +25,8 @@ import { LENS_VIEW } from "./view";
 import { type Dismissal, type Lists, type LensLang, type LensResult, type Match, type Measures, type RuleId } from "./types";
 import { enabledRules } from "./panel-model";
 import { addNotName, parseNotNames } from "./settings";
-import { lensOffNotice, lensSettingsSection } from "./settings-ui";
+import { lensOffNotice, lensSettingsItems } from "./settings-ui";
+import type { SettingsBlock } from "../ui/settings-rows";
 
 /** What `Platform.isMobile` reads (the body class); index.ts has no runtime obsidian import, so tests can load it. */
 function isMobile(): boolean {
@@ -321,6 +322,6 @@ export class LensModule extends FeatureModule {
     return this.ui?.createLists() ?? Promise.resolve();
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { lensSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return lensSettingsItems(ui, this.plugin); }
   offNotice(): Promise<string | null> { return lensOffNotice(this.plugin); }
 }

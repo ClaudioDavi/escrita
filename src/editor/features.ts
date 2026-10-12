@@ -9,7 +9,8 @@ import { EditorView, keymap } from "@codemirror/view";
 import type EscritaPlugin from "../main";
 import { FeatureModule } from "../core/module-context";
 import type { EditorSlot, SettingsUi } from "../core/module-context";
-import { typingSettingsSection } from "./settings-ui";
+import type { SettingsBlock } from "../ui/settings-rows";
+import { typingSettingsItems } from "./settings-ui";
 import { t } from "../i18n";
 import { renameInSet, dropFromSet } from "../core/path-keys";
 import { segment, segmentDoc } from "../core/markdown";
@@ -233,7 +234,7 @@ export class TypingFeature extends FeatureModule {
     return true;
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { typingSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return typingSettingsItems(ui, this.plugin); }
 }
 
 export class DialogueFocusFeature extends FeatureModule {
