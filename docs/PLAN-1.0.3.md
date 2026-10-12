@@ -124,7 +124,8 @@ follow the loaded features without a rebuild.
 ## Gates
 
 - **G0** (before Wave 0): the questions answered.
-- **G1** (before Wave 1): the board approved, or waived (Q7).
+- **G1** (before Wave 1): the board approved, or waived (Q7). **Passed** 2026-10-12: board 40,
+  "Configurações em grupos do Obsidian, e a busca".
 - **G2** (before release): `npm run lint` clean with only `snapshots/fs.ts`'s exception
   left, and the bot's config (no per-file exceptions) reporting nothing but that one.
 - **G3** (before release): the by-hand checks below, in the author's Obsidian 1.14.4.
@@ -146,10 +147,30 @@ Wave 1 finishes, modules still on `settingsSection` keep drawing through a tempo
 
 | Task | Owns |
 |---|---|
-| A, the core tab | `src/settings-tab.ts`, `src/settings.ts`, `src/ui/confirm.ts`, tests `settings-tab`, `-features`, `-presets`, `-stages`, `-order`, `-1-4`, `-g3`, `-folder-problem`, `-imports` |
-| B, small sections | goals, outline, placeholders, darlings, publish, explorer, desk `settings-ui.ts` and `index.ts` (the one-line method), their tests |
-| C, editor, lens, snapshots | `editor/settings-ui.ts`, `editor/features.ts`, `lens/settings-ui.ts`, `lens/index.ts`, `snapshots/settings-ui.ts`, `snapshots/index.ts`, their tests |
-| D, universe, export, submissions | `universe/settings-ui.ts`, `universe/threads-settings-ui.ts`, `universe/index.ts`, `universe/threads-feature.ts`, `export/*`, `submissions/*` settings files, their tests and the lifecycle-export tests |
+| A, the core tab | `src/settings-tab.ts`, `src/settings.ts`, `src/ui/confirm.ts`, tests `settings-tab`, `-tab-update`, `-plugin-folders`, `-features`, `-presets`, `-stages`, `-order`, `-1-4`, `-g3`, `-folder-problem`, `-imports` |
+| B, small sections | goals, outline, placeholders, darlings, publish, explorer, desk `settings-ui.ts` and `index.ts` (the one-line method), their tests (`settings-goals`, `-publish`, `-darlings`, `-desk`, `-explorer`) |
+| C, editor, lens, snapshots | `editor/settings-ui.ts`, `editor/features.ts`, `lens/settings-ui.ts`, `lens/index.ts`, `snapshots/settings-ui.ts`, `snapshots/index.ts`, their tests (`settings-typing`, `-lens`, `-lens-section`, `-snapshots`) |
+| D, universe, export, submissions | `universe/settings-ui.ts`, `universe/threads-settings-ui.ts`, `universe/index.ts`, `universe/threads-feature.ts`, `export/*`, `submissions/*` settings files, their tests (`settings-universe`, `universe-names-settings`) and the lifecycle-export tests |
+
+Rules for every task (from the Wave 0 review):
+
+- A ported module exports `<prefix>SettingsItems(ui, plugin): SettingsBlock[]` from its
+  `settings-ui.ts`, where the prefix is today's (`goals`, `typing`, `explorer`, `threads`…).
+  `tests/settings-tab.test.ts` finds that function, or the old `<prefix>SettingsSection`, by
+  name, so B, C and D never edit it.
+- Nobody edits `tests/support/` (`definitions.ts`, `section-ui.ts`, `section-rig.ts`). A test
+  that needs a different rig keeps its own copy.
+- Module tests render through `renderBlocks`, which groups blocks as the tab does (a block
+  without a heading joins the group above), so a duplicate row name fails there. A clash with
+  the core's rows of the slot shows in `settings-tab.test.ts`, which opens the whole tab.
+- Rows are built when the tab rebuilds, not when it opens. The tab rebuilds when the loaded
+  features, the switches or `defaultsLanguage` change, so a placeholder or fallback read from
+  `ui.defaults()` while building is current. Anything else a row reads must be read in
+  `render` (or passed as a function).
+- Task A: the universe slot's core part is only its heading. Once ported it has no rows, and
+  `slotGroups` then opens the threads rows under the universe's heading (the empty slot's
+  heading carries to the next slot without one, pinned in `settings-tab.test.ts`). Keep
+  the universe slot in `sectionOrder` while threads is loaded.
 
 Task A also removes the adapter once B–D merge. **Judge (Opus):** reads the diff against
 this plan, the row names per group, and the behaviors in "Tests".

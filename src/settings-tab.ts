@@ -99,12 +99,22 @@ export class EscritaSettingTab extends PluginSettingTab {
     const ui = this.ui ??= this.makeUi();
     this.loaded = new Set(FEATURE_IDS.filter((id) => this.plugin.features.isOn(id)));
     this.builtFrom = this.structure();
-    return slotGroups(sectionOrder(this.loaded).map((slot) => this.slotPart(slot, ui)));
+    return slotGroups(sectionOrder(this.loaded).map((slot) => {
+      // Obsidian builds the rows in the plugin's onload (addSettingTab calls update()) and on each
+      // update(), unguarded: a part that throws costs its own rows, not the plugin's load.
+      try {
+        return this.slotPart(slot, ui);
+      } catch (err) {
+        console.error(`Escrita: the ${slot.id} settings failed`, err);
+        return { slot, blocks: [], drawsHeading: false };
+      }
+    }));
   }
 
   /**
-   * Rebuilds the rows (`update()`) when the loaded features or the switches (the universe mode
-   * among them) differ from what they were built from. Called after every registry apply
+   * Rebuilds the rows (`update()`) when the loaded features, the switches (the universe mode
+   * among them) or the language of the defaults (the setup; rows read placeholders and
+   * fallbacks from it when built) differ from what they were built from. Called after every registry apply
    * (main.ts) and after the Features page saves, so one change rebuilds once, and a text
    * commit, which changes neither, never does.
    */
@@ -113,7 +123,8 @@ export class EscritaSettingTab extends PluginSettingTab {
   }
 
   private structure(): string {
-    return JSON.stringify([FEATURE_IDS.filter((id) => this.plugin.features.isOn(id)), switchesOf(this.plugin.settings)]);
+    const s = this.plugin.settings;
+    return JSON.stringify([FEATURE_IDS.filter((id) => this.plugin.features.isOn(id)), switchesOf(s), s.defaultsLanguage]);
   }
 
   /** One slot's blocks: declarative for a ported module, else the adapter's one row of today's drawing. */
@@ -596,9 +607,9 @@ function listJoin(items: string[]): string {
 }
 
 /** What one slot gives the tab: its blocks, and whether its own drawing code draws the slot's heading (the adapter). */
-interface SlotPart {
-  slot: SectionSlot;
-  blocks: SettingsBlock[];
+export interface SlotPart {
+  slot: Pick<SectionSlot, "heading">;
+  blocks: readonly SettingsBlock[];
   drawsHeading: boolean;
 }
 
@@ -614,22 +625,27 @@ function adapterRow(draw: (el: HTMLElement) => void): ReturnType<typeof customRo
  * The groups of the tab, in slot order (Q4). Each slot with a heading starts a group under it,
  * unless its own drawing code still draws the heading (the adapter); a slot without one
  * continues the group above. A block with a heading becomes a group of its own. Empty slots
- * and groups are left out.
+ * and groups are left out, but an empty slot's heading still opens the rows of a slot without
+ * one after it: the thread words with the universe off sit under the universe's heading.
  */
 export function slotGroups(parts: readonly SlotPart[]): SettingDefinitionGroup[] {
   const groups: SettingDefinitionGroup[] = [];
   let current: SettingDefinitionGroup | null = null;
+  /** The heading the next group opens under: the last slot heading, until a group opens. */
+  let opening: string | undefined;
   for (const { slot, blocks, drawsHeading } of parts) {
-    if (blocks.every((b) => b.items.length === 0)) continue;
-    if (slot.heading !== null || current === null) {
-      current = { type: "group", items: [] };
-      if (slot.heading !== null && !drawsHeading) current.heading = t(slot.heading);
-      groups.push(current);
+    if (slot.heading !== null) {
+      current = null;
+      opening = drawsHeading ? undefined : t(slot.heading);
     }
+    if (blocks.every((b) => b.items.length === 0)) continue;
     for (const b of blocks) {
-      if (b.heading) {
-        current = { type: "group", heading: b.heading, items: [] };
+      if (b.heading || current === null) {
+        current = { type: "group", items: [] };
+        const heading = b.heading || opening;
+        if (heading) current.heading = heading;
         groups.push(current);
+        opening = undefined;
       }
       current.items!.push(...b.items);
     }

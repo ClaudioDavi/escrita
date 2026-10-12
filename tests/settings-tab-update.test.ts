@@ -108,6 +108,14 @@ describe("the tab rebuilds on a change of structure, once", () => {
     expect(r.update).toHaveBeenCalledTimes(2);
   });
 
+  it("the language of the defaults (the setup): rows built from it get its placeholders and fallbacks", async () => {
+    const r = rig();
+    expect(r.plugin.settings.defaultsLanguage).toBe("en");
+    r.plugin.settings.defaultsLanguage = "pt-BR";
+    await r.plugin.saveSettings();
+    expect(r.update).toHaveBeenCalledTimes(1);
+  });
+
   it("never after a text field commits", async () => {
     const r = rig();
     const field = rowNamed(r.open.groups(), "Words")!.setting.components[0] as unknown as { inputEl: HTMLInputElement };

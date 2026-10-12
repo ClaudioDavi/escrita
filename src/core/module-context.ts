@@ -80,7 +80,7 @@ export interface SettingsUi {
    * a change that adds or removes rows. Never after a text field commits (PLAN-1.0.3 Q5).
    */
   redraw(): void;
-  /** A number typed in a field: its digits, at least `min` (default 0); `fallback` when blank or not a number. */
+  /** A number typed in a field: its digits, at least `min` (default 0); `fallback` when it has no digit (blank, or only words). */
   num(v: string, fallback: number, min?: number): number;
 }
 

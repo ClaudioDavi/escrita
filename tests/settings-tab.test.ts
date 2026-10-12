@@ -10,19 +10,19 @@ import { toggleRow, type SettingsBlock } from "../src/ui/settings-rows";
 import { registerStrings, t } from "../src/i18n";
 import { coreStrings } from "../src/strings";
 import { DEFAULT_SETTINGS, type EscritaSettings } from "../src/settings";
-import { EscritaSettingTab } from "../src/settings-tab";
-import { goalsSettingsSection } from "../src/goals/settings-ui";
-import { outlineSettingsItems } from "../src/outline/settings-ui";
-import { placeholdersSettingsSection } from "../src/placeholders/settings-ui";
-import { publishSettingsSection } from "../src/publish/settings-ui";
-import { snapshotsSettingsSection } from "../src/snapshots/settings-ui";
-import { explorerSettingsSection } from "../src/explorer/settings-ui";
-import { universeSettingsSection } from "../src/universe/settings-ui";
-import { threadsSettingsSection } from "../src/universe/threads-settings-ui";
-import { darlingsSettingsSection } from "../src/darlings/settings-ui";
-import { typingSettingsSection } from "../src/editor/settings-ui";
-import { lensSettingsSection } from "../src/lens/settings-ui";
-import { deskSettingsSection } from "../src/desk/settings-ui";
+import { EscritaSettingTab, slotGroups } from "../src/settings-tab";
+import * as goalsUi from "../src/goals/settings-ui";
+import * as outlineUi from "../src/outline/settings-ui";
+import * as placeholdersUi from "../src/placeholders/settings-ui";
+import * as publishUi from "../src/publish/settings-ui";
+import * as snapshotsUi from "../src/snapshots/settings-ui";
+import * as explorerUi from "../src/explorer/settings-ui";
+import * as universeUi from "../src/universe/settings-ui";
+import * as threadsUi from "../src/universe/threads-settings-ui";
+import * as darlingsUi from "../src/darlings/settings-ui";
+import * as editorUi from "../src/editor/settings-ui";
+import * as lensUi from "../src/lens/settings-ui";
+import * as deskUi from "../src/desk/settings-ui";
 import { resetSettingLog, settingLog } from "./support/obsidian";
 import { openTab } from "./support/definitions";
 
@@ -36,16 +36,32 @@ interface Fake {
   loaded: Set<FeatureId>;
 }
 
-/** Modules that own their section (task 2.2): the real draw function stands in for the module's method. Opened through tests/support/definitions.ts. */
-type Draw = (el: HTMLElement, ui: never, plugin: never) => void;
-const OWNED: Partial<Record<FeatureId, Draw>> = {
-  goals: goalsSettingsSection as Draw, publish: publishSettingsSection as Draw,
-  placeholders: placeholdersSettingsSection as Draw,
-  snapshots: snapshotsSettingsSection as Draw, explorerCounts: explorerSettingsSection as Draw,
-  universe: universeSettingsSection as Draw, threads: threadsSettingsSection as Draw,
-  darlings: darlingsSettingsSection as Draw, typing: typingSettingsSection as Draw,
-  lens: lensSettingsSection as Draw, desk: deskSettingsSection as Draw,
+/**
+ * Modules that own their part of the tab (task 2.2): the real function of each settings-ui file
+ * stands in for the module's method. Opened through tests/support/definitions.ts.
+ */
+const OWNED: Partial<Record<FeatureId, [ns: object, prefix: string]>> = {
+  goals: [goalsUi, "goals"], publish: [publishUi, "publish"], outline: [outlineUi, "outline"],
+  placeholders: [placeholdersUi, "placeholders"],
+  snapshots: [snapshotsUi, "snapshots"], explorerCounts: [explorerUi, "explorer"],
+  universe: [universeUi, "universe"], threads: [threadsUi, "threads"],
+  darlings: [darlingsUi, "darlings"], typing: [editorUi, "typing"],
+  lens: [lensUi, "lens"], desk: [deskUi, "desk"],
 };
+
+/**
+ * A module's part from its settings-ui file: `<prefix>SettingsItems(ui, plugin)` once ported,
+ * else `<prefix>SettingsSection(el, ui, plugin)`. Found by name, so the Wave 1 ports of
+ * PLAN-1.0.3 (tasks B, C, D) rename or drop the section function without touching this file.
+ */
+function fromUi(ns: object, prefix: string, plugin: unknown): Partial<FeatureModule> {
+  const fns = ns as Record<string, unknown>;
+  const items = fns[`${prefix}SettingsItems`];
+  if (typeof items === "function") return { settingsItems: (ui) => (items as (ui: SettingsUi, plugin: unknown) => SettingsBlock[])(ui, plugin) };
+  const section = fns[`${prefix}SettingsSection`];
+  if (typeof section === "function") return { settingsSection: (el, ui) => (section as (el: HTMLElement, ui: SettingsUi, plugin: unknown) => void)(el, ui, plugin) };
+  throw new Error(`${prefix}: no ${prefix}SettingsItems or ${prefix}SettingsSection`);
+}
 
 function tabWith(off: FeatureId[] = [], modules: Partial<Record<FeatureId, Partial<FeatureModule>>> = {}): Fake {
   const settings = { ...DEFAULT_SETTINGS, features: {}, stages: structuredClone(DEFAULT_SETTINGS.stages), universeMode: "perBook" as const };
@@ -57,11 +73,9 @@ function tabWith(off: FeatureId[] = [], modules: Partial<Record<FeatureId, Parti
     setup: { hasHomeNote: () => true, open: () => {} },
     features: { isOn: (id: FeatureId) => loaded.has(id), get: (id: FeatureId) => (loaded.has(id) ? modules[id] : undefined) },
   };
-  for (const [id, draw] of Object.entries(OWNED) as [FeatureId, Draw][]) {
-    modules[id] ??= { settingsSection: (el, ui) => draw(el, ui as never, plugin as never) };
+  for (const [id, [ns, prefix]] of Object.entries(OWNED) as [FeatureId, [object, string]][]) {
+    modules[id] ??= fromUi(ns, prefix, plugin);
   }
-  // ported to settingsItems (PLAN-1.0.3 Wave 0)
-  modules.outline ??= { settingsItems: (ui) => outlineSettingsItems(ui, plugin as never) };
   const tab = new EscritaSettingTab(new App() as never, plugin as never);
   return { tab, settings, saves, loaded };
 }
@@ -201,6 +215,49 @@ describe("the declarative tab (PLAN-1.0.3)", () => {
     (tab as unknown as { makeUi(): SettingsUi }).makeUi().redraw();
     expect(update).toHaveBeenCalledTimes(1);
   });
+
+  it("a module whose rows fail to build costs only its own section (the rows are built in onload)", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const broken = { settingsItems: (): SettingsBlock[] => { throw new Error("broken"); } };
+      expect(() => openTab(tabWith([], { lens: broken }).tab)).not.toThrow();
+      expect(error).toHaveBeenCalledTimes(1);
+      expect(headings()).not.toContain(t("settings.lens"));
+      expect(headings()).toContain(t("settings.editor"));
+      expect(headings()).toContain(t("settings.stages"));
+    } finally {
+      error.mockRestore();
+    }
+  });
+});
+
+describe("slotGroups", () => {
+  const rows = (...names: string[]): SettingsBlock[] => [{ items: names.map((name) => ({ name, render: () => {} })) }];
+  const shape = (parts: Parameters<typeof slotGroups>[0]) =>
+    slotGroups(parts).map((g) => [g.heading, (g.items ?? []).map((i) => ("name" in i ? i.name : ""))]);
+
+  it("a slot without a heading continues the group above; a block with one opens its own group", () => {
+    expect(shape([
+      { slot: { heading: "settings.books" }, blocks: rows("Chapters folder"), drawsHeading: false },
+      { slot: { heading: null }, blocks: rows("Day ends at"), drawsHeading: false },
+      { slot: { heading: "settings.lens" }, blocks: [...rows("Echo"), { heading: "Rules", items: rows("Adverbs")[0].items }], drawsHeading: false },
+    ])).toEqual([
+      [t("settings.books"), ["Chapters folder", "Day ends at"]],
+      [t("settings.lens"), ["Echo"]],
+      ["Rules", ["Adverbs"]],
+    ]);
+  });
+
+  it("after an empty slot, a slot without a heading opens under the empty slot's heading (threads with the universe off)", () => {
+    expect(shape([
+      { slot: { heading: "settings.snapshots" }, blocks: rows("Snapshots folder"), drawsHeading: false },
+      { slot: { heading: "universe.settings" }, blocks: [], drawsHeading: false },
+      { slot: { heading: null }, blocks: rows("Thread word"), drawsHeading: false },
+    ])).toEqual([
+      [t("settings.snapshots"), ["Snapshots folder"]],
+      [t("universe.settings"), ["Thread word"]],
+    ]);
+  });
 });
 
 describe("saveOnCommit", () => {
@@ -246,10 +303,11 @@ describe("saveOnCommit", () => {
     expect(f.input.value).toBe("Chapters");
   });
 
-  it("num keeps the digits, at least min, and the fallback for blank", () => {
+  it("num keeps the digits, at least min, and the fallback for a field with no digit", () => {
     const ui = (tabWith().tab as unknown as { makeUi(): import("../src/core/module-context").SettingsUi }).makeUi();
     expect(ui.num("1,500", 9)).toBe(1500);
     expect(ui.num("", 9)).toBe(9);
+    expect(ui.num("abc", 9)).toBe(9);
     expect(ui.num("3", 9, 50)).toBe(50);
   });
 });

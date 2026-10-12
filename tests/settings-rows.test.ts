@@ -7,7 +7,7 @@ import type { SettingDefinitionRender } from "obsidian";
 import type { SettingsUi } from "../src/core/module-context";
 import { registerStrings } from "../src/i18n";
 import { coreStrings } from "../src/strings";
-import { DEFAULT_SETTINGS, defaultsFor, digitsNumber } from "../src/settings";
+import { DEFAULT_SETTINGS, defaultsFor } from "../src/settings";
 import { customRow, dropdownRow, folderRow, noteRow, numberRow, textAreaRow, textRow, toggleRow } from "../src/ui/settings-rows";
 import { resetSettingLog, settingLog } from "./support/obsidian";
 import { commit, fakeUi } from "./support/section-ui";
@@ -19,7 +19,6 @@ beforeEach(() => resetSettingLog());
 /** One row rendered alone; its rendered row and the fake ui. */
 function one(make: (ui: SettingsUi) => SettingDefinitionRender, lang: "en" | "pt-BR" = "en") {
   const f = fakeUi(lang);
-  f.ui.num = digitsNumber;
   const def = make(f.ui);
   const el = document.createElement("div");
   const groups = renderDefinitions([def], el);
@@ -121,7 +120,7 @@ describe("dropdownRow", () => {
 });
 
 describe("numberRow", () => {
-  it("keeps the digits, between min and max; blank keeps the stored number", () => {
+  it("keeps the digits, between min and max; blank or wordless keeps the stored number", () => {
     let v = 40;
     const r = one((ui) => numberRow(ui, { name: "Echo window", min: 10, max: 200, unit: "words", get: () => v, set: (x) => { v = x; } }));
     const field = r.fields[0];
@@ -136,6 +135,9 @@ describe("numberRow", () => {
     expect(v).toBe(10);
     commit(field, "55 words");
     expect(v).toBe(55);
+    commit(field, "abc");
+    expect(v).toBe(55);
+    expect(field.inputEl.value).toBe("55");
     expect(r.row.setting.controlEl.textContent).toContain("words");
   });
 });
@@ -226,5 +228,12 @@ describe("the harness (Obsidian's keys)", () => {
 
   it("keys unnamed rows by index, so several of them live in one group", () => {
     expect(() => renderBlocks([{ items: [noteRow("a"), noteRow("b"), customRow("", () => {})] }])).not.toThrow();
+  });
+
+  it("renderBlocks groups blocks as the tab does: a block without a heading joins the group above", () => {
+    const named = (name: string) => customRow(name, () => {});
+    expect(() => renderBlocks([{ items: [named("A")] }, { items: [named("A")] }])).toThrow(/duplicate/);
+    const { groups } = renderBlocks([{ items: [named("A")] }, { heading: "Rules", items: [named("A")] }, { items: [named("B")] }]);
+    expect(groups.map((g) => [g.def.heading, g.rows.map((r) => r.def.name)])).toEqual([[undefined, ["A"]], ["Rules", ["A", "B"]]]);
   });
 });

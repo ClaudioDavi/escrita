@@ -1,0 +1,56 @@
+// @vitest-environment happy-dom
+// Task 2.2c: the snapshots section draws from its module (PLAN-1.0.3 Wave 1: task C).
+
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { registerStrings, t } from "../src/i18n";
+import { coreStrings } from "../src/strings";
+import { snapshotsStrings } from "../src/snapshots/strings";
+import { DEFAULT_SETTINGS } from "../src/settings";
+import { snapshotsOffNotice, snapshotsSettingsSection } from "../src/snapshots/settings-ui";
+import { resetSettingLog, settingLog } from "./support/obsidian";
+import { names, rig } from "./support/section-rig";
+
+beforeAll(() => { registerStrings(coreStrings); registerStrings(snapshotsStrings); });
+beforeEach(() => resetSettingLog());
+
+describe("snapshots section", () => {
+  it("draws its heading and three rows", () => {
+    const r = rig();
+    snapshotsSettingsSection(r.el, r.ui, r.plugin);
+    expect(names()).toEqual(["settings.snapshots", "settings.snapshotsFolder", "settings.snapshotBeforeFirstEdit", "settings.snapshotsKeepAuto"].map((k) => t(k)));
+    expect(settingLog[0].heading).toBe(true);
+  });
+
+  it("a committed folder saves through one commit; a bad one keeps the saved value", () => {
+    const r = rig();
+    snapshotsSettingsSection(r.el, r.ui, r.plugin);
+    expect(r.commits).toHaveLength(2);
+    r.commits[0].apply("Escrita/Old");
+    expect(r.settings.snapshotsFolder).toBe("Escrita/Old");
+    r.commits[0].apply("../outside");
+    expect(r.settings.snapshotsFolder).toBe("Escrita/Old");
+  });
+
+  it("the number of kept automatic snapshots is a number of at least one", () => {
+    const r = rig();
+    snapshotsSettingsSection(r.el, r.ui, r.plugin);
+    r.commits[1].apply("0");
+    expect(r.settings.snapshotsKeepAuto).toBe(1);
+    r.commits[1].apply("x");
+    expect(r.settings.snapshotsKeepAuto).toBe(DEFAULT_SETTINGS.snapshotsKeepAuto);
+  });
+
+  it("the off notice counts the snapshots that stay, or says nothing", async () => {
+    const store = (lists: Record<string, number>) => ({
+      notesWithSnapshots: async () => Object.keys(lists),
+      list: async (n: string) => new Array(lists[n]).fill(0),
+    });
+    const plugin = (lists: Record<string, number>) => ({ settings: { snapshotsFolder: "Escrita/Snapshots" }, snapshots: { store: store(lists) } }) as never;
+    expect(await snapshotsOffNotice(plugin({}))).toBeNull();
+    const text = await snapshotsOffNotice(plugin({ a: 2, b: 1 }));
+    expect(text).toContain("3");
+    expect(text).toContain("Escrita/Snapshots");
+    const broken = { settings: {}, snapshots: { store: { notesWithSnapshots: async () => { throw new Error("x"); } } } } as never;
+    expect(await snapshotsOffNotice(broken)).toBeNull();
+  });
+});

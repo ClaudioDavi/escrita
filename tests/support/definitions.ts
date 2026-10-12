@@ -16,6 +16,7 @@
 import type { SettingDefinition, SettingDefinitionGroup, SettingDefinitionItem, SettingGroupItem } from "obsidian";
 import { Setting, SettingGroup } from "./obsidian";
 import type { SettingsBlock } from "../../src/ui/settings-rows";
+import { slotGroups } from "../../src/settings-tab";
 
 export interface RenderedRow {
   key: string;
@@ -173,9 +174,14 @@ export function renderDefinitions(items: readonly SettingDefinitionItem[], el: H
   return out;
 }
 
-/** Renders a module's blocks as the tab would group them: one group per block. */
+/**
+ * Renders a module's blocks as the tab groups them (`slotGroups`): a block with a heading opens a
+ * group, one without continues the group above, so a duplicate name across blocks of one group
+ * fails here as it would in Obsidian. A clash with the core's rows of the slot shows only when the
+ * whole tab is opened (`openTab`).
+ */
 export function renderBlocks(blocks: readonly SettingsBlock[], el: HTMLElement = document.createElement("div")): { el: HTMLElement; groups: RenderedGroup[] } {
-  const groups = renderDefinitions(blocks.map((b) => ({ type: "group" as const, heading: b.heading, items: b.items })), el);
+  const groups = renderDefinitions(slotGroups([{ slot: { heading: null }, blocks, drawsHeading: false }]), el);
   return { el, groups };
 }
 

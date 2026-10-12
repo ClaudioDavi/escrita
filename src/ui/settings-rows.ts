@@ -164,8 +164,8 @@ export function dropdownRow<T extends string | number>(ui: SettingsUi, o: Dropdo
 
 /**
  * A whole number typed in a field, saved when committed: its digits (`ui.num`, the one parser),
- * kept between `min` and `max`. A blank or wordless field keeps the stored number. The field
- * then shows what was kept.
+ * kept between `min` and `max`. A field with no digit (blank, or only words) keeps the stored
+ * number. The field then shows what was kept.
  */
 export function numberRow(ui: SettingsUi, o: NumberRowOptions): SettingDefinitionRender {
   return row(o, (s) => {

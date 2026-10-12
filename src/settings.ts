@@ -425,8 +425,8 @@ export function setFeature(s: EscritaSettings, id: FeatureId, on: boolean): void
   }
 }
 
-/** A number typed in a field: its digits, at least `min`; `fallback` when blank or not a number. */
+/** A number typed in a field: its digits, at least `min`; `fallback` when it has no digit (blank, or only words). */
 export function digitsNumber(v: string, fallback: number, min = 0): number {
   const n = Number(v.replace(/[^\d]/g, ""));
-  return Number.isFinite(n) && v.trim() !== "" ? Math.max(min, n) : fallback;
+  return /\d/.test(v) && Number.isFinite(n) ? Math.max(min, n) : fallback;
 }
