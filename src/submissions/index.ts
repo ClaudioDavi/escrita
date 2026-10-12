@@ -9,7 +9,8 @@ import { isoDay } from "../core/dates";
 import { writtenWord } from "../core/stages";
 import { fmt, t } from "../i18n";
 import { SubmissionModal } from "./modal";
-import { submissionsOffNotice, submissionsSettingsSection } from "./settings-ui";
+import type { SettingsBlock } from "../ui/settings-rows";
+import { submissionsOffNotice, submissionsSettingsItems } from "./settings-ui";
 import {
   parseWorkLink, pendingList, pendingValue, propsKey, propsOf, recentMarkets, rowOf, sameRow, submissionPath, submissionText, workFor,
   type SubmissionRow,
@@ -99,7 +100,7 @@ export class SubmissionsModule extends FeatureModule {
     }];
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { submissionsSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return submissionsSettingsItems(ui, this.plugin); }
   offNotice(): Promise<string | null> { return submissionsOffNotice(this.plugin); }
 
   // --- the pending port -----------------------------------------------------

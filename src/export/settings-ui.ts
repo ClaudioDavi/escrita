@@ -1,57 +1,59 @@
-import { Setting } from "obsidian";
 import { t } from "../i18n";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
+import { textAreaRow, textRow, type SettingsBlock } from "../ui/settings-rows";
+
+type PropertyKey = "compileProperty" | "dedicationProperty" | "epigraphProperty" | "authorProperty" | "coverProperty" | "epubSceneBreak" | "collectionProperty";
 
 /**
- * The Export section: the property names, the author on the title page and the
- * chapter heading. The folder is drawn by the core (settings.ts, pluginFolderRows). Every value has a default in the install's set (ui.defaults(), rule 6).
+ * The Export section's rows, under the heading the tab draws: the property names, the author on
+ * the title page and the chapter heading. The folder is drawn by the core (settings-tab.ts,
+ * pluginFolderRows). Every value has a default in the install's set (ui.defaults(), rule 6).
  */
-export function exportSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
+export function exportSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): SettingsBlock[] {
   const s = plugin.settings;
-  new Setting(el).setName(t("export.settings.heading")).setHeading();
-  const text = (key: "compileProperty" | "dedicationProperty" | "epigraphProperty" | "authorProperty" | "coverProperty" | "epubSceneBreak" | "collectionProperty", name: string): void => {
-    new Setting(el)
-      .setName(t(`export.settings.${name}`))
-      .setDesc(t(`export.settings.${name}.desc`))
-      .addText((c) => {
-        c.setPlaceholder(ui.defaults()[key]).setValue(s[key]);
-        ui.saveOnCommit(c, () => ui.defaults()[key], (v) => { s[key] = v; });
-      });
-  };
-  text("compileProperty", "compile");
-  text("dedicationProperty", "dedication");
-  text("epigraphProperty", "epigraph");
-  text("authorProperty", "authorProperty");
-  new Setting(el)
-    .setName(t("export.settings.authorName"))
-    .setDesc(t("export.settings.authorName.desc"))
-    .addText((c) => {
-      c.setValue(s.authorName);
-      ui.saveOnCommit(c, () => "", (v) => { s.authorName = v; });
-    });
-  new Setting(el)
-    .setName(t("export.settings.authorSurname"))
-    .setDesc(t("export.settings.authorSurname.desc"))
-    .addText((c) => {
-      c.setValue(s.authorSurname);
-      ui.saveOnCommit(c, () => "", (v) => { s.authorSurname = v; });
-    });
-  new Setting(el)
-    .setName(t("export.settings.contact"))
-    .setDesc(t("export.settings.contact.desc"))
-    .addTextArea((c) => {
-      c.setValue(s.contactLines);
-      ui.saveOnCommit(c, () => "", (v) => { s.contactLines = v; });
-    });
-  new Setting(el)
-    .setName(t("export.settings.heading.format"))
-    .setDesc(t("export.settings.heading.format.desc"))
-    .addText((c) => {
-      c.setPlaceholder(t("export.settings.heading.format.placeholder")).setValue(s.chapterHeadingFormat);
-      ui.saveOnCommit(c, () => "", (v) => { s.chapterHeadingFormat = v; });
-    });
-  text("coverProperty", "cover");
-  text("epubSceneBreak", "epubBreak");
-  text("collectionProperty", "collection");
+  const property = (key: PropertyKey, name: string) => textRow(ui, {
+    name: t(`export.settings.${name}`),
+    desc: t(`export.settings.${name}.desc`),
+    key,
+    placeholder: ui.defaults()[key],
+    get: () => s[key],
+    set: (v) => { s[key] = v; },
+  });
+  return [{
+    items: [
+      property("compileProperty", "compile"),
+      property("dedicationProperty", "dedication"),
+      property("epigraphProperty", "epigraph"),
+      property("authorProperty", "authorProperty"),
+      textRow(ui, {
+        name: t("export.settings.authorName"),
+        desc: t("export.settings.authorName.desc"),
+        get: () => s.authorName,
+        set: (v) => { s.authorName = v; },
+      }),
+      textRow(ui, {
+        name: t("export.settings.authorSurname"),
+        desc: t("export.settings.authorSurname.desc"),
+        get: () => s.authorSurname,
+        set: (v) => { s.authorSurname = v; },
+      }),
+      textAreaRow(ui, {
+        name: t("export.settings.contact"),
+        desc: t("export.settings.contact.desc"),
+        get: () => s.contactLines,
+        set: (v) => { s.contactLines = v; },
+      }),
+      textRow(ui, {
+        name: t("export.settings.heading.format"),
+        desc: t("export.settings.heading.format.desc"),
+        placeholder: t("export.settings.heading.format.placeholder"),
+        get: () => s.chapterHeadingFormat,
+        set: (v) => { s.chapterHeadingFormat = v; },
+      }),
+      property("coverProperty", "cover"),
+      property("epubSceneBreak", "epubBreak"),
+      property("collectionProperty", "collection"),
+    ],
+  }];
 }
