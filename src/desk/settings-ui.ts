@@ -1,29 +1,35 @@
-import { Setting } from "obsidian";
 import { fmt, lang, plural, t } from "../i18n";
 import type EscritaPlugin from "../main";
 import type { SettingsUi } from "../core/module-context";
+import { textRow, toggleRow, type SettingsBlock } from "../ui/settings-rows";
 
-/** The home note rows. */
-export function deskSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
+/** The home note rows, under the heading the tab draws. */
+export function deskSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): SettingsBlock[] {
   const s = plugin.settings;
-  new Setting(el).setName(t("settings.homeNoteHeading")).setHeading();
-  new Setting(el)
-    .setName(t("settings.homeNote"))
-    .setDesc(t("settings.homeNote.desc"))
-    .addText((c) => {
-      c.setPlaceholder(lang() === "pt-BR" ? "Início.md" : "Home.md").setValue(s.homeNote);
-      ui.saveOnCommit(c, () => "", (v) => { s.homeNote = v; });
-    });
-  new Setting(el)
-    .setName(t("settings.openHomeOnStartup"))
-    .setDesc(t("settings.openHomeOnStartup.desc"))
-    .addToggle((c) => c.setValue(s.openHomeOnStartup)
-      .onChange(async (v) => { s.openHomeOnStartup = v; await ui.save(); }));
-  new Setting(el)
-    .setName(t("desk.writingMode.setting"))
-    .setDesc(t("desk.writingMode.setting.desc"))
-    .addToggle((c) => c.setValue(s.openInWritingMode)
-      .onChange(async (v) => { s.openInWritingMode = v; await ui.save(); }));
+  return [{
+    items: [
+      // A cleared home note stays empty (no home), so no key: the fallback is "".
+      textRow(ui, {
+        name: t("settings.homeNote"),
+        desc: t("settings.homeNote.desc"),
+        placeholder: lang() === "pt-BR" ? "Início.md" : "Home.md",
+        get: () => s.homeNote,
+        set: (v) => { s.homeNote = v; },
+      }),
+      toggleRow(ui, {
+        name: t("settings.openHomeOnStartup"),
+        desc: t("settings.openHomeOnStartup.desc"),
+        get: () => s.openHomeOnStartup,
+        set: (v) => { s.openHomeOnStartup = v; },
+      }),
+      toggleRow(ui, {
+        name: t("desk.writingMode.setting"),
+        desc: t("desk.writingMode.setting.desc"),
+        get: () => s.openInWritingMode,
+        set: (v) => { s.openInWritingMode = v; },
+      }),
+    ],
+  }];
 }
 
 export async function deskOffNotice(plugin: EscritaPlugin): Promise<string | null> {

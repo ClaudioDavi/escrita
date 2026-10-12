@@ -15,7 +15,8 @@ import {
   type DarlingEntry,
 } from "./format";
 import { ConfirmModal, DarlingsView, VIEW_DARLINGS } from "./view";
-import { darlingsOffNotice, darlingsSettingsSection } from "./settings-ui";
+import { darlingsOffNotice, darlingsSettingsItems } from "./settings-ui";
+import type { SettingsBlock } from "../ui/settings-rows";
 
 export { VIEW_DARLINGS };
 
@@ -455,6 +456,6 @@ export class DarlingsModule extends FeatureModule {
     }).open();
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { darlingsSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return darlingsSettingsItems(ui, this.plugin); }
   offNotice(): Promise<string | null> { return darlingsOffNotice(this.plugin); }
 }

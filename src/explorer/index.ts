@@ -14,7 +14,8 @@ import type { Book } from "../core/books";
 import { measureText, noteProgress, type Counts } from "../core/measure";
 import { fmt, lang, t, unitAmount } from "../i18n";
 import { abbreviate, countLabel, explorerTotals, stateClass, type Abbrev, type BookShape, type NumFmt, type Totals } from "./counts";
-import { explorerSettingsSection } from "./settings-ui";
+import { explorerSettingsItems } from "./settings-ui";
+import type { SettingsBlock } from "../ui/settings-rows";
 
 /** files counted concurrently per step of the first pass */
 const BATCH = 40;
@@ -396,5 +397,5 @@ export class ExplorerModule extends FeatureModule {
     return { text: label.text, tooltip, cls: stateClass(label.state) };
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { explorerSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return explorerSettingsItems(ui, this.plugin); }
 }

@@ -9,7 +9,8 @@ import { LeftOffRecorder } from "./recorder";
 import { DeskBlock } from "./render";
 import { openHome, startupOpen } from "./home-note";
 import { dropKeys, renameKeys } from "../core/path-keys";
-import { deskOffNotice, deskSettingsSection } from "./settings-ui";
+import { deskOffNotice, deskSettingsItems } from "./settings-ui";
+import type { SettingsBlock } from "../ui/settings-rows";
 import { WritingMode } from "./writing-mode";
 import type { WritingModeHost, WritingModePort } from "../core/writing-mode";
 
@@ -108,6 +109,6 @@ export class DeskModule extends FeatureModule implements WritingModeHost {
     ws.updateOptions();   // Live Preview widgets
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { deskSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return deskSettingsItems(ui, this.plugin); }
   offNotice(): Promise<string | null> { return deskOffNotice(this.plugin); }
 }
