@@ -330,7 +330,7 @@ interface lives. Test through the interface.
   unchecked (`main.ts:236`). Export's `ExportChoice` types and cleaners move out of `data.ts`.
 - **Files by path.** 58 checks of `getAbstractFileByPath` then `instanceof TFile`, four local
   `fileAt` helpers, two private `frontmatter()` copies (`publish/index.ts:130`,
-  `export/index.ts:158`). `minAppVersion` is 1.8.7, so use `vault.getFileByPath` (add it to the
+  `export/index.ts:158`). `minAppVersion` is 1.13.0 (above 1.5.7), so use `vault.getFileByPath` (add it to the
   test fakes) and `books.frontmatter(file | path)`.
 - **Note settings.** One `readTemplate(app, setting)` for `core/chapter-ops.ts:98` and
   `universe/index.ts:475`, built on `withMd` (candidate 33). One `resolveHomeNote` for the

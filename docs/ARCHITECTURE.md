@@ -1135,7 +1135,8 @@ module internals (`tests/settings-imports.test.ts`: only shared core, top-level 
   slots to draw: core always, a module's slot while it is loaded, and a slot with `also` while
   any of those is loaded (the core part only).
 - **`getSettingDefinitions()`** reads the loaded set, walks `sectionOrder(loaded)` and makes
-  one group per slot: the core's rows for the slot (`coreBlocks`), then the module's blocks.
+  one group per slot: the core's rows for the slot (`coreBlocks`), then the module's blocks
+  (the editor slot puts the typing module's rows first, then the shared editor rows).
   A slot whose heading is null joins the previous group (`slotGroups`); an empty slot's heading
   carries to the next slot without one. A part that throws costs its own rows, not the
   plugin's load. A row that depends on the loaded features is left out when the rows are built
@@ -1148,7 +1149,7 @@ module internals (`tests/settings-imports.test.ts`: only shared core, top-level 
   above. `FeatureModule.offNotice()` returns what the Features page says when the feature is
   switched off and keeps data (read after the switch is saved, so only what stays). A section
   is gone with its module. The tab reaches a module through `features.get<FeatureModule>(id)`.
-- **Row helpers** (`src/ui/settings-rows.ts`; imports only `obsidian` and core types). Each
+- **Row helpers** (`src/ui/settings-rows.ts`; imports only `obsidian`, shared core and the settings types; never a module folder). Each
   returns a `SettingDefinitionRender` (a row with a `render` callback, not Obsidian's `control`
   rows, which save through `saveData` and skip `saveSettings()` and the commit-on-blur rule):
   `textRow`, `textAreaRow`, `toggleRow`, `dropdownRow` (converts number values itself),

@@ -38,7 +38,7 @@ export function isDefaultsLanguage(v: unknown): v is DefaultsLanguage {
  * agree; Escrita has no European set (and its words are Brazilian on purpose).
  *
  * Where the language is read: from `locale()` in i18n.ts, that is Obsidian's
- * `getLanguage()` (since 1.0, `minAppVersion` is 1.8.7). An empty or missing value
+ * `getLanguage()` (since 1.0; `minAppVersion` is 1.13.0 since 1.0.3). An empty or missing value
  * (a test) gives "en", the fallback.
  */
 export function languageOf(obsidianLanguage: string | null | undefined): DefaultsLanguage {

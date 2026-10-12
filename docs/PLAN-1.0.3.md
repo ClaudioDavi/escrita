@@ -198,7 +198,8 @@ this plan, the row names per group, and the behaviors in "Tests".
   ("Settings tab", "Documented exceptions"), CONTEXT.md, IMPROVEMENTS.md (36 and 51 in "Done"),
   ROADMAP.md, the README changelog and the guide's "Features and settings" page (English and
   pt-BR) describe the new tab. `versions.json` gets its 1.0.3 entry (1.13.0) from `npm version`
-  at release, after the by-hand checks (G3).
+  at release, after the by-hand checks (G3). In the same bare-version commit: date the README
+  changelog heading (`### 1.0.3 (unreleased)`) and trim the ROADMAP row's version cell to `1.0.3`.
 - **Section headings accepted by the author on 2026-10-12:** "Revisão · a lente" /
   "Revision · the lens" and "Publicação · a checagem" / "Publishing · the check". The Features
   page groups stay plain.
