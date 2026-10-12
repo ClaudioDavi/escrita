@@ -1,4 +1,5 @@
-import { ItemView, TFile, WorkspaceLeaf, debounce, moment, setIcon, type ViewStateResult } from "obsidian";
+import { ItemView, TFile, WorkspaceLeaf, debounce, setIcon, type ViewStateResult } from "obsidian";
+import { fromTime } from "../ui/day";
 import { fmt, t, unitAmount } from "../i18n";
 import type { AnchoredChange } from "../core/note-text";
 import { compareTexts, type Block, type Compare, type Part } from "./compare";
@@ -216,7 +217,7 @@ export class CompareView extends ItemView {
   }
 
   private entryText(e: SnapshotEntry): string {
-    const when = e.taken > 0 ? moment(e.taken).format("ll LT") : "";
+    const when = e.taken > 0 ? fromTime(e.taken).format("ll LT") : "";
     return when ? `${this.module.labelOf(e)} · ${when}` : this.module.labelOf(e);
   }
 

@@ -172,7 +172,17 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
     - `src/ui/confirm.ts`: `no-deprecated` for `ButtonComponent.setWarning`;
       `setDestructive` is newer than `minAppVersion`.
     - `src/snapshots/fs.ts`: `prefer-file-manager-trash-file`, the empty snapshot folder
-      removal listed above.
+      removal listed above. The settings exception is planned away in IMPROVEMENTS 51.
+  - **`moment` calls go through `src/ui/day.ts`** (`parseDay`, `fromTime`). The bot's type
+    check resolves `moment(...)` as `any`, which raises `no-unsafe-*` warnings at every call
+    (review of 2026-10-12). The wrapper casts `moment` once to the small typed slice Escrita
+    uses. Don't call `moment(...)` directly anywhere else.
+  - **CSS lint "partially supported" warnings are false positives.** The bot reports
+    `text-decoration` (the lens marks, name underlines, dotted links), `box-decoration-break`
+    (placeholders) and `text-indent` (export preview) as only partly supported by Obsidian
+    1.7.4. The gaps are features Escrita doesn't use: `text-decoration-skip`, the
+    `each-line`/`hanging` indents, and box-decoration-break on block elements. The bot checks
+    against 1.7.4 whatever `minAppVersion` says, so raising it won't clear them. Leave them.
   - **Writes into a note's text go through `plugin.notes`** (the editor when the note is
     open in source or Live Preview, else `vault.process`), never straight to
     `vault.process`. **The editor-writes rule (0.8):** an edit at the cursor of the editor

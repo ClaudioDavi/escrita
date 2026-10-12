@@ -2,7 +2,8 @@
 // dictionary (the source of truth) and translations keyed by locale.
 // Adding a language = adding one key to each strings file.
 
-import { getLanguage, moment } from "obsidian";
+import { getLanguage } from "obsidian";
+import { parseDay } from "./ui/day";
 import { pluralKey, unitKey, type PieceUnit } from "./core/measure";
 
 export type Dict = Record<string, string>;
@@ -52,7 +53,7 @@ export function unitAmount(unit: PieceUnit, n: number): string {
 
 /** YYYY-MM-DD → "Sep 29" / "29 de set." for chart labels. */
 export function fmtShortDay(day: string): string {
-  const m = moment(day, "YYYY-MM-DD", true);
+  const m = parseDay(day);
   if (!m.isValid()) return day;
   const long = m.localeData().longDateFormat("ll");
   // Drop the year from the locale's "ll" format.

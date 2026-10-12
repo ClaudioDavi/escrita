@@ -1,4 +1,5 @@
-import { ItemView, TFile, WorkspaceLeaf, moment, setIcon } from "obsidian";
+import { ItemView, TFile, WorkspaceLeaf, setIcon } from "obsidian";
+import { fromTime } from "../ui/day";
 import { t, unitAmount } from "../i18n";
 import { AUTO_KINDS, type SnapshotEntry } from "./index-format";
 import type { SnapshotsModule } from "./index";
@@ -107,7 +108,7 @@ export class SnapshotsView extends ItemView {
     }
 
     const meta = card.createDiv({ cls: "escrita-snapshot-meta" });
-    const when = e.taken > 0 ? moment(e.taken).format("ll LT") : e.file;
+    const when = e.taken > 0 ? fromTime(e.taken).format("ll LT") : e.file;
     meta.createSpan({ text: when });
     meta.createSpan({ text: e.words >= 0 ? unitAmount("words", e.words) : t("snapshots.row.unknown") });
     if (words !== null && e.words >= 0) {

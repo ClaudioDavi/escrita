@@ -510,6 +510,23 @@ interface lives. Test through the interface.
   `tests/support/obsidian.ts`.
 - `VaultTree` fakes in 7 files. Add `tests/support/fake-tree.ts`.
 
+### 51. The settings tab on the declarative settings API
+
+**Strength:** medium · **Pairs with:** candidates 36 and 37 · **Needs:** mockups first (rule 7)
+
+- **Problem.** The community review bot reports that `EscritaSettingTab` doesn't implement
+  `getSettingDefinitions()`, so its settings don't show up in Obsidian's settings search
+  (1.13.0+). It also flags `display()` as deprecated. Both rules are turned off for
+  `settings.ts` in `eslint.config.mjs`, but the bot's own run still reports them (review of
+  2026-10-12).
+- **Change.** Raise `minAppVersion` to 1.13.0. Build the tab from `getSettingDefinitions()`:
+  one group per section in `sectionOrder`, with `control` rows for plain toggles, text and
+  dropdowns, and `render` rows for the Features page, the presets block and folder fields.
+  Use `visible` for rows that depend on loaded features. Replace `redraw` with `update()` or
+  `refreshDomState()`. Remove `display()` and both lint exceptions. Doing candidate 36 first
+  turns the sections into lists of rows, which makes this mostly mechanical.
+- **Wins.** Settings search finds Escrita's rows, and two documented exceptions go away.
+
 ## Measured and set aside
 
 ### 12. Content indexes share one read and one segmentation per file

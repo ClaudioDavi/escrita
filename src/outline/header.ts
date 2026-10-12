@@ -2,7 +2,8 @@
 // summary, the stage and POV chips, the filtered line and the POV colour menu. The model
 // functions are pure; the render functions draw into a host element the view owns.
 
-import { Component, moment, setIcon } from "obsidian";
+import { Component, setIcon } from "obsidian";
+import { parseDay } from "../ui/day";
 import { fmt, lang, plural, t } from "../i18n";
 import type { SerialLine } from "../core/serial";
 import type { StageMapping } from "../core/stages";
@@ -288,7 +289,7 @@ export function showPovMenu(
 /** "30 set" / "Sep 30" for a YYYY-MM-DD date; anything else as written (D5: a future date too). */
 export function serialDateText(date: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
-  const m = moment(date, "YYYY-MM-DD", true);
+  const m = parseDay(date);
   return m.isValid() ? m.format(lang() === "pt-BR" ? "D MMM" : "MMM D") : date;
 }
 

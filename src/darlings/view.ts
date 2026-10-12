@@ -1,4 +1,5 @@
-import { App, ItemView, Modal, Notice, WorkspaceLeaf, moment, setIcon } from "obsidian";
+import { App, ItemView, Modal, Notice, WorkspaceLeaf, setIcon } from "obsidian";
+import { parseDay } from "../ui/day";
 import { fmt, t } from "../i18n";
 import { excerpt, newestFirst, type DarlingEntry } from "./format";
 import type { DarlingsModule } from "./index";
@@ -136,7 +137,7 @@ export class DarlingsView extends ItemView {
 
     const meta = card.createDiv({ cls: "escrita-darling-meta" });
     meta.createSpan({ cls: "escrita-darling-source", text: this.module.sourceTitle(e) });
-    const date = moment(e.date, "YYYY-MM-DD", true);
+    const date = parseDay(e.date);
     meta.createSpan({ cls: "escrita-darling-date", text: date.isValid() ? date.format("ll") : e.date });
 
     const text = excerpt(e.text);
