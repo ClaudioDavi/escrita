@@ -11,7 +11,7 @@
 // hidden with `visible`: the tab rebuilds on every change of the loaded set, the switches, the
 // language of the defaults and the lens's language, so the build is always current.
 
-import { App, Notice, PluginSettingTab, Setting, type ColorComponent, type SettingDefinitionGroup, type SettingDefinitionItem, type SettingDefinitionRender, type SettingGroupItem, type TextAreaComponent, type TextComponent } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting, type ColorComponent, type SettingDefinitionGroup, type SettingDefinitionItem, type SettingDefinitionRender, type SettingGroupItem } from "obsidian";
 import type EscritaPlugin from "./main";
 import { lang, t } from "./i18n";
 import { PRESET_IDS, matchingPreset, presetChanges, presetSwitches, type PresetId } from "./core/feature-presets";
@@ -23,7 +23,7 @@ import type { FeatureModule, SettingsUi } from "./core/module-context";
 import type { UniverseMode } from "./universe/settings";
 import { exportRoot, snapshotsRoot, submissionsRoot } from "./core/classify";
 import { holdsOwnNotes, pluginFolderProblem, type BookPaths } from "./core/folder-problem";
-import { customRow, drawnRow, dropdownRow, folderRow, noteRow, textAreaRow, textRow, toggleRow, type SettingsBlock, type TextKey } from "./ui/settings-rows";
+import { customRow, drawnRow, wireCommit, dropdownRow, folderRow, noteRow, textAreaRow, textRow, toggleRow, type SettingsBlock, type TextKey } from "./ui/settings-rows";
 import { defaultsFor, digitsNumber, rowShown, setFeature, type EscritaSettings, type ParagraphStyle, type QuoteStyle } from "./settings";
 
 /** What the color input holds while a stage has no color (not black, so black is a real choice). */
@@ -119,17 +119,7 @@ export class EscritaSettingTab extends PluginSettingTab {
       app: this.app,
       save,
       defaults: () => defaultsFor(this.plugin.settings.defaultsLanguage),
-      saveOnCommit: (c: TextComponent | TextAreaComponent | HTMLInputElement, fallback: () => string, apply: (v: string) => void, read?: () => unknown) => {
-        const input = c instanceof HTMLInputElement ? c : c.inputEl;
-        const show = (v: string) => { if (c instanceof HTMLInputElement) c.value = v; else c.setValue(v); };
-        input.addEventListener("change", () => {
-          const v = (c instanceof HTMLInputElement ? c.value : c.getValue()).trim() || fallback();
-          show(v);
-          const before = read?.();
-          apply(v);
-          if (!read || read() !== before) void save();
-        });
-      },
+      saveOnCommit: (c, fallback, apply, read) => wireCommit(c, fallback, apply, read, save),
       redraw: () => this.update(),
       num: digitsNumber,
     };

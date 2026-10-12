@@ -65,9 +65,11 @@ export interface SettingsUi {
    * features per letter. The value is trimmed; blank becomes `fallback()`; the
    * field then shows what was kept, `apply(v)` stores it, and the settings save.
    * `c` may be a plain `<input>` (a table cell). With `read`, the settings save only when
-   * `read()` differs across `apply`, so committing the value already held writes nothing.
+   * `read()` differs across `apply` (`!==`), so committing the value already held writes nothing.
+   * `read` returns a primitive (a string or number); for an object, return its text form, as
+   * the universe's form values field does.
    */
-  saveOnCommit(c: TextComponent | TextAreaComponent | HTMLInputElement, fallback: () => string, apply: (v: string) => void, read?: () => unknown): void;
+  saveOnCommit(c: TextComponent | TextAreaComponent | HTMLInputElement, fallback: () => string, apply: (v: string) => void, read?: () => string | number): void;
   /**
    * The default set of the install's language (`defaultsFor(settings.defaultsLanguage)`, 1.0):
    * what a cleared field falls back to and what a placeholder shows. Never DEFAULT_SETTINGS

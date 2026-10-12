@@ -40,6 +40,29 @@ export interface RowOptions {
   aliases?: string[];
 }
 
+/**
+ * The one commit path of a text field (`SettingsUi.saveOnCommit`; the tab and the tests' fake
+ * both wire it here): on `change` (blur or Enter), trim, blank becomes `fallback()`, show what
+ * was kept, `apply` it, then `save` (only if `read()` changed across `apply`, when given).
+ */
+export function wireCommit(
+  c: TextComponent | TextAreaComponent | HTMLInputElement,
+  fallback: () => string,
+  apply: (v: string) => void,
+  read: (() => string | number) | undefined,
+  save: () => Promise<void>,
+): void {
+  const plain = c instanceof HTMLInputElement;
+  const input = plain ? c : c.inputEl;
+  input.addEventListener("change", () => {
+    const v = (plain ? c.value : c.getValue()).trim() || fallback();
+    if (plain) c.value = v; else c.setValue(v);
+    const before = read?.();
+    apply(v);
+    if (!read || read() !== before) void save();
+  });
+}
+
 /** The settings stored as text: the keys a text row can take its fallback from. */
 export type TextKey = { [K in keyof EscritaSettings]-?: EscritaSettings[K] extends string ? K : never }[keyof EscritaSettings];
 

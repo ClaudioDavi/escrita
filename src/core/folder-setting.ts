@@ -24,7 +24,7 @@ export function folderProblemText(p: FolderProblem): string {
 export function addFolderField(
   row: Setting, ui: SettingsUi,
   o: {
-    placeholder: string; value: string; read?: () => unknown; problemOf: (v: string) => FolderProblem | null; save: (v: string) => void;
+    placeholder: string; value: string; read?: () => string | number; problemOf: (v: string) => FolderProblem | null; save: (v: string) => void;
     problemText?: (p: FolderProblem) => string;
   },
 ): void {

@@ -246,6 +246,25 @@ describe("the stages group", () => {
     expect(saves).not.toHaveBeenCalled();
   });
 
+  it("a committed words field is trimmed", () => {
+    const { open, settings, saves } = build();
+    commit(field(open.groups(), t("stage.draft")), " rascunho ");
+    expect(settings.stages.draft.words).toBe("rascunho");
+    expect(saves).toHaveBeenCalledTimes(1);
+  });
+
+  it("a blank commit over blank stored words stores the default, with one save", () => {
+    const { open, settings, saves } = build();
+    settings.stages.draft.words = "";
+    const f = field(open.groups(), t("stage.draft"));
+    commit(f, "");
+    const def = defaultsFor(settings.defaultsLanguage).stages.draft.words;
+    expect(def).not.toBe("");
+    expect(settings.stages.draft.words).toBe(def);
+    expect(f.inputEl.value).toBe(def);
+    expect(saves).toHaveBeenCalledTimes(1);
+  });
+
   it("the draft switch describes the draft word and saves at once", async () => {
     const { open, settings, saves } = build();
     const row = rowNamed(open.groups(), t("settings.draftNewNotes"))!;

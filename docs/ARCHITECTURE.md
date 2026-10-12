@@ -1171,9 +1171,10 @@ module internals (`tests/settings-imports.test.ts`: only shared core, top-level 
   Enter, not per key, so typing a folder name doesn't reload features per letter; the value is
   trimmed, blank becomes the fallback, and the field shows what was kept; the component may be
   a plain `<input>`, for table cells; with `read`, the settings save only if `read()` changed
-  across `apply`). This is the one commit, trim, fallback and save path of the tab: no section
-  keeps its own `change` listener for a text field, `redraw()` (calls the
-  tab's `update()`) and `num(v, fallback, min)`.
+  across `apply`; `read` returns a primitive, or an object's text form), `redraw()` (calls the
+  tab's `update()`) and `num(v, fallback, min)`. `saveOnCommit` is the one commit, trim,
+  fallback and save path of the tab (`wireCommit` in `ui/settings-rows.ts`, which the tests'
+  fake `SettingsUi` wires too): no section keeps its own `change` listener for a text field.
 - **When the rows are rebuilt.** Obsidian computes the definitions when the tab is added and on
   each `update()`, never when the tab opens. So the tab calls `update()` only when the
   structure changes: `structure()` is a string of the loaded features, the switches,

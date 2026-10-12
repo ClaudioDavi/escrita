@@ -1,7 +1,9 @@
 // A fake SettingsUi for tests that draw one module's settings section with the `Setting` stub.
 import { vi } from "vitest";
 import type { SettingsUi } from "../../src/core/module-context";
+import type { TextAreaComponent, TextComponent } from "obsidian";
 import { defaultsFor, digitsNumber } from "../../src/settings";
+import { wireCommit } from "../../src/ui/settings-rows";
 
 export interface FakeUi {
   ui: SettingsUi;
@@ -15,17 +17,9 @@ export function fakeUi(lang: "en" | "pt-BR" = "en"): FakeUi {
   const fields: FakeUi["fields"] = [];
   const ui = {
     app: {}, save, defaults: () => defaultsFor(lang), redraw: vi.fn(), num: digitsNumber,
-    saveOnCommit(c: { inputEl: HTMLInputElement; getValue(): string; setValue(v: string): unknown } | HTMLInputElement, fallback: () => string, apply: (v: string) => void, read?: () => unknown) {
-      const plain = c instanceof HTMLInputElement;
-      const input = plain ? c : c.inputEl;
-      fields.push({ inputEl: input });
-      input.addEventListener("change", () => {
-        const v = (plain ? c.value : c.getValue()).trim() || fallback();
-        if (plain) c.value = v; else c.setValue(v);
-        const before = read?.();
-        apply(v);
-        if (!read || read() !== before) void save();
-      });
+    saveOnCommit(c: TextComponent | TextAreaComponent | HTMLInputElement, fallback: () => string, apply: (v: string) => void, read?: () => string | number) {
+      fields.push({ inputEl: (c instanceof HTMLInputElement ? c : c.inputEl) as HTMLInputElement });
+      wireCommit(c, fallback, apply, read, save);
     },
   } as unknown as SettingsUi;
   return { ui, save, fields };
