@@ -1,24 +1,29 @@
-import { Setting } from "obsidian";
 import { t } from "../i18n";
 import type EscritaPlugin from "../main";
 import type { SettingsUi } from "../core/module-context";
+import { textAreaRow, textRow, type SettingsBlock } from "../ui/settings-rows";
 
-/** The Publishing section: the date property and the properties a published note should have. */
-export function publishSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
+/** The Publishing section's rows, under the heading the tab draws: the date property and the properties a published note should have. */
+export function publishSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): SettingsBlock[] {
   const s = plugin.settings;
-  new Setting(el).setName(t("settings.publishing")).setHeading();
-  new Setting(el)
-    .setName(t("settings.dateProperty"))
-    .setDesc(t("settings.dateProperty.desc"))
-    .addText((c) => {
-      c.setPlaceholder(ui.defaults().dateProperty).setValue(s.dateProperty);
-      ui.saveOnCommit(c, () => ui.defaults().dateProperty, (v) => { s.dateProperty = v; });
-    });
-  new Setting(el)
-    .setName(t("settings.recommendedProperties"))
-    .setDesc(t("settings.recommendedProperties.desc"))
-    .addTextArea((c) => {
-      c.setPlaceholder(ui.defaults().recommendedProperties).setValue(s.recommendedProperties);
-      ui.saveOnCommit(c, () => "", (v) => { s.recommendedProperties = v; });
-    });
+  return [{
+    items: [
+      textRow(ui, {
+        name: t("settings.dateProperty"),
+        desc: t("settings.dateProperty.desc"),
+        placeholder: ui.defaults().dateProperty,
+        key: "dateProperty",
+        get: () => s.dateProperty,
+        set: (v) => { s.dateProperty = v; },
+      }),
+      // A cleared list stays empty (nothing is recommended), so no key: the fallback is "".
+      textAreaRow(ui, {
+        name: t("settings.recommendedProperties"),
+        desc: t("settings.recommendedProperties.desc"),
+        placeholder: ui.defaults().recommendedProperties,
+        get: () => s.recommendedProperties,
+        set: (v) => { s.recommendedProperties = v; },
+      }),
+    ],
+  }];
 }

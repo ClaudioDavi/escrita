@@ -1,24 +1,28 @@
-import { Setting } from "obsidian";
 import { t } from "../i18n";
 import type EscritaPlugin from "../main";
 import type { SettingsUi } from "../core/module-context";
+import { textRow, type SettingsBlock } from "../ui/settings-rows";
 
-export function darlingsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
+/** The Darlings section's rows, under the heading the tab draws: the two notes cut passages go to. */
+export function darlingsSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): SettingsBlock[] {
   const s = plugin.settings;
-  new Setting(el).setName(t("settings.darlings")).setHeading();
-  new Setting(el)
-    .setName(t("settings.darlingsNote"))
-    .setDesc(t("settings.darlingsNote.desc"))
-    .addText((c) => {
-      c.setValue(s.darlingsNote);
-      ui.saveOnCommit(c, () => ui.defaults().darlingsNote, (v) => { s.darlingsNote = v; });
-    });
-  new Setting(el)
-    .setName(t("settings.globalDarlingsNote"))
-    .addText((c) => {
-      c.setValue(s.globalDarlingsNote);
-      ui.saveOnCommit(c, () => ui.defaults().globalDarlingsNote, (v) => { s.globalDarlingsNote = v; });
-    });
+  return [{
+    items: [
+      textRow(ui, {
+        name: t("settings.darlingsNote"),
+        desc: t("settings.darlingsNote.desc"),
+        key: "darlingsNote",
+        get: () => s.darlingsNote,
+        set: (v) => { s.darlingsNote = v; },
+      }),
+      textRow(ui, {
+        name: t("settings.globalDarlingsNote"),
+        key: "globalDarlingsNote",
+        get: () => s.globalDarlingsNote,
+        set: (v) => { s.globalDarlingsNote = v; },
+      }),
+    ],
+  }];
 }
 
 export async function darlingsOffNotice(_plugin: EscritaPlugin): Promise<string | null> {

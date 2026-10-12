@@ -11,7 +11,8 @@ import { t } from "../i18n";
 import { locate, placeholderSpec, planInsert, resolvePlaceholder, scan, stepIndex, type IndexedMarker } from "./logic";
 import { placeholderDecorations } from "./decoration";
 import { PLACEHOLDERS_VIEW, PlaceholdersView } from "./view";
-import { placeholdersSettingsSection } from "./settings-ui";
+import { placeholdersSettingsItems } from "./settings-ui";
+import type { SettingsBlock } from "../ui/settings-rows";
 
 export { PLACEHOLDERS_VIEW } from "./view";
 export type { IndexedMarker } from "./logic";
@@ -330,5 +331,5 @@ export class PlaceholdersModule extends FeatureModule {
     return true;
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { placeholdersSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return placeholdersSettingsItems(ui, this.plugin); }
 }

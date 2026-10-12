@@ -1,86 +1,130 @@
-import { Setting, moment } from "obsidian";
+import type { SettingDefinitionRender, TextAreaComponent } from "obsidian";
+import { moment } from "obsidian";
 import { t } from "../i18n";
 import { cleanWeekdays } from "../core/merge";
 import { invalidDatesOff } from "../core/daysoff";
 import { fmt, plural } from "../i18n";
 import type EscritaPlugin from "../main";
 import type { SettingsUi } from "../core/module-context";
+import { numberRow, textAreaRow, toggleRow, type SettingsBlock } from "../ui/settings-rows";
 
-/** The Goals section: daily goal, jumps, sprint, status bar, days off. */
-export function goalsSettingsSection(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
+const MAX = Number.MAX_SAFE_INTEGER;
+
+/** The Goals section's rows, under the heading the tab draws: daily goal, jumps, sprint, status bar, days off. */
+export function goalsSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): SettingsBlock[] {
   const s = plugin.settings;
-  new Setting(el).setName(t("settings.goals")).setHeading();
-  new Setting(el)
-    .setName(t("settings.dailyGoal"))
-    .addText((c) => {
-      c.setValue(String(s.dailyGoal));
-      ui.saveOnCommit(c, () => String(s.dailyGoal), (v) => { s.dailyGoal = ui.num(v, s.dailyGoal); c.setValue(String(s.dailyGoal)); });
-    });
-  new Setting(el)
-    .setName(t("settings.ignoreJumpsOver"))
-    .setDesc(t("settings.ignoreJumpsOver.desc"))
-    .addText((c) => {
-      c.setValue(String(s.ignoreJumpsOver));
-      ui.saveOnCommit(c, () => String(s.ignoreJumpsOver), (v) => { s.ignoreJumpsOver = ui.num(v, s.ignoreJumpsOver, 50); c.setValue(String(s.ignoreJumpsOver)); });
-    });
-  new Setting(el)
-    .setName(t("settings.sprintMinutes"))
-    .setDesc(t("settings.sprintMinutes.desc"))
-    .addText((c) => {
-      c.setValue(String(s.sprintMinutes));
-      ui.saveOnCommit(c, () => String(s.sprintMinutes), (v) => { s.sprintMinutes = Math.min(240, ui.num(v, s.sprintMinutes, 1)); c.setValue(String(s.sprintMinutes)); });
-    })
-    .addText((c) => {
-      c.setValue(String(s.sprintTarget));
-      ui.saveOnCommit(c, () => String(s.sprintTarget), (v) => { s.sprintTarget = ui.num(v, s.sprintTarget, 0); c.setValue(String(s.sprintTarget)); });
-    });
-  new Setting(el)
-    .setName(t("settings.showStatusBar"))
-    .addToggle((c) => c.setValue(s.showStatusBar)
-      .onChange(async (v) => { s.showStatusBar = v; await ui.save(); }));
-  weekdaysSetting(el, ui, plugin);
-  const datesOff = new Setting(el)
-    .setName(t("settings.datesOff"))
-    .setDesc(t("settings.datesOff.desc"));
-  const datesHint = datesOff.descEl.createDiv({ cls: "escrita-setting-warning" });
-  const showDatesHint = (value: string) => {
-    const bad = invalidDatesOff(value);
-    datesHint.setText(bad.length ? t("settings.datesOff.invalid", { dates: bad.join(", ") }) : "");
-    datesHint.toggle(bad.length > 0);
-  };
-  showDatesHint(s.datesOff);
-  datesOff.addTextArea((c) => {
-    c.setPlaceholder("2026-12-25\n2027-01-01").setValue(s.datesOff);
-    c.onChange((v) => showDatesHint(v)); // the hint follows the typing; the save waits for the commit
-    ui.saveOnCommit(c, () => "", (v) => { s.datesOff = v; showDatesHint(v); });
+  return [{
+    items: [
+      numberRow(ui, {
+        name: t("settings.dailyGoal"),
+        min: 0, max: MAX,
+        get: () => s.dailyGoal,
+        set: (v) => { s.dailyGoal = v; },
+      }),
+      numberRow(ui, {
+        name: t("settings.ignoreJumpsOver"),
+        desc: t("settings.ignoreJumpsOver.desc"),
+        min: 50, max: MAX,
+        get: () => s.ignoreJumpsOver,
+        set: (v) => { s.ignoreJumpsOver = v; },
+      }),
+      sprintRow(ui, plugin),
+      toggleRow(ui, {
+        name: t("settings.showStatusBar"),
+        get: () => s.showStatusBar,
+        set: (v) => { s.showStatusBar = v; },
+      }),
+      weekdaysRow(ui, plugin),
+      datesOffRow(ui, plugin),
+    ],
+  }];
+}
+
+/** The default sprint: minutes, then target words, two fields in one row. */
+function sprintRow(ui: SettingsUi, plugin: EscritaPlugin): SettingDefinitionRender {
+  const s = plugin.settings;
+  const minutes = numberRow(ui, {
+    name: t("settings.sprintMinutes"),
+    desc: t("settings.sprintMinutes.desc"),
+    min: 1, max: 240,
+    get: () => s.sprintMinutes,
+    set: (v) => { s.sprintMinutes = v; },
   });
+  const target = numberRow(ui, {
+    name: t("settings.sprintMinutes"),
+    min: 0, max: MAX,
+    get: () => s.sprintTarget,
+    set: (v) => { s.sprintTarget = v; },
+  });
+  return {
+    ...minutes,
+    render: (setting, group) => {
+      const a = minutes.render?.(setting, group);
+      const b = target.render?.(setting, group);
+      return () => { a?.(); b?.(); };
+    },
+  };
 }
 
 /** One labeled checkbox per weekday, in the locale's week order. */
-function weekdaysSetting(el: HTMLElement, ui: SettingsUi, plugin: EscritaPlugin): void {
+function weekdaysRow(ui: SettingsUi, plugin: EscritaPlugin): SettingDefinitionRender {
   const s = plugin.settings;
-  const setting = new Setting(el)
-    .setName(t("settings.weekdaysOff"))
-    .setDesc(t("settings.weekdaysOff.desc"));
-  setting.settingEl.addClass("escrita-setting-weekdays");
-  const box = setting.controlEl.createDiv({ cls: "escrita-weekdays" });
-  const first = moment.localeData().firstDayOfWeek();
-  for (let i = 0; i < 7; i++) {
-    const day = (first + i) % 7;
-    const label = box.createEl("label", { cls: "escrita-weekday" });
-    const input = label.createEl("input", { type: "checkbox" });
-    input.checked = s.weekdaysOff.includes(day);
-    label.createSpan({ text: moment.weekdaysShort(day) });
-    label.setAttr("aria-label", moment.weekdays(day));
-    // The listener lives and dies with the element (re-rendered on every display()).
-    input.addEventListener("change", () => {
-      const set = new Set(s.weekdaysOff);
-      if (input.checked) set.add(day);
-      else set.delete(day);
-      s.weekdaysOff = cleanWeekdays([...set]);
-      void ui.save();
-    });
-  }
+  return {
+    name: t("settings.weekdaysOff"),
+    desc: t("settings.weekdaysOff.desc"),
+    render: (setting) => {
+      setting.settingEl.addClass("escrita-setting-weekdays");
+      const box = setting.controlEl.createDiv({ cls: "escrita-weekdays" });
+      const first = moment.localeData().firstDayOfWeek();
+      for (let i = 0; i < 7; i++) {
+        const day = (first + i) % 7;
+        const label = box.createEl("label", { cls: "escrita-weekday" });
+        const input = label.createEl("input", { type: "checkbox" });
+        input.checked = s.weekdaysOff.includes(day);
+        label.createSpan({ text: moment.weekdaysShort(day) });
+        label.setAttr("aria-label", moment.weekdays(day));
+        // The listener lives and dies with the element (the row's control is cleared at each render).
+        input.addEventListener("change", () => {
+          const set = new Set(s.weekdaysOff);
+          if (input.checked) set.add(day);
+          else set.delete(day);
+          s.weekdaysOff = cleanWeekdays([...set]);
+          void ui.save();
+        });
+      }
+    },
+  };
+}
+
+/** The dates-off text area, with a warning under the description that follows the typing. */
+function datesOffRow(ui: SettingsUi, plugin: EscritaPlugin): SettingDefinitionRender {
+  const s = plugin.settings;
+  /** Redraws the warning of the row as last rendered. */
+  let showHint: (value: string) => void = () => {};
+  const area = textAreaRow(ui, {
+    name: t("settings.datesOff"),
+    desc: t("settings.datesOff.desc"),
+    placeholder: "2026-12-25\n2027-01-01",
+    get: () => s.datesOff,
+    set: (v) => { s.datesOff = v; showHint(v); },
+  });
+  return {
+    ...area,
+    render: (setting, group) => {
+      const hint = setting.descEl.createDiv({ cls: "escrita-setting-warning" });
+      showHint = (value) => {
+        const bad = invalidDatesOff(value);
+        hint.setText(bad.length ? t("settings.datesOff.invalid", { dates: bad.join(", ") }) : "");
+        hint.toggle(bad.length > 0);
+      };
+      showHint(s.datesOff);
+      const cleanup = area.render?.(setting, group);
+      // The hint follows the typing; the save waits for the commit.
+      const field = setting.components[setting.components.length - 1] as TextAreaComponent | undefined;
+      field?.onChange((v) => showHint(v));
+      return cleanup;
+    },
+  };
 }
 
 export async function goalsOffNotice(plugin: EscritaPlugin): Promise<string | null> {

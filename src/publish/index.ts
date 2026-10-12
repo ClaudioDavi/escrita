@@ -16,7 +16,8 @@ import { initialDate, shouldWriteDate } from "./date";
 import { dateText } from "../core/measure";
 import { PublishModal } from "./modal";
 import { bookSerial, earlierUnpublished, type PublishNextPort, type SerialState } from "../core/serial";
-import { publishSettingsSection } from "./settings-ui";
+import { publishSettingsItems } from "./settings-ui";
+import type { SettingsBlock } from "../ui/settings-rows";
 
 type Frontmatter = Record<string, unknown>;
 
@@ -283,5 +284,5 @@ export class PublishModule extends FeatureModule implements PublishNextPort {
     if (dropKeys(this.plugin.data.publish, path)) this.plugin.requestSave();
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { publishSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return publishSettingsItems(ui, this.plugin); }
 }

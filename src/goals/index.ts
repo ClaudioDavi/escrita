@@ -19,7 +19,8 @@ import { StatusBar } from "./status-bar";
 import {
   ActiveFiles, addedOn, applyDelta, countsAsWriting, recordBookTotal, renameBook, streak,
 } from "./tracker";
-import { goalsSettingsSection, goalsOffNotice } from "./settings-ui";
+import { goalsSettingsItems, goalsOffNotice } from "./settings-ui";
+import type { SettingsBlock } from "../ui/settings-rows";
 import type { DailyProgress, DailyProgressSource } from "../core/daily-progress";
 
 /**
@@ -396,6 +397,6 @@ export class GoalsModule extends FeatureModule {
     this.sprintTimer = null;
   }
 
-  settingsSection(el: HTMLElement, ui: SettingsUi): void { goalsSettingsSection(el, ui, this.plugin); }
+  settingsItems(ui: SettingsUi): SettingsBlock[] { return goalsSettingsItems(ui, this.plugin); }
   offNotice(): Promise<string | null> { return goalsOffNotice(this.plugin); }
 }
