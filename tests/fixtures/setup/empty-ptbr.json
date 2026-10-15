@@ -93,6 +93,17 @@
     },
     {
       "kind": "setting",
+      "target": "storiesFolder",
+      "state": "change",
+      "tick": "folders",
+      "ticked": true,
+      "reason": {
+        "key": "setup.reason.newWorkFolder"
+      },
+      "value": "Contos"
+    },
+    {
+      "kind": "setting",
       "target": "chaptersFolder",
       "state": "kept",
       "tick": null,

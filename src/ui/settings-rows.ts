@@ -77,6 +77,8 @@ export interface TextRowOptions extends RowOptions {
   placeholder?: string;
   /** Classes for the input. */
   inputCls?: string;
+  /** Attaches an input suggest to the field (ui/suggest.ts); called once per render with the field's input. */
+  suggest?: (input: HTMLInputElement) => void;
 }
 
 export interface ToggleRowOptions extends RowOptions {
@@ -112,6 +114,8 @@ export interface FolderRowOptions extends RowOptions {
   problemOf: (v: string) => FolderProblem | null;
   /** The warning for a problem; default: the shared folder warnings (core/folder-setting.ts). */
   problemText?: (p: FolderProblem) => string;
+  /** Attaches an input suggest to the field (ui/suggest.ts); called once per render with the field's input. */
+  suggest?: (input: HTMLInputElement) => void;
 }
 
 const classes = (cls: string | undefined): string[] => (cls ?? "").split(" ").filter(Boolean);
@@ -146,6 +150,7 @@ function commitField(ui: SettingsUi, c: TextComponent | TextAreaComponent, o: Te
   c.setValue(o.get());
   if (o.inputCls) c.inputEl.addClass(...classes(o.inputCls));
   if (o.name) c.inputEl.setAttr("aria-label", o.name);
+  if (c.inputEl instanceof HTMLInputElement) o.suggest?.(c.inputEl);
   ui.saveOnCommit(c, fallback, (v) => {
     o.set(v);
     c.setValue(o.get());
@@ -221,6 +226,8 @@ export function numberRow(ui: SettingsUi, o: NumberRowOptions): SettingDefinitio
 export function folderRow(ui: SettingsUi, o: FolderRowOptions): SettingDefinitionRender {
   return drawnRow(o, (s) => {
     addFolderField(s, ui, { placeholder: o.placeholder, value: o.get(), read: o.get, problemOf: o.problemOf, problemText: o.problemText, save: o.set });
+    const input = s.controlEl.querySelector("input");
+    if (input) o.suggest?.(input);
   });
 }
 

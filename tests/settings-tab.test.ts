@@ -87,7 +87,7 @@ const names = () => settingLog.map((r) => r.name);
 describe("the tab draws from the order list", () => {
   it("with every feature loaded, the headings come in today's order", () => {
     openTab(tabWith().tab);
-    const want = ["settings.features", ...groupHeadings, "settings.shared", "settings.books", "settings.goals", "settings.publishing",
+    const want = ["settings.features", ...groupHeadings, "settings.shared", "settings.books", "settings.newWorks", "settings.goals", "settings.publishing",
       "export.settings.heading", "submissions.settings.heading", "settings.outline",
       "settings.placeholders", "settings.darlings", "settings.editor", "settings.lens", "settings.lens.rules", "settings.lens.measures",
       "settings.stages", "settings.homeNoteHeading", "settings.snapshots", "universe.settings", "universe.settings.types", "universe.settings.names"];
@@ -109,7 +109,7 @@ describe("the tab draws from the order list", () => {
   it("the core sections stay when every module is off", () => {
     openTab(tabWith([...FEATURE_IDS]).tab);
     // the Features page lists every feature, loaded or not, in its groups
-    expect(headings()).toEqual([t("settings.features"), ...FEATURE_GROUPS.map(featureGroupHeading), ...["settings.shared", "settings.books", "settings.stages"].map((k) => t(k))]);
+    expect(headings()).toEqual([t("settings.features"), ...FEATURE_GROUPS.map(featureGroupHeading), ...["settings.shared", "settings.books", "settings.newWorks", "settings.stages"].map((k) => t(k))]);
   });
 
   it("the export and submissions folders draw in the shared section with both features off (the classifier reads them)", () => {

@@ -291,6 +291,28 @@
     },
     {
       "kind": "setting",
+      "target": "storiesFolder",
+      "state": "change",
+      "tick": "folders",
+      "ticked": true,
+      "reason": {
+        "key": "setup.reason.newWorkFolder"
+      },
+      "value": "Contos"
+    },
+    {
+      "kind": "setting",
+      "target": "booksFolder",
+      "state": "change",
+      "tick": "folders",
+      "ticked": true,
+      "reason": {
+        "key": "setup.reason.newWorkFolder"
+      },
+      "value": "Livros"
+    },
+    {
+      "kind": "setting",
       "target": "chaptersFolder",
       "state": "change",
       "tick": "language",
