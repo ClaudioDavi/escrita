@@ -14,7 +14,7 @@ import { NoteExistsError, FolderBlockedError } from "../core/notes";
 import { macrotaskYield, yieldBudget } from "../core/vault-index";
 import { lang, t } from "../i18n";
 import {
-  authorOf, canRepeat, choiceOfLast, coverLink, coverMediaType, dropChoices, exportFileName, inFolder, keepBothName, lastInPlace, linkTarget, placeOf, planChapters, renameChoices,
+  authorOf, canRepeat, choiceOfLast, coverLink, coverMediaType, dropChoices, exportFileName, joinPath, keepBothName, lastInPlace, linkTarget, placeOf, planChapters, renameChoices,
 } from "./logic";
 import { ExportModal, askExists, askWhere, type BookOptions, type ExportHost, type ModalState } from "./modal";
 import { presetById, presetForLanguage } from "../core/presets";
@@ -380,7 +380,7 @@ export class ExportModule extends FeatureModule {
   // ------------------------------------------------------------------ writing
 
   private pathFor(title: string, state: ModalState): string {
-    return inFolder(exportRoot(this.plugin.settings.exportFolder), exportFileName(title, state.format, state.preset));
+    return joinPath(exportRoot(this.plugin.settings.exportFolder), exportFileName(title, state.format, state.preset));
   }
 
   /**
@@ -440,7 +440,7 @@ export class ExportModule extends FeatureModule {
           const ours = Object.values(p.data.exportChoices).some((c) => c.last?.path === e.existing);
           file = (await p.notes.create(path, data, { exists: "replace", trashOld: !ours })).file;
         } else {
-          const again = inFolder(exportRoot(p.settings.exportFolder), keepBothName(title, state.format, state.preset, new Date()));
+          const again = joinPath(exportRoot(p.settings.exportFolder), keepBothName(title, state.format, state.preset, new Date()));
           file = (await p.notes.create(again, data, { exists: "unique" })).file;
         }
       }

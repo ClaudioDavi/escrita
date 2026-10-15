@@ -6,6 +6,7 @@
 import type { ExportChoice, ExportFormat, ExportSelection, LastExport } from "../data";
 import { chapterHeadings, type Author } from "../core/export-pipeline";
 import type { ChapterRef } from "../core/book-source";
+import { joinPath, parentOf } from "../core/paths";
 import { dropKeys, movedPath, renameKeys } from "../core/path-keys";
 import { safeFileName } from "../core/book";
 import { yamlKey } from "../core/template";
@@ -80,11 +81,8 @@ export function keepBothName(title: string, format: ExportFormat, preset: string
   return `${base} (${presetLabel(preset)}) ${stamp(at)}.${format}`;
 }
 
-/** folder + name, without a doubled or leading slash; an empty folder is the vault root. */
-export function inFolder(folder: string, name: string): string {
-  const f = folder.replace(/\\/g, "/").replace(/\/{2,}/g, "/").replace(/^\/+|\/+$/g, "");
-  return f === "" ? name : `${f}/${name}`;
-}
+/** The join lives in core/paths (`joinPath`); `inFolder` is its old name, kept for the existing tests. */
+export { joinPath, joinPath as inFolder };
 
 // ------------------------------------------------------------------ author, front matter
 
@@ -247,7 +245,7 @@ export function dropChoices(choices: Record<string, ExportChoice>, path: string)
 
 // ------------------------------------------------------------------ repeating an export (Q17)
 
-const dirOf = (path: string): string => (path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "");
+const dirOf = parentOf;
 const nameOf = (path: string): string => path.split("/").pop() ?? path;
 
 /**
