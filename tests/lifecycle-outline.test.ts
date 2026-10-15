@@ -7,7 +7,7 @@ import { OUTLINE_VIEW } from "../src/outline/view";
 import { READER_VIEW } from "../src/outline/reader-view";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
 
-const COMMANDS = ["open-outline", "open-outline-board", "read-book", "create-book", "add-beat", "renumber-chapters"].map((c) => `escrita:${c}`);
+const COMMANDS = ["open-outline", "open-outline-board", "read-book", "add-beat", "renumber-chapters"].map((c) => `escrita:${c}`);
 
 let plugin: FakePlugin;
 let mod: OutlineModule;
@@ -34,7 +34,7 @@ describe("outline lifecycle", () => {
     expect(plugin.commands.size).toBe(0);
   });
 
-  it("loads: six commands, the ribbon icon, the ghost beats, the view creates an OutlineView", () => {
+  it("loads: five commands, the ribbon icon, the ghost beats, the view creates an OutlineView", () => {
     reg.apply();
     expect(reg.isOn("outline")).toBe(true);
     expect([...plugin.commands.keys()].sort()).toEqual([...COMMANDS].sort());

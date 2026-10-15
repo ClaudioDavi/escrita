@@ -445,7 +445,7 @@ export class OutlineView extends ItemView {
       box.createEl("pre", { cls: "escrita-outline-example", text: t("outline.empty.example", { folder }) });
     }
     const create = box.createEl("button", { cls: books.length || note ? "" : "mod-cta", text: t("outline.empty.create") });
-    create.addEventListener("click", () => this.plugin.outline.createBook());
+    create.addEventListener("click", () => this.plugin.newWork.start("book"));
   }
 
   private render(): void {

@@ -41,6 +41,8 @@ export const newWorkStrings: Strings = {
     "new-work.notice.templateMissing": "Template not found: {path}. Used the built-in one.",
     "new-work.notice.untracked": "“{name}” is outside the track folders, so goals don't count it.",
     "new-work.notice.openSettings": "Open settings",
+    "new-work.notice.notBook": "“{path}” wasn't recognized as a book. Check the chapters folder setting.",
+    "new-work.notice.failed": "Escrita couldn't do that: {msg}",
   },
   "pt-BR": {
     "new-work.command.newWork": "Nova obra…",
@@ -78,5 +80,7 @@ export const newWorkStrings: Strings = {
     "new-work.notice.templateMissing": "Modelo não encontrado: {path}. Usei o embutido.",
     "new-work.notice.untracked": "“{name}” está fora das pastas acompanhadas, então as metas não a contam.",
     "new-work.notice.openSettings": "Abrir configurações",
+    "new-work.notice.notBook": "“{path}” não foi reconhecido como livro. Confira a configuração da pasta de capítulos.",
+    "new-work.notice.failed": "O Escrita não conseguiu fazer isso: {msg}",
   },
 };
