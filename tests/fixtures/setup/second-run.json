@@ -179,6 +179,28 @@
     },
     {
       "kind": "setting",
+      "target": "storiesFolder",
+      "state": "change",
+      "tick": "folders",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingHasWorks"
+      },
+      "value": "Stories"
+    },
+    {
+      "kind": "setting",
+      "target": "booksFolder",
+      "state": "change",
+      "tick": "folders",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingHasWorks"
+      },
+      "value": "Books"
+    },
+    {
+      "kind": "setting",
       "target": "chaptersFolder",
       "state": "kept",
       "tick": null,

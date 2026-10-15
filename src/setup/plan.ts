@@ -18,7 +18,7 @@
 // - A track folder is added to `trackFolders`, never swapped: the item's `value` is the
 //   current list plus the new folders. An empty list (the whole vault) stays empty: every
 //   folder is already tracked, and the item is `kept`.
-// - The settings the plan may list (board 37): `defaultsLanguage` and the word-bearing
+// - The settings the plan may list (board 37; 1.0.4 adds `storiesFolder` and `booksFolder`, only while empty): `defaultsLanguage` and the word-bearing
 //   settings of core/defaults.ts `WORD_KEYS` that are not the writer's own (a language
 //   other than the install's), `trackFolders`, `chaptersFolder`, `lensLanguage` (the
 //   writing language), `homeNote` and `openHomeOnStartup` (with the home note),
@@ -220,6 +220,9 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
   const books = choices.writes !== "stories";
   if (stories) addFolder(names.storiesFolder);
   if (books) addFolder(names.booksFolder);
+  // The folders the writes answer names, kept for the new-work settings below (the existing spelling wins).
+  const storiesPath = stories ? folderPaths[0] : null;
+  const booksPath = books ? folderPaths[folderPaths.length - 1] : null;
 
   // Examples: the chapters folder follows the writer's own name when they have one.
   const ownChapters = !same(settings.chaptersFolder, install.chaptersFolder);
@@ -300,6 +303,18 @@ export function planSetup(choices: SetupChoices, vault: SetupVault, settings: Es
       reason: { key: hasWorks ? "setup.reason.trackAddHasWorks" : "setup.reason.trackAdd", vars: { folders: added.join(", ") } }, value: [...tracked, ...added].join("\n"),
     });
   }
+
+  // Where "New short story" and "New book" create (1.0.4, Q3): the folders this plan creates or adopts,
+  // written only into an empty setting, with the folders tick (the writer's own value is never replaced).
+  const newWork = (key: "storiesFolder" | "booksFolder", path: string | null): void => {
+    if (path === null) return;
+    const cur = settings[key];
+    if (cur !== "" && keyOf(cur) === keyOf(path)) keep(key, cur, "settingSame");
+    else if (cur !== "") keep(key, cur, "settingOwn");
+    else change(key, path, "folders", !hasWorks, hasWorks ? "settingHasWorks" : "newWorkFolder");
+  };
+  newWork("storiesFolder", storiesPath);
+  newWork("booksFolder", booksPath);
 
   word("chaptersFolder", true);
   if (same(settings.lensLanguage, choices.language)) keep("lensLanguage", settings.lensLanguage, "settingSame");

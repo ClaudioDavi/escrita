@@ -23,6 +23,7 @@ import type { FeatureModule, SettingsUi } from "./core/module-context";
 import type { UniverseMode } from "./universe/settings";
 import { exportRoot, snapshotsRoot, submissionsRoot } from "./core/classify";
 import { holdsOwnNotes, pluginFolderProblem, type BookPaths } from "./core/folder-problem";
+import { FolderSuggest, NoteSuggest } from "./ui/suggest";
 import { customRow, drawnRow, wireCommit, dropdownRow, folderRow, noteRow, textAreaRow, textRow, toggleRow, type SettingsBlock, type TextKey } from "./ui/settings-rows";
 import { defaultsFor, digitsNumber, rowShown, setFeature, type EscritaSettings, type ParagraphStyle, type QuoteStyle } from "./settings";
 
@@ -182,17 +183,9 @@ export class EscritaSettingTab extends PluginSettingTab {
     switch (slot.id) {
       case "features": return this.featuresBlocks(ui);
       case "shared": return [{ items: this.sharedItems(ui) }];
-      case "books": return [{ items: this.booksItems(ui, shown("templatesFolder")) }];
-      case "dayEnds":
-        return shown("dayEndsAt") ? [{
-          items: [dropdownRow(ui, {
-            name: t("settings.dayEndsAt"),
-            desc: t("settings.dayEndsAt.desc"),
-            options: [0, 1, 2, 3, 4, 5, 6].map((h) => [h, `${String(h).padStart(2, "0")}:00`] as const),
-            get: () => s.dayEndsAt,
-            set: (v) => { s.dayEndsAt = v; },
-          })],
-        }] : [];
+      case "books": return [{ items: [...this.booksItems(ui, shown("templatesFolder")), ...(shown("dayEndsAt") ? [this.dayEndsRow(ui)] : [])] }, { heading: t("settings.newWorks"), items: this.newWorksItems(ui, shown("booksFolder")) }];
+      // The writing day sits in the books group, before "New works" (a group of its own would take it otherwise).
+      case "dayEnds": return [];
       case "stages": return [{ items: this.stagesItems(ui) }];
       case "placeholders":
         // The heading and the marker are shared with publish; the module adds its own rows under them.
@@ -279,6 +272,39 @@ export class EscritaSettingTab extends PluginSettingTab {
         set: (v) => { s.unnumberedTitles = v; },
       }),
       statusAndSummaryRow(ui, s),
+    ];
+  }
+
+  private dayEndsRow(ui: SettingsUi): SettingGroupItem {
+    const s = this.plugin.settings;
+    return dropdownRow(ui, {
+      name: t("settings.dayEndsAt"),
+      desc: t("settings.dayEndsAt.desc"),
+      options: [0, 1, 2, 3, 4, 5, 6].map((h) => [h, `${String(h).padStart(2, "0")}:00`] as const),
+      get: () => s.dayEndsAt,
+      set: (v) => { s.dayEndsAt = v; },
+    });
+  }
+
+  /** Where New short story and New book create, and the templates they use (1.0.4, Q5). The book rows follow the outline. */
+  private newWorksItems(ui: SettingsUi, bookRowsShown: boolean): SettingGroupItem[] {
+    const s = this.plugin.settings;
+    const app = ui.app;
+    const folder = (key: "storiesFolder" | "booksFolder", name: string, desc: string) => folderRow(ui, {
+      name, desc, placeholder: "", get: () => s[key], set: (v) => { s[key] = v; },
+      problemOf: () => null, suggest: (input) => { new FolderSuggest(app, input); },
+    });
+    const template = (key: "storyTemplate" | "bookNoteTemplate", name: string, desc: string) => textRow(ui, {
+      name, desc, placeholder: t("new-work.modal.builtIn"), key, get: () => s[key], set: (v) => { s[key] = v; },
+      suggest: (input) => { new NoteSuggest(app, input); },
+    });
+    return [
+      folder("storiesFolder", t("settings.storiesFolder"), t("settings.storiesFolder.desc")),
+      template("storyTemplate", t("settings.storyTemplate"), t("settings.storyTemplate.desc")),
+      ...(bookRowsShown ? [
+        folder("booksFolder", t("settings.booksFolder"), t("settings.booksFolder.desc")),
+        template("bookNoteTemplate", t("settings.bookNoteTemplate"), t("settings.bookNoteTemplate.desc")),
+      ] : []),
     ];
   }
 

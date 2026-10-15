@@ -59,6 +59,41 @@ describe("planSetup: rules", () => {
     expect(items.find((i) => i.target === "BOOKS/example · the lighthouse.md")?.state).toBe("kept");
   });
 
+  describe("the new-work folder settings (1.0.4, Q3)", () => {
+    const row = (items: SetupItem[], key: string) => items.find((i) => i.kind === "setting" && i.target === key);
+
+    it("sets storiesFolder and booksFolder to the folders the plan creates, by what the writer writes", () => {
+      const both = planSetup(base, empty, DEFAULT_SETTINGS);
+      expect(row(both, "storiesFolder")).toMatchObject({ state: "change", tick: "folders", ticked: true, value: "Stories" });
+      expect(row(both, "booksFolder")).toMatchObject({ state: "change", tick: "folders", ticked: true, value: "Books" });
+      const stories = planSetup({ ...base, writes: "stories" }, empty, DEFAULT_SETTINGS);
+      expect(row(stories, "storiesFolder")?.value).toBe("Stories");
+      expect(row(stories, "booksFolder")).toBeUndefined();
+      const books = planSetup({ ...base, writes: "books" }, empty, DEFAULT_SETTINGS);
+      expect(row(books, "booksFolder")?.value).toBe("Books");
+      expect(row(books, "storiesFolder")).toBeUndefined();
+    });
+
+    it("adopts an existing folder, in its own spelling", () => {
+      const items = planSetup(base, { ...empty, folders: ["STORIES", "books"] }, DEFAULT_SETTINGS);
+      expect(row(items, "storiesFolder")).toMatchObject({ state: "change", value: "STORIES" });
+      expect(row(items, "booksFolder")).toMatchObject({ state: "change", value: "books" });
+    });
+
+    it("leaves a setting the writer already filled alone", () => {
+      const items = planSetup(base, empty, { ...DEFAULT_SETTINGS, storiesFolder: "Mine", booksFolder: "Books" });
+      expect(row(items, "storiesFolder")).toMatchObject({ state: "kept", value: "Mine", reason: { key: "setup.reason.settingOwn" } });
+      expect(row(items, "booksFolder")).toMatchObject({ state: "kept", reason: { key: "setup.reason.settingSame" } });
+      expect(itemsToRun(items, {}).some((i) => i.target === "storiesFolder" || i.target === "booksFolder")).toBe(false);
+    });
+
+    it("goes with the folders tick: unticked in a vault with works", () => {
+      const items = planSetup(base, { ...empty, hasWorks: true }, DEFAULT_SETTINGS);
+      expect(row(items, "storiesFolder")).toMatchObject({ tick: "folders", ticked: false, reason: { key: "setup.reason.settingHasWorks" } });
+      expect(itemsToRun(items, { folders: true }).map((i) => i.target)).toEqual(expect.arrayContaining(["storiesFolder", "booksFolder"]));
+    });
+  });
+
   it("adds a track folder, never swaps; keeps a list that already has it", () => {
     const has = planSetup(base, empty, { ...DEFAULT_SETTINGS, trackFolders: "books\nOther" });
     expect(has.find((i) => i.target === "trackFolders")?.value).toBe("books\nOther\nStories");
