@@ -1,13 +1,10 @@
 import { Notice, TFile, normalizePath, type Editor } from "obsidian";
-import { newBookNote } from "./new-book";
 import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
 import type { Follower } from "../core/vault-index";
 import { FeatureModule, type EditorSlot, type FeatureSlots } from "../core/module-context";
 import type { SettingsUi } from "../core/module-context";
 import type { Book } from "../core/books";
-import { safeFileName } from "../core/book";
-import { FolderBlockedError, NoteExistsError } from "../core/notes";
 import { parseBeats } from "../core/markers";
 import { statusColor } from "../core/stages";
 import { t } from "../i18n";
@@ -19,7 +16,6 @@ import { loadRows, type RowsPort } from "./rows";
 import { bookSource } from "../core/books";
 import { readChapterDefault } from "../core/measure";
 import { assignColors, povValue, renamePovKey, type PovColor } from "./pov";
-import { CreateBookModal } from "./modals";
 import { confirmAction } from "../ui/confirm";
 import type { SettingsBlock } from "../ui/settings-rows";
 import { OUTLINE_VIEW, OutlineView, str } from "./view";
@@ -27,11 +23,9 @@ import { READER_VIEW, ReaderView } from "./reader-view";
 import { dropPositions, movePositions } from "./reader-plan";
 import { outlineSettingsItems } from "./settings-ui";
 
-/** Default goal written into a new book's note. */
-
 /**
  * The outline: a side panel with a book's chapters and beats (editable in
- * place), ghost beats in the editor, a Canvas board export and book creation.
+ * place), ghost beats in the editor and a Canvas board export.
  */
 export class OutlineModule extends FeatureModule {
   readonly id = "outline" as const;
@@ -129,11 +123,6 @@ export class OutlineModule extends FeatureModule {
         if (!checking) void this.openReader(book);
         return true;
       },
-    });
-    ctx.command({
-      id: "create-book",
-      name: t("outline.command.createBook"),
-      callback: () => this.createBook(),
     });
     ctx.command({
       id: "add-beat",
@@ -293,63 +282,6 @@ export class OutlineModule extends FeatureModule {
       await app.workspace.getLeaf("tab").openFile(file, { active: true });
     } catch (e) {
       this.fail(e);
-    }
-  }
-
-  // ---------------------------------------------------------------- books
-
-  /** Ask for a title and folder, then create the book note, its folders and a first chapter. */
-  createBook(): void {
-    const parent = this.currentBook()?.folder.parent;
-    const folder = parent && !parent.isRoot() ? parent.path : "";
-    new CreateBookModal(this.plugin.app, folder, (title, dir) => this.makeBook(title, dir)).open();
-  }
-
-  private async makeBook(title: string, dir: string): Promise<boolean> {
-    const { app, settings, books, chapterOps } = this.plugin;
-    const name = safeFileName(title);
-    if (!name) {
-      new Notice(t("outline.create.needTitle"));
-      return false;
-    }
-    const base = dir.trim().replace(/^\/+|\/+$/g, "");
-    const join = (...parts: string[]) => normalizePath(parts.filter(Boolean).join("/"));
-    const notePath = join(base, `${name}.md`);
-    const folderPath = join(base, name);
-    if (app.vault.getAbstractFileByPath(notePath)) {
-      new Notice(t("outline.create.exists", { path: notePath }));
-      return false;
-    }
-    try {
-      // starts in the draft stage, in the writer's own status word; "fail": the check above found nothing, so a file that appeared since is not touched
-      const note = (await this.plugin.notes.create(notePath, newBookNote(settings), { exists: "fail" }).catch((e) => {
-        if (e instanceof FolderBlockedError) throw new Error(t("outline.create.exists", { path: e.path }));
-        if (e instanceof NoteExistsError) throw new Error(t("outline.create.exists", { path: e.existing }));
-        throw e;
-      })).file;
-      await this.ensureFolder(folderPath);
-      await this.ensureFolder(join(folderPath, settings.chaptersFolder));
-      const book = books.classify(note).book;
-      if (!book) throw new Error(t("outline.create.notBook", { path: notePath }));
-      // The folder may already hold chapters (a book note added to existing
-      // work): leave them as they are instead of inserting a chapter before them.
-      const first = books.chapters(book)[0]?.file ?? await chapterOps.createChapterAt(book, 0, t("common.untitled"));
-      await app.workspace.getLeaf(false).openFile(first, { active: true });
-      await this.openOutline(note.path);
-      return true;
-    } catch (e) {
-      this.fail(e);
-      return false;
-    }
-  }
-
-  /** plugin.notes.ensureFolder, with the outline's message when a segment is a file. */
-  private async ensureFolder(path: string): Promise<void> {
-    try {
-      await this.plugin.notes.ensureFolder(path);
-    } catch (e) {
-      if (e instanceof FolderBlockedError) throw new Error(t("outline.create.exists", { path: e.path }));
-      throw e;
     }
   }
 

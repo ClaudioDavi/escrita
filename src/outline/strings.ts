@@ -5,7 +5,6 @@ export const outlineStrings: Strings = {
     "outline.viewTitle": "Outline",
     "outline.command.open": "Open outline",
     "outline.command.board": "Open outline as a board",
-    "outline.command.createBook": "Create a book",
     "outline.command.addBeat": "Add a beat to this chapter",
     "outline.command.renumber": "Renumber chapters of this book",
 
@@ -91,14 +90,7 @@ export const outlineStrings: Strings = {
     "outline.boardExists": "“{file}” already exists and wasn't made by Escrita. Replace it?",
     "outline.boardReplace": "Replace",
 
-    "outline.create.title": "Create a book",
-    "outline.create.name": "Title",
-    "outline.create.folder": "Folder",
-    "outline.create.folderDesc": "Where the book note and its folder go. Leave empty for the vault root.",
-    "outline.create.submit": "Create",
-    "outline.create.needTitle": "Give the book a title.",
     "outline.create.exists": "“{path}” already exists.",
-    "outline.create.notBook": "“{path}” wasn't recognized as a book. Check the chapters folder setting.",
 
     "outline.err.exists": "“{name}” already exists",
     "outline.err.duplicate": "two chapters would be named “{name}”",
@@ -147,7 +139,6 @@ export const outlineStrings: Strings = {
     "outline.viewTitle": "Esboço",
     "outline.command.open": "Abrir esboço",
     "outline.command.board": "Abrir esboço como quadro",
-    "outline.command.createBook": "Criar um livro",
     "outline.command.addBeat": "Adicionar um beat a este capítulo",
     "outline.command.renumber": "Renumerar os capítulos deste livro",
 
@@ -233,14 +224,7 @@ export const outlineStrings: Strings = {
     "outline.boardExists": "“{file}” já existe e não foi criado pelo Escrita. Substituir?",
     "outline.boardReplace": "Substituir",
 
-    "outline.create.title": "Criar um livro",
-    "outline.create.name": "Título",
-    "outline.create.folder": "Pasta",
-    "outline.create.folderDesc": "Onde ficam a nota do livro e a pasta dele. Deixe vazio para a raiz do cofre.",
-    "outline.create.submit": "Criar",
-    "outline.create.needTitle": "Dê um título ao livro.",
     "outline.create.exists": "“{path}” já existe.",
-    "outline.create.notBook": "“{path}” não foi reconhecido como livro. Confira a configuração da pasta de capítulos.",
 
     "outline.err.exists": "“{name}” já existe",
     "outline.err.duplicate": "dois capítulos ficariam com o nome “{name}”",
