@@ -378,7 +378,10 @@ deadline: 2026-12-01
 - `target` é o tamanho que você quer alcançar. `limit` é um máximo rígido, como o de um concurso.
 - `unit` é `words` (palavras), `characters` (caracteres com espaços) ou `characters-no-spaces`
   (sem espaços). Uma nota com só `unit: characters` continua sendo contada em caracteres.
-- `deadline` é uma data, AAAA-MM-DD.
+- `deadline` é uma data, AAAA-MM-DD, ou um mês, MM/AAAA ou AAAA-MM, que vale o último dia do
+  mês (`12/2026` é 31 de dezembro de 2026). Uma data com dia e mês como `05/12/2026` não é lida:
+  ela significa dias diferentes em países diferentes. O `deadline` de um livro funciona do mesmo
+  jeito.
 
 Os caracteres são contados no texto que o leitor vê: sem propriedades, comentários, código nem
 marcas de formatação, e uma sequência de espaços conta como um. Uma letra acentuada ou um travessão

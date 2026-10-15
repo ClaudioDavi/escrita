@@ -186,6 +186,13 @@ module folder imports another.
   count" and the two new settings; the old "rows without a box are the folders" was wrong),
   and the two folder settings' descriptions give the full empty-folder rule.
 
+- **Deadlines by month** (2026-10-15, from the author's first by-hand try: `deadline: 12/2026`
+  was silently ignored). `readDeadline` in `core/measure.ts` reads what `parseDeadline` reads,
+  plus MM/YYYY, M/YYYY and YYYY-MM as the month's last day; pieces and book goals read deadlines
+  through it. `parseDeadline` stays strict, because the publish check reads publication dates
+  with it. Day-first or month-first full dates stay unread (ambiguous between pt-BR and US).
+  Tests in `tests/measure.test.ts`; guide "Writing" (en, pt-BR) and the changelog.
+
 ## By-hand checks (G2, the author's vault `~/projects/website/escrita/`)
 
 1. Ctrl+P, "Nova obra…": the list shows Conto and Livro with where each goes.

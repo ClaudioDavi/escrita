@@ -368,7 +368,10 @@ deadline: 2026-12-01
 - `target` is the length you are aiming for. `limit` is a hard maximum, like a contest's.
 - `unit` is `words`, `characters` (with spaces) or `characters-no-spaces`. A note with only
   `unit: characters` is still counted in characters.
-- `deadline` is a date, YYYY-MM-DD.
+- `deadline` is a date, YYYY-MM-DD, or a month, MM/YYYY or YYYY-MM, which means the last day of
+  that month (`12/2026` is December 31, 2026). A day-first or month-first date like `05/12/2026`
+  isn't read: it means different days in different countries. A book's `deadline` works the
+  same way.
 
 Characters are counted on the text a reader sees: no properties, comments, code or formatting
 marks, and runs of spaces count as one. An accented letter or an em dash is one character. The

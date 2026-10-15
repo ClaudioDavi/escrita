@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   countIn, measureText, noteProgress, parseAmount, parseDeadline, pieceProgress, pluralKey, progressOf,
-  readBookGoal, readPiece, readUnit, sameCounts, sumCounts, unitKey, ZERO, type PieceUnit,
+  readBookGoal, readDeadline, readPiece, readUnit, sameCounts, sumCounts, unitKey, ZERO, type PieceUnit,
 } from "../src/core/measure";
 import { countCharacters, countWords } from "../src/core/wordcount";
 import { coreStrings } from "../src/strings";
@@ -224,5 +224,32 @@ describe("labels", () => {
         expect(s, `${lang} ${form}`).not.toContain("{unit}");
       }
     }
+  });
+});
+
+describe("readDeadline (1.0.4: a month means its last day)", () => {
+  it("reads every full date parseDeadline reads", () => {
+    expect(readDeadline("2026-12-15")).toBe("2026-12-15");
+    expect(readDeadline(new Date(Date.UTC(2026, 11, 15)))).toBe("2026-12-15");
+  });
+
+  it("reads MM/YYYY, M/YYYY and YYYY-MM as the month's last day", () => {
+    expect(readDeadline("12/2026")).toBe("2026-12-31");
+    expect(readDeadline(" 2/2028 ")).toBe("2028-02-29");
+    expect(readDeadline("02/2027")).toBe("2027-02-28");
+    expect(readDeadline("2026-04")).toBe("2026-04-30");
+  });
+
+  it("leaves other text unread", () => {
+    for (const v of ["13/2026", "0/2026", "2026-13", "2026-4", "05/12/2026", "dez/2026", "12/26", "", 2026, null]) {
+      expect(readDeadline(v)).toBeUndefined();
+    }
+  });
+
+  it("is what a piece and a book goal read; a publication date stays strict", () => {
+    const props = { targetProperty: "target", limitProperty: "limit", unitProperty: "unit", deadlineProperty: "deadline" };
+    expect(readPiece({ deadline: "12/2026" }, props)?.deadline).toBe("2026-12-31");
+    expect(readBookGoal({ goal: 1000, deadline: "2027-03" }, { goalProperty: "goal", deadlineProperty: "deadline" }).deadline).toBe("2027-03-31");
+    expect(parseDeadline("12/2026")).toBeUndefined();
   });
 });

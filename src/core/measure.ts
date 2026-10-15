@@ -167,6 +167,26 @@ export function parseDeadline(v: unknown): string | undefined {
   return `${m[1]}-${m[2]}-${m[3]}`;
 }
 
+/**
+ * A deadline as the writer may type it (1.0.4): anything `parseDeadline` reads, or a month,
+ * "MM/YYYY", "M/YYYY" or "YYYY-MM", which means the last day of that month ("12/2026" →
+ * "2026-12-31"). Only deadlines read months: a publication date stays a full date
+ * (publish/date.ts uses `parseDeadline`). No day-first or month-first full dates: "05/12/2026"
+ * is a different day in Brazil and in the US, so it stays unread.
+ */
+export function readDeadline(v: unknown): string | undefined {
+  const day = parseDeadline(v);
+  if (day !== undefined || typeof v !== "string") return day;
+  const s = v.trim();
+  const m = /^(\d{1,2})\/(\d{4})$/.exec(s) ?? null;
+  const iso = m ? null : /^(\d{4})-(\d{2})$/.exec(s);
+  const year = m ? Number(m[2]) : iso ? Number(iso[1]) : NaN;
+  const month = m ? Number(m[1]) : iso ? Number(iso[2]) : NaN;
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return undefined;
+  const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(last).padStart(2, "0")}`;
+}
+
 /** Whether a frontmatter date value is there at all (any value but missing, null or blank). */
 export function hasDate(raw: unknown): boolean {
   if (raw === undefined || raw === null) return false;
@@ -198,7 +218,7 @@ export function readPiece(frontmatter: Record<string, unknown> | null | undefine
   if (!isRecord(frontmatter)) return null;
   const target = parseAmount(frontmatter[props.targetProperty]);
   const limit = parseAmount(frontmatter[props.limitProperty]);
-  const deadline = parseDeadline(frontmatter[props.deadlineProperty || DEFAULT_DEADLINE_PROPERTY]);
+  const deadline = readDeadline(frontmatter[props.deadlineProperty || DEFAULT_DEADLINE_PROPERTY]);
   if (target === undefined && limit === undefined && deadline === undefined) return null;
   const piece: Piece = { unit: parseUnit(frontmatter[props.unitProperty]) };
   if (target !== undefined) piece.target = target;
@@ -223,12 +243,12 @@ export interface BookGoal {
   deadline: string | null;
 }
 
-/** A book note's goal (via parseAmount) and deadline (via parseDeadline), under the configured names. */
+/** A book note's goal (via parseAmount) and deadline (via readDeadline), under the configured names. */
 export function readBookGoal(frontmatter: Record<string, unknown> | null | undefined, props: BookGoalProperties): BookGoal {
   if (!isRecord(frontmatter)) return { goal: null, deadline: null };
   return {
     goal: parseAmount(frontmatter[props.goalProperty || DEFAULT_GOAL_PROPERTY]) ?? null,
-    deadline: parseDeadline(frontmatter[props.deadlineProperty || DEFAULT_DEADLINE_PROPERTY]) ?? null,
+    deadline: readDeadline(frontmatter[props.deadlineProperty || DEFAULT_DEADLINE_PROPERTY]) ?? null,
   };
 }
 
