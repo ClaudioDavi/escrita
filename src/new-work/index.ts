@@ -1,14 +1,14 @@
-import { MarkdownView, Notice, TFile, normalizePath } from "obsidian";
+import { MarkdownView, Notice, TFile, TFolder, normalizePath } from "obsidian";
 import type EscritaPlugin from "../main";
 import { ChapterError } from "../core/chapter-plan";
 import { CoreModule } from "../core/module-context";
 import { FolderBlockedError, NoteExistsError } from "../core/notes";
 import type { NewWorkKind, NewWorkStarter } from "../core/new-work";
-import { cleanFolder, joinPath, noMd, parentOf } from "../core/paths";
+import { cleanFolder, joinPath, noMd } from "../core/paths";
 import { resolveTemplate } from "../core/records";
 import { templateVars } from "../core/template";
 import { t } from "../i18n";
-import { bookNoteText, cursorAfterBody, fromTemplate, storyNoteText, targetPath } from "./model";
+import { bookNoteText, cursorAfterBody, defaultFolderFor, fromTemplate, storyNoteText, targetPath } from "./model";
 import { NewWorkList, NewWorkModal } from "./modals";
 
 /**
@@ -77,10 +77,9 @@ export class NewWorkModule extends CoreModule implements NewWorkStarter {
 
   /** The setting's folder, else the active note's folder (the vault root is ""). */
   private defaultFolder(kind: NewWorkKind): string {
-    const set = this.settingFolder(kind);
-    if (set) return set;
     const active = this.plugin.app.workspace.getActiveFile();
-    return active ? parentOf(active.path) : "";
+    const book = active ? this.plugin.books.classify(active).book : null;
+    return defaultFolderFor(this.settingFolder(kind), active?.path ?? null, book?.folder.path ?? null);
   }
 
   private templateSetting(kind: NewWorkKind): string {
@@ -138,6 +137,12 @@ export class NewWorkModule extends CoreModule implements NewWorkStarter {
       return false;
     }
     const folderPath = noMd(notePath);
+    const chaptersPath = normalizePath(joinPath(folderPath, settings.chaptersFolder));
+    const blocker = this.fileInTheWay(chaptersPath);
+    if (blocker) {
+      new Notice(t("new-work.notice.exists", { path: blocker }));
+      return false;
+    }
     try {
       const template = await this.readTemplate("book");
       const text = template === null
@@ -148,9 +153,9 @@ export class NewWorkModule extends CoreModule implements NewWorkStarter {
         : fromTemplate(template, templateVars(title.trim(), new Date()), settings);
       const note = (await notes.create(notePath, text, { exists: "fail" })).file;
       await notes.ensureFolder(folderPath);
-      await notes.ensureFolder(normalizePath(joinPath(folderPath, settings.chaptersFolder)));
+      await notes.ensureFolder(chaptersPath);
       const book = books.classify(note).book;
-      if (!book) throw new Error(t("new-work.notice.notBook", { path: notePath }));
+      if (!book || book.note.path !== note.path) throw new Error(t("new-work.notice.notBook", { path: notePath }));
       // The folder may already hold chapters (a book note added to existing work): leave them
       // as they are instead of inserting a chapter before them. Without a chapter template the
       // first chapter holds a beat; with one, the template decides (Q7).
@@ -164,6 +169,17 @@ export class NewWorkModule extends CoreModule implements NewWorkStarter {
     } catch (e) {
       return this.failed(e);
     }
+  }
+
+  /** The first path of `path` (or one of its parents) that is a file, not a folder; null when none. */
+  private fileInTheWay(path: string): string | null {
+    const parts = path.split("/");
+    for (let i = 1; i <= parts.length; i++) {
+      const p = parts.slice(0, i).join("/");
+      const x = this.plugin.app.vault.getAbstractFileByPath(p);
+      if (x && !(x instanceof TFolder)) return p;
+    }
+    return null;
   }
 
   /** The note's vault path for the typed title and folder; a notice and null when there is no title. */
@@ -209,7 +225,7 @@ export class NewWorkModule extends CoreModule implements NewWorkStarter {
   private failed(e: unknown): false {
     if (e instanceof FolderBlockedError) new Notice(t("new-work.notice.exists", { path: e.path }));
     else if (e instanceof NoteExistsError) new Notice(t("new-work.notice.exists", { path: e.existing }));
-    else if (e instanceof ChapterError) new Notice(t("new-work.notice.exists", { path: e.subject }));
+    else if (e instanceof ChapterError && e.code === "exists") new Notice(t("new-work.notice.exists", { path: e.subject }));
     else new Notice(t("new-work.notice.failed", { msg: e instanceof Error ? e.message : String(e) }));
     return false;
   }

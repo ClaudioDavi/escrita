@@ -78,7 +78,7 @@ export const newWorkStrings: Strings = {
     "new-work.notice.exists": "“{path}” já existe. Nada foi alterado.",
     "new-work.notice.needTitle": "Dê um título à obra.",
     "new-work.notice.templateMissing": "Modelo não encontrado: {path}. Usei o embutido.",
-    "new-work.notice.untracked": "“{name}” está fora das pastas acompanhadas, então as metas não a contam.",
+    "new-work.notice.untracked": "“{name}” está fora das pastas acompanhadas, então não conta para as metas.",
     "new-work.notice.openSettings": "Abrir configurações",
     "new-work.notice.notBook": "“{path}” não foi reconhecido como livro. Confira a configuração da pasta de capítulos.",
     "new-work.notice.failed": "O Escrita não conseguiu fazer isso: {msg}",

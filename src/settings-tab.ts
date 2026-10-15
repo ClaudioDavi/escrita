@@ -183,9 +183,9 @@ export class EscritaSettingTab extends PluginSettingTab {
     switch (slot.id) {
       case "features": return this.featuresBlocks(ui);
       case "shared": return [{ items: this.sharedItems(ui) }];
-      case "books": return [{ items: [...this.booksItems(ui, shown("templatesFolder")), ...(shown("dayEndsAt") ? [this.dayEndsRow(ui)] : [])] }, { heading: t("settings.newWorks"), items: this.newWorksItems(ui, shown("booksFolder")) }];
-      // The writing day sits in the books group, before "New works" (a group of its own would take it otherwise).
-      case "dayEnds": return [];
+      case "books": return [{ items: this.booksItems(ui, shown("templatesFolder")) }];
+      case "dayEnds": return shown("dayEndsAt") ? [{ items: [this.dayEndsRow(ui)] }] : [];
+      case "newWorks": return [{ items: this.newWorksItems(ui, shown("booksFolder")) }];
       case "stages": return [{ items: this.stagesItems(ui) }];
       case "placeholders":
         // The heading and the marker are shared with publish; the module adds its own rows under them.

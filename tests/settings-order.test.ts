@@ -15,13 +15,13 @@ const ids = (loaded: ReadonlySet<FeatureId>) => sectionOrder(loaded).map((s) => 
 describe("sectionOrder (PLAN-0.8 Q13)", () => {
   it("with every feature loaded, keeps today's visual order", () => {
     expect(ids(all)).toEqual([
-      "features", "shared", "books", "dayEnds", "goals", "publish", "export", "submissions", "outline", "placeholders", "darlings",
+      "features", "shared", "books", "dayEnds", "newWorks", "goals", "publish", "export", "submissions", "outline", "placeholders", "darlings",
       "editor", "lens", "stages", "desk", "snapshots", "universe", "threads",
     ]);
   });
 
   it("with nothing loaded, only the core sections draw", () => {
-    expect(ids(new Set())).toEqual(["features", "shared", "books", "dayEnds", "stages"]);
+    expect(ids(new Set())).toEqual(["features", "shared", "books", "dayEnds", "newWorks", "stages"]);
   });
 
   it("a section is gone with its module", () => {

@@ -5,7 +5,7 @@ import { templateVars } from "../src/core/template";
 import { defaultsFor } from "../src/settings";
 import { newWorkStrings } from "../src/new-work/strings";
 import {
-  bookNoteText, cursorAfterBody, fromTemplate, storyNoteText, targetPath, type BookTexts, type NewWorkSettings, type StoryTexts,
+  bookNoteText, cursorAfterBody, defaultFolderFor, fromTemplate, storyNoteText, targetPath, type BookTexts, type NewWorkSettings, type StoryTexts,
 } from "../src/new-work/model";
 
 // A frontmatter reader as small as the notes need: `key: value`, a blank value is YAML null.
@@ -165,5 +165,19 @@ describe("targetPath", () => {
   it("is null when the title leaves no name", () => {
     expect(targetPath("Contos", "   ")).toBeNull();
     expect(targetPath("Contos", "/:*?")).toBeNull();
+  });
+});
+
+describe("defaultFolderFor", () => {
+  it("prefers the setting", () => {
+    expect(defaultFolderFor("Contos", "Novels/A/Chapters/1.md", "Novels/A")).toBe("Contos");
+  });
+  it("leaves a book for its parent folder, not the chapters folder", () => {
+    expect(defaultFolderFor("", "Novels/A/Chapters/1.md", "Novels/A")).toBe("Novels");
+    expect(defaultFolderFor("", "A/Chapters/1.md", "A")).toBe("");
+  });
+  it("is the active note's folder outside a book, else the root", () => {
+    expect(defaultFolderFor("", "Textos/x.md", null)).toBe("Textos");
+    expect(defaultFolderFor("", null, null)).toBe("");
   });
 });

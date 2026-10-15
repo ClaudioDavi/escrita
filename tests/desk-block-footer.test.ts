@@ -63,3 +63,24 @@ describe("the home block footer", () => {
     expect(start).toHaveBeenLastCalledWith("story");
   });
 });
+
+describe("the home block and the outline switch", () => {
+  it("repaints when the outline feature changes, not for other features", () => {
+    let fire: (id: string) => void = () => {};
+    const plugin = {
+      settings: { stages: {} },
+      newWork: { start: vi.fn(), offers: () => true },
+      works: { onChange: () => () => {}, onReady: () => () => {}, isReady: () => false },
+      measure: { onChange: () => () => {} },
+      features: { onChange: (cb: (id: string) => void) => { fire = cb; return () => {}; }, get: () => undefined, isOn: () => false },
+    } as unknown as EscritaPlugin;
+    const block = new DeskBlock(plugin, document.createElement("div"), "", { onChange: () => () => {} } as never);
+    const spy = vi.spyOn(block, "refresh").mockResolvedValue();
+    (block as unknown as { onload(): void }).onload();
+    spy.mockClear();
+    fire("goals");
+    expect(spy).not.toHaveBeenCalled();
+    fire("outline");
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+});

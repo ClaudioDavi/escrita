@@ -4,7 +4,7 @@
 
 import { safeFileName } from "../core/book";
 import { withProperty } from "../core/chapter-plan";
-import { joinPath, cleanFolder } from "../core/paths";
+import { joinPath, cleanFolder, parentOf } from "../core/paths";
 import { writtenWord, type StageMapping } from "../core/stages";
 import { hasFrontmatter, renderTemplate, yamlKey, type TemplateVars } from "../core/template";
 
@@ -103,4 +103,15 @@ export function cursorAfterBody(text: string): number {
 export function targetPath(folder: string, title: string): string | null {
   const name = safeFileName(title);
   return name ? joinPath(cleanFolder(folder), `${name}.md`) : null;
+}
+
+/**
+ * The folder a new work is offered in: the setting's folder, else beside the active note.
+ * An active note inside a book (a chapter, the book note) offers the book's parent folder,
+ * so the new work doesn't land in the chapters folder and classify as a chapter.
+ */
+export function defaultFolderFor(settingFolder: string, activePath: string | null, bookFolderPath: string | null): string {
+  if (settingFolder) return settingFolder;
+  if (bookFolderPath) return parentOf(bookFolderPath);
+  return activePath ? parentOf(activePath) : "";
 }

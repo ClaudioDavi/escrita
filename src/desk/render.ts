@@ -91,7 +91,7 @@ export class DeskBlock extends MarkdownRenderChild {
     this.register(measure.onChange((paths) => { if (paths.some((p) => this.touches(p))) this.soon(); }));
     this.register(this.leftOff.onChange((paths) => { if (paths.some((p) => this.touches(p))) this.soon(); }));
     // the pending count: follow the submissions feature and its list
-    this.register(this.plugin.features.onChange((id) => { if (id === "submissions") { this.bindPending(); void this.refresh(); } }));
+    this.register(this.plugin.features.onChange((id) => { if (id === "submissions") { this.bindPending(); void this.refresh(); } else if (id === "outline") void this.refresh(); }));
     this.register(() => { this.unbindPending?.(); this.unbindPending = null; });
     this.bindPending();
     void this.refresh();

@@ -150,6 +150,30 @@ module folder imports another.
   and `outline.create.*` only while something still reads them, and removes them with the
   code that does.
 
+- **Wave 1** (2026-10-15): A `d97bc9a` (the module), B `04fdda2` (the desk footer), C
+  `35128a6` (settings and setup), D `c424b98` (paths adoption), merged in the order D, A, B,
+  C. The Opus judge passed D, and A, B and C with fixes, all applied:
+  - A1: with no folder setting and a chapter open, the default folder is the one beside the
+    book (`defaultFolderFor`, `new-work/model.ts`), so a new work never lands in a chapters
+    folder. A2: the book check also compares the book's note. A3: only a `ChapterError`
+    "exists" shows the exists notice. A4: pt-BR "então não conta para as metas". A5: a file
+    in the way of the book's folders stops before anything is written (`fileInTheWay`).
+  - B1: the home block redraws when the outline is switched.
+  - C1: "New works" is its own slot in `core/settings-order.ts`, after the writing day.
+  - Answers: new works don't go through `draftNewNotes` (they always start as drafts); no
+    rollback after a partial book create (A5 prevents it); setup writes the folder settings
+    under its "folders" tick.
+  - Also: the book goal starts blank (`NEW_BOOK_GOAL` is gone; changelog); `create-book` is
+    registered by new-work; the outline's `createBook`, `CreateBookModal`, `new-book.ts` and
+    their strings are removed; `ui/settings-rows` has a `suggest` option; the list and notice
+    reuse `escrita-template-path` and `escrita-notice-button` (editor CSS); `outline/rows.ts`
+    strips ".md" in any case.
+  - For Wave 2: three test-only re-export aliases remain (`export/logic.ts` `inFolder`,
+    `placeholders/logic.ts` `parentPath`, `universe/migrate-plan.ts` `basename`/`dirname`),
+    plus the other slash-trim copies (IMPROVEMENTS 33 loose end). G2 adds: the template line
+    is a disabled field (check against board 41); the footer follows the outline switch.
+  Checks after the fixes: typecheck, 3,488 tests, build, bundle test and lint pass.
+
 ## By-hand checks (G2, the author's vault `~/projects/website/escrita/`)
 
 1. Ctrl+P, "Nova obra…": the list shows Conto and Livro with where each goes.
