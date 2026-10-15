@@ -160,10 +160,27 @@ export class DeskBlock extends MarkdownRenderChild {
     this.section(root, t("desk.heading.writing"), g.model.writing, "writing");
     this.section(root, t("desk.heading.revising"), g.model.revising, "revising");
     this.counts(root, g);
+    this.footer(root);
 
     if (focused !== null) {
       const el = Array.from(root.querySelectorAll<HTMLElement>(`[${KEY}]`)).find((x) => x.getAttribute(KEY) === focused);
       el?.focus({ preventScroll: true });
+    }
+  }
+
+  /** "+ New short story · + New book": always drawn, after the counts and outside them (the bar can be empty). */
+  private footer(parent: HTMLElement): void {
+    const foot = parent.createDiv({ cls: "escrita-desk-new" });
+    const add = (kind: "story" | "book", text: string) => {
+      const b = foot.createEl("button", { cls: "escrita-desk-newbtn", text });
+      b.setAttribute("type", "button");
+      b.setAttribute(KEY, `new:${kind}`);
+      this.actions.set(`new:${kind}`, () => this.plugin.newWork.start(kind));
+    };
+    add("story", t("desk.new.story"));
+    if (this.plugin.newWork.offers("book")) {
+      foot.createSpan({ cls: "escrita-desk-dot", text: "·" }).setAttribute("aria-hidden", "true");
+      add("book", t("desk.new.book"));
     }
   }
 

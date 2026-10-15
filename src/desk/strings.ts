@@ -42,6 +42,8 @@ export const deskStrings: Strings = {
     "desk.empty.nothing": "Nothing in {draft} or {revision}.",
     "desk.empty.noFolder": "No folder “{folder}”.",
     "desk.empty.noneInFolder": "No works in “{folder}”.",
+    "desk.new.story": "+ New short story",
+    "desk.new.book": "+ New book",
   },
   "pt-BR": {
     "desk.writingMode.cmd.enter": "Entrar no modo escrita",
@@ -83,5 +85,7 @@ export const deskStrings: Strings = {
     "desk.empty.nothing": "Nada em {draft} ou {revision}.",
     "desk.empty.noFolder": "Nenhuma pasta “{folder}”.",
     "desk.empty.noneInFolder": "Nenhuma obra em “{folder}”.",
+    "desk.new.story": "+ Novo conto",
+    "desk.new.book": "+ Novo livro",
   },
 };

@@ -226,3 +226,37 @@ body.is-mobile .escrita-writing-exit {
 body.is-mobile .escrita-writing-goal {
   bottom: calc(var(--size-4-3) + env(safe-area-inset-bottom, 0px));
 }
+
+/* The footer (board 42): start a new work. Muted like the counts, a thin rule above. */
+.escrita-desk-new {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: var(--size-2-2);
+  padding: var(--size-2-2) 2px 0;
+  border-top: 1px solid var(--background-modifier-border);
+}
+.escrita-desk .escrita-desk-newbtn {
+  display: inline-flex;
+  align-items: center;
+  height: auto;
+  min-height: 32px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-s);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.escrita-desk .escrita-desk-newbtn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+.escrita-desk .escrita-desk-newbtn:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+}
+body.is-mobile .escrita-desk .escrita-desk-newbtn {
+  min-height: 44px;
+}
