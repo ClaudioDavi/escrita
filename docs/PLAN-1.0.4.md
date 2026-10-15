@@ -174,6 +174,18 @@ module folder imports another.
     is a disabled field (check against board 41); the footer follows the outline switch.
   Checks after the fixes: typecheck, 3,488 tests, build, bundle test and lint pass.
 
+- **Wave 2** (docs, 2026-10-15): "Getting started", "Writing" and "Features and settings"
+  (English and pt-BR) describe starting a new work, the footer and the "New works" settings;
+  README (feature line, `1.0.4 (unreleased)` changelog with the upgrade note), ARCHITECTURE
+  (the new-work core module and port, `core/paths.ts`, `ui/suggest.ts`, the shared CSS
+  classes), IMPROVEMENTS (33 in "Done", the aliases and trim copies as a loose end), ROADMAP
+  (1.0.4 under "Shipped", unreleased; next is 1.1), SF 14 and CONTEXT. The Opus review fixed
+  the default-folder wording (any note of a book, the root with no note open), dropped a wrong
+  claim that goals ignore a work without a target, and fixed pt-BR agreement. After it: the
+  setup's box table gained the **Folders** box (it covers the new folders, "Folders that
+  count" and the two new settings; the old "rows without a box are the folders" was wrong),
+  and the two folder settings' descriptions give the full empty-folder rule.
+
 ## By-hand checks (G2, the author's vault `~/projects/website/escrita/`)
 
 1. Ctrl+P, "Nova obra…": the list shows Conto and Livro with where each goes.

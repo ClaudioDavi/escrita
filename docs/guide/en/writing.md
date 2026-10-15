@@ -1,6 +1,6 @@
 # Writing
 
-This page is about the writing itself: planning a book in the outline, setting goals, leaving
+This page is about the writing itself: starting a work, planning a book in the outline, setting goals, leaving
 notes for later, typing without friction, moving text around, and seeing your counts. Each part
 starts with the task, then names the commands and settings it uses.
 
@@ -8,6 +8,85 @@ Other pages: [Getting started](getting-started.md), [Revision](revision.md),
 [Tracking](tracking.md), [Publishing](publishing.md), [The world](the-world.md) and
 [Features and settings](features-and-settings.md). Every part below has a switch on the Features
 page, so you can turn off what you don't use.
+
+## Start a new work
+
+Three commands start a work. None has a default hotkey; bind the ones you want in Obsidian's
+settings.
+
+- **New work…** opens a short list: **Short story** and **Book**. Under each name a grey line says
+  where it will go. Pick one.
+- **New short story** skips the list.
+- **New book** skips the list too. It is the old **Create a book**, with the same command id, so a
+  hotkey you set keeps working. It is offered only while the outline is on.
+
+The home block has the same two as buttons under the works list (**+ New short story** and
+**+ New book**; the book one is hidden while the outline is off), and an empty outline has a
+**Create a book** button.
+
+A small window opens:
+
+- **Title.** Press Enter here to create.
+- **Folder.** It suggests your folders as you type. It starts at the **Short stories folder** or
+  **Books folder** setting. If that is empty, it starts at the folder beside the open book when a
+  chapter or the book note is open, otherwise at the folder of the open note. With no note open,
+  it is the root of the vault.
+- **Template.** Shows **Built-in**, or the path of your own note. You change it in the settings.
+- **Create.**
+
+Nothing is ever overwritten. If the note already exists, Escrita says so and touches nothing.
+
+### What a short story starts with
+
+One note. Its status is your draft word, its form property is your short-story word, and the target
+and deadline are blank. It has one beat, "What happens first", and the cursor is on the line under
+it, ready to type. Fill in the `target` when you know the length you aim for.
+
+### What a book starts with
+
+- The **book note**, with a draft status, a blank goal and a blank deadline, and two headings,
+  **Premise** and **Characters**, with a hint under each. The goal starts blank, not at 80,000:
+  set it when you know it.
+- The book's folder and its chapters folder.
+- The **first chapter**. It holds the same beat, "What happens first", unless you have a chapter
+  template. Then the template decides.
+- The **outline**, open beside it.
+
+### Use your own template
+
+In the **New works** group of Settings › Escrita (see
+[Features and settings](features-and-settings.md)), set:
+
+- **Short story template.** A note of yours used instead of the built-in one.
+- **Book note template.** The same for the book note. The first chapter still follows the chapter
+  template.
+
+`{{title}}`, `{{date}}` (YYYY-MM-DD) and `{{time}}` (HH:mm) are filled in. If your template has no
+status, a draft status is added. If it has one, it stays as you wrote it. If the note named in the
+setting is missing, Escrita uses the built-in one and says so.
+
+This is not **Insert from a template**, below. That puts a template into a note that already
+exists, at the cursor. These make a new note.
+
+### Notices
+
+- **"… already exists. Nothing was changed."** The title is taken.
+- **"Give the work a title."** The title is empty.
+- **"Template not found: … Used the built-in one."** Check the path in the setting.
+- **"… is outside the track folders, so goals don't count it."** The work is created anyway. The
+  notice has **Open settings**, to add the folder to **Folders to track**.
+
+### Settings for new works
+
+In the **New works** group:
+
+- **Short stories folder.** Where New short story creates the note.
+- **Short story template.**
+- **Books folder.** Where New book creates the book's folder. Shown while the outline is on.
+- **Book note template.** Shown while the outline is on.
+
+An empty folder means the folder beside the open book or the open note, as above. Setup fills
+the two folders it creates, but only when these settings are empty.
 
 ## Plan a book in the outline
 
@@ -22,9 +101,9 @@ Novels/My Book/Chapters/01 Arrival.md
 Novels/My Book/Chapters/02 The locked door.md
 ```
 
-Run **Create a book** (also a button in an empty outline) to make one. It asks for a title and
-a folder, then makes the book note (in the draft stage, with a goal of 80,000 words and an empty
-deadline), its folders and, if the folder has no chapters yet, a first chapter. Run **Open outline** to
+Run **New book** (see [Start a new work](#start-a-new-work); also a button in an empty outline) to
+make one. It makes the book note, its folders and, if the chapters folder has none yet, a first
+chapter. Run **Open outline** to
 open the **Outline** panel in the right sidebar. It lists the chapters of the current book, each
 with its number, title, status, summary and length, and the book's total against its goal. If
 you have several books, the **Book** dropdown at the top picks one.
@@ -420,6 +499,8 @@ of your selection.
   overwritten.
 - It all goes in as one change, so one undo takes it back.
 - Beats and placeholders in a template work as usual once inserted.
+
+To start a new note from a template instead, see [Start a new work](#start-a-new-work).
 
 With no templates folder set, the command says so and offers to open the settings. If the note
 changes while the template loads, nothing is inserted. The same folder holds the templates the

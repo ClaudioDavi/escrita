@@ -16,7 +16,7 @@ resultado e o Obsidian leva você até ela. As linhas de um recurso desligado n�
 porque o recurso não está carregado.
 
 Cada seção da aba do Escrita é um cartão sob o próprio título: Recursos, Propriedades e pastas,
-Livros, Metas, Publicação · a checagem, Exportação, Envios, Esboço, Marcadores, Darlings, Editor,
+Livros, Novas obras, Metas, Publicação · a checagem, Exportação, Envios, Esboço, Marcadores, Darlings, Editor,
 Revisão · a lente, Estágios, Nota inicial, Versões e Universo. A seção de um recurso desligado
 some até você ligar o recurso de novo.
 
@@ -144,7 +144,7 @@ as palavras que o Escrita escreve no seu cofre.
 | Interruptor | Desligado significa |
 |---|---|
 | Metas e sprints | Sem contagem de palavras escritas, meta diária, janela de progresso, sprints nem barra de status. As configurações dele se escondem. |
-| Esboço e beats fantasmas | Sem painel do esboço, sem beats fantasmas no editor, sem comandos de beat, sem **Ler o livro**. |
+| Esboço e beats fantasmas | Sem painel do esboço, sem beats fantasmas no editor, sem comandos de beat, sem **Ler o livro**. Também somem o comando **Novo livro**, a escolha Livro em **Nova obra…**, o botão **+ Novo livro** do bloco de obras e as linhas Pasta dos livros e Modelo da nota do livro. |
 | Marcadores | Sem pílulas de marcador, pontos no explorador, painel nem selo no esboço. (A checagem de publicação continua parando num marcador esquecido numa nota, enquanto a Publicação estiver ligada.) |
 | Enter e tipografia | O Enter não faz quebras de cena nem capítulos; sem travessões e aspas automáticos. |
 | Foco no diálogo | O comando e o esmaecimento somem. |
@@ -162,6 +162,8 @@ as palavras que o Escrita escreve no seu cofre.
 | Envios | Sem o comando nem o item de menu **Registrar envio**, sem a contagem de pendentes no bloco de obras e sem a seção Envios nas configurações. A linha da pasta dos envios continua. |
 | Universo compartilhado | Sem painel, sem comandos do universo, sem "Aparece em", sem marcas de nomes nem nomes na lente. |
 | Threads | Sem comandos de thread, sinal na margem nem aba no painel. |
+
+Os contos nunca se desligam. **Nova obra…** e **Novo conto** são comandos do núcleo, como a preparação, então ficam mesmo com todos os recursos desligados.
 
 Ao desligar um recurso, um aviso curto diz o que fica e onde.
 
@@ -230,6 +232,19 @@ fantasmas. **Publicar o próximo capítulo** pertence a Checagem de publicação
 próximo** no cabeçalho do esboço só aparece com os dois ligados. As menções sem link não têm
 interruptor próprio: fazem parte do Universo compartilhado, então somem quando o universo está
 desligado.
+
+## Configurações da 1.0.4
+
+A seção **Novas obras** vem depois de Livros. Ela define onde **Nova obra…**, **Novo conto** e **Novo livro** criam notas, e qual modelo seu eles usam. Fica sempre à vista, exceto as duas linhas do livro, que se escondem quando Esboço e beats fantasmas está desligado. Nada aqui é sobrescrito: uma nota que já existe fica como está.
+
+| Configuração | Precisa de | O que faz |
+|---|---|---|
+| Pasta dos contos | | Onde **Novo conto** cria a nota. Vazia por padrão: a pasta ao lado do livro aberto quando um capítulo ou a nota do livro está aberto, senão a pasta da nota aberta (a raiz do cofre sem nenhuma nota aberta). |
+| Modelo de conto | | Uma nota sua no lugar do modelo embutido. `{{title}}`, `{{date}}` e `{{time}}` são preenchidos, e um status de rascunho é acrescentado quando não há. Vazio por padrão (embutido). Se a nota não for encontrada, vale o modelo embutido, com um aviso. |
+| Pasta dos livros | Esboço | Onde **Novo livro** cria a pasta do livro. Vazia por padrão, com a mesma regra da linha acima. |
+| Modelo da nota do livro | Esboço | Uma nota sua no lugar da nota de livro embutida. Vazio por padrão (embutido). O primeiro capítulo segue o modelo de capítulo. |
+
+A preparação preenche as duas linhas de pasta com as pastas que ela cria, mas só enquanto estiverem vazias. Os comandos são explicados em [Escrita](writing.md).
 
 ## Linhas de pasta e como os campos salvam
 

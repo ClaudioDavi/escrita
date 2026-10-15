@@ -2,8 +2,8 @@
 
 Esta página leva você da instalação do Escrita até o primeiro conto e o primeiro livro. Dá
 para fazer tudo com um comando, **Preparar o cofre para escrever**, que mostra tudo antes de
-criar qualquer coisa. Ou você pode pular o comando e fazer à mão: as duas últimas partes da
-página mostram como.
+criar qualquer coisa. Ou você pode pular o preparo e começar por **Nova obra…**, que funciona
+em qualquer cofre: as duas últimas partes da página mostram como, e como fazer à mão.
 
 Outras páginas: [Recursos e configurações](features-and-settings.md), [Escrita](writing.md),
 [Revisão](revision.md), [Acompanhamento](tracking.md), [Publicação](publishing.md) e
@@ -16,8 +16,8 @@ Outras páginas: [Recursos e configurações](features-and-settings.md), [Escrit
 - [Os exemplos](#os-exemplos)
 - [A nota inicial](#a-nota-inicial)
 - [Dois layouts: a mesa de escrita e o modo escrita](#dois-layouts-a-mesa-de-escrita-e-o-modo-escrita)
-- [Seu primeiro conto, à mão](#seu-primeiro-conto-à-mão)
-- [Seu primeiro livro, à mão](#seu-primeiro-livro-à-mão)
+- [Seu primeiro conto](#seu-primeiro-conto)
+- [Seu primeiro livro](#seu-primeiro-livro)
 - [Comandos e configurações desta página](#comandos-e-configurações-desta-página)
 
 ## Instalar o Escrita
@@ -88,7 +88,7 @@ quê. Uma marca na frente avisa o que a linha vai fazer: **+** é novo, **=** fi
 
 | Grupo | O que lista |
 |---|---|
-| **Pastas** | `Contos` e/ou `Livros`. Uma pasta que já existe é usada como está, e a linha diz quantas notas há nela. Se você mantém uma lista de pastas acompanhadas, uma pasta nova entra nela (veja abaixo). |
+| **Pastas** | `Contos` e/ou `Livros`. Uma pasta que já existe é usada como está, e a linha diz quantas notas há nela. Se você mantém uma lista de pastas acompanhadas, uma pasta nova entra nela (veja abaixo). As configurações **Pasta dos contos** e **Pasta dos livros** também são preenchidas com essas pastas, quando estão vazias (veja [seu primeiro conto](#seu-primeiro-conto)). |
 | **Exemplos** | O conto de exemplo e o livro de exemplo, se você quiser (veja [os exemplos](#os-exemplos)). |
 | **Configurações** | Cada configuração que o preparo mudaria, com o valor, e cada uma que ele deixa em paz, com o motivo. |
 | **Nota inicial** | `Início.md` (`Home.md` em inglês), com o bloco de obras. |
@@ -99,6 +99,7 @@ tem escolha a fazer:
 
 | Caixa | O que cobre |
 |---|---|
+| **Pastas** (na primeira pasta nova) | As pastas novas, incluí-las em **Pastas que contam** e preencher **Pasta dos contos** e **Pasta dos livros**. |
 | **Exemplos** | Todas as notas de exemplo juntas. |
 | **Idioma dos padrões** | O idioma e cada configuração que leva palavras: **Status**, **Pasta de capítulos**, **Títulos de capítulo sem número**, **Resultados dos envios**, **Pasta de exportações**, **Pasta de envios**, as notas de darlings, **Nota do universo**, **Tipos de entrada**, **Valores de forma**, **Palavra das threads**, **Palavra de thread fechada** e **Idioma da escrita**. |
 | **Nota inicial** | Criar a nota inicial e defini-la como a sua **Nota inicial**. |
@@ -106,8 +107,14 @@ tem escolha a fazer:
 | **Recursos** | Põe os interruptores como a predefinição que você escolheu. |
 | **Arrumar a tela uma vez** | O layout. |
 
-As linhas sem caixa são as pastas, a linha das pastas acompanhadas (**Pastas que contam**) e a
-resposta de **Mundo compartilhado** que você deu no passo 1.
+As pastas que já existem não têm caixa, nem a resposta de **Mundo compartilhado** que você deu
+no passo 1.
+
+**Para onde vão as obras novas.** O preparo também preenche **Pasta dos contos** e **Pasta dos
+livros** (Configurações › Escrita, **Novas obras**) com as pastas que ele cria, e **Novo conto** e
+**Novo livro** passam a começar nelas. Só faz isso enquanto a configuração está vazia: uma pasta
+que você escolheu fica. Elas aparecem em **Configurações** e usam a caixa das pastas: num cofre que
+já tem obras, vêm desmarcadas ("Desmarcado: você já tem obras").
 
 **Num cofre que já tem obras**, o preparo é cuidadoso. As caixas dos exemplos, do idioma, de abrir
 ao iniciar e dos recursos vêm desmarcadas, com uma linha dizendo por quê ("Desmarcado: você já
@@ -144,7 +151,8 @@ novo depois de resolver a causa.
   nada ali, em qualquer caixa de letras. Se uma nota aparecer depois da prévia, ela é contada como
   pulada, não gravada.
 - Nunca muda uma configuração salva sem uma caixa marcada. As únicas coisas que mudam sem caixa
-  são a lista de pastas acompanhadas (as pastas novas entram nela) e a resposta de **Mundo
+  são a lista de pastas acompanhadas (as pastas novas entram nela), as configurações **Pasta
+  dos contos** e **Pasta dos livros** (só enquanto vazias) e a resposta de **Mundo
   compartilhado** que você mesmo escolheu no passo 1.
 - Nunca move suas versões nem muda a lista de pastas que o Escrita ignora. Uma instalação nova em
   português usa `Escrita/Versões` para as versões e `Modelos` como pasta de modelos; uma instalação
@@ -192,6 +200,10 @@ nome em outra caixa de letras (`início.md`), o preparo a usa como está.
 
 A linha do preparo **Abrir a nota inicial ao iniciar** liga a configuração **Abrir ao iniciar**.
 
+Embaixo da lista de obras há uma linha: **+ Novo conto · + Novo livro**. Ela está sempre ali, e
+cada parte abre a mesma janela do comando (veja [seu primeiro conto](#seu-primeiro-conto)).
+**+ Novo livro** some enquanto o esboço está desligado.
+
 Uma obra é um livro, ou uma nota acompanhada, cujo status é uma das suas palavras de estágio. O
 bloco lista as obras que você está escrevendo e revisando, e conta as que são só ideia, prontas ou
 publicadas. O bloco, o comando **Abrir a nota inicial** e as configurações da nota inicial estão em
@@ -233,9 +245,43 @@ Obsidian passa a abrir no modo. O modo escrita não grava nada no seu cofre, e a
 que ele escondeu. Os comandos, a configuração e como ele convive com um plugin zen estão em
 [Acompanhamento](tracking.md#escreva-só-com-a-nota-o-modo-escrita).
 
-## Seu primeiro conto, à mão
+## Seu primeiro conto
 
-Você não precisa do preparo para isso. Um conto é qualquer nota.
+Você não precisa do preparo para isso. Abra a paleta de comandos e rode **Novo conto** (em
+inglês, **New short story**). Ou rode **Nova obra…** (**New work…**): uma lista pergunta "O que
+você vai escrever?" com **Conto** e **Livro**, cada um com uma linha cinza dizendo para onde vai
+("Uma nota em Contos/"). Escolha **Conto**. Os comandos não têm atalho. Também dá para clicar em
+**+ Novo conto** embaixo da lista de obras na nota inicial.
+
+Abre uma janela com:
+
+- **Título**. O cursor começa aqui. Enter cria a nota.
+- **Pasta**, com sugestões enquanto você digita. Começa na configuração **Pasta dos contos**
+  (Configurações › Escrita, **Novas obras**). Se ela estiver vazia, começa na pasta ao lado do
+  livro aberto quando um capítulo ou a nota do livro está aberto, senão na pasta da nota aberta. Sem nenhuma nota
+  aberta, é a raiz do cofre.
+- **Modelo**: **Embutido**, ou o caminho de uma nota sua (veja abaixo). Esta linha mostra o que
+  será usado; para mudar, use as configurações.
+- **Criar**.
+
+Você ganha uma nota: o status no estágio de rascunho, a propriedade de forma com a palavra de
+conto, meta e prazo vazios e um beat, "O que acontece primeiro". Ela abre com o cursor na linha
+embaixo do beat. Escreva. Acrescente um `target` quando souber o tamanho que você quer, e a nota inicial lista o conto com o tamanho dele
+contra a meta.
+
+**Um modelo seu.** Aponte **Modelo de conto** (em **Novas obras**) para uma nota sua. O texto
+dela é usado no lugar do embutido, com `{{title}}`, `{{date}}` e `{{time}}` preenchidos. Se ela
+não tiver status, o de rascunho é acrescentado. Se a nota não existir, o modelo embutido é usado
+e um aviso diz isso.
+
+**Nada é sobrescrito.** Se já existir uma nota com esse nome, um aviso diz "já existe. Nada foi
+alterado.", e a janela continua aberta. Uma obra criada fora das suas pastas acompanhadas é criada
+mesmo assim, e um aviso diz que as metas não a contam, com um botão **Abrir configurações**. Um
+título vazio também ganha um aviso: "Dê um título à obra."
+
+### À mão
+
+Dá para fazer o mesmo à mão. Um conto é qualquer nota.
 
 1. Crie uma nota onde quiser, por exemplo `Contos/A travessia.md`. Se você tem uma lista de pastas
    acompanhadas (Configurações › Escrita, **Pastas acompanhadas**), crie dentro de uma delas. Se a
@@ -267,7 +313,7 @@ Você não precisa do preparo para isso. Um conto é qualquer nota.
 Quando terminar, mude o status para o estágio seguinte. Como revisar e publicar está em
 [Escrita](writing.md) e [Publicação](publishing.md).
 
-## Seu primeiro livro, à mão
+## Seu primeiro livro
 
 Uma nota é um livro quando uma pasta com o mesmo nome fica ao lado dela e essa pasta guarda uma
 pasta de capítulos:
@@ -279,10 +325,23 @@ Livros/O farol/Capítulos/              a pasta de capítulos (o nome é uma con
     02 A tempestade.md
 ```
 
-**O jeito rápido**: rode **Criar um livro**. Uma janela pede um **Título** e uma **Pasta** (vazio
-é a raiz do cofre). O Escrita cria a nota do livro, com o status de rascunho e uma meta de 80.000
-palavras, cria a pasta e a pasta de capítulos, cria um primeiro capítulo sem título e o abre com o
-esboço. O comando funciona igual num cofre sem o preparo.
+**O jeito rápido**: rode **Novo livro** (**New book**). Também dá para escolher **Livro** em
+**Nova obra…** ou clicar em **+ Novo livro** na nota inicial. Ele só é oferecido enquanto o esboço
+está ligado, então some da paleta, da lista e da nota inicial quando esse interruptor está
+desligado. A janela é a mesma do conto, começando na **Pasta dos livros**. O Escrita cria:
+
+- a nota do livro, com o status de rascunho, meta e prazo vazios e dois títulos, **Premissa** e
+  **Personagens**, cada um com uma dica num comentário;
+- a pasta com o nome do livro e a pasta de capítulos dentro dela;
+- um primeiro capítulo sem título. Sem modelo de capítulo, ele traz um beat, "O que acontece
+  primeiro". Com modelo de capítulo, o modelo decide;
+- o esboço, ao lado do capítulo. O capítulo abre com o cursor depois do beat.
+
+A meta começa vazia. Defina `goal` na nota do livro quando souber o tamanho que ele terá. Você
+pode apontar **Modelo da nota do livro** (em **Novas obras**) para uma nota sua, como no conto. O
+primeiro capítulo continua seguindo o modelo de capítulo. **Novo livro** funciona igual num cofre
+sem o preparo, e nada é sobrescrito: se a nota ou um arquivo no caminho já existir, um aviso diz
+isso e nada é criado.
 
 **À mão**: crie a nota, a pasta com o mesmo nome e a pasta de capítulos dentro dela, e depois uma
 nota para cada capítulo. O nome da pasta de capítulos é **Nome da pasta de capítulos** nas
@@ -301,8 +360,12 @@ O esboço, as metas por capítulo e o resto estão em [Escrita](writing.md).
 | Nome | O que faz |
 |---|---|
 | **Preparar o cofre para escrever** (comando) | Abre a janela de dois passos. Também se chega a ele pela página Recursos quando não há nota inicial. |
+| **Nova obra…** (comando) | Abre a lista: **Conto** ou **Livro**, cada um com o lugar para onde vai. |
+| **Novo conto** (comando) | Abre a janela de um conto. |
+| **Novo livro** (comando) | Abre a janela de um livro. Era **Criar um livro**, com o mesmo id de comando, então o seu atalho continua valendo. Só é oferecido enquanto o esboço está ligado. |
+| **Pasta dos contos**, **Modelo de conto**, **Pasta dos livros**, **Modelo da nota do livro** (configurações) | O grupo **Novas obras**. As duas linhas do livro só aparecem com o esboço ligado. Pasta vazia é a pasta ao lado do livro ou da nota aberta. |
 
-**Criar um livro** é um comando do esboço; a página dele é [Escrita](writing.md). **Abrir a nota
+**Novo livro** é um comando do núcleo, disponível sempre que o esboço está ligado. **Abrir a nota
 inicial**, **Entrar no modo escrita**, **Sair do modo escrita** e as configurações **Nota
 inicial**, **Abrir ao iniciar** e **Abrir no modo escrita** estão em
 [Acompanhamento](tracking.md).

@@ -14,7 +14,7 @@ type "chapters folder" to find that row. Click a result and Obsidian lands on it
 feature that is off don't show, because the feature isn't loaded.
 
 Each section of Escrita's tab is a card under its own heading: Features, Properties and
-folders, Books, Goals, Publishing · the check, Export, Submissions, Outline, Placeholders,
+folders, Books, New works, Goals, Publishing · the check, Export, Submissions, Outline, Placeholders,
 Darlings, Editor, Revision · the lens, Stages, Home note, Snapshots and Universe. A section
 of a feature that is off is gone until you turn the feature on.
 
@@ -137,7 +137,7 @@ the words Escrita writes into your vault.
 | Switch | Off means |
 |---|---|
 | Goals and sprints | No word tracking, daily goal, progress window, sprints or status bar. Its settings hide. |
-| Outline and ghost beats | No outline panel, no ghost beats in the editor, no beat commands, no **Read the book**. |
+| Outline and ghost beats | No outline panel, no ghost beats in the editor, no beat commands, no **Read the book**. Also no **New book** command, no Book choice in **New work…**, no **+ New book** button in the home block and no Books folder or Book note template rows. |
 | Placeholders | No placeholder pills, explorer dots, panel or outline badge. (The publish check still stops on a placeholder left in a note, while Publish is on.) |
 | Enter flow and smart typography | Enter doesn't make scene breaks or chapters; no automatic dashes and quotes. |
 | Dialogue focus | The command and its dimming go. |
@@ -155,6 +155,8 @@ the words Escrita writes into your vault.
 | Submissions | No **Record a submission** command or menu item, no pending count in the home block, and no Submissions section in the settings. The submissions folder row stays. |
 | Shared universe | No panel, no universe commands, no "Appears in", no name marks or lens names. |
 | Threads | No thread commands, margin flag or panel tab. |
+
+Short stories never switch off. **New work…** and **New short story** are core commands, like the setup, so they stay even with every feature off.
 
 Turning a feature off shows a short notice that says what stays and where.
 
@@ -220,6 +222,19 @@ Two commands arrive with 0.9 and have no setting. **Read the book** belongs to O
 ghost beats. **Publish next chapter** belongs to Publish check. The **Publish next** button in
 the outline header shows only while both are on. Unlinked mentions have no switch of their own:
 they are part of Shared universe, so they go when the universe is off.
+
+## Settings added in 1.0.4
+
+The **New works** section comes after Books. It sets where **New work…**, **New short story** and **New book** create notes, and which template of yours they use. It is always shown, except the two book rows, which hide when Outline and ghost beats is off. Nothing here is ever overwritten: a note that already exists is left alone.
+
+| Setting | Needs | What it does |
+|---|---|---|
+| Short stories folder | | Where **New short story** creates the note. Empty by default: the folder beside the open book when a chapter or the book note is open, else the open note's folder (the vault root with no note open). |
+| Short story template | | A note of yours to use instead of the built-in template. `{{title}}`, `{{date}}` and `{{time}}` are filled in, and a draft status is added when it has none. Empty by default (built-in). A note that can't be found falls back to the built-in one, with a notice. |
+| Books folder | Outline | Where **New book** creates the book's folder. Empty by default, with the same fallback as above. |
+| Book note template | Outline | A note of yours to use instead of the built-in book note. Empty by default (built-in). The first chapter follows the chapter template. |
+
+The setup fills the two folder rows with the folders it creates, but only while they are empty. The commands are explained in [Writing](writing.md).
 
 ## Folder rows and how fields save
 

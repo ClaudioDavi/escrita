@@ -1154,7 +1154,9 @@ module internals (`tests/settings-imports.test.ts`: only shared core, top-level 
   rows, which save through `saveData` and skip `saveSettings()` and the commit-on-blur rule):
   `textRow`, `textAreaRow`, `toggleRow`, `dropdownRow` (converts number values itself),
   `numberRow` (one parser, `digitsNumber`), `folderRow` (with an optional `problemOf`, used by
-  the folder rows and snapshots), `noteRow` (a description paragraph, not searched) and
+  the folder rows and snapshots; `textRow` and `folderRow` take an optional `suggest` callback
+  that attaches an input suggest to the field, `FolderSuggest` or `NoteSuggest` from
+  `src/ui/suggest.ts`, 1.0.4), `noteRow` (a description paragraph, not searched) and
   `customRow(name, draw)` (empties the row and draws into it, for the presets block and the
   universe's tables). `drawnRow(o, draw)` is the base they build on and is exported for rows
   that fill the control area by hand (the Features page, the stage rows): a named, searchable row
@@ -1301,7 +1303,7 @@ measurer, the vault index and the notes service are core and always on.
 
 A part of Escrita that is not one of the 19 features and never switches off is a
 `CoreModule` (a `Component`). The first is the setup ("Set up a writing vault", `src/setup/`,
-SF 10). It has no `FeatureId`: it is not on the Features page, in a preset, in
+SF 10); the second, in 1.0.4, is new-work (see "Start a new work" below). It has no `FeatureId`: it is not on the Features page, in a preset, in
 `settings.features` or in the registry.
 
 - **The seam.** `main.ts` constructs it at the end of `onload`, after
@@ -1385,6 +1387,45 @@ the first-run notice. The work is split so the Obsidian side stays thin:
   and the lens on the right; `focus` enters writing mode. Panel ids come from `VIEW_TYPES`.
 - `modal.ts`: the two steps (what you write, language and preset; then the preview with its
   ticks). `src/ui/` holds the shared modal and leaf helpers (`confirm.ts`, `open-work.ts`).
+
+## Start a new work (`src/new-work/`, `core/new-work.ts`, `core/paths.ts`, 1.0.4)
+
+`NewWorkModule` (a core module, see above) registers "New work…", "New short story" and
+"New book" (SF 14). Starting a work is not a feature to switch off: a short story needs no
+feature at all, and a book needs only the core services (`books`, `chapterOps`, `notes`). The
+commands have no default hotkeys. `create-book` is the old outline command's id, now
+registered here with a `checkCallback` that is true only while the outline is on, so writers'
+hotkeys keep working.
+
+- **The port** (`core/new-work.ts`, no Obsidian imports): `NewWorkKind` (`"story" | "book"`,
+  listed in `NEW_WORK_KINDS`) and `NewWorkStarter` (`start(kind?)`, `offers(kind)`).
+  `plugin.newWork` is typed by it. The home block's footer (`desk/render.ts`) and the outline
+  view's empty-state "Create a book" button call `plugin.newWork.start`; with no kind, `start` opens
+  the list. `offers("book")` follows the outline switch. Neither caller imports the module.
+- **The module.** `model.ts` is pure and tested: the built-in short story and book notes (the
+  property names and words come from settings, rule 6), `fromTemplate` (`renderTemplate`, then
+  the draft status added when the template has none), `defaultFolderFor` and the cursor offset.
+  `modals.ts` holds the list (`SuggestModal<NewWorkKind>`) and the title, folder and template
+  modal. `index.ts` writes through `notes.create(…, { exists: "fail" })`, opens the note, sets
+  the cursor, and shows the notices (already exists, no title, template not found, outside the
+  track folders with an "Open settings" button). A book is created after a check that no file
+  is in the way of its folders, so nothing is written half done. Nothing is ever overwritten.
+- **Settings.** `storiesFolder`, `storyTemplate`, `booksFolder` and `bookNoteTemplate`, empty
+  by default, in the "New works" group (its own slot in `core/settings-order.ts`). The story
+  rows show always, the book rows with the outline on (`SETTING_FEATURES`). The setup writes
+  the two folders it creates when they are empty.
+- **Shared CSS classes.** The list's grey line and the notice's button reuse
+  `escrita-template-path` and `escrita-notice-button`, which are defined in the editor's
+  `styles.css` (for the template picker). The classes are loaded with the plugin's one
+  stylesheet, so they apply even with the editor feature off; if the editor's styles change,
+  check new-work too.
+- **Path helpers** (`core/paths.ts`, IMPROVEMENTS 33): the one place for path questions.
+  `parentOf`, `baseName`, `noteName`, `withMd`, `noMd`, `cleanFolder`, `joinPath` and
+  `isUnder(path, folder, { emptyMatches })`. New code uses these instead of writing the string
+  work by hand; the edge cases are pinned in `tests/paths.test.ts`.
+- **Suggests** (`src/ui/suggest.ts`): `FolderSuggest` (moved from the outline's modals) and
+  `NoteSuggest` (Markdown files by path), both `AbstractInputSuggest`s, shared by the modal and
+  the settings rows.
 
 ## Wave 2 ports and view ids (1.0)
 
@@ -1596,9 +1637,8 @@ the first-run notice. The work is split so the Obsidian side stays thin:
   dropped, the line a whole number, at least 0). The outline's data follower moves a key or a
   chapter with a rename (`movePositions`) and drops an entry with a deleted book or chapter,
   while the outline is off too. Deleting a chapter sends the position back to the top.
-- **Commands**: "Open outline", "Open outline as a board", "Read the book", "Create a book" (modal: title +
-  parent folder → creates `<folder>/<title>.md` with `goal`/`deadline` properties, the
-  book folder, the chapters folder and a first chapter), "Add a beat to this chapter",
+- **Commands**: "Open outline", "Open outline as a board", "Read the book" ("Create a book" moved to the new-work
+  core module in 1.0.4 as "New book", same id; see "Start a new work"), "Add a beat to this chapter",
   "Renumber chapters of this book".
 
 ### placeholders (`src/placeholders/`)

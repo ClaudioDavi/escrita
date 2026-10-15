@@ -99,6 +99,13 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   through `core/writing-mode.ts`, and the goal counter through `core/daily-progress.ts`.
   Shared modal and leaf helpers are in `src/ui/`, never importing a module folder. View ids
   are in `core/view-types.ts`; they never change (they live in the writer's workspace file).
+- **1.0.4 additions.** Starting a work is a second core module, `src/new-work/`
+  (`CoreModule`, always loaded): "New work…", "New short story" and "New book" (`create-book`
+  moved here from the outline, offered only while the outline is on). Its port is
+  `core/new-work.ts` (`plugin.newWork`: `start(kind?)`, `offers(kind)`), which the desk's
+  footer and the outline's empty state call, so they never import the module. Path questions
+  (parent, base name, `.md`, folder cleaning, joins, "is inside") go through `core/paths.ts`;
+  folder and note suggests are in `src/ui/suggest.ts`.
 - **Markdown questions** (frontmatter, code, comments, what a line is) go through
   `segment(text)` / `segmentDoc(doc)` in `core/markdown.ts`. Line predicates live next
   to `isSceneBreakLine` in `core/markers.ts`.
@@ -199,10 +206,14 @@ and what upkeep it asks of the writer.
   (N 7 stage 3, N 4, N 8; 0.10 merged in on 2026-10-06), collections of contos exported
   as one DOCX or EPUB (SF 13). Improvement: IMPROVEMENTS 9,
   the fuller change (scope as a field on the classifier result). Plan and results in `docs/PLAN-0.9.md`.
-- **1.0 (next)**: universe + manuscript export complete, setup with presets (Essentials,
+- **1.0 (shipped)**: universe + manuscript export complete, setup with presets (Essentials,
   Writer, Everything), mobile pass, docs in both languages, community plugin submission.
-- **After 1.0**: screenwriting (`docs/ROADMAP-screenplay.md`), Fountain and PDF export first;
-  then universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
+- **1.0.4 (shipped, unreleased), start a new work**: "New work…", "New short story" and
+  "New book" (SF 14), the home block footer and the "New works" settings. Improvement:
+  IMPROVEMENTS 33, path helpers in core. Plan and results in `docs/PLAN-1.0.4.md`.
+- **1.1 (next)**: screenwriting, phase 1 (`docs/ROADMAP-screenplay.md`), Fountain and PDF
+  export first.
+- **After 1.1**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
 
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and
 `goals/progress-modal.ts` are large and mostly untested (IMPROVEMENTS 5; the chapter rows

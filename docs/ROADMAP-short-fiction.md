@@ -55,7 +55,7 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 0.8.0 | Submissions (12), with export (novel roadmap, 7) | S | Shipped |
 | 0.9.0 | Collections of contos, exported as one file (13) | M | Shipped |
 | 1.0 | Set up a writing vault and presets (10) | S | Shipped |
-| 1.0.4 | Start a new work: "New short story" and "New book" (14) | S–M | Planned |
+| 1.0.4 | Start a new work: "New short story" and "New book" (14) | S–M | Shipped |
 
 Sections keep their original numbers so references from the other roadmaps stay valid.
 
@@ -894,7 +894,7 @@ title, with the collection's title page.
 
 ---
 
-## 14. Start a new work (v1.0.4, planned; mockups approved 2026-10-15)
+## 14. Start a new work (v1.0.4, shipped; mockups approved 2026-10-15)
 
 **Why.** Asked for by the author on 2026-10-14. To start a conto today the writer makes a
 note by hand and fills its properties, or relies on the draft status that a tracked folder

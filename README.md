@@ -39,7 +39,7 @@ It needs Obsidian **1.13 or later**. It works on desktop and on phones.
 
 1. Enable Escrita. A notice offers to set the vault up; you can also run **Set up a writing vault** from the command palette.
 2. The setup shows everything before it creates anything. Pick a starting point (Essentials, Writer or Everything), a layout, and the folders and examples you want.
-3. Open the example short story or book, or run **Create a book**, and write. Escrita sets no hotkeys; bind the commands you use in Settings → Hotkeys.
+3. Open the example short story or book, or run **New work…** (a short story or a book, from a title), and write. Escrita sets no hotkeys; bind the commands you use in Settings → Hotkeys.
 
 Step by step: [Getting started](docs/guide/en/getting-started.md) ([Português](docs/guide/pt-BR/getting-started.md)).
 
@@ -51,7 +51,7 @@ Each part is a switch on the Features page, so you can turn off what you don't u
 
 **Features and settings.** The Features page turns each part on or off. It has three starting points (Essentials, Writer, Everything), and a fresh install takes its defaults (status words, folder names) from Obsidian's language. A feature that is off isn't loaded, and its data stays. Guide: [English](docs/guide/en/features-and-settings.md) · [Português](docs/guide/pt-BR/features-and-settings.md).
 
-**Writing.** The outline sits in the sidebar and lists your chapters and their beats, with point of view, filters, a board and a "Read the book" view. Goals, pacing, sprints, days off, targets for a single short story or essay, placeholders, Enter flow, smart typography, dialogue focus, moving a paragraph or scene, templates, spellcheck on demand and word counts in the file explorer are here too. Guide: [English](docs/guide/en/writing.md) · [Português](docs/guide/pt-BR/writing.md).
+**Writing.** **New work…**, **New short story** and **New book** start a note that is already a work in the draft stage, from a built-in template or a note of yours, with the cursor in the prose; the home note has the same two buttons. The outline sits in the sidebar and lists your chapters and their beats, with point of view, filters, a board and a "Read the book" view. Goals, pacing, sprints, days off, targets for a single short story or essay, placeholders, Enter flow, smart typography, dialogue focus, moving a paragraph or scene, templates, spellcheck on demand and word counts in the file explorer are here too. Guide: [English](docs/guide/en/writing.md) · [Português](docs/guide/pt-BR/writing.md).
 
 ![Writing under the outline: a chapter's planned beats show as faint labels in the editor; typing under one ticks it off, with the quotes curled and the ellipsis set as you type, and a new beat is added from the outline.](docs/images/outline-and-beats.gif)
 
@@ -94,6 +94,18 @@ To try your build, link or copy the repository folder into a test vault's `.obsi
 To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updates `manifest.json` and `versions.json`), commit, then push a tag with the bare version number (for example `git tag 0.1.1 && git push --tags`). The release workflow builds the plugin and drafts a GitHub release with `main.js`, `manifest.json` and `styles.css`; publish the draft when it looks right.
 
 ## Changelog
+
+### 1.0.4 (unreleased)
+
+You can start a new short story or a new book from a title and be writing in seconds.
+
+- **Start a new work**: **New work…** opens a list (Short story, Book), each with a grey line saying where it goes. **New short story** and **New book** skip the list. A short story is one note in the draft stage with a form, a blank target and deadline, and one beat, with the cursor under it. A book is its note (Premise and Characters), its folder, the chapters folder, the first chapter and the outline beside it. Nothing is ever overwritten: if the note already exists, a notice says so and nothing changes. Escrita sets no hotkeys for the new commands.
+- **Home block footer**: "+ New short story · + New book" sits under the works list. "+ New book" is hidden while the outline is off.
+- **New works settings**: a "New works" group with Short stories folder, Short story template, Books folder and Book note template. A template is a note of yours; `{{title}}`, `{{date}}` and `{{time}}` are filled in, and a draft status is added when it has none. A folder left empty means the folder beside the open book, or the open note's folder. The setup fills the two folders it creates when they are empty.
+- Upgrade notes:
+  - **Create a book** is now **New book**. It is the same command, so your hotkeys keep working, and it is offered only while the outline is on.
+  - A new book's goal now starts blank instead of 80,000.
+- Improvement: path helpers in core (`core/paths.ts`, candidate 33), used by the new commands and in place of six copies of "parent of a path".
 
 ### 1.0.3 (2026-10-12)
 

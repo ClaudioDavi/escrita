@@ -178,30 +178,6 @@ interface lives. Test through the interface.
   serial model reads, so the rows would gain those fields first.
 - **Cost.** Wider rows for one line; only worth it if the second read shows up in a profile.
 
-### 33. Path helpers in core
-
-**Strength:** strong, small · **Pairs with:** every module
-
-- **Problem.** Path strings are handled by hand all over `src/`:
-  - "Parent of a path": 6 definitions (`core/classify.ts:367`, `placeholders/logic.ts:291`,
-    `snapshots/store.ts:90`, `snapshots/fs.ts:22`, `universe/migrate-plan.ts:8`,
-    `export/logic.ts:244`).
-  - "Name without `.md`": 7 named copies and about 10 inline ones; some strip `.md`
-    case-sensitively (`outline/rows.ts:81`, `core/serial.ts:102`).
-  - "Add `.md` if missing": 10 sites. `core/scope.ts` has `withMd` and `noMd` but keeps them
-    private.
-  - Trimming slashes from a folder: about 25 copies in 4 variants; only some handle `\` and
-    `//` (`classify.ts:232`, `export/logic.ts:85`, `lens/settings.ts:7`,
-    `universe/settings.ts:109`).
-  - "Is inside a folder": 7 versions that disagree on an empty folder. `scope.inFolder("")` is
-    true, `path-keys.isUnder("")` is false. And `export/logic.ts:84 inFolder` is a path join
-    with the same name as core's containment test.
-- **Change.** `core/paths.ts` (or `path-keys.ts`): `parentOf`, `baseName`, `noteName`,
-  `withMd`, `cleanFolder`, and one `isUnder(path, folder, { emptyMatches })`. Rename the export
-  join to `joinPath`. Pin the edge cases in a test first; adopting the full slash rule
-  everywhere changes behaviour for `\` input, so decide it on purpose.
-- **Wins.** One rule per path question; most of candidates 34 and 41 get shorter.
-
 ### 34. Navigation helpers in `src/ui/`
 
 **Strength:** strong · **Pairs with:** known issue "beat click"
@@ -506,7 +482,23 @@ Revisit only if a phone profile shows reads dominating.
 
 ## Loose ends
 
-None at the moment. The four from 0.2.1 were closed in 0.8.0 (see "Done").
+From candidate 33 (1.0.4):
+
+- **Test-only re-export aliases.** `export/logic.ts` `inFolder`, `placeholders/logic.ts`
+  `parentPath` and `universe/migrate-plan.ts` `basename` and `dirname` stay as aliases of
+  `core/paths.ts` only because tests import them. Drop them when those tests move to the core
+  helpers.
+- **Slash-trim copies.** The edge-slash trim (`replace(/^\/+|\/+$/g, "")`) is still written
+  by hand in `core/classify.ts:232`, `:320` and `:380`, `settings.ts:323` and `:340`,
+  `desk/block.ts:12`, `desk/works.ts:216`, `editor/template-insert.ts:63`, `core/lists.ts:16`,
+  `lens/settings.ts:7`, `core/new-note-status.ts:44`, `core/scope.ts:83` (`trimSlashes`),
+  `darlings/format.ts:334`, `placeholders/logic.ts:265`, `submissions/logic.ts:208`,
+  `universe/migration.ts:59`, `universe/view-entries.ts:19`, `universe/settings.ts:109`,
+  `universe/works-list.ts:41`, `universe/new-entry.ts:23` and `universe/settings-ui.ts:20`.
+  Some also fold `\` or `//`; adopting `cleanFolder` there changes behavior for those inputs,
+  so decide it on purpose, one module at a time.
+
+The four from 0.2.1 were closed in 0.8.0 (see "Done").
 
 ## Known issues
 
@@ -524,6 +516,7 @@ Found by the review of 2026-10-08. Each is small; fix them before the refactors.
 
 | Version | Improvement |
 |---|---|
+| 1.0.4 | Path helpers in core (candidate 33): `core/paths.ts` (`parentOf`, `baseName`, `noteName`, `withMd`, `cleanFolder`, `joinPath`, `isUnder` with `emptyMatches`), edge cases pinned in `tests/paths.test.ts` first. Adopted in the new-work module and in place of the six `parentOf` copies (`core/classify.ts`, `placeholders/logic.ts`, `snapshots/store.ts`, `snapshots/fs.ts`, `universe/migrate-plan.ts`, `export/logic.ts`), `core/scope.ts`'s `withMd`, `noMd` and `inFolder`, and export's path join (renamed `joinPath`, no longer named like core's containment test). `outline/rows.ts` strips `.md` in any letter case. `cleanFolder` keeps today's rule; the `\` rule of `classify.ts` `folderRoot` stays there on purpose |
 | 1.0.3 | The settings tab on Obsidian's declarative settings API (candidate 51): `EscritaSettingTab` implements `getSettingDefinitions()` in `src/settings-tab.ts`, one group per slot of `core/settings-order.ts` under the slot's heading, so Escrita's rows show in the settings search; `display()` and the `settings.ts` lint exceptions are gone, `minAppVersion` is 1.13.0, and the tab rebuilds (`update()`) only on a change of structure (`refresh()`, `features.onApplied`) |
 | 1.0.3 | Settings rows, with fallbacks from the install's defaults (candidate 36): `FeatureModule.settingsItems` returns `SettingsBlock[]`, built with `textRow`, `toggleRow`, `dropdownRow`, `numberRow`, `folderRow`, `noteRow`, `customRow` and `drawnRow` in `src/ui/settings-rows.ts`; one commit path for text fields (`ui.saveOnCommit` with an optional `read`, plain inputs too: the universe tables, the stage words, the status and summary row; no second copy in the lens or the tab); one number parser (`digitsNumber`), snapshots shares `folderRow`, and a cleared field falls back to `ui.defaults()` of the install's language in every section (the known issue "English defaults in the settings tab" is closed). `ui/confirm.ts` uses `setDestructive` |
 | 1.0.0 | Known issues from the review of 2026-10-08: the settings tab falls back to the install's language set (`SettingsUi.defaults()`, the first slice of candidate 36); one home note lookup for the desk and the setup (`core/home-note.ts`, exact, then NFC, then case-insensitive; pt-BR offers `Início.md` and still adopts `Inicio.md`; the setup no longer plans a second home note); darlings write through `plugin.notes`; dialogue focus and the name marks retry a failed dispatch once (`core/dispatch-retry.ts`, the failure-policy slice of candidate 38); "Appears in" strings registered in `main.ts` and in the parity test; saved-data cleaners skip `__proto__` (`core/records.ts`); the chapter template resolves to a Markdown file; `FakePlugin.turn` (part of candidate 50); stale plan-task comments in core |

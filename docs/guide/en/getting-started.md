@@ -2,8 +2,8 @@
 
 This page takes you from installing Escrita to a first short story and a first book. You can do
 it with one command, **Set up a writing vault**, which shows you everything before it creates
-anything. Or you can skip the command and do it by hand: the last two parts of the page
-show how.
+anything. Or you can skip the setup and start from **New work…**, which works in any vault:
+the last two parts of the page show how, and how to do it by hand.
 
 Other pages: [Features and settings](features-and-settings.md), [Writing](writing.md),
 [Revision](revision.md), [Tracking](tracking.md), [Publishing](publishing.md) and
@@ -16,8 +16,8 @@ Other pages: [Features and settings](features-and-settings.md), [Writing](writin
 - [The examples](#the-examples)
 - [The home note](#the-home-note)
 - [Two layouts: the writing desk and writing mode](#two-layouts-the-writing-desk-and-writing-mode)
-- [Your first short story, by hand](#your-first-short-story-by-hand)
-- [Your first book, by hand](#your-first-book-by-hand)
+- [Your first short story](#your-first-short-story)
+- [Your first book](#your-first-book)
 - [Commands and settings on this page](#commands-and-settings-on-this-page)
 
 ## Install Escrita
@@ -88,7 +88,7 @@ and **·** is a setting that changes.
 
 | Group | What it lists |
 |---|---|
-| **Folders** | `Stories` and/or `Books`. A folder that already exists is used as it is, and the row says how many notes are in it. If you keep a list of track folders, a new folder is added to it (see below). |
+| **Folders** | `Stories` and/or `Books`. A folder that already exists is used as it is, and the row says how many notes are in it. If you keep a list of track folders, a new folder is added to it (see below). The settings **Short stories folder** and **Books folder** are filled with these folders too, when they are empty (see [your first short story](#your-first-short-story)). |
 | **Examples** | The example short story and the example book, if you want them (see [the examples](#the-examples)). |
 | **Settings** | Every setting the setup would change, with its value, and every one it leaves alone, with the reason. |
 | **Home note** | `Home.md` (`Início.md` in Portuguese), with the works block. |
@@ -99,6 +99,7 @@ make:
 
 | Box | What it covers |
 |---|---|
+| **Folders** (on the first new folder) | The new folders, adding them to **Folders that count**, and filling **Short stories folder** and **Books folder**. |
 | **Examples** | All the example notes together. |
 | **Language of the defaults** | The language and every word-bearing setting: **Statuses**, **Chapters folder**, **Unnumbered chapter titles**, **Submission results**, **Export folder**, **Submissions folder**, the darlings notes, **Universe note**, **Entry types**, **Form values**, **Thread keyword**, **Closed-thread word**, and **Writing language**. |
 | **Home note** | Creating the home note and setting it as your **Home note**. |
@@ -106,8 +107,14 @@ make:
 | **Features** | Turns the switches to match the preset you chose. |
 | **Arrange the screen once** | The layout. |
 
-The rows without a box are the folders and the track folders row (**Folders that count**),
-and the **Shared world** answer you gave in step 1.
+Folders that already exist have no box, and neither has the **Shared world** answer you
+gave in step 1.
+
+**Where new works go.** The setup also fills **Short stories folder** and **Books folder**
+(Settings › Escrita, **New works**) with the folders it makes, so **New short story** and **New
+book** start there. It does this only while the setting is empty: a folder you chose yourself
+stays. They are listed under **Settings** and share the folders' box: in a vault that already has
+works they come unticked ("Unticked: you already have works").
 
 **In a vault that already has works**, the setup is careful. The boxes for the examples, the
 language, opening on startup and the features come unticked, with a line saying why ("Unticked:
@@ -144,7 +151,8 @@ command again after fixing the cause.
   is there already, in any letter case. If a note appears after the preview, it is counted as
   skipped, not written.
 - It never changes a saved setting without a box ticked. The only things that change without
-  a box are the track folders list (new folders are added to it) and the **Shared world**
+  a box are the track folders list (new folders are added to it), the two settings
+  **Short stories folder** and **Books folder** (only while empty), and the **Shared world**
   answer you picked yourself in step 1.
 - It never moves your snapshots or changes the list of folders Escrita ignores. A fresh
   Portuguese install uses `Escrita/Versões` for snapshots and `Modelos` as the templates
@@ -190,6 +198,10 @@ name exists in another letter case (`home.md`), the setup uses it as it is.
 
 The setup's row **Open the home note on startup** turns on the setting **Open on startup**.
 
+Under the list of works, a line reads **+ New short story · + New book**. It is always there,
+and each part opens the same window as the command (see [your first short
+story](#your-first-short-story)). **+ New book** is hidden while the outline is off.
+
 A work is a book, or a tracked note, whose status is one of your stage words. The block lists
 the works you are writing and revising, and counts the ones that are only ideas, ready or
 published. The block, the **Open the home note** command and the home note settings are in
@@ -232,9 +244,43 @@ starts in the mode. Writing mode writes nothing to your vault, and leaving it br
 what it hid. Its commands, its setting and how it sits next to a zen plugin are in
 [Tracking](tracking.md#write-with-only-the-note-writing-mode).
 
-## Your first short story, by hand
+## Your first short story
 
-You don't need the setup for this. A short story is any note.
+You don't need the setup for this. Open the command palette and run **New short story** (in
+Portuguese, **Novo conto**). Or run **New work…** (**Nova obra…**): a list asks "What are you
+writing?" with **Short story** and **Book**, each with a grey line saying where it goes ("A note
+in Stories/"). Pick **Short story**. The commands have no hotkey. You can also click **+ New
+short story** under the works list in the home note.
+
+A window opens with:
+
+- **Title**. The cursor starts here. Enter creates the note.
+- **Folder**, with suggestions as you type. It starts at the setting **Short stories folder**
+  (Settings › Escrita, **New works**). If that is empty, it starts at the folder beside the open
+  book when a chapter or the book note is open, otherwise at the folder of the open note. With no note open, it
+  is the root of the vault.
+- **Template**: **Built-in**, or the path of your own note (see below). This line shows what is
+  used; you change it in the settings.
+- **Create**.
+
+You get one note: the status in the draft stage, the form property set to the short story word,
+a blank target and a blank deadline, and one beat, "What happens first". It opens with the cursor
+on the line under the beat. Write. Add a `target` when you know the length you aim for, and the home note lists the short story with its
+length against it.
+
+**Your own template.** Point **Short story template** (in **New works**) at a note of yours. Its
+text is used instead of the built-in one, with `{{title}}`, `{{date}}` and `{{time}}` filled in.
+If it has no status, the draft status is added. If the note is missing, the built-in template is
+used and a notice says so.
+
+**Nothing is overwritten.** If a note with that name already exists, a notice says "already
+exists. Nothing was changed.", and the window stays open. A work created outside your track
+folders is created anyway, and a notice says goals don't count it, with an **Open settings**
+button. An empty title gets a notice too: "Give the work a title."
+
+### By hand
+
+You can do the same by hand. A short story is any note.
 
 1. Make a note where you want it, for example `Stories/The crossing.md`. If you have a list of
    track folders (Settings › Escrita, **Folders to track**), make it inside one. If the list is
@@ -265,7 +311,7 @@ You don't need the setup for this. A short story is any note.
 When you finish, change the status to the next stage. How to revise and publish it is in
 [Writing](writing.md) and [Publishing](publishing.md).
 
-## Your first book, by hand
+## Your first book
 
 A note is a book when a folder with the same name sits next to it, and that folder holds a
 chapters folder:
@@ -277,10 +323,23 @@ Books/The lighthouse/Chapters/               the chapters folder (its name is a 
     02 The storm.md
 ```
 
-**The quick way**: run **Create a book**. A window asks for a **Title** and a **Folder** (empty
-means the root of the vault). Escrita makes the book note, with the draft status and a goal of
-80,000 words, makes the folder and the chapters folder, makes a first chapter without a title, and opens
-it with the outline. The command works the same in a vault with no setup.
+**The quick way**: run **New book** (**Novo livro**). You can also pick **Book** in **New work…**
+or click **+ New book** in the home note. It is offered only while the outline is on, so it is
+missing from the palette, the list and the home note when that switch is off. The window is the
+same as for a short story, with **Books folder** as the starting folder. Escrita makes:
+
+- the book note, with the draft status, a blank goal and a blank deadline, and two headings,
+  **Premise** and **Characters**, each with a hint in a comment;
+- the folder with the book's name, and the chapters folder inside it;
+- a first chapter without a title. With no chapter template it holds one beat, "What happens
+  first". With a chapter template, the template decides;
+- the outline, beside the chapter. The chapter opens with the cursor after the beat.
+
+The goal starts blank. Set `goal` in the book note when you know how long the book will be. You can
+point **Book note template** (in **New works**) at a note of yours, as for a short story. The first
+chapter still follows the chapter template. **New book** works the same in a vault with no setup,
+and nothing is overwritten: if the note or a file in the way already exists, a notice says so and
+nothing is created.
 
 **By hand**: make the note, the folder with its name and the chapters folder inside it, then a
 note for each chapter. The chapters folder's name is **Chapters folder name** in the settings
@@ -299,7 +358,11 @@ The outline, chapter targets and the rest are in [Writing](writing.md).
 | Name | What it does |
 |---|---|
 | **Set up a writing vault** (command) | Opens the two-step window. Also reachable from the Features page when there is no home note. |
+| **New work…** (command) | Opens the list: **Short story** or **Book**, each with where it goes. |
+| **New short story** (command) | Opens the window for a short story. |
+| **New book** (command) | Opens the window for a book. It was **Create a book**, with the same command id, so your hotkey still works. Offered only while the outline is on. |
+| **Short stories folder**, **Short story template**, **Books folder**, **Book note template** (settings) | The **New works** group. The two book rows show only while the outline is on. Empty folders mean the folder beside the open book or note. |
 
-**Create a book** is a command of the outline; its page is [Writing](writing.md). **Open the
+**New book** is a core command, available whenever the outline is on. **Open the
 home note**, **Enter writing mode**, **Exit writing mode** and the settings **Home note**,
 **Open on startup** and **Open in writing mode** are on [Tracking](tracking.md).

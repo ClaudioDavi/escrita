@@ -1,6 +1,6 @@
 # Escrita
 
-Esta página é sobre a escrita em si: planejar um livro no esboço, definir metas, deixar lembretes
+Esta página é sobre a escrita em si: começar uma obra, planejar um livro no esboço, definir metas, deixar lembretes
 para depois, digitar sem atrito, mover texto de lugar e ver as suas contagens. Cada parte começa
 pela tarefa e depois nomeia os comandos e as configurações que ela usa.
 
@@ -8,6 +8,87 @@ Outras páginas: [Primeiros passos](getting-started.md), [Revisão](revision.md)
 [Acompanhamento](tracking.md), [Publicação](publishing.md), [O mundo](the-world.md) e
 [Recursos e configurações](features-and-settings.md). Cada parte abaixo tem um interruptor na
 página Recursos, então você pode desligar o que não usa.
+
+## Começar uma obra
+
+Três comandos começam uma obra. Nenhum tem atalho padrão; associe os que quiser nas configurações
+do Obsidian.
+
+- **Nova obra…** abre uma lista curta: **Conto** e **Livro**. Sob cada nome, uma linha cinza diz
+  onde ele vai ficar. Escolha um.
+- **Novo conto** pula a lista.
+- **Novo livro** também pula a lista. É o antigo **Criar um livro**, com o mesmo id de comando,
+  então um atalho que você definiu continua funcionando. Só é oferecido enquanto o esboço está
+  ligado.
+
+O bloco inicial tem os mesmos dois como botões sob a lista de obras (**+ Novo conto** e
+**+ Novo livro**; o do livro some enquanto o esboço está desligado), e um esboço vazio tem um botão
+**Criar um livro**.
+
+Abre-se uma janela pequena:
+
+- **Título.** Aperte Enter aqui para criar.
+- **Pasta.** Sugere as suas pastas enquanto você digita. Começa na configuração **Pasta dos contos**
+  ou **Pasta dos livros**. Se ela está vazia, começa na pasta ao lado do livro aberto quando um
+  capítulo ou a nota do livro está aberto, senão na pasta da nota aberta. Sem nenhuma nota aberta,
+  é a raiz do cofre.
+- **Modelo.** Mostra **Embutido**, ou o caminho da sua própria nota. Você o muda nas configurações.
+- **Criar.**
+
+Nada é sobrescrito. Se a nota já existe, o Escrita avisa e não toca em nada.
+
+### Com o que um conto começa
+
+Uma nota. O status dela é a sua palavra de rascunho, a propriedade de forma é a sua palavra de
+conto, e a meta e o prazo ficam vazios. Ela tem um beat, "O que acontece primeiro", e o cursor fica
+na linha embaixo dele, pronto para digitar. Preencha o `target` quando souber o tamanho que quer.
+
+### Com o que um livro começa
+
+- A **nota do livro**, com status de rascunho, meta e prazo vazios, e dois títulos, **Premissa** e
+  **Personagens**, com uma dica embaixo de cada. A meta começa vazia, e não em 80.000: defina-a
+  quando você souber.
+- A pasta do livro e a pasta de capítulos dele.
+- O **primeiro capítulo**. Ele tem o mesmo beat, "O que acontece primeiro", a não ser que você tenha
+  um modelo de capítulo. Então o modelo decide.
+- O **esboço**, aberto ao lado.
+
+### Use o seu próprio modelo
+
+No grupo **Novas obras** de Configurações › Escrita (veja
+[Recursos e configurações](features-and-settings.md)), defina:
+
+- **Modelo de conto.** Uma nota sua usada no lugar do modelo embutido.
+- **Modelo da nota do livro.** O mesmo para a nota do livro. O primeiro capítulo continua seguindo o
+  modelo de capítulo.
+
+`{{title}}`, `{{date}}` (AAAA-MM-DD) e `{{time}}` (HH:mm) são preenchidos. Se o seu modelo não tem
+status, o status de rascunho é acrescentado. Se tem, fica como você escreveu. Se a nota indicada na
+configuração não existe, o Escrita usa o embutido e avisa.
+
+Isto não é **Inserir de um modelo**, mais abaixo. Aquele põe um modelo numa nota que já existe, no
+cursor. Estes comandos criam uma nota nova.
+
+### Avisos
+
+- **"… já existe. Nada foi alterado."** O título já está em uso.
+- **"Dê um título à obra."** O título está vazio.
+- **"Modelo não encontrado: … Usei o embutido."** Confira o caminho na configuração.
+- **"… está fora das pastas acompanhadas, então não conta para as metas."** A obra é criada do mesmo
+  jeito. O aviso tem **Abrir configurações**, para acrescentar a pasta em **Pastas acompanhadas**.
+
+### Configurações das novas obras
+
+No grupo **Novas obras**:
+
+- **Pasta dos contos.** Onde Novo conto cria a nota.
+- **Modelo de conto.**
+- **Pasta dos livros.** Onde Novo livro cria a pasta do livro. Aparece enquanto o esboço está ligado.
+- **Modelo da nota do livro.** Aparece enquanto o esboço está ligado.
+
+Uma pasta vazia significa a pasta ao lado do livro aberto ou da nota aberta, como acima. A
+configuração inicial preenche as duas pastas que ela cria, mas só quando estas configurações estão
+vazias.
 
 ## Planeje um livro no esboço
 
@@ -22,9 +103,9 @@ Romances/Meu Livro/Capítulos/01 Chegada.md
 Romances/Meu Livro/Capítulos/02 A porta fechada.md
 ```
 
-Rode **Criar um livro** (também há um botão num esboço vazio) para fazer um. Ele pergunta o título
-e a pasta e cria a nota do livro (no estágio de rascunho, com uma meta de 80.000 palavras e o
-prazo vazio), as pastas dele e, se a pasta ainda não tem capítulos, um primeiro capítulo. Rode
+Rode **Novo livro** (veja [Começar uma obra](#começar-uma-obra); também há um botão num esboço
+vazio) para fazer um. Ele cria a nota do livro, as pastas dele e, se a pasta de capítulos ainda
+não tem nenhum, um primeiro capítulo. Rode
 **Abrir esboço** para abrir o painel **Esboço** na barra lateral direita. Ele lista os capítulos do
 livro atual, cada um com número, título, status, resumo e tamanho, e o total do livro contra a meta
 dele. Se você tem vários livros, a lista **Livro** no topo escolhe um.
@@ -432,6 +513,8 @@ pasta, com o caminho embaixo do nome. A que você escolhe entra no cursor, ou no
   sobrescrito.
 - Tudo entra como uma única mudança, então um desfazer a desfaz.
 - Beats e marcadores num modelo funcionam normalmente depois de inseridos.
+
+Para começar uma nota nova a partir de um modelo, veja [Começar uma obra](#começar-uma-obra).
 
 Sem pasta de modelos definida, o comando avisa e oferece abrir as configurações. Se a nota mudar
 enquanto o modelo carrega, nada é inserido. A mesma pasta guarda os modelos que o universo usa
