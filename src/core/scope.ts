@@ -27,6 +27,7 @@
 // core/classify.ts imports this file at runtime (Placement.scope), so this file never
 // imports classify: inFolder and NO_SCOPE live here, and classify re-exports them.
 import { folderListOf } from "./lists";
+import { isUnder, noMd, withMd } from "./paths";
 
 export type ScopeKind = "none" | "book" | "universe";
 
@@ -76,13 +77,10 @@ export const NO_SCOPE: Scope = Object.freeze({ kind: "none", root: "", note: nul
 
 /** Whether `path` is `folder` itself or inside it. Slashes at the folder's edges are ignored, "" means the whole vault, case-sensitive. */
 export function inFolder(path: string, folder: string): boolean {
-  const f = folder.replace(/^\/+|\/+$/g, "");
-  return f === "" || path === f || path.startsWith(`${f}/`);
+  return isUnder(path, folder, { emptyMatches: true });
 }
 
 const trimSlashes = (p: string) => p.replace(/^\/+|\/+$/g, "");
-const withMd = (p: string) => (/\.md$/i.test(p) ? p : `${p}.md`);
-const noMd = (p: string) => p.replace(/\.md$/i, "");
 
 /** The link text of a property value: `[[A|b]]` and `[[A#h]]` → "A"; a plain string stays; the first non-empty item of a list. */
 export function linkText(value: unknown): string | null {

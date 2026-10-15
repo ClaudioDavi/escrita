@@ -4,11 +4,9 @@
 
 import type { Conflict, MigrationPlan, PlannedMove } from "./migration";
 
-export const basename = (path: string): string => path.slice(path.lastIndexOf("/") + 1);
-export const dirname = (path: string): string => {
-  const i = path.lastIndexOf("/");
-  return i < 0 ? "" : path.slice(0, i);
-};
+import { baseName as basename, parentOf as dirname } from "../core/paths";
+
+export { basename, dirname };
 
 export type PreviewRow =
   | { type: "move"; name: string; addType: string | null }

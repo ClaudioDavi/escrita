@@ -8,6 +8,7 @@ import {
   countIn, effectivePiece, noteProgress, parseUnit, readPiece,
   type ChapterDefault, type Counts, type Piece, type PieceUnit, type Progress,
 } from "../core/measure";
+import { noteName } from "../core/paths";
 import { isBlankBody } from "./beats-edit";
 import { readStatus, stageOf, type Stage, type StageMapping } from "../core/stages";
 import type { PovValue } from "./pov";
@@ -78,7 +79,7 @@ export async function loadRows<B>(port: RowsPort<B>, book: B): Promise<ChapterRo
     // a chapter renamed or deleted while rows load is skipped; the next refresh draws it
     let read: Awaited<ReturnType<typeof port.read>>;
     try { read = await port.read(ch.path); } catch { return null; }
-    const basename = ch.path.slice(ch.path.lastIndexOf("/") + 1).replace(/\.md$/, "");
+    const basename = noteName(ch.path);
     const fm = port.frontmatter(ch.path) ?? {};
     const status = readStatus(fm, s.statusProperty) ?? "";
     const own = readPiece(fm, s);

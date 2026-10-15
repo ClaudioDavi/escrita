@@ -16,17 +16,9 @@
 
 import { TFile, TFolder, normalizePath, type App, type TAbstractFile } from "obsidian";
 import { lookupPath } from "../core/classify";
+import { baseName, parentOf } from "../core/paths";
 import type { SnapshotFs } from "./store";
 import { isHiddenPath } from "./paths";
-
-function parentOf(path: string): string {
-  const i = path.lastIndexOf("/");
-  return i === -1 ? "" : path.slice(0, i);
-}
-
-function baseName(path: string): string {
-  return path.slice(path.lastIndexOf("/") + 1);
-}
 
 /** The file system for snapshots under `root`: the adapter for hidden folders, else the vault. */
 export function createSnapshotFs(app: App, root: string, ensureFolder: (path: string) => Promise<void>): SnapshotFs {

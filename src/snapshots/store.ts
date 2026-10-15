@@ -15,6 +15,7 @@
 // snapshots go to the trash, never a permanent delete.
 
 import { SerialQueue } from "../core/chapter-engine";
+import { parentOf } from "../core/paths";
 import {
   addEntry, fnv1a, latest, mergeIndexes, newestFirst, parseIndex, reconcile, removeEntry, sameText, serializeIndex,
   updateEntry, indexNote, AUTO_KINDS, type SnapshotEntry, type SnapshotIndex, type SnapshotKind,
@@ -85,11 +86,6 @@ function pathOf(ref: NoteRef): string {
 
 function join(dir: string, name: string): string {
   return `${dir}/${name}`;
-}
-
-function parentOf(path: string): string {
-  const i = path.lastIndexOf("/");
-  return i === -1 ? "" : path.slice(0, i);
 }
 
 function lowerSet(names: Iterable<string>): Set<string> {

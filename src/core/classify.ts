@@ -5,6 +5,7 @@
 // folder through `ChapterFs`; core/books.ts adapts the real vault to it.
 
 import { folderList, folderListOf } from "./lists";
+import { parentOf } from "./paths";
 import { effectivePiece, parseUnit, readChapterDefault, readPiece, type Piece, type PieceProperties, type PieceUnit } from "./measure";
 import { LANGUAGE_DEFAULTS, isDefaultsLanguage } from "./defaults";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, readStatus, stageOf, type Stage, type StageMapping } from "./stages";
@@ -361,11 +362,6 @@ export function placementPath(
   if (typeof x !== "string") return x?.path ?? null;
   if (x === "" || exists(x)) return x;
   return normalize(x);
-}
-
-function parentOf(path: string): string {
-  const i = path.lastIndexOf("/");
-  return i < 0 ? "" : path.slice(0, i);
 }
 
 /** The folders containing `path`, nearest first, never the root: "A/B/c.md" gives ["A/B", "A"], "c.md" gives []. */

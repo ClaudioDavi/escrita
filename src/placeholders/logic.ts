@@ -9,6 +9,7 @@
 import { parsePlaceholders, type PlaceholderMarker } from "../core/markers";
 import type { Markdown } from "../core/markdown";
 import { inFolder } from "../core/classify";
+import { parentOf } from "../core/paths";
 import type { IndexSpec } from "../core/vault-index";
 
 /** A placeholder with the exact source text it was parsed from. */
@@ -287,11 +288,8 @@ export function displayName(path: string): string {
   return base.replace(/\.md$/i, "");
 }
 
-/** Parent folder of a path ("" at the vault root). */
-export function parentPath(path: string): string {
-  const i = path.lastIndexOf("/");
-  return i === -1 ? "" : path.slice(0, i);
-}
+/** Parent folder of a path ("" at the vault root): core/paths' `parentOf`, kept under its old name. */
+export { parentOf as parentPath };
 
 // ---------------------------------------------------------------------------
 // The vault index spec
