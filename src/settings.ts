@@ -8,6 +8,7 @@ import { switchesOf } from "./core/feature-registry";
 import { defaultUniverseSettings, normalizeUniverse, type UniverseSettings } from "./universe/settings";
 import { DEFAULT_SNAPSHOTS_FOLDER, snapshotsRoot } from "./core/classify";
 import { isDefaultsLanguage, languageOf, overlayDefaults, type DefaultsLanguage } from "./core/defaults";
+import { cleanFolder } from "./core/paths";
 
 export type ParagraphStyle = "single" | "blank";
 export type Scope = "books" | "all";
@@ -19,6 +20,13 @@ export interface EscritaSettings extends UniverseSettings {
   chapterTemplate: string;
   /** folder of the notes offered by "Insert from a template"; empty = none */
   templatesFolder: string;
+  // New works (1.0.4, SF 14): where "New short story" and "New book" create, and the notes
+  // that replace their built-in templates. Empty folder = the active note's folder; empty
+  // template = the built-in one. Setup writes the folders it creates (PLAN-1.0.4 Q3).
+  storiesFolder: string;
+  storyTemplate: string;
+  booksFolder: string;
+  bookNoteTemplate: string;
   numberPadding: number;
   /** titles that never get a chapter number in export and the outline (comma or newline separated); empty = none */
   unnumberedTitles: string;
@@ -188,6 +196,10 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   chaptersFolder: "Chapters",
   chapterTemplate: "",
   templatesFolder: "",
+  storiesFolder: "",
+  storyTemplate: "",
+  booksFolder: "",
+  bookNoteTemplate: "",
   numberPadding: 2,
   unnumberedTitles: "Prologue, Preface, Foreword, Introduction, Interlude, Epilogue, Afterword",
   statusProperty: "status",
@@ -326,6 +338,8 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   // a blank scene break would vanish in the book: the default instead
   s.epubSceneBreak = (typeof s.epubSceneBreak === "string" ? s.epubSceneBreak.trim() : "") || DEFAULT_SETTINGS.epubSceneBreak;
   s.templatesFolder = typeof s.templatesFolder === "string" ? s.templatesFolder.trim().replace(/^\/+|\/+$/g, "") : "";
+  for (const k of ["storiesFolder", "booksFolder"] as const) s[k] = typeof s[k] === "string" ? cleanFolder(s[k]) : "";
+  for (const k of ["storyTemplate", "bookNoteTemplate"] as const) s[k] = typeof s[k] === "string" ? s[k].trim().replace(/^\/+/, "") : "";
   s.threadKeyword = (typeof s.threadKeyword === "string" ? s.threadKeyword.trim() : "") || d.threadKeyword;
   s.features = cleanFeatures(s.features);
   Object.assign(s, normalizeUniverse(s, d));
@@ -378,6 +392,7 @@ export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "a
   goalProperty: "always", povProperty: "always", chapterTargetProperty: "always",
   trackFolders: "always", excludeFolders: "always",
   templatesFolder: ["templates", "universe"],
+  storiesFolder: "always", storyTemplate: "always", booksFolder: ["outline"], bookNoteTemplate: ["outline"],
   homeNote: ["desk"], openHomeOnStartup: ["desk"], openInWritingMode: ["desk"],
   // shared core (it picks the fallback of every word-bearing setting); no row in 1.0
   defaultsLanguage: "always",

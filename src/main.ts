@@ -60,6 +60,9 @@ import { appearsStrings } from "./universe/strings-appears";
 import { SetupModule } from "./setup";
 import { setupStrings } from "./setup/strings";
 import { setupLayoutStrings } from "./setup/layout-strings";
+import { NewWorkModule } from "./new-work";
+import { newWorkStrings } from "./new-work/strings";
+import type { NewWorkStarter } from "./core/new-work";
 
 /** How long after a note is created before its status is checked: templates land first. */
 const DRAFT_DELAY_MS = 1500;
@@ -103,6 +106,8 @@ export default class EscritaPlugin extends Plugin {
   threads!: ThreadsFeature;
   /** "Set up a writing vault": a core module, always loaded (ARCHITECTURE.md, "Core modules"). */
   setup!: SetupModule;
+  /** "New work…": a core module, always loaded; others call it through this port (core/new-work.ts). */
+  newWork!: NewWorkStarter;
 
   /** Persist data soon; for frequent writes such as word tracking. */
   requestSave = debounce(() => { void this.persist(); }, 2000, true);
@@ -113,7 +118,7 @@ export default class EscritaPlugin extends Plugin {
       exportStrings, submissionsStrings,
       explorerStrings, snapshotsStrings, deskStrings, lensStrings,
       universeStrings, universeViewStrings, universeCreateStrings, universeMigrateStrings, appearsStrings,
-      setupStrings, setupLayoutStrings,
+      setupStrings, setupLayoutStrings, newWorkStrings,
     ]) {
       registerStrings(s);
     }
@@ -176,6 +181,9 @@ export default class EscritaPlugin extends Plugin {
     // Core modules: after the switches are applied, so they can read features.isOn.
     this.setup = new SetupModule(this);
     startCoreModule(this, this.setup);
+    const newWork = new NewWorkModule(this);
+    this.newWork = newWork;
+    startCoreModule(this, newWork);
 
     // Obsidian builds the tab's rows here and on its update() only: a change of the loaded features
     // or the switches rebuilds them (PLAN-1.0.3 Q5).

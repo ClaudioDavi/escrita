@@ -163,5 +163,9 @@
   "unpublishedValue": "pronto",
   "publishFolders": "Contos\nTextos",
   "slugProperty": "slug",
-  "keepUrlOnRename": true
+  "keepUrlOnRename": true,
+  "storiesFolder": "",
+  "storyTemplate": "",
+  "booksFolder": "",
+  "bookNoteTemplate": ""
 }

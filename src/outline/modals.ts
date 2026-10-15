@@ -1,29 +1,6 @@
-import { AbstractInputSuggest, App, Modal, Setting, TFolder } from "obsidian";
+import { App, Modal, Setting } from "obsidian";
+import { FolderSuggest } from "../ui/suggest";
 import { t } from "../i18n";
-class FolderSuggest extends AbstractInputSuggest<TFolder> {
-  constructor(app: App, private input: HTMLInputElement) {
-    super(app, input);
-  }
-
-  getSuggestions(query: string): TFolder[] {
-    const q = query.toLowerCase().trim();
-    return this.app.vault.getAllLoadedFiles()
-      .filter((f): f is TFolder => f instanceof TFolder && !f.isRoot())
-      .filter((f) => f.path.toLowerCase().includes(q))
-      .sort((a, b) => a.path.localeCompare(b.path))
-      .slice(0, 50);
-  }
-
-  renderSuggestion(folder: TFolder, el: HTMLElement): void {
-    el.setText(folder.path);
-  }
-
-  selectSuggestion(folder: TFolder): void {
-    this.setValue(folder.path);
-    this.input.dispatchEvent(new Event("input"));
-    this.close();
-  }
-}
 
 /** Title + parent folder for a new book. */
 export class CreateBookModal extends Modal {
