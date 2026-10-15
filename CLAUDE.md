@@ -56,6 +56,15 @@ they travel with the repo). Dates are when each was said.
   checks pass. Never `git worktree remove --force` before `git status` is clean there: a
   force-remove once destroyed uncommitted work.
 
+## The test vault
+
+- **`~/Projects/escrita-test/`** is a vault just for trying Escrita out (2026-10-15). Its
+  `.obsidian/plugins/escrita/` holds symlinks to the repo's `main.js`, `manifest.json` and
+  `styles.css`, so it always runs the last build. Keep it updated with every release: after
+  `npm run build` for a release (and before the author's by-hand checks), make sure the links
+  are still there and point at this repo; reloading the plugin in Obsidian picks up the new
+  build. It is a scratch vault: never put the author's writing in it.
+
 ## Reading Obsidian's real behavior
 
 The author's Obsidian is a flatpak. Its app code is in
