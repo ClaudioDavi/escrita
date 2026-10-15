@@ -55,6 +55,7 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 0.8.0 | Submissions (12), with export (novel roadmap, 7) | S | Shipped |
 | 0.9.0 | Collections of contos, exported as one file (13) | M | Shipped |
 | 1.0 | Set up a writing vault and presets (10) | S | Shipped |
+| 1.0.4 | Start a new work: "New short story" and "New book" (14) | S–M | Planned |
 
 Sections keep their original numbers so references from the other roadmaps stay valid.
 
@@ -890,6 +891,71 @@ title, with the collection's title page.
 - **Not a book**: no outline, no "Read the book", no serial publishing; a work only by the usual rule.
 - Open for the author: the title starts empty; a mixed selection of notes and other files doesn't
   offer the menu item.
+
+---
+
+## 14. Start a new work (v1.0.4, planned; mockups approved 2026-10-15)
+
+**Why.** Asked for by the author on 2026-10-14. To start a conto today the writer makes a
+note by hand and fills its properties, or relies on the draft status that a tracked folder
+adds on its own. "Create a book" exists, but it is hidden in the outline, and the book
+note it writes has properties and no body. No template ships: the templates folder and the
+chapter template are empty by default. The writer should be able to say "new conto", type a
+title, and be in the prose.
+
+**Stage and upkeep.** Serves the idea and draft stages. No upkeep: the templates are built
+in, in the defaults language (`core/defaults.ts`), and read the writer's property names and
+status words from settings (rule 6).
+
+**What it does.** Mockups: boards 41 and 42 on the design canvas, approved 2026-10-15.
+
+- **Commands**: "New work…" (pt-BR "Nova obra…"), the one to reach for in the palette: it
+  opens a short list, "Short story" and "Book" (pt-BR "Conto", "Livro"), and the chosen one
+  goes on to the modal below. "New short story" and "New book" go straight to the modal, for
+  a hotkey. No default hotkeys. "New book" replaces the name of "Create a book", and its
+  command id `create-book` stays (writers' hotkeys point at it).
+- **The list** ("What are you writing?") shows each kind with a grey line saying where it
+  goes, read from settings. With the outline off, "Book" is left out and the list still opens.
+- **One small modal** for both: title, folder (with folder suggestions), a "Template" line
+  that only says which template applies ("Built-in" or the note's path), Create. Focus starts
+  on the title; Enter creates. The folder starts at the setting for that kind of work
+  ("Short stories folder", "Books folder"; empty means the active note's folder, as
+  "Create a book" does today).
+- **A conto is one note**, `<folder>/<title>.md`, never a folder. Built-in template: the
+  status in the draft stage, the form (`formValues.shortStory`, in the form property), an
+  empty target and deadline, and one ghost beat in the body ("What happens first" /
+  "O que acontece primeiro"), with the cursor on the line after it. The target starts empty
+  (decided 2026-10-14): a blank field in Properties to fill, and the conto is not a piece,
+  with no bar or pacing, until it has a number.
+- **A book** is what "Create a book" makes today, plus a body for the book note from the
+  built-in book template: two headings, "Premise" and "Characters" ("Premissa",
+  "Personagens"), each with a hint in a `%% %%` comment. The first chapter uses the
+  chapter template and opens with the cursor after its beat; the outline opens beside it.
+  Its `goal` starts empty too, instead of today's 80,000 (`NEW_BOOK_GOAL`): no work starts
+  with a number the writer didn't choose. A change in behavior, named in the changelog.
+- **The home block** gets a quiet footer line under the works list, always shown:
+  "+ New short story · + New book" (decided 2026-10-14). "New book" is hidden when the
+  outline feature is off; the desk checks `features.isOn`, never imports the outline.
+- **Settings**, a new section "New works" ("Novas obras"): Short stories folder, Short
+  story template, Books folder, Book note template. The folder rows suggest folders, the
+  template rows suggest notes; all four are in settings search.
+- **Templates you own (optional)**: when "Short story template" or "Book note template" is
+  set, that note is filled with `core/template.ts` (`{{title}}`, `{{date}}`, `{{time}}`)
+  instead of the built-in one. If it has no status, the draft word is added, so the new work
+  is a work at once. If the note is missing, the built-in template is used and a notice says
+  so.
+- **Notices**: the path already exists (nothing is touched), no title, template not found.
+- **After creating**, the note opens with the cursor at the start of the prose (after the
+  beat). Nothing is ever overwritten: an existing path stops with a notice
+  (`notes.create`, `exists: "fail"`), the same as "Create a book".
+
+**How it's built**: `docs/PLAN-1.0.4.md` (a core module, `src/new-work/`, behind a core
+port the desk calls; setup writes the folders it creates into the new settings).
+
+**Done when** "New work…" lists both kinds and goes on to the chosen one; "New short story", with a title and the default settings, makes a note that
+classifies as a work in the draft stage with its form, opens it with the cursor in the
+prose, and never touches an existing file; "New book" does the same for a book with its
+first chapter; a template note set in settings replaces each built-in one; English and pt-BR.
 
 ---
 

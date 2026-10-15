@@ -46,7 +46,21 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 | 1.0.2 | Escrita is in the community plugins list: install links in the README and the guides, "short story" for "conto" in the English docs. No change in behavior |
 | 1.0.3 | Settings search: Escrita's rows appear in Obsidian's settings search, through the declarative settings tab (PLAN-1.0.3) · Minimum Obsidian 1.13.0 · Fixes from the community review: no `display()`, no deprecated `setWarning`, a `moment` wrapper · Improvements: settings rows with fallbacks from the install's defaults (candidate 36) and the settings tab on the declarative settings API (candidate 51) |
 
-## Next: 1.1, screenwriting (phase 1)
+## Next: 1.0.4, start a new work
+
+Plan: [PLAN-1.0.4.md](PLAN-1.0.4.md) (written 2026-10-15; mockups approved, boards 41–42), from [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md),
+section 14. Asked for by the author on 2026-10-14: nothing took a writer from "new conto" to
+writing prose. Serves the idea and draft stages. Upkeep: none; the templates are built in,
+and a note of the writer's own replaces one only when a setting points to it.
+
+| Feature | Ref | Effort | Note |
+|---|---|---|---|
+| "New work…" (pick short story or book), "New short story", "New book": a title, a folder, a filled template, then the cursor in the prose; both in the home block's footer | SF 14 | S–M | Mockups first (rule 7) |
+
+**Improvement:** path helpers in core (candidate 33). The new commands join and clean
+folder paths, as `makeBook` already does by hand.
+
+## Then: 1.1, screenwriting (phase 1)
 
 Plan: to write (`PLAN-1.1.md`), from [ROADMAP-screenplay.md](ROADMAP-screenplay.md).
 
