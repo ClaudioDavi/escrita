@@ -370,15 +370,209 @@ modal (boards 43 and 44), the "Screenplays" settings group, and `frontPages` thr
 `screenplays` fixtures, 0.9's G0d, known issue 1, `screenplay.spec.ts`, and test 11b once the
 author decides.
 
+### Wave 2 (2026-10-16)
+
+Six tasks merged into `1.1` with `--no-ff` in this order: P (`9094911`), I (`23e65d0`), G (`151ecd6`),
+F (`dd223f9`), H1 (`8dcc579`), H2 (`d384391`); then the merge fixes (`ecb2d29`), task J's spec
+(`3ef7a56`) and the judge fixes (`2dec6d7`). One conflict: `tests/settings-tab.test.ts`, the
+expected headings, where both new groups were kept.
+
+**F, screenplay export (`3b6f8ba`).** `export/writers/table.ts` (`WRITERS`, prose or script per
+format) replaces the ternary in `write()`. `writers/fountain.ts` inverts the parser and checks
+each forced mark with the parser itself; `writers/pdf.ts` is a thin call to `screenplayPdf`.
+`export/screenplay.ts` builds the title page (`screenplayTitlePage`) and adds the script, the
+notes and the pages to the build (`withScreenplay`), with the `unsupported` warning for a PDF.
+`export/script-preview.ts` draws the pages from `paginate`. The modal (576 to 654 lines) has the
+Page chips, "Scene numbers" and "Keep notes", the where line and the notice of board 43; the
+"Screenplays" group has the nine rows of board 44 b. `frontPages` reads through `propertyValue`.
+New tests: `export-fountain` (14), `export-screenplay` (19), `lifecycle-export-screenplay` (12).
+
+- The `Title:` block's credit never wins, because the setting is never empty. Accepted (the Wave 1
+  decision: the credit is the setting).
+- An inline `%%` note becomes its own `[[note]]` paragraph before its block. Accepted.
+- Escrita's parser reads a `[[note]]` back as link text, so notes are not part of the round trip.
+  Accepted: there is no Fountain import in 1.1.
+
+**G, form and universe (`86adca3`).** The universe reads `classify().form` (`worksIn`, the labels).
+The three form rows are a "Forms" group after Books, always drawn, with their strings moved to
+core (`settings.forms`, `settings.form*`); `SETTING_FEATURES` marks them `always`. Cues count in
+mentions (Q8): `computeMentions(md, find, cues)` adds a cue that the matcher takes whole, unless
+the prose matcher or a link already covers it, so a cue is never counted twice. The mentions
+index gets `formOf` and re-indexes when the screenplay words change. "Roteiros" is the Works
+tab's seventh group.
+
+**H1, TEST-1.0 and G2c (`3df3558`, `1e90742`, `3ddb9ff`).** Seven specs: `features-presets`,
+`writing-mode`, `release-fixes`, `demo-findings`, `phone`, `author-vault`, `beat-click` (68
+tests). Helpers in `e2e/lib/more.ts`, the `world()` fixture, and `VaultSpec.copyFrom` (a read-only
+recursive copy). TEST-1.0 has a pointer under each section.
+
+**H2, TEST-0.9 and G0d (`d2a1ef2` to `77d7061`, nine commits).** Nine specs (`unlinked`, `names`,
+`epub`, `collections`, `publish-next`, `read-book`, `scope`, `switches`, `appears-in-reading`; 96
+tests), the `long-book` fixture (31 chapters, 90,951 words, seeded), `world-09`, and the helpers
+`measure.ts` (`timeToFirstText`, a CDP `Trace`, `scrollToEnd`), `panels.ts`, `export-ui.ts`,
+`zip-read.ts`. Where TEST-0.9's wording differs from the code, the specs assert the code, with a
+comment at each (four places, for Wave 3).
+
+**I, setup run again (`996367b`).** `planCounts` leaves the layout row out of `available` while it
+is unticked by default and the writer has not ticked it. A set-up vault says "nothing to do"
+(board 36 b); test 11b passes. It covers the `layoutTabs` reason too. Accepted.
+
+**J, screenplay e2e (`3ef7a56`).** `e2e/specs/screenplay.spec.ts` (10 tests) and
+`e2e/fixtures/screenplays.ts`: the formats, the file names, `pdfinfo` page sizes and Courier
+fonts, the page remembered per work, the `Title:` block and "Keep notes", the `★` warning, the
+preview's `(MAIS)` and `(CONT.)`, the nine pt-BR rows, the export switch.
+
+**P, pagination check (`5416dda`).** Escrita does not count a line too many: 55 rows on Letter,
+57 on A4, the same arithmetic as Afterwriting. Two real bugs fixed in `core/screenplay-pages.ts`: a
+scene heading could be left alone above a short action or a speech with no sentence end
+(`minLead`), and `HARRY (V.O.) (CONT'D)` printed the label twice. The compare script gained
+`ESCRITA_COMPARE_TRIM` and `ESCRITA_COMPARE_AW_COLUMNS`.
+
+**Merge fixes (`ecb2d29`).** H2 committed its worktree's `node_modules` symlink (`77d7061`); the
+merge replaced the main checkout's `node_modules` with a link to itself. The merge was amended to
+drop it, `node_modules` reinstalled with `npm ci`, and `.gitignore` now says `node_modules` (a file
+or a folder). Branch `1.1-w2-h2` still holds the symlink: delete it after its worktree, never
+check it out in the main checkout.
+
+**Judge fixes (`2dec6d7`).**
+
+- Centered lines with no blank between are one centered block (`core/fountain.ts`), and the
+  Fountain writer writes each line as `> … <`. Brick & Steel on Letter now matches Afterwriting.
+- A `forms` slot in `core/settings-order.ts`, after `dayEnds`, replaces G's trick of returning the
+  Forms group from the writing-day slot.
+- `LastExport` gains `pages` and `sceneNumbers` (`data.ts`, kept by `cleanLast`), so a PDF's page
+  count no longer rides in `chapterCount` and "Export again" repeats a numbered PDF.
+- Title page rows carry `TITLE_PAGE_LINE` (-1) in `core/screenplay-pdf.ts`: a character Courier
+  can't print in the title, author or contact is named in the warning, with no "line 1" link.
+- Progress chart (`goals/progress-modal.ts:374`): `is-met` is its own class. Obsidian adds an SVG's
+  `cls` with `classList.add`, which threw on the space, so the chart was missing for anyone who
+  had met a goal (a 1.0 bug, found by H1).
+- Create entry from selection (`universe/create.ts` `openBeside`): Obsidian 1.14 brings the new tab
+  to the front whatever `active` says, so the chapter's leaf is revealed and made active again.
+- Read the book (`outline/reader-view.ts` `refreshDirty`): the text in view is kept by a measured
+  anchor, the first block at the top of the window, found again after the redraw by its text
+  (`anchorAfterEdit` in `reader-model.ts`, tested). The old code added the height change after
+  Chromium's scroll anchoring had made it (test 8, a jump of twice the change). With 8 fixed, test
+  8b showed the other case, an edit in the chapter being read: its blocks are all replaced, so
+  Chromium's anchor was lost and the text jumped by the change. Both pass now.
+- `setCssProps` stubbed in `tests/support/dom-setup.ts`. `docs/TESTING.md` lists every spec, the
+  new helpers and the `stages` lesson for fixtures.
+- Afterwriting's `liner.js` in `~/.cache/escrita-e2e/` restored from P's copy (it had P's debug
+  lines).
+
+**Decisions on the handoffs.**
+
+- Cue extensions stay one string in the `Script` model; `cueTextOf` prints `(V.O.) (CONT'D)` as two
+  groups. A list type is not worth a model change in 1.1.
+- Scene numbers and "Keep notes" are not remembered per work in `ExportChoice`: scene numbers
+  start from the setting, and a last PDF export keeps its own. "Keep notes" starts off each time.
+- The unlinked list reads the prose matcher only (no cues): a cue is plain text the prose matcher
+  sees already.
+- Known issue 1 (beat click and the restored cursor) is closed, not a bug: the cursor lands on the
+  beat in all three ways H1 tried. `beat-click.spec.ts` stays as the regression check.
+- 0.7's G0d is closed as decided (Q12): Reading view shows the panel only.
+  `appears-in-reading.spec.ts` checks it across 5 toggles, a split and a 200-line entry.
+- G0d's 20 ms bar (below): accepted at 30 ms for "Read the book". The longest task is the
+  renderer's chapter draw (about 44 blocks), measured with a trace running; no frame is dropped
+  and nothing reaches 50 ms. Splitting a chapter's draw across frames is not worth it now.
+- The reader's startup race (a `compile: false` chapter included when Read the book runs before
+  the metadata cache is ready) goes to IMPROVEMENTS as a candidate (rebuild on the cache's
+  `resolved`), not 1.1.
+- TEST-0.9's text is fixed in Wave 3 in the four places H2 listed.
+
+**Page breaks** (task P's comparison, decided; each pinned in `tests/screenplay-pages.test.ts`,
+"reference differences, decided"):
+
+| Cause | Where it shows | Decision | Reason |
+|---|---|---|---|
+| R1, dialogue splits at a sentence end (ours) or at any line (Afterwriting) | my_living_memory Letter 8, 11; A4 14; en-short A4 4 | Keep ours | SP 6 and Final Draft's rule: a speech breaks after a sentence. Confirmed again at G2. |
+| R3, columns: action 60 (A4 57), dialogue 35 from 25, cue at 37; Afterwriting 61, 36, 35 | pt-short Letter 3–5, en-short 3, most of my_living_memory | Keep ours | US industry layout: 1.5" left and 1" right margins give 6.0" of action; cue at 3.7". |
+| R4, consecutive `> x <` lines | Brick & Steel Letter 4 | Follow theirs (fixed) | The lines are one centered block; blank rows between them were ours alone. |
+| R5, a trailing space wraps a full-width line onto an empty one | my_living_memory Letter 4–6 | Keep ours | An Afterwriting artifact; trailing spaces are not text. |
+| An indented `CUT TO:` is action (ours, Q6) or a transition (Afterwriting) | Brick & Steel A4 3, 4 | Keep ours, ask the author | Q6 made an indent action. Fountain's spec says leading spaces are ignored outside action, which would make it a transition: a question for G2. |
+| Cascades of the above | the rest of each list | Keep ours | No rule of their own. |
+
+The comparison after the judge fixes (`scripts/compare-screenplay.mjs`, Afterwriting 1.17.3; page
+counts include the title page; Wave 1's numbers in brackets):
+
+| Fixture | Letter: Escrita / Afterwriting | Letter: pages that start differently | A4: Escrita / Afterwriting | A4: pages that start differently |
+|---|---|---|---|---|
+| en-short | 5 / 5 | 1 (1) | 5 / 5 | 3 (3) |
+| pt-short | 5 / 5 | 3 (3) | 5 / 5 | 0 (0) |
+| brick_and_steel | 4 / 4 | 0 (1) | 4 / 4 | 2 (1) |
+| my_living_memory | 16 / 16 | 9 (9) | 16 / 15 | 9 (9) |
+| printing_trouble | 12 / 12 | 0 (0) | 12 / 12 | 0 (1) |
+
+Brick & Steel A4 gains a page: the indented `CUT TO:` now starts page 3, and page 4 follows from
+it. It goes if the author picks the spec's reading of indents.
+
+**Checks** (main checkout, after the judge fixes): typecheck, vitest 231 files with 3765 passed and
+2 skipped (14.2 s), the timing project 10 passed and 1 skipped, build, `test:bundle` 4 passed, lint,
+`npx tsc -p e2e`. The test vault's three links still point at this repo's build.
+
+**e2e** (`npx playwright test`, once after the judge fixes, 12:38 to 12:46): 204 tests, 199 passed
+in 7.9 min, 1 failed and 4 did not run after it. No `test.fail()` is left: the three findings
+(17, 16 and read-book 8) are fixed and pass, and so does 8b. The failure was
+`release-fixes.spec.ts:133` (the darlings editor did not show the first cut within 8 s); the file
+then passed alone, 9 of 9 in 32 s. A flake to watch, not a known bug. Time inside tests per file
+(launches not included): read-book 83.7 s, demo-findings 61.4 s, appears-in-reading 33.1 s, phone
+23.1 s, names 20.8 s, setup 20.3 s, release-fixes 16.4 s (5 of 9 tests), scope 14.0 s, unlinked
+11.2 s, author-vault 9.6 s, collections 7.4 s, switches 5.6 s, publish-next 5.0 s, epub 4.8 s,
+new-work 3.9 s, screenplay 3.5 s, beat-click 3.4 s, writing-mode 3.1 s, features-presets 1.4 s.
+Wall time with launches, from the tasks' own runs: demo-findings 125 s, read-book 84 s, phone
+38–51 s, appears-in-reading 38 s, release-fixes 32 s, names 26 s, author-vault 25 s, scope 19 s,
+unlinked 16 s, collections 13 s, switches 11 s, publish-next 9 s, epub 9 s, writing-mode 9 s,
+beat-click 8 s, screenplay 8 s, features-presets 7 s.
+
+**G0d (0.9, "Read the book" on `long-book`: 31 chapters, 90,951 words).** First text on screen
+from the command: 8 to 18 ms (median 16.1 and 9.8 ms in two full runs); painted 29 to 60 ms.
+Longest main-thread task while dragging to the end in about 5 s: 22.9 to 28.4 ms over six runs, 6
+to 11 tasks of 20 ms or more per pass, none of 50 ms; the widest gap between frames 16.8 ms (one
+run had one of 33.3 ms). At reading pace (120 px per frame, 26 s): 24.2 and 26.6 ms. Typing in a
+3,000-word chapter with the lens off: longest task 7.5 to 9.6 ms. The bars: first text under 500
+ms, passed; the 20 ms task bar missed by 3 to 8 ms, accepted at 30 ms (decisions).
+
+**G2c (the author's vault, on a copy).** `author-vault.spec.ts` copies `~/Projects/website/escrita`
+(13 MB) into the run folder, hashes the source before and after (unchanged), and runs G2c 1 to 6.
+The setup in the copy leaves `data.json`'s `settings` deep-equal to the source's (G3 holds).
+"Abrir a nota inicial ao iniciar" shows "Já está assim" because it is already on, not unticked as
+TEST-1.0 says. The forms text has `screenplay` added, and the closed thread word is the author's
+`fechado`.
+
+**For Wave 3.**
+
+- The user guide, English and pt-BR: `screenplays.md` (the form, Fountain in a note, the export,
+  the warnings, "Keep notes", the "Screenplays" settings), "Publishing" pointing to it, and the
+  upgrade note: the form rows moved from Universe to a "Forms" group after Books.
+- README: the feature line and the changelog, with that upgrade note and the 1.0 fixes (the
+  Progress chart, the entry tab, the reader's jump).
+- `docs/ARCHITECTURE.md`: `core/form.ts`, `fountain.ts`, `screenplay-pages.ts`, `pdf.ts`,
+  `screenplay-pdf.ts`, `screenplay-presets.ts`, `export-formats.ts`; `export/writers/table.ts`,
+  `fountain.ts`, `pdf.ts`, `screenplay.ts`, `script-preview.ts`; the `forms` slot; cues in mentions;
+  the harness. `CONTEXT.md`: the 1.1 line, `form` in the classifier, the harness in "Working
+  process".
+- `docs/IMPROVEMENTS.md`: 46 and the five known issues to "Done" (issue 1 closed, not a bug); a
+  candidate for the reader's startup race.
+- `docs/ROADMAP.md`: SP 1 and SP 6 shipped, G0d's numbers, 0.7's G0d closed, "Still open after 1.0"
+  cleared. TEST-0.9's text in the four places H2 listed.
+
 ## By-hand checks (G2)
 
-What stays by hand is short, and most of it is reading the harness's screenshots:
+The harness runs everything a script can see (204 tests). What is left for the author:
 
-1. The screenshots in the Playwright report: the setup steps, writing mode, the export modal
-   for a screenplay, light and dark.
-2. A PDF of the Portuguese fixture and of *Brick & Steel*, opened in a PDF reader: Courier,
-   page numbers, `(MAIS)` and `(CONT.)` where a speech breaks.
-3. The author's user tries a short film of their own and says whether it is what they submit.
+1. **The pictures** in the Playwright report (`npm run e2e`, then `e2e/report/`): the screenplay
+   modal, the warning and the preview against board 43; the Screenplays and Forms groups against
+   board 44; the setup steps; writing mode; the Progress chart's colours (demo finding 16); light
+   and dark.
+2. **A PDF in a reader app:** the Portuguese fixture and *Brick & Steel*, on Letter and A4:
+   Courier, page numbers from page 2, `(MAIS)` and `(CONT.)` where a speech breaks, the title page.
+3. **Two pagination calls:** a long speech with no sentence end moves whole to the next page
+   (R1, kept), and an indented `CUT TO:` is action (Q6) where Fountain's spec would make it a
+   transition. Keep Q6, or follow the spec?
+4. **By eye, as before:** writing mode with a third-party theme (Typewriter, Minimal, zen; demo
+   findings 1 and 6). Phone checks stay waived.
+5. **The author's user** tries a short film of their own and says whether the PDF is what they
+   submit.
 
 ## Risks
 
