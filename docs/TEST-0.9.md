@@ -491,7 +491,9 @@ Board 34. Guide: [Publishing, "Export a collection of stories"](guide/en/publish
      overwritten. Delete the second.
 6. Open the collection note and run **Exportar…**.
    - Expected: the line "Coleção: 3 contos" [Collection: 3 stories], a **Contos** [Stories] row
-     instead of Capítulos (Todos, Do … ao …, Escolher…), and no **O quê** [What] row.
+     instead of Capítulos (Todos, Do … ao …, Escolher…). The **O quê** [What] row is there too, but
+     it only states what the collection is (the "Coleção: 3 contos" line): no **Este capítulo** or
+     **O livro inteiro** choice.
 7. Choose **DOCX**, template **pt-BR**, and export. Open it:
 
    ```bash
@@ -509,8 +511,8 @@ Board 34. Guide: [Publishing, "Export a collection of stories"](guide/en/publish
    - Expected: the cover and the dedication page, from the collection note.
 10. **Edge case, a dangling link.** Add a line `- "[[Conto que não existe]]"` to `contents`.
     Open the export window.
-    - Expected: "Coleção: 3 contos"; **Antes de enviar** says "Conto não encontrado: Conto que
-      não existe. Fica de fora."; the button reads **Exportar mesmo assim**. Export: the
+    - Expected: "Coleção: 3 contos"; **Antes de enviar** says "Conto não encontrado: [[Conto que
+      não existe]]. Fica de fora." (the brackets are part of the text); the button reads **Exportar mesmo assim**. Export: the
       three real contos only.
 11. **Edge case, a reordered list.** Move `Sal` to the top of `contents` and export.
     - Expected: Sal comes first in the file.
@@ -544,7 +546,8 @@ Board 32. Guide: [Publishing, "Publish a book one chapter at a time"](guide/en/p
 4. Press **Publicar o próximo** twice more, publishing 02 and 03.
    - Expected: each opens the next chapter first. The line ends at "Próximo: 04 A escada".
 5. **Edge case, a gap.** Open `05 O porão` and run **Publicar esta nota** [Publish this note].
-   - Expected: a warning "Capítulo anterior não publicado: 04. Quem lê pularia um capítulo."
+   - Expected: a warning "Capítulo anterior não publicado: 04 A escada. Quem lê pularia um capítulo." (the
+     chapter is named with its title, like the "Próximo" line)
      It is a warning: the button is still **Publicar**, with no "mesmo assim" tick. Publish.
    - Expected in the header: "Lacuna: 04 · Próximo: 04 A escada · último publicado em 7 out"
      (the gap first, board 32b).
@@ -622,7 +625,9 @@ IMPROVEMENTS 9 moved scope into the classifier. Nothing should look different.
    - Expected: the **Aparece em** numbers you wrote down, plus three works from the test notes:
      O farol apagado, Sal and Livro Longo (chapter 03). Maré doesn't name him.
 2. The **Obras** tab.
-   - Expected: what you wrote down, plus the test contos and the two test books.
+   - Expected: what you wrote down, plus the test contos and the test book **Livro Vazio**. **Livro Longo** is not
+     listed: its note has no `status`, and a book is a work only when its status is a known stage.
+     To see it there, give `Livro Longo.md` a `status: rascunho`.
      `Textos/Noite.md` is not there (`universe: false`).
 3. In `Textos/Noite.md`, remove `universe: "false"`.
    - Expected: it joins the Works tab within a few seconds, without a restart. Put it back: it

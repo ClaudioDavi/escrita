@@ -61,7 +61,7 @@ Each part is a switch on the Features page, so you can turn off what you don't u
 
 ![Revising a chapter: the revision lens underlines echoes and a misspelled name, a paragraph goes to the darlings, and the chapter is compared word by word with its first draft.](docs/images/revision-lens.gif)
 
-**Publishing.** The publish check looks for open comments, placeholders and unwritten beats before you mark a note published. Export writes Markdown, DOCX or EPUB (Shunn and pt-BR templates), for a note, a book or a collection of short stories. Submissions record where a work was sent and what came back. Guide: [English](docs/guide/en/publishing.md) · [Português](docs/guide/pt-BR/publishing.md).
+**Publishing.** The publish check looks for open comments, placeholders and unwritten beats before you mark a note published. Export writes Markdown, DOCX or EPUB (Shunn and pt-BR templates), for a note, a book or a collection of short stories. A screenplay, a note written in Fountain, exports as a PDF (US Letter or A4) or as a Fountain file. Submissions record where a work was sent and what came back. Guide: [English](docs/guide/en/publishing.md) · [Português](docs/guide/pt-BR/publishing.md). Screenplays: [English](docs/guide/en/screenplays.md) · [Português](docs/guide/pt-BR/screenplays.md).
 
 ![Publishing a chapter: "Publish next chapter" stops on a placeholder, the line is written and the chapter published, then the book is exported as an EPUB with a preview.](docs/images/publish-and-export.gif)
 
@@ -94,6 +94,27 @@ To try your build, link or copy the repository folder into a test vault's `.obsi
 To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updates `manifest.json` and `versions.json`), commit, then push a tag with the bare version number (for example `git tag 0.1.1 && git push --tags`). The release workflow builds the plugin and drafts a GitHub release with `main.js`, `manifest.json` and `styles.css`; publish the draft when it looks right.
 
 ## Changelog
+
+### 1.1.0 (unreleased)
+
+You can write a screenplay in a note and export it as a PDF.
+
+- **Screenplays**: a note whose form is `screenplay` (the form property, or a form by folder) is read as Fountain: scene headings, action, character cues, dialogue, parentheticals, transitions and centered lines. An indented line is action, so a tab-indented `CUT TO:` stays action. **Export…** writes a PDF (US Letter by default, or A4) or a Fountain file. A preview shows the pages before anything is written. A PDF is set in Courier 12, with a title page, page numbers from page 2 and, when a speech breaks across pages, the `(MORE)` and `(CONT'D)` labels (`(MAIS)` and `(CONT.)` in Portuguese). A speech splits across pages only at the end of a sentence; otherwise it moves whole to the next page. There is no automatic `(CONT'D)` between speeches and no `CONTINUED:` marks. The window offers **Scene numbers in the margins** and **Keep the %% … %% notes as Fountain notes**, and warnings (such as a character Courier can't print) link to their lines. Books and collections stay prose, even if they hold screenplay notes. See [Screenplays](docs/guide/en/screenplays.md).
+- **Screenplays settings**: a group in the Export settings with the scene heading prefixes, the transition endings, the page size, scene numbers, the continues and continued labels, the credit line, the source property and the draft date property.
+- **The form outside the universe**: the form property, the form values and the form by folder now apply with the universe off. `screenplay` is the seventh form value; a saved list of six values gains it on its own. The Works tab has a seventh group for screenplays.
+- **Cues in "Appears in"**: with the universe on, a character cue in a screenplay counts as a mention of that character.
+- **Setup run again**: running **Set up a writing vault** in a vault that is already set up says there is nothing to do.
+- **Fixes**:
+  - The Progress chart was missing for anyone who had met a goal (a bug since 1.0).
+  - **Create entry from selection** on Obsidian 1.14: the new tab no longer hides the chapter you were reading.
+  - **Read the book** no longer jumps when you edit above the part in view or in the chapter you are reading.
+  - "Appears in" reads chapter numbers the same way as the rest of Escrita, so `3Title` and `03) X` have no number.
+  - The cover property is read ignoring case, like `Compile:`.
+  - The templates folder and the global darlings note follow renames, also while their feature is off.
+  - The notice about the submissions feature being off now comes in your language.
+- Upgrade notes:
+  - The form rows (**Form property**, **Form values**, **Form by folder**) moved from the Universe section to a new **Forms** group after Books. It is always shown. Nothing you saved changes.
+- Improvement: the export writers share the title page and the export window's small dialogs moved out of it (candidate 46).
 
 ### 1.0.4 (2026-10-16)
 
