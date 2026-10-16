@@ -1,3 +1,26 @@
+> **Automated (1.1):** the feature sections of this page run as end-to-end specs (`npm run e2e`, see
+> [TESTING.md](TESTING.md)), on a fixture vault built from the notes in "Make the test notes"
+> (`e2e/fixtures/world-09.ts`, and `e2e/fixtures/long-book.ts` for the 30-chapter book). The steps
+> below stay as the description of each check; the specs are where they run:
+>
+> | Section | Spec |
+> |---|---|
+> | Unlinked mentions | `e2e/specs/unlinked.spec.ts` |
+> | Names without an entry | `e2e/specs/names.spec.ts` |
+> | EPUB | `e2e/specs/epub.spec.ts` |
+> | Collections | `e2e/specs/collections.spec.ts` |
+> | Publish next chapter | `e2e/specs/publish-next.spec.ts` |
+> | Read the book, and G0d (the timings) | `e2e/specs/read-book.spec.ts` |
+> | Scope and no-regression checks | `e2e/specs/scope.spec.ts` |
+> | Feature switches on and off | `e2e/specs/switches.spec.ts` |
+> | 0.7's G0d, closed as decided (Reading view shows the panel only) | `e2e/specs/appears-in-reading.spec.ts` |
+>
+> What stays by eye: reading an EPUB in Calibre or Apple Books, a DOCX in LibreOffice or Word,
+> the visual match against the design canvas, light and dark themes, and the Git and backup
+> steps of "Before you start" (the specs use a throwaway vault, not yours). Where a step's text
+> differs from what the code does, the spec says so in a comment; the differences found are listed
+> in PLAN-1.1.md, "Results".
+
 # Escrita 0.9: manual test plan
 
 This is the plan for testing 0.9 by hand, in Obsidian on desktop, in your vault at
@@ -245,6 +268,8 @@ These are not 0.9 changes, but they affect what you'll see:
 
 ## Unlinked mentions
 
+> Runs as `e2e/specs/unlinked.spec.ts` (one test per step).
+
 Board 29. Guide: [The world, section 11](guide/en/the-world.md#11-unlinked-mentions).
 
 1. Open `Contos/Teste 0.9/O farol apagado.md`. Open the universe panel, tab **Obras** [Works].
@@ -310,6 +335,8 @@ Board 29. Guide: [The world, section 11](guide/en/the-world.md#11-unlinked-menti
 
 ## Names without an entry
 
+> Runs as `e2e/specs/names.spec.ts`.
+
 Board 30. Guide: [The world, "Names without an entry"](guide/en/the-world.md#names-without-an-entry).
 
 1. Open `O farol apagado.md` and run **Ativar ou desativar a lente de revisão** [Toggle
@@ -352,6 +379,8 @@ Board 30. Guide: [The world, "Names without an entry"](guide/en/the-world.md#nam
     - Expected: no names-rule marks and no "contando…" that stays forever.
 
 ## EPUB
+
+> Runs as `e2e/specs/epub.spec.ts`; the file is opened with a zip reader. Step 5's reader app stays by eye.
 
 Board 31. Guide: [Publishing, "Export an EPUB"](guide/en/publishing.md#export-an-epub).
 
@@ -421,6 +450,8 @@ Board 31. Guide: [Publishing, "Export an EPUB"](guide/en/publishing.md#export-an
       dois** [Keep both] and **Substituir** [Replace], as for DOCX.
 
 ## Collections
+
+> Runs as `e2e/specs/collections.spec.ts`; the DOCX and EPUB are read with a zip reader.
 
 Board 34. Guide: [Publishing, "Export a collection of stories"](guide/en/publishing.md#export-a-collection-of-stories).
 
@@ -495,6 +526,8 @@ Board 34. Guide: [Publishing, "Export a collection of stories"](guide/en/publish
 
 ## Publish next chapter
 
+> Runs as `e2e/specs/publish-next.spec.ts` (on a book cut to 8 chapters).
+
 Board 32. Guide: [Publishing, "Publish a book one chapter at a time"](guide/en/publishing.md#publish-a-book-one-chapter-at-a-time).
 
 1. Open `Livro Longo.md` and run **Abrir esboço** [Open outline].
@@ -538,6 +571,8 @@ Board 32. Guide: [Publishing, "Publish a book one chapter at a time"](guide/en/p
 
 ## Read the book
 
+> Runs as `e2e/specs/read-book.spec.ts`.
+
 Board 33. Guide: [Writing, "Read the book"](guide/en/writing.md#read-the-book).
 
 1. Open `Livro Longo.md` and run **Ler o livro** [Read the book].
@@ -579,6 +614,8 @@ Board 33. Guide: [Writing, "Read the book"](guide/en/writing.md#read-the-book).
 
 ## Scope and no-regression checks
 
+> Runs as `e2e/specs/scope.spec.ts`; "as before" is the explorer as the first test records it.
+
 IMPROVEMENTS 9 moved scope into the classifier. Nothing should look different.
 
 1. Open `Willian.md` in Live Preview.
@@ -605,6 +642,8 @@ IMPROVEMENTS 9 moved scope into the classifier. Nothing should look different.
 
 ## Feature switches on and off
 
+> Runs as `e2e/specs/switches.spec.ts`, including the two renames made while a feature is off.
+
 **Configurações** › Escrita › **Recursos** [Features]. Turn each one off, check, turn it back
 on, check that nothing was lost.
 
@@ -625,6 +664,8 @@ on, check that nothing was lost.
 ## Open gates to check by eye
 
 ### G0d: "Read the book" on a long book
+
+> Measured by `e2e/specs/read-book.spec.ts` (three runs, a DevTools trace for the longest task); the numbers are in PLAN-1.1.md, "Results".
 
 Livro Longo has 30 chapters and about 90,000 words. Open the developer tools with
 Ctrl+Shift+I.
@@ -651,6 +692,8 @@ Ctrl+Shift+I.
 3. Write both numbers in PLAN-0.9.md under the release review result, as G0d's result.
 
 ### 0.7's G0d: "Aparece em" across re-renders
+
+> Closed as decided (PLAN-1.1 Q12): Reading view shows the panel only. `e2e/specs/appears-in-reading.spec.ts` checks it.
 
 0.7's G0d asked whether a Reading-view post-processor could draw "Aparece em" reliably across
 re-renders. The spike plugin for it is gone. 0.9 still ships no post-processor: Reading view
