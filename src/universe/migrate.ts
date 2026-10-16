@@ -6,11 +6,12 @@
 
 import { App, Modal, Notice, Setting, TFile, TFolder, normalizePath, type Menu, type TAbstractFile } from "obsidian";
 import { inFolder } from "../core/classify";
+import { baseName as basename } from "../core/paths";
 import { plural, t } from "../i18n";
 import type EscritaPlugin from "../main";
 import { ENTRY_KINDS } from "./settings";
 import {
-  basename, effectiveMoves, folderHint, previewGroup, resultNotice,
+  effectiveMoves, folderHint, previewGroup, resultNotice,
   type MigrationResult,
 } from "./migrate-plan";
 import { planMigration, type MigrationPlan } from "./migration";

@@ -3,7 +3,7 @@
 // focus, move blocks, templates and spellcheck on demand. Each registers through
 // its ModuleContext; nothing here calls the plugin's register* methods.
 
-import { MarkdownView, Notice, TFile, editorInfoField, type Editor, type WorkspaceLeaf } from "obsidian";
+import { MarkdownView, Notice, TFile, TFolder, editorInfoField, type Editor, type WorkspaceLeaf } from "obsidian";
 import { Prec, StateEffect, StateField, type EditorState, type Extension } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import type EscritaPlugin from "../main";
@@ -12,6 +12,8 @@ import type { EditorSlot, SettingsUi } from "../core/module-context";
 import type { SettingsBlock } from "../ui/settings-rows";
 import { typingSettingsItems } from "./settings-ui";
 import { t } from "../i18n";
+import type { Follower } from "../core/vault-index";
+import { followFolderSetting } from "../core/classify";
 import { renameInSet, dropFromSet } from "../core/path-keys";
 import { segment, segmentDoc } from "../core/markdown";
 import { blockStateIn, bodyLineIn, inBlock } from "../core/block-context";
@@ -347,6 +349,20 @@ export class TemplatesFeature extends FeatureModule {
   readonly id = "templates" as const;
 
   constructor(private plugin: EscritaPlugin) { super(); }
+
+  /** The templates folder (or a folder holding it) was renamed: the setting follows, even while the feature is off. */
+  dataFollowers(): Follower[] {
+    return [{
+      moved: (oldPath, newPath) => {
+        const s = this.plugin.settings;
+        const f = this.plugin.app.vault.getAbstractFileByPath(newPath);
+        const next = f instanceof TFolder ? followFolderSetting(s.templatesFolder, oldPath, f.path) : null;
+        if (next === null) return;
+        s.templatesFolder = next;
+        void this.plugin.saveSettings();
+      },
+    }];
+  }
 
   onload(): void {
     this.ctx.command({

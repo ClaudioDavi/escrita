@@ -42,6 +42,9 @@ describe("chapter labels", () => {
     expect(chapterParts("4 - Teo")).toEqual({ n: 4, title: "Teo" });
     expect(chapterParts("Epílogo")).toEqual({ n: null, title: "Epílogo" });
     expect(chapterParts("07")).toEqual({ n: 7, title: "07" });
+    // the same parser as core/book.ts: no separator, no number
+    expect(chapterParts("3Title")).toEqual({ n: null, title: "3Title" });
+    expect(chapterParts("03) X")).toEqual({ n: null, title: "03) X" });
   });
   it("makes the reference and the first/last line", () => {
     expect(baseName("A Casa/Capítulos/01 Chegada.md")).toBe("01 Chegada");

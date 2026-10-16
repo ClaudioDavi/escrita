@@ -2,9 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 import {
   scan, placeholderSpans, sanitizeNote, placeholderText, planInsert, locate,
   removalRange, resolvePlaceholder, stepIndex, isIndexable, orderPaths,
-  displayName, parentPath, placeholderValue, sameMarkers, placeholderSpec, type IndexedMarker,
+  displayName, placeholderValue, sameMarkers, placeholderSpec, type IndexedMarker,
 } from "../src/placeholders/logic";
 import { VaultIndex } from "../src/core/vault-index";
+import { parentOf } from "../src/core/paths";
 import { MemoryVault, ManualTimers, type MemFile } from "./support/memory-vault";
 
 const X = "XXX";
@@ -443,8 +444,8 @@ describe("files", () => {
   it("displayName and parentPath", () => {
     expect(displayName("Novels/A Casa/Chapters/03 O porão.md")).toBe("03 O porão");
     expect(displayName("root.md")).toBe("root");
-    expect(parentPath("Novels/A Casa.md")).toBe("Novels");
-    expect(parentPath("root.md")).toBe("");
+    expect(parentOf("Novels/A Casa.md")).toBe("Novels");
+    expect(parentOf("root.md")).toBe("");
   });
 });
 

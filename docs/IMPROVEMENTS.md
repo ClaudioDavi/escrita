@@ -484,10 +484,8 @@ Revisit only if a phone profile shows reads dominating.
 
 From candidate 33 (1.0.4):
 
-- **Test-only re-export aliases.** `export/logic.ts` `inFolder`, `placeholders/logic.ts`
-  `parentPath` and `universe/migrate-plan.ts` `basename` and `dirname` stay as aliases of
-  `core/paths.ts` only because tests import them. Drop them when those tests move to the core
-  helpers.
+- **One alias left.** `placeholders/logic.ts` `parentPath` (an alias of `core/paths.ts` `parentOf`)
+  stays because `placeholders/view.ts:249` still calls it. Point that call at `parentOf` and drop it.
 - **Slash-trim copies.** The edge-slash trim (`replace(/^\/+|\/+$/g, "")`) is still written
   by hand in `core/classify.ts:232`, `:320` and `:380`, `settings.ts:323` and `:340`,
   `desk/block.ts:12`, `desk/works.ts:216`, `editor/template-insert.ts:63`, `core/lists.ts:16`,
@@ -507,15 +505,12 @@ Found by the review of 2026-10-08. Each is small; fix them before the refactors.
 - **Beat click may land at the restored cursor.** `outline/view.ts:1491` sets the cursor after
   opening, which `ui/open-work.ts:57` says Obsidian's restore undoes; it doesn't clamp either.
   Unverified in Obsidian. Fix with candidate 34.
-- **Smaller.** "Appears in" parses chapter numbers with its own regex (`appears-in-model.ts:42`),
-  unlike `core/book.ts` (`3Title`, `03) X`). Export reads `Cover:` by exact key but `Compile:`
-  ignoring case. `templatesFolder` and `globalDarlingsNote` don't follow renames.
-  `submissionsOffNotice` calls `submissionsRoot()` without the language.
 
 ## Done
 
 | Version | Improvement |
 |---|---|
+| 1.1 | Known issues from the review of 2026-10-08, except the beat click: "Appears in" reads chapter numbers with `core/book.ts` (`chapterNumber`, `chapterTitle`); export reads the cover property through `propertyValue`, ignoring case like `Compile:`; `templatesFolder` and `globalDarlingsNote` follow renames (data followers in `TemplatesFeature` and `DarlingsModule`, also while off); `submissionsOffNotice` passes the language. Test-only aliases gone: `export/logic.ts` `inFolder` and `universe/migrate-plan.ts` `basename`, `dirname` (tests use `core/paths.ts`); `placeholders/logic.ts` `parentPath` stays, `placeholders/view.ts` uses it |
 | 1.0.4 | Path helpers in core (candidate 33): `core/paths.ts` (`parentOf`, `baseName`, `noteName`, `withMd`, `cleanFolder`, `joinPath`, `isUnder` with `emptyMatches`), edge cases pinned in `tests/paths.test.ts` first. Adopted in the new-work module and in place of the six `parentOf` copies (`core/classify.ts`, `placeholders/logic.ts`, `snapshots/store.ts`, `snapshots/fs.ts`, `universe/migrate-plan.ts`, `export/logic.ts`), `core/scope.ts`'s `withMd`, `noMd` and `inFolder`, and export's path join (renamed `joinPath`, no longer named like core's containment test). `outline/rows.ts` strips `.md` in any letter case. `cleanFolder` keeps today's rule; the `\` rule of `classify.ts` `folderRoot` stays there on purpose |
 | 1.0.3 | The settings tab on Obsidian's declarative settings API (candidate 51): `EscritaSettingTab` implements `getSettingDefinitions()` in `src/settings-tab.ts`, one group per slot of `core/settings-order.ts` under the slot's heading, so Escrita's rows show in the settings search; `display()` and the `settings.ts` lint exceptions are gone, `minAppVersion` is 1.13.0, and the tab rebuilds (`update()`) only on a change of structure (`refresh()`, `features.onApplied`) |
 | 1.0.3 | Settings rows, with fallbacks from the install's defaults (candidate 36): `FeatureModule.settingsItems` returns `SettingsBlock[]`, built with `textRow`, `toggleRow`, `dropdownRow`, `numberRow`, `folderRow`, `noteRow`, `customRow` and `drawnRow` in `src/ui/settings-rows.ts`; one commit path for text fields (`ui.saveOnCommit` with an optional `read`, plain inputs too: the universe tables, the stage words, the status and summary row; no second copy in the lens or the tab); one number parser (`digitsNumber`), snapshots shares `folderRow`, and a cleared field falls back to `ui.defaults()` of the install's language in every section (the known issue "English defaults in the settings tab" is closed). `ui/confirm.ts` uses `setDestructive` |

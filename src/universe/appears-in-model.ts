@@ -2,6 +2,7 @@
 // an entry's name, the chapter labels, and the check that a stored mention is still where
 // the index saw it. No Obsidian or CodeMirror imports.
 
+import { chapterNumber, chapterTitle } from "../core/book";
 import { segment } from "../core/markdown";
 import { findNames, type TermTable } from "../core/names";
 import { readerMask } from "../core/wordcount";
@@ -40,10 +41,8 @@ export function countTip(ai: AppearsIn): string {
 
 /** A chapter's position and title from its note's name: "03 O porão" gives 3 and "O porão". */
 export function chapterParts(basename: string): { n: number | null; title: string } {
-  const m = /^\s*(\d+)\s*[-–—.:)]*\s*(.*)$/.exec(basename);
-  if (!m) return { n: null, title: basename.trim() };
-  const title = m[2].trim();
-  return { n: Number(m[1]), title: title === "" ? basename.trim() : title };
+  const n = chapterNumber(basename);
+  return { n, title: n === null ? basename.trim() : chapterTitle(basename) };
 }
 
 /** "1, Chegada" (or just the title when the name has no number). */

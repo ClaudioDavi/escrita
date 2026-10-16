@@ -40,9 +40,12 @@ function only(...on: FeatureId[]): void {
   registry.apply();
 }
 
+// templates keeps one data follower (the templates folder setting) whether or not it is on
+const DATA_FOLLOWERS = 1;
+
 function nothingLeft(): void {
   expect([...plugin.commands.keys()]).toEqual([]);
-  expect(plugin.followers.size).toBe(0);
+  expect(plugin.followers.size).toBe(DATA_FOLLOWERS);
   expect(plugin.liveListeners()).toBe(0);
   expect(plugin.indexAdded.length - plugin.indexRemoved.length).toBe(0);
   expect(plugin.ribbon.size).toBe(0);
@@ -78,7 +81,7 @@ describe.each(Object.keys(COMMANDS))("%s", (id) => {
     expect([...plugin.commands.keys()].sort()).toEqual([...COMMANDS[id]].sort());
     const filled = plugin.extensions.filter((e) => (e as Extension[]).length > 0).length;
     expect(filled).toBe(id === "typing" || id === "dialogueFocus" || id === "spellcheck" ? 1 : 0);
-    expect(plugin.followers.size).toBe(id === "dialogueFocus" ? 1 : 0);
+    expect(plugin.followers.size).toBe(DATA_FOLLOWERS + (id === "dialogueFocus" ? 1 : 0));
     only();
     nothingLeft();
   });
@@ -100,7 +103,7 @@ describe("features are independent", () => {
     expect(plugin.commands.has("escrita:toggle-dialogue-focus")).toBe(false);
     expect(plugin.commands.size).toBe(7);
     expect(plugin.extensions.filter((e) => (e as Extension[]).length > 0)).toHaveLength(2);
-    expect(plugin.followers.size).toBe(0);
+    expect(plugin.followers.size).toBe(DATA_FOLLOWERS);
   });
 
   it("typing registers its three extensions as one array", () => {
@@ -149,7 +152,7 @@ describe("dialogue focus", () => {
     expect(cmd.checkCallback(true)).toBe(true);
     cmd.checkCallback(false);
     expect(noticeLog.at(-1)).toBe("editor.dialogueFocusOn");
-    const [f] = [...plugin.followers];
+    const f = [...plugin.followers].at(-1)!;
     f.moved!("a.md", "b.md");
     f.deleted!("b.md");
     only();

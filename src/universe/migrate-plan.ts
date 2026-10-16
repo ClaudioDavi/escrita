@@ -6,8 +6,6 @@ import type { Conflict, MigrationPlan, PlannedMove } from "./migration";
 
 import { baseName as basename, parentOf as dirname } from "../core/paths";
 
-export { basename, dirname };
-
 export type PreviewRow =
   | { type: "move"; name: string; addType: string | null }
   | { type: "clash"; name: string; folder: string };

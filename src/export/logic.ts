@@ -81,8 +81,7 @@ export function keepBothName(title: string, format: ExportFormat, preset: string
   return `${base} (${presetLabel(preset)}) ${stamp(at)}.${format}`;
 }
 
-/** The join lives in core/paths (`joinPath`); `inFolder` is its old name, kept for the existing tests. */
-export { joinPath, joinPath as inFolder };
+export { joinPath };
 
 // ------------------------------------------------------------------ author, front matter
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { basename, dirname, effectiveMoves, folderHint, previewGroup, resultNotice, universeLink } from "../src/universe/migrate-plan";
+import { baseName as basename, parentOf as dirname } from "../src/core/paths";
+import { effectiveMoves, folderHint, previewGroup, resultNotice, universeLink } from "../src/universe/migrate-plan";
 import { planMigration } from "../src/universe/migration";
 import { defaultUniverseSettings } from "../src/universe/settings";
 
