@@ -49,25 +49,41 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 
 ## Next: 1.1, screenwriting (phase 1)
 
-Plan: [PLAN-1.1.md](PLAN-1.1.md) (approved 2026-10-16), from [ROADMAP-screenplay.md](ROADMAP-screenplay.md).
+**Built, not released** (1.1.0, unreleased). Plan and results: [PLAN-1.1.md](PLAN-1.1.md)
+(approved 2026-10-16), from [ROADMAP-screenplay.md](ROADMAP-screenplay.md). It moves to "Shipped" at
+the release step.
 
 A screenplay is a note in Fountain. Phase 1 makes a script a first-class note and gets it
 out the door as a correct PDF; the editor help comes in phase 2. Serves drafting and
 submitting. Upkeep: none beyond marking a note as a screenplay.
 
-| Feature | Ref | Effort | Note |
+| Feature | Ref | Effort | Status |
 |---|---|---|---|
-| Screenplay notes and the Fountain parser | SP 1 | M | |
-| Export: Fountain and PDF in industry format | SP 6 | L | |
+| Screenplay notes and the Fountain parser: `screenplay` is the seventh form value, Fountain read in the note, character cues count in "Appears in", the form rows moved to a "Forms" group after Books and work with the universe off | SP 1 | M | Built |
+| Export: Fountain and PDF in industry format (Letter or A4), with a preview, warnings and the "Screenplays" settings group | SP 6 | L | Built |
+| End-to-end checks: a Playwright harness that drives Obsidian and runs the by-hand checks (`e2e/`, `npm run e2e`, local only, see [TESTING.md](TESTING.md)) | not a feature | M | Built (204 tests) |
 
-| End-to-end checks: a Playwright harness that drives Obsidian and runs the by-hand checks | — | M | Not a feature; `e2e/`, `npm run e2e`, local only |
+**Improvement (built):** export writers share the title page, the modal splits (candidate 46),
+plus the five known issues and the test-only aliases from 33. Moves to "Done" in IMPROVEMENTS.md
+with the release (already listed there under 1.1).
 
-**Improvement:** export writers share the title page, the modal splits (candidate 46), plus the
-five known issues and the test-only aliases from 33.
+**Also fixed in 1.1:** the Progress chart is back for anyone who has met a goal; creating an entry
+from a selection keeps the chapter in front; "Read the book" keeps the text in view when a chapter
+changes; setting up again in a finished vault says there is nothing to do.
 
-Still open after 1.0, on desktop: gate G0d (the Reading-view "Appears in" section across
-re-renders) and the by-hand checks in [TEST-1.0.md](TEST-1.0.md) that were not run before
-release. The phone gates stay waived (no phone to test on, 2026-10-05).
+**What was open after 1.0, and where each went:**
+
+| Open item | Outcome |
+|---|---|
+| Gate G0d, 0.7: the Reading-view "Appears in" section across re-renders | Closed as decided: Reading view shows the panel only, no post-processor. `e2e/specs/appears-in-reading.spec.ts` checks it across 5 toggles, a split and a 200-line entry |
+| Gate G0d, 0.9: "Read the book" timings on a 30-chapter book | Measured (`e2e/specs/read-book.spec.ts`, 31 chapters, 90,951 words). First text on screen 8–18 ms (painted 29–60 ms); longest task while scrolling 22.9–28.4 ms, none of 50 ms, accepted at 30 ms (the 20 ms bar was missed by 3–8 ms); typing in a 3,000-word chapter 7.5–9.6 ms |
+| The by-hand checks of TEST-0.9 and TEST-1.0 | Run by the harness. What needs an eye stays in PLAN-1.1, "By-hand checks (G2)": the pictures, a PDF in a reader, writing mode with a third-party theme |
+| The reader's startup race (a `compile: false` chapter read as included) | Candidate 52 in IMPROVEMENTS.md (not in 1.1) |
+| Phone gates | Waived (no phone to test on, 2026-10-05) |
+
+**Open with the author before release (G2):** (1) a speech with no sentence end moves whole to
+the next page (kept; confirm), and (2) an indented `CUT TO:` is action, where Fountain's spec would
+make it a transition (keep, or follow the spec). Today's behavior is the first reading in both.
 
 After screenwriting: universe phase 2 (timeline, dates, facts over time, continuity and
 canon; U 2.1–2.4), moved out of 0.9 on 2026-10-06.
@@ -157,7 +173,7 @@ and the README links to every guide.
 | Book-wide snapshots and revision reports | N 10 | M | Builds on SF 4, SF 5 |
 | Companion-plugin guide (unscheduled) | N 6 | S | Dropped from 0.8 on 2026-10-05; written only if a need shows up (for example, a StoryLine clash reported by a writer) |
 | Longform importer | N 5 | S–M | Not wanted for 1.0 |
-| Screenwriting, phase 1: screenplay notes, Fountain parser, Fountain and PDF export | SP 1, SP 6 | M + L | Export first: a script can be drafted in plain Fountain, but can't be handed in without a correct PDF. Builds on the 0.8 export pipeline and the `form` property (0.6) |
+| Screenwriting, phase 1: screenplay notes, Fountain parser, Fountain and PDF export | SP 1, SP 6 | M + L | Built in 1.1 (see "Next"). Export first: a script can be drafted in plain Fountain, but can't be handed in without a correct PDF. Builds on the 0.8 export pipeline and the `form` property (0.6) |
 | Screenwriting, phase 2: screenplay layout and Tab/Enter in the editor, pages as a unit, scene outline | SP 2–4 | M + S + S | |
 | Screenwriting, phase 3: script report, FDX export, Fountain import, feature-length scripts as a book | SP 5–7 | M + M + M | |
 | Universe phase 2: story timeline, `when` and eras, narrative mode, shift dates, facts over time, continuity checks, canon | U 2.1–2.4 | L | After screenwriting. Planned for 0.9 and moved on 2026-10-06 as bloat at this stage; the draft design is in `research_notes/0.9-dates-draft/` (local) |
