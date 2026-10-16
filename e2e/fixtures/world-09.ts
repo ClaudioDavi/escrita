@@ -2,7 +2,7 @@
 // universe note, one entry (Willian), Textos/Noite.md (`universe: false`) and the folder
 // layout of the author's vault (contos in Contos/, books in Romances/, essays in Textos/).
 // The book is the long book fixture; `chapters` can make it shorter for specs that don't
-// measure it. The cover image is binary: `installCover(app.vaultDir)` writes it after launch.
+// measure it. The cover image is binary: `installCover(ob.vaultDir)` writes it after launch.
 import fs from "node:fs";
 import path from "node:path";
 import type { App } from "../lib/app";
@@ -92,8 +92,8 @@ export function world09(o: World09Options = {}): VaultSpec {
  * The universe settings of the author's vault, set through the plugin the way the settings tab
  * does (a saved `settings` object would replace the pt-BR default set's stages). Call after launch.
  */
-export async function configureWorld09(app: App, extra: Record<string, unknown> = {}): Promise<void> {
-  await app.setSettings({
+export async function configureWorld09(ob: App, extra: Record<string, unknown> = {}): Promise<void> {
+  await ob.setSettings({
     universeMode: "universe",
     universeNote: "Universo.md",
     defaultUniverseFolders: "Contos\nRomances\nTextos",

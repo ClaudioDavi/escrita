@@ -15,31 +15,31 @@ const BOOK = "Romances/Teste 0.9/Livro Longo.md";
 const DIR = "Escrita/Exportações";
 const PTBR = `${DIR}/Livro Longo (pt-BR).epub`;
 const SHUNN = `${DIR}/Livro Longo (Shunn).epub`;
-let app: App;
+let ob: App;
 
 test.beforeAll(async () => {
-  app = await App.launch({ vault: world09() }); // the whole 30-chapter book
-  installWorld09Extras(app.vaultDir);
-  await configureWorld09(app);
+  ob = await App.launch({ vault: world09() }); // the whole 30-chapter book
+  installWorld09Extras(ob.vaultDir);
+  await configureWorld09(ob);
 });
-test.afterAll(async () => { await app?.close(); });
-test.afterEach(async () => { await app.closeModals(); await app.dismissNotices(); });
+test.afterAll(async () => { await ob?.close(); });
+test.afterEach(async () => { await ob.closeModals(); await ob.dismissNotices(); });
 
-const modal = () => exportModal(app);
+const modal = () => exportModal(ob);
 const chipLabels = async () => modal().locator(".escrita-export-chips").nth(0).locator(".escrita-export-chip > span:first-child").allTextContents();
 
 test("1. Exportar… opens the window for the book with DOCX, Markdown and EPUB", async () => {
-  await openExport(app, BOOK);
+  await openExport(ob, BOOK);
   await expect(modal().locator(".modal-title")).toHaveText("Exportar “Livro Longo”");
   const formats = await modal().locator(".escrita-export-field").filter({ hasText: "Formato" }).locator(".escrita-export-chip > span:first-child").allTextContents();
   expect(formats).toEqual(expect.arrayContaining(["DOCX", "Markdown", "EPUB"]));
-  await snap(app, "1. the export window", modal());
+  await snap(ob, "1. the export window", modal());
 });
 
 test("2. EPUB, pt-BR, all chapters: the line, the file name, the left-out chapter, no warning box", async () => {
-  await openExport(app, BOOK);
-  await chip(app, "EPUB");
-  await chip(app, "pt-BR");
+  await openExport(ob, BOOK);
+  await chip(ob, "EPUB");
+  await chip(ob, "pt-BR");
   await expect(modal().locator(".escrita-export-radio").first()).toContainText("Todos (31)");
   const where = modal().locator(".escrita-export-where");
   await expect(where).toContainText("Uma coluna de leitura: capa, folha de rosto, sumário e uma página por capítulo. Sem contagem de palavras.");
@@ -47,14 +47,14 @@ test("2. EPUB, pt-BR, all chapters: the line, the file name, the left-out chapte
   await expect(where.locator(".escrita-export-mono")).toHaveText(PTBR);
   await expect(modal().locator(".escrita-export-hint")).toContainText("31 Notas soltas");
   await expect(modal().locator(".escrita-export-warn")).toHaveCount(0);
-  await expect(primary(app)).toHaveText("Exportar");
-  await snap(app, "2. EPUB options", modal());
+  await expect(primary(ob)).toHaveText("Exportar");
+  await snap(ob, "2. EPUB options", modal());
 });
 
 test("3. the preview: cover, title page, dedication, epigraph, contents, then the chapters", async () => {
-  await openExport(app, BOOK);
-  await chip(app, "EPUB");
-  await chip(app, "pt-BR");
+  await openExport(ob, BOOK);
+  await chip(ob, "EPUB");
+  await chip(ob, "pt-BR");
   await modal().getByRole("button", { name: "Prévia" }).click();
   const paper = modal().locator(".escrita-export-paper");
   await expect(paper).toBeVisible();
@@ -96,7 +96,7 @@ test("3. the preview: cover, title page, dedication, epigraph, contents, then th
   expect(text).not.toContain("ela encontra a carta");
   expect(text).not.toContain("rever o tom");
   expect(text).toContain("A carta estava debaixo da porta, molhada.");
-  await snap(app, "3. EPUB preview", modal());
+  await snap(ob, "3. EPUB preview", modal());
 
   // Voltar returns; a click on a paragraph opens the chapter at that line
   await modal().getByRole("button", { name: "Voltar" }).click();
@@ -105,24 +105,24 @@ test("3. the preview: cover, title page, dedication, epigraph, contents, then th
   const para = modal().locator(".escrita-export-para.is-linked").first();
   const line = Number(await para.getAttribute("data-line"));
   await para.click();
-  await app.waitFor("a chapter to open", async () => ((await app.activeFile()) ?? "").includes("/Capítulos/"));
-  expect(await app.activeFile()).toContain("Capítulos/00 Prólogo");
-  await app.waitFor("the cursor line", async () => (await app.cursor())?.line === line, 4000).catch(() => {});
-  expect((await app.cursor())?.line).toBe(line);
+  await ob.waitFor("a chapter to open", async () => ((await ob.activeFile()) ?? "").includes("/Capítulos/"));
+  expect(await ob.activeFile()).toContain("Capítulos/00 Prólogo");
+  await ob.waitFor("the cursor line", async () => (await ob.cursor())?.line === line, 4000).catch(() => {});
+  expect((await ob.cursor())?.line).toBe(line);
 });
 
 test("4. Exportar writes the file and says so", async () => {
-  await openExport(app, BOOK);
-  await chip(app, "EPUB");
-  await chip(app, "pt-BR");
-  await primary(app).click();
-  await app.notice("Exportado: Livro Longo (pt-BR).epub.");
-  expect(app.vaultFileExists(PTBR)).toBe(true);
-  await expect(app.page.locator(".notice", { hasText: "Exportado:" }).getByText("Abrir a pasta", { exact: false }).first()).toBeVisible().catch(() => {});
+  await openExport(ob, BOOK);
+  await chip(ob, "EPUB");
+  await chip(ob, "pt-BR");
+  await primary(ob).click();
+  await ob.notice("Exportado: Livro Longo (pt-BR).epub.");
+  expect(ob.vaultFileExists(PTBR)).toBe(true);
+  await expect(ob.page.locator(".notice", { hasText: "Exportado:" }).getByText("Abrir a pasta", { exact: false }).first()).toBeVisible().catch(() => {});
 });
 
 test("5. inside the file: mimetype first and stored, cover, title, language, the contents list, scene breaks", async () => {
-  const zip = zipFiles(vaultBytes(app, PTBR));
+  const zip = zipFiles(vaultBytes(ob, PTBR));
   expect(zip.names[0]).toBe("mimetype");
   expect(zip.entries[0].method).toBe(0);
   expect(zip.text("mimetype")).toBe("application/epub+zip");
@@ -151,28 +151,28 @@ test("5. inside the file: mimetype first and stored, cover, title, language, the
 });
 
 test("6. the window remembers the last export; Exportar de novo writes at once", async () => {
-  await openExport(app, BOOK);
+  await openExport(ob, BOOK);
   const last = modal().locator(".escrita-export-last");
   await expect(last).toContainText("Última exportação: EPUB · pt-BR · 31 capítulos");
   await expect(last.locator("a.escrita-export-mono")).toHaveText("Livro Longo (pt-BR).epub");
-  await app.closeModals();
-  const before = fs.statSync(path.join(app.vaultDir, PTBR)).mtimeMs;
+  await ob.closeModals();
+  const before = fs.statSync(path.join(ob.vaultDir, PTBR)).mtimeMs;
   await sleep(1100);
-  await app.command("export-again");
-  await app.notice("Exportado");
-  await expect(exportModal(app)).toHaveCount(0);
-  expect(fs.statSync(path.join(app.vaultDir, PTBR)).mtimeMs).toBeGreaterThan(before);
-  expect(app.listVaultFolder(DIR).filter((n) => n.startsWith("Livro Longo"))).toEqual(["Livro Longo (pt-BR).epub"]);
+  await ob.command("export-again");
+  await ob.notice("Exportado");
+  await expect(exportModal(ob)).toHaveCount(0);
+  expect(fs.statSync(path.join(ob.vaultDir, PTBR)).mtimeMs).toBeGreaterThan(before);
+  expect(ob.listVaultFolder(DIR).filter((n) => n.startsWith("Livro Longo"))).toEqual(["Livro Longo (pt-BR).epub"]);
 });
 
 test("7. Shunn: a second file beside the first, English headings and language", async () => {
-  await openExport(app, BOOK);
-  await chip(app, "EPUB");
-  await chip(app, "Shunn");
-  await runExport(app);
-  await app.notice("Exportado: Livro Longo (Shunn).epub.");
-  expect(app.vaultFileExists(PTBR)).toBe(true);
-  const zip = zipFiles(vaultBytes(app, SHUNN));
+  await openExport(ob, BOOK);
+  await chip(ob, "EPUB");
+  await chip(ob, "Shunn");
+  await runExport(ob);
+  await ob.notice("Exportado: Livro Longo (Shunn).epub.");
+  expect(ob.vaultFileExists(PTBR)).toBe(true);
+  const zip = zipFiles(vaultBytes(ob, SHUNN));
   expect(zip.text("OEBPS/content.opf")).toMatch(/<dc:language>en(-US)?<\/dc:language>/);
   const nav = zip.text("OEBPS/nav.xhtml");
   expect(nav).toContain("<h1>Contents</h1>");
@@ -180,100 +180,100 @@ test("7. Shunn: a second file beside the first, English headings and language", 
 });
 
 test("8. edge case: a missing cover warns, the button says anyway, the EPUB goes without a cover", async () => {
-  await setProperty(app, BOOK, "cover", "[[capa-que-nao-existe.jpg]]");
-  await openExport(app, BOOK);
-  await chip(app, "EPUB");
-  await chip(app, "pt-BR");
+  await setProperty(ob, BOOK, "cover", "[[capa-que-nao-existe.jpg]]");
+  await openExport(ob, BOOK);
+  await chip(ob, "EPUB");
+  await chip(ob, "pt-BR");
   const warn = modal().locator(".escrita-export-warn");
   await expect(warn).toContainText("Antes de enviar");
   await expect(warn).toContainText("Capa não encontrada ou ilegível: [[capa-que-nao-existe.jpg]]. O EPUB sai sem capa");
-  await expect(primary(app)).toHaveText("Exportar mesmo assim");
-  await snap(app, "8. missing cover warning", modal());
-  await runExport(app, "Substituir");
-  await app.notice("Exportado:");
-  const zip = zipFiles(vaultBytes(app, PTBR));
+  await expect(primary(ob)).toHaveText("Exportar mesmo assim");
+  await snap(ob, "8. missing cover warning", modal());
+  await runExport(ob, "Substituir");
+  await ob.notice("Exportado:");
+  const zip = zipFiles(vaultBytes(ob, PTBR));
   expect(zip.text("OEBPS/content.opf")).not.toContain("cover-image");
 });
 
 test("9. edge case: a note as the cover gives the same warning; no cover property, no warning", async () => {
-  await setProperty(app, BOOK, "cover", "[[Maré]]");
-  await openExport(app, BOOK);
-  await chip(app, "EPUB");
+  await setProperty(ob, BOOK, "cover", "[[Maré]]");
+  await openExport(ob, BOOK);
+  await chip(ob, "EPUB");
   await expect(modal().locator(".escrita-export-warn")).toContainText("Capa não encontrada ou ilegível: [[Maré]]");
-  await app.closeModals();
-  await setProperty(app, BOOK, "cover", null);
-  await openExport(app, BOOK);
-  await chip(app, "EPUB");
+  await ob.closeModals();
+  await setProperty(ob, BOOK, "cover", null);
+  await openExport(ob, BOOK);
+  await chip(ob, "EPUB");
   await expect(modal().locator(".escrita-export-warn")).toHaveCount(0);
-  await expect(primary(app)).toHaveText("Exportar");
-  await app.closeModals();
-  await setProperty(app, BOOK, "cover", "[[capa-teste.jpg]]");
+  await expect(primary(ob)).toHaveText("Exportar");
+  await ob.closeModals();
+  await setProperty(ob, BOOK, "cover", "[[capa-teste.jpg]]");
 });
 
 test("10. edge case: a plain path works like the link", async () => {
-  await setProperty(app, BOOK, "cover", "Anexos/capa-teste.jpg");
-  await openExport(app, BOOK);
-  await chip(app, "EPUB");
-  await chip(app, "pt-BR");
+  await setProperty(ob, BOOK, "cover", "Anexos/capa-teste.jpg");
+  await openExport(ob, BOOK);
+  await chip(ob, "EPUB");
+  await chip(ob, "pt-BR");
   await expect(modal().locator(".escrita-export-warn")).toHaveCount(0);
   await expect(modal().locator(".escrita-export-where")).toContainText("capa, folha de rosto");
-  await runExport(app, "Substituir");
-  await app.notice("Exportado:");
-  expect(zipFiles(vaultBytes(app, PTBR)).text("OEBPS/content.opf")).toContain('properties="cover-image"');
-  await setProperty(app, BOOK, "cover", "[[capa-teste.jpg]]");
+  await runExport(ob, "Substituir");
+  await ob.notice("Exportado:");
+  expect(zipFiles(vaultBytes(ob, PTBR)).text("OEBPS/content.opf")).toContain('properties="cover-image"');
+  await setProperty(ob, BOOK, "cover", "[[capa-teste.jpg]]");
 });
 
 test("11. a conto with its own cover: cover, title page and a contents page with one entry", async () => {
   const mare = "Contos/Teste 0.9/Maré.md";
-  await setProperty(app, mare, "cover", "[[capa-teste.jpg]]");
-  await openExport(app, mare);
-  await chip(app, "EPUB");
-  await chip(app, "pt-BR");
+  await setProperty(ob, mare, "cover", "[[capa-teste.jpg]]");
+  await openExport(ob, mare);
+  await chip(ob, "EPUB");
+  await chip(ob, "pt-BR");
   await expect(modal().locator(".escrita-export-where")).toContainText("capa, folha de rosto");
-  await runExport(app);
-  await app.notice("Exportado: Maré (pt-BR).epub.");
-  const zip = zipFiles(vaultBytes(app, `${DIR}/Maré (pt-BR).epub`));
+  await runExport(ob);
+  await ob.notice("Exportado: Maré (pt-BR).epub.");
+  const zip = zipFiles(vaultBytes(ob, `${DIR}/Maré (pt-BR).epub`));
   expect(zip.text("OEBPS/content.opf")).toContain('properties="cover-image"');
   expect(zip.text("OEBPS/title.xhtml")).toContain("Maré");
   const labels = [...zip.text("OEBPS/nav.xhtml").matchAll(/<li><a href="([^"]+)">([^<]+)<\/a><\/li>/g)].map((m) => m[2]);
   expect(labels.filter((l) => l !== "Capa" && l !== "Sumário" && !/^(Começar|Início)/.test(l))).toHaveLength(1);
-  await setProperty(app, mare, "cover", null);
+  await setProperty(ob, mare, "cover", null);
 });
 
 test("12. the scene break setting: ❦ in the file; an empty field goes back to * * *", async () => {
   // the settings row, typed in the settings tab
-  await app.openSettings();
-  const row = (await settingsPage(app)).locator(".setting-item").filter({ hasText: "Separador de cena no EPUB" }).locator("input").first();
+  await ob.openSettings();
+  const row = (await settingsPage(ob)).locator(".setting-item").filter({ hasText: "Separador de cena no EPUB" }).locator("input").first();
   await row.fill("❦");
   await row.blur();
-  await app.waitFor("the setting saved", async () => (await app.setting<string>("epubSceneBreak")) === "❦");
-  await app.closeModals();
-  await openExport(app, BOOK);
-  await chip(app, "EPUB");
-  await chip(app, "pt-BR");
-  await runExport(app, "Substituir");
-  await app.notice("Exportado:");
-  const all = (() => { const z = zipFiles(vaultBytes(app, PTBR)); return z.names.filter((n) => n.endsWith(".xhtml")).map((n) => z.text(n)).join("\n"); })();
+  await ob.waitFor("the setting saved", async () => (await ob.setting<string>("epubSceneBreak")) === "❦");
+  await ob.closeModals();
+  await openExport(ob, BOOK);
+  await chip(ob, "EPUB");
+  await chip(ob, "pt-BR");
+  await runExport(ob, "Substituir");
+  await ob.notice("Exportado:");
+  const all = (() => { const z = zipFiles(vaultBytes(ob, PTBR)); return z.names.filter((n) => n.endsWith(".xhtml")).map((n) => z.text(n)).join("\n"); })();
   expect(all).toContain('<p class="scene-break">❦</p>');
   expect(all).not.toContain('<p class="scene-break">* * *</p>');
 
-  await app.openSettings();
-  const row2 = (await settingsPage(app)).locator(".setting-item").filter({ hasText: "Separador de cena no EPUB" }).locator("input").first();
+  await ob.openSettings();
+  const row2 = (await settingsPage(ob)).locator(".setting-item").filter({ hasText: "Separador de cena no EPUB" }).locator("input").first();
   await row2.fill("");
   await row2.blur();
-  await app.waitFor("the default is back", async () => (await app.setting<string>("epubSceneBreak")) === "* * *");
-  await app.closeModals();
+  await ob.waitFor("the default is back", async () => (await ob.setting<string>("epubSceneBreak")) === "* * *");
+  await ob.closeModals();
 });
 
 test("13. the file already exists: Cancelar, Manter os dois, Substituir", async () => {
-  await openExport(app, BOOK);
-  await chip(app, "EPUB");
-  await chip(app, "pt-BR");
-  await primary(app).click();
-  const dlg = app.page.locator(".modal", { hasText: "O arquivo já existe" });
+  await openExport(ob, BOOK);
+  await chip(ob, "EPUB");
+  await chip(ob, "pt-BR");
+  await primary(ob).click();
+  const dlg = ob.page.locator(".modal", { hasText: "O arquivo já existe" });
   await expect(dlg).toBeVisible();
   for (const b of ["Cancelar", "Manter os dois", "Substituir"]) await expect(dlg.getByRole("button", { name: b })).toBeVisible();
-  await snap(app, "13. the file already exists", dlg);
+  await snap(ob, "13. the file already exists", dlg);
   await dlg.getByRole("button", { name: "Manter os dois" }).click();
-  await app.waitFor("the second file", () => app.listVaultFolder(DIR).filter((n) => /^Livro Longo \(pt-BR\) .*\.epub$/.test(n)).length === 1);
+  await ob.waitFor("the second file", () => ob.listVaultFolder(DIR).filter((n) => /^Livro Longo \(pt-BR\) .*\.epub$/.test(n)).length === 1);
 });
