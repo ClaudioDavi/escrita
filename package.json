@@ -31,6 +31,7 @@
     "@codemirror/view": "6.38.6",
     "@eslint/js": "^10.0.1",
     "@eslint/json": "^2.1.1",
+    "@playwright/test": "1.63.0",
     "@types/node": "^22.0.0",
     "esbuild": "^0.25.0",
     "eslint": "^10.12.0",
