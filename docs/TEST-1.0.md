@@ -1,3 +1,5 @@
+> **Automated (1.1):** G2a and G2b run as `e2e/specs/setup.spec.ts` (`npm run e2e`, see [TESTING.md](TESTING.md)). What stays by eye: reading the screenshots in the report, G2c and the rest of this page.
+
 # Escrita 1.0: manual test plan (G2 and G4)
 
 This is the plan for testing Wave 2 of 1.0 by hand, in Obsidian on desktop: the setup

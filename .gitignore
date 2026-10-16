@@ -7,3 +7,7 @@ data.json
 .vscode/
 .idea/
 /styles.css
+
+# end-to-end run output (docs/TESTING.md)
+/e2e/report/
+/test-results/
