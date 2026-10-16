@@ -119,6 +119,20 @@ describe("keep rules", () => {
     expect(pages[1].rows[0].row).toBe(0);
   });
 
+  it("a scene heading moves when a short action after it (it never splits) would not fit whole", () => {
+    // 50 rows used: the heading fits, its blank and three lines do not (PLAN-1.1 Q10, the heading was left alone)
+    const pages = paginate(script(...fill(47), actionOf(2, "e"), scene("int. a - day"), actionOf(3, "f")), LETTER);
+    expect(pages).toHaveLength(2);
+    expect(rowText(pages[0].rows[pages[0].rows.length - 1])).toBe("e".repeat(59));
+    expect(rowText(pages[1].rows[0])).toBe("INT. A - DAY");
+  });
+
+  it("a scene heading moves when the speech after it has no sentence end to split at", () => {
+    const long = Array.from({ length: 6 }, () => "word").join(" ").repeat(1) + " " + "w".repeat(30) + " " + "z".repeat(30) + " " + "y".repeat(30);
+    const pages = paginate(script(...fill(47), actionOf(2, "e"), scene("int. a - day"), cue("ANA"), dialogue(long)), LETTER);
+    expect(rowText(pages[1].rows[0])).toBe("INT. A - DAY");
+  });
+
   it("a scene heading stays when two lines of what follows fit under it", () => {
     expect(paginate(script(...fill(49), scene("int. a - day"), action("g")), LETTER)).toHaveLength(1);
   });
@@ -179,6 +193,17 @@ describe("dialogue across pages", () => {
   it("does not repeat the label when the extension is already the continued word", () => {
     const pages = paginate(script(...fill(41), cue("ANA", "CONT'D"), dialogue(speech(30))), LETTER);
     expect(rowText(pages[1].rows[0])).toBe("ANA (CONT'D)");
+  });
+
+  it("does not repeat the label when the extension holds it after another one: (V.O.) (CONT'D)", () => {
+    const pages = paginate(script(...fill(41), cue("ANA", "V.O. CONT'D"), dialogue(speech(30))), LETTER);
+    expect(rowText(pages[0].rows.find((r) => rowText(r).startsWith("ANA"))!)).toBe("ANA (V.O.) (CONT'D)");
+    expect(rowText(pages[1].rows[0])).toBe("ANA (V.O.) (CONT'D)");
+  });
+
+  it("adds the label after an extension of its own", () => {
+    const pages = paginate(script(...fill(41), cue("ANA", "V.O."), dialogue(speech(30))), LETTER);
+    expect(rowText(pages[1].rows[0])).toBe("ANA (V.O.) (CONT'D)");
   });
 
   it("splits a speech more than once when it is long enough", () => {
