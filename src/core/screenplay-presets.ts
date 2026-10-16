@@ -43,15 +43,17 @@ const US_COLUMNS: ScreenplayPreset["columns"] = {
 
 /**
  * The two pages (PLAN-1.1, decided 2026-10-16: Letter by default, A4 for Brazil and Europe).
- * A4 keeps the same left margin and columns, narrowed to its width, and gains lines from its
- * height. The A4 numbers are a first guess that Wave 1 C checks against the reference (Q10).
+ * A4 keeps the same left margin and columns, narrowed to its width (1" right margin: 72
+ * whole columns on 8.27"), and gains lines from its height. Checked against Afterwriting's
+ * `a4` profile (Wave 1 C, Q10): it has 57 lines per page (top margin 1", 1.19" left at the
+ * bottom), so A4 is 57, not the first guess of 58.
  */
 const LETTER_PAGE = { id: "letter" as const, page: { width: 612, height: 792 }, top: 72, linesPerPage: 55, columns: US_COLUMNS };
 const A4_PAGE = {
   id: "a4" as const,
   page: { width: 595.28, height: 841.89 },
   top: 72,
-  linesPerPage: 58,
+  linesPerPage: 57,
   columns: { ...US_COLUMNS, scene: { left: 15, right: 72 }, action: { left: 15, right: 72 }, character: { left: 37, right: 72 }, transition: { left: 15, right: 72 } },
 };
 
