@@ -194,7 +194,7 @@ export function aboutCount(amount: number): number {
 }
 
 /** What the title page says, worked out once for every writer and the preview. */
-export interface TitlePage {
+export interface ManuscriptTitle {
   /** the name, then the contact lines, trimmed, empty ones left out */
   contact: string[];
   /** the rounded count in the preset's words and number format ("about 18,500 words"); "" for an empty work */
@@ -210,7 +210,7 @@ export function bylineOf(name: string, template: string): string {
 }
 
 /** The title page's contact lines, count line and byline (Q8), shared by DOCX, Markdown and the preview. */
-export function titlePageOf(doc: ExportDoc, preset: Pick<Preset, "countLabel" | "byline" | "language">): TitlePage {
+export function titlePageOf(doc: ExportDoc, preset: Pick<Preset, "countLabel" | "byline" | "language">): ManuscriptTitle {
   return {
     contact: [doc.author.name.trim(), ...doc.author.contact.map((c) => c.trim())].filter((c) => c !== ""),
     count: doc.count.amount > 0

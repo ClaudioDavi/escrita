@@ -101,8 +101,9 @@ Obsidian in Portuguese (Brasil), vault `vazio-pt`.
      both examples (stage rascunho), and the line saying the "Exemplo ·" notes can be deleted.
    - The right sidebar: the outline on top; the lens below with **Marcadores** [Placeholders]
      as a second tab behind it. The universe panel is a tab behind the files on the left.
-   - In the file explorer, the conto shows its count against 2000; the chapters show 1200
-     and 1500 (their own targets), and the book note 1500 as the chapters' default.
+   - In the file explorer, the conto's count has 2000 as its target (in the tooltip; in the
+     text only with "Mostrar a meta ao lado da contagem" on); the chapters have 1200 and 1500
+     (their own targets), and the book note 1500 as the chapters' default.
 8. Open the conto.
    Expected: the first beat has prose under it, the second is a ghost beat; the placeholder
    `%% XXX: … %%` is marked; the dialogue line starts with a travessão and dialogue focus
@@ -110,7 +111,8 @@ Obsidian in Portuguese (Brasil), vault `vazio-pt`.
 9. Open **Configurações › Escrita**.
    Expected: the statuses read ideia, rascunho, revisão, pronto, publicado; the chapters
    folder is "Capítulos"; the Features page reads **Tudo** with every switch on; the universe
-   mode is Universo; "Abrir a nota inicial ao iniciar" is on.
+   mode is Universo; "Abrir ao iniciar" is on (the setup's preview calls it "Abrir a nota
+   inicial ao iniciar").
 10. Restart Obsidian.
     Expected: `Início.md` opens on startup. No first-run notice.
 11. Run the command again and go to step 2.
@@ -128,9 +130,9 @@ Obsidian in English, vault `empty-en`. Repeat G2a with the English names, with t
    Expected: `Home.md` opens and writing mode starts: no sidebars, no tab bar, no ribbon, no
    status bar; the note's header (its title) stays on desktop. A quiet **Exit writing mode**
    button at the top right; the notice "Writing mode. To leave: the button in the corner or
-   the command." once. The goal counter "today 0 / 500" at the bottom (Goals is in
+   the command." once. The goal counter "today 0 / 1,000" at the bottom (Goals is in
    Essentials).
-3. **Settings** shows "Open in writing mode" on, beside "Open the home note on startup".
+3. **Settings** shows "Open in writing mode" on, beside "Open on startup".
    Restart: Obsidian opens in writing mode on `Home.md`.
 4. **Edge case**, the language tick off: in a third empty vault, pick Portuguese as the
    language with Obsidian in English, untick the language group and create.

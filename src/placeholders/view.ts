@@ -3,7 +3,8 @@ import type EscritaPlugin from "../main";
 import type { Book } from "../core/books";
 import { fmt, t } from "../i18n";
 import { inBook } from "../core/classify";
-import { displayName, orderPaths, parentPath, type IndexedMarker } from "./logic";
+import { displayName, orderPaths, type IndexedMarker } from "./logic";
+import { parentOf } from "../core/paths";
 import { VIEW_TYPES } from "../core/view-types";
 
 export const PLACEHOLDERS_VIEW = VIEW_TYPES.placeholders;
@@ -246,6 +247,6 @@ export class PlaceholdersView extends ItemView {
   private whereLabel(path: string): string {
     const p = this.plugin.books.classify(path);
     if (p.book && (p.kind === "chapter" || p.kind === "book-file")) return p.book.title;
-    return parentPath(path);
+    return parentOf(path);
   }
 }

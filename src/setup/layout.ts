@@ -43,10 +43,13 @@ export async function applyLayout(plugin: EscritaPlugin, layout: SetupLayout): P
   const heads: WorkspaceLeaf[] = [];
 
   for (const step of steps) {
+    // A tab behind another (a second tab of a group, the universe behind the files) stays
+    // behind: only the head of a group comes to the front.
+    const head = step.how !== "tabWith" && step.how !== "leftTab";
     const existing = workspace.getLeavesOfType(step.view)[0];
     if (existing) {
       leaves.set(step.view, existing);
-      if (step.how !== "tabWith") heads.push(existing);
+      if (head) heads.push(existing);
       continue;
     }
     const anchor = step.anchor ? leaves.get(step.anchor) : undefined;
@@ -59,10 +62,9 @@ export async function applyLayout(plugin: EscritaPlugin, layout: SetupLayout): P
       failed.push(step.view);
       continue;
     }
-    // A tab behind another stays behind: only the head of a group comes to the front.
-    await leaf.setViewState({ type: step.view, active: step.how !== "tabWith" });
+    await leaf.setViewState({ type: step.view, active: head });
     leaves.set(step.view, leaf);
-    if (step.how !== "tabWith") heads.push(leaf);
+    if (head) heads.push(leaf);
   }
   for (const leaf of heads) await workspace.revealLeaf(leaf);
 

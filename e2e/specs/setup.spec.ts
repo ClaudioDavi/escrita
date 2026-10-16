@@ -153,12 +153,9 @@ test.describe("G2a: the setup in an empty vault, in Portuguese", () => {
     await app.screenshot("7. the desk layout");
   });
 
-  // FINDING (task E, 2026-10-16): the universe tab comes to the FRONT of the left sidebar, with the
-  // files behind it. TEST-1.0 G2a step 7 and setup/layout.ts's own comment say the universe is "a tab
-  // behind the files". Cause: layout.ts opens the "leftTab" step with `active: true` and then
-  // `revealLeaf`s every head, and the leftTab step counts as a head. Drop this test.fail() when fixed.
+  // Found by task E (2026-10-16): the universe tab came to the front; fixed by the Wave 1 judge
+  // (setup/layout.ts: a "leftTab" step is not a head, and opens inactive).
   test("7b. the universe panel is a tab behind the files on the left", async () => {
-    test.fail();
     const where = await app.placement(["escrita-universe"]);
     expect(where["escrita-universe"]!.front).toBe("file-explorer");
   });

@@ -252,6 +252,124 @@ module folder imports another.
 - The spike is in `e2e/spike/` (`run.mjs`, `NOTES.md`); task E builds the harness on it and
   removes it.
 
+### Wave 1 (2026-10-16)
+
+Five tasks, merged into `1.1` in order with `--no-ff` (`59ddf92`, `6b58db1`, `8200ad0`, `1a96eaf`,
+`5c8100b`). No conflicts: A and D touched different lines of `export/index.ts` and `logic.ts`.
+
+**A, improvement 46 (`e6becab`).** `core/export-pipeline.ts` has `titlePageOf(doc, preset)`,
+`bylineOf` and `minHeadingOf`; `EpubCover` moved there. DOCX, Markdown, EPUB and the preview use
+them. `writers/xml.ts` holds `xmlEscape`, so `epub.ts` no longer imports `docx.ts`. `logic.ts`
+has `headingFormat`, `ExportState` and `stateOfLast` (the copies in `modal.ts` and `index.ts` are
+gone). The four dialogs are in `export/dialogs.ts`; `modal.ts` went from 714 to 576 lines. No
+export expectation changed. New: `tests/export-title-page.test.ts`.
+
+- `askExists` and `askWhere` stay in `modal.ts` as thin wrappers, because three lifecycle tests
+  mock that module. Accepted.
+- A's finding that `askChapters` has no caller is wrong: `modal.ts:346` calls it.
+
+**B, the parser (`659a27c`).** `parseFountain` in `core/fountain.ts`, on `segment()`'s lines, with
+boneyard, the title block, forced elements, dual dialogue and emphasis (`parseRuns`, exported for
+the writers). An unclosed `/*` is text, a `---` line is action, so nothing is lost (Q6). 121 tests
+in `tests/fountain.test.ts` and the Portuguese fixture `tests/fixtures/fountain/roteiro.md`. The
+Wave 0 types are unchanged.
+
+**C, pages and PDF (`3f97e65`).** `core/screenplay-pages.ts` (`paginate(script, preset)`, every
+rule of SP 6), `core/pdf.ts` (PDF 1.4, the four base-14 Courier faces, WinAnsi, `?` for the rest)
+and `core/screenplay-pdf.ts` (`screenplayPdf(script, titlePage, preset)` with `unsupported` for the
+preview, Q7). A4 is 57 lines, as in Afterwriting's A4 profile. `scripts/compare-screenplay.mjs` is
+the reference script (Q10). Tests: `screenplay-pages` (27), `pdf` (13), `screenplay-pdf` (8). The
+fixtures are C's own (`tests/fixtures/screenplay/`): *Brick & Steel* has no stated license, so it
+stays out of the repo and is read from Afterwriting's samples folder.
+
+**D, known issues 2 to 5 (`ff18fcd`).** "Appears in" reads chapter numbers with `core/book.ts`
+(`3Title` and `03) X` now have no number, like everywhere else). The cover property goes through
+`propertyValue`. `templatesFolder` and `globalDarlingsNote` follow renames through
+`dataFollowers()`, also while the feature is off. `submissionsOffNotice` passes the language. The
+`inFolder`, `basename` and `dirname` aliases are gone.
+
+**E, the harness (`27fd451`).** `e2e/lib/` (launch, restart, close, the `App` helpers, a setup
+page object), `e2e/fixtures/` (`emptyPt`, `emptyEn`, `writer`), `new-work.spec.ts` (PLAN-1.0.4's
+checks 1 to 9) and `setup.spec.ts` (TEST-1.0 G2a and G2b), `playwright.config.ts`, `npm run e2e`,
+`docs/TESTING.md`. `e2e/spike/` is removed. `restart()` quits over CDP so the profile's
+localStorage is kept.
+
+**Judge fixes.**
+
+- `core/export-pipeline.ts`'s new `TitlePage` clashed with `core/fountain.ts`'s `TitlePage` (the
+  screenplay's). The prose one is now `ManuscriptTitle`.
+- The last test-only alias went: `placeholders/view.ts` calls `parentOf` from `core/paths.ts`, and
+  `placeholders/logic.ts` no longer exports `parentPath`. IMPROVEMENTS updated.
+- E's finding 1, fixed: after the desk layout the universe panel came to the front of the left
+  sidebar. In `setup/layout.ts` a `leftTab` step now opens inactive and is not revealed, so it
+  stays behind the files. Test 7b no longer has `test.fail()` and passes.
+- TEST-1.0's stale expectations now match the code: the settings row is "Abrir ao iniciar" /
+  "Open on startup", the default goal is 1,000, the explorer shows the target in the tooltip.
+
+**Decisions on the handoffs.**
+
+- The screenplay title page (Wave 2, F): a pure function in the export module builds core/fountain's
+  `TitlePage`. The title is the note's title. The author and contact lines use the same rule as
+  prose (`titlePageOf(doc).contact`, from `authorProperty`, `authorName`, `contactLines`). Credit,
+  source and draft date come from the settings' properties. The Title block fills only what is
+  still empty (Q9).
+- The Fountain writer (F) inverts the parser's rules: `@` for a mixed-case cue, `.` for a heading
+  without a known prefix, `!` for action that reads as a cue or a transition. Its round-trip test
+  parses what it writes.
+- Dialogue splits only at a sentence end (SP 6). Kept. A long speech with no sentence end moves
+  whole; the author confirms at G2.
+- No automatic `(CONT'D)` when a character speaks again after action, and no `CONTINUED:` marks,
+  in 1.1. Writers type the extension when they want it.
+- Columns: ours stay the industry numbers (action 60, dialogue 35 from col 25, cue at col 37).
+  Afterwriting's differ by one or two columns, which explains some of the page breaks below.
+- Property reads in export: the cover and `Compile:` both ignore case now. `frontPages` trims and
+  the others don't. F routes `frontPages` through `propertyValue` while it is in `index.ts`.
+- `parseFountain` falls back to `segment(text)` when `md.text` differs, which evicts the caller's
+  cache. Harmless; F always passes the note's own `segment()`.
+- CONTEXT.md and ARCHITECTURE.md mention the harness in Wave 3, as planned.
+
+**Left for the author.** E's finding 2: running the setup again in a vault that is fully set up
+lists the layout row ("Arrumar a tela uma vez", unticked). So the modal says "Nada marcado" and
+shows a disabled Criar, not "nothing to do" with Fechar as board 36 b and TEST-1.0 G2a step 11
+say. Either the layout row stops counting as available (and can't be run from a finished
+setup), or the expectation changes. Test 11b pins it with `test.fail()`.
+
+**Checks** (main checkout, after the merges and again after the judge fixes): typecheck, vitest
+227 files with 3683 passed and 2 skipped, the timing project 10 passed and 1 skipped, build,
+`test:bundle` 4 passed, lint, `npx tsc -p e2e`. A fuzz of 3,000 random scripts through
+`parseFountain`, `paginate` and `screenplayPdf` (Letter and A4) threw nothing and every PDF's xref
+offsets matched. `pdfinfo` and `pdffonts` read the PDFs: the right page size, the four Courier
+faces, WinAnsi, nothing embedded.
+
+**e2e** (`npx playwright test`, once): 27 passed in 41.3 s wall, 4 Obsidian launches. Two of the 27
+are `test.fail()` findings (7b, 11b). After the layout fix the setup spec ran again: 18 passed,
+and only 11b is still an expected failure. The author's `obsidian.json` hash was unchanged, and
+their two Obsidian instances kept running.
+
+**Reference comparison** (`scripts/compare-screenplay.mjs`, Afterwriting 1.17.3; page counts
+include the title page):
+
+| Fixture | Letter: Escrita / Afterwriting | Letter: pages that start differently | A4: Escrita / Afterwriting | A4: pages that start differently |
+|---|---|---|---|---|
+| en-short (ours) | 5 / 5 | 1 | 5 / 5 | 3 |
+| pt-short (ours) | 5 / 5 | 3 | 5 / 5 | 0 |
+| brick_and_steel | 4 / 4 | 1 | 4 / 4 | 1 |
+| my_living_memory | 16 / 16 | 9 | 16 / 15 | 9 |
+| printing_trouble | 12 / 12 | 0 | 12 / 12 | 1 |
+
+The page counts match except *My Living Memory* on A4. Escrita usually starts a page one or two
+lines earlier. Some of it is Afterwriting's own rules (its automatic `(CONT'D)`, its dialogue
+split at any line, its wider columns). But on *Brick & Steel* page 3 the lines wrap the same and
+Afterwriting still fits one more short speech, so Escrita may count a line too many per page.
+Wave 2 checks that first (a counting error is a fix, not a decision), then decides each
+remaining difference and pins it in `tests/screenplay-pages.test.ts`.
+
+**For Wave 2.** F: the writer table, `writers/{fountain,pdf}.ts`, the screenplay title page, the
+modal (boards 43 and 44), the "Screenplays" settings group, and `frontPages` through
+`propertyValue`. G: as planned. H: the remaining TEST-1.0 and TEST-0.9 specs, the `long-book` and
+`screenplays` fixtures, 0.9's G0d, known issue 1, `screenplay.spec.ts`, and test 11b once the
+author decides.
+
 ## By-hand checks (G2)
 
 What stays by hand is short, and most of it is reading the harness's screenshots:
