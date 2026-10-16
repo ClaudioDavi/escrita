@@ -3,6 +3,8 @@
 // No Obsidian imports: the hub's `add`, `rebuild`, link resolution and time come in
 // through `MentionsDeps`, so it is tested on MemoryVault and ManualTimers.
 
+import type { FormKind } from "../core/form";
+import { fountainOptions } from "../core/fountain";
 import { segment } from "../core/markdown";
 import { findNames, type TermTable } from "../core/names";
 import type { IndexChange, IndexFile, IndexSpec, IndexTimers, VaultIndex } from "../core/vault-index";
@@ -36,6 +38,8 @@ export interface MentionsDeps<F extends IndexFile> {
   /** the global term table (the provider's `globalTable()`), read live */
   table(): TermTable;
   settings(): EntriesSettings;
+  /** the note's form (`classify().form`): a screenplay's cues count as mentions (PLAN-1.1 Q8) */
+  formOf(path: string): FormKind | null;
   /** a link path to a note path, from a note (`getFirstLinkpathDest`); null when it resolves to nothing */
   resolve(linkpath: string, from: string): string | null;
   timers: IndexTimers;
@@ -49,6 +53,7 @@ function includeKey(s: EntriesSettings): string {
   return JSON.stringify([
     classifyKeyOf(s), s.universeMode, s.templatesFolder,
     Object.values(s.entryTypes).map((t) => t.template),
+    s.screenplaySceneHeadings ?? "", s.screenplayTransitions ?? "",   // the cue parser's words
   ]);
 }
 
@@ -203,9 +208,11 @@ export class MentionsIndex<F extends IndexFile> {
       name: MENTIONS_INDEX_NAME,
       mode: "content",
       include: (f) => this.deps.settings().universeMode !== "off" && isUniverseNote(f, this.deps.settings()),
-      compute: (_f, text) => {
+      compute: (f, text) => {
         if (text === null) return undefined;
-        const nm = computeMentions(segment(text), (m) => findNames(m, this.deps.table()));
+        const s = this.deps.settings();
+        const cues = { form: this.deps.formOf(f.path), options: fountainOptions({ screenplaySceneHeadings: s.screenplaySceneHeadings ?? "", screenplayTransitions: s.screenplayTransitions ?? "" }) };
+        const nm = computeMentions(segment(text), (m) => findNames(m, this.deps.table()), cues);
         return nm.occurrences.length === 0 && nm.links.length === 0 ? undefined : nm;   // Q31
       },
       same: mentionsSame,

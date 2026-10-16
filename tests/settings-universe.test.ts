@@ -26,11 +26,11 @@ describe("universe and threads sections", () => {
     expect(names()).toContain(t("universe.settings.names"));
   });
 
-  it("the thread words follow the form and come before the types", () => {
+  it("the thread words come before the types", () => {
     const r = rig({ universeMode: "perBook" });
     renderBlocks(universeSettingsItems(r.ui, r.plugin));
     const n = names();
-    expect(n.indexOf(t("universe.settings.threadWord"))).toBeGreaterThan(n.indexOf(t("universe.settings.form")));
+    expect(n).not.toContain(t("settings.formProperty"));   // the form rows live in the books slot since 1.1
     expect(n.indexOf(t("universe.settings.threadWord"))).toBeLessThan(n.indexOf(t("universe.settings.types")));
   });
 
@@ -56,14 +56,6 @@ describe("universe and threads sections", () => {
     off.commits[0].apply("loose end");
     expect(off.settings.threadKeyword).toBe("loose end");
     expect(off.commits[1].fallback()).toBe("closed");
-  });
-
-  it("the universe form field saves once per commit", () => {
-    const r = rig({ universeMode: "universe" });
-    renderBlocks(universeSettingsItems(r.ui, r.plugin));
-    const form = r.commits.find((c) => c.fallback() === DEFAULT_SETTINGS.formProperty)!;
-    form.apply("kind");
-    expect(r.settings.formProperty).toBe("kind");
   });
 });
 
@@ -94,27 +86,25 @@ describe("a pt-BR install falls back to the pt-BR set (1.0 known issue: English 
 describe("the universe section's blocks", () => {
   const rowNames = () => names().filter(Boolean);
 
-  it("is three blocks in a universe: the form rows, then Types and Names under their own headings", () => {
+  it("is three blocks in a universe: the note rows, then Types and Names under their own headings", () => {
     const r = rig({ universeMode: "universe" });
     const blocks = universeSettingsItems(r.ui, r.plugin);
     expect(blocks.map((b) => b.heading)).toEqual([undefined, t("universe.settings.types"), t("universe.settings.names")]);
     renderBlocks(blocks);
     expect(rowNames()).toEqual([
-      "universe.settings.note", "universe.settings.folders", "universe.settings.form", "universe.settings.formFolders",
+      "universe.settings.note", "universe.settings.folders",
       "universe.settings.threadWord", "universe.settings.closedWord", "universe.settings.types", "universe.settings.types.property",
       "universe.settings.names", "universe.settings.underline", "universe.settings.titles", "universe.settings.props",
     ].map((k) => t(k)));
   });
 
-  it("per book has no note or folders, and its form row is one field", () => {
+  it("per book has no note or folders", () => {
     const r = rig({ universeMode: "perBook" });
-    const { groups } = renderBlocks(universeSettingsItems(r.ui, r.plugin));
+    renderBlocks(universeSettingsItems(r.ui, r.plugin));
     expect(rowNames()).toEqual([
-      "universe.settings.form", "universe.settings.threadWord", "universe.settings.closedWord", "universe.settings.types",
+      "universe.settings.threadWord", "universe.settings.closedWord", "universe.settings.types",
       "universe.settings.types.property", "universe.settings.names", "universe.settings.underline", "universe.settings.titles", "universe.settings.props",
     ].map((k) => t(k)));
-    expect(rowNamed(groups, t("universe.settings.form"))!.setting.components).toHaveLength(1);
-    expect(rowNamed(groups, t("universe.settings.form"))!.def.desc).toBe(t("universe.settings.form.desc.perBook"));
   });
 
   it("starts with the description and the mode pointer as rows without a name", () => {
@@ -130,24 +120,6 @@ describe("the universe section's blocks", () => {
   it("with the mode off and threads off there is nothing to show", () => {
     const r = rig({ universeMode: "off" }, ["universe"]);
     expect(universeSettingsItems(r.ui, r.plugin)).toEqual([]);
-  });
-
-  it("the form row holds the property and, in a universe, the values after it; the values save once per change", () => {
-    const { ui, save } = fakeUi();
-    const r = rig({ universeMode: "universe" });
-    const { groups } = renderBlocks(universeSettingsItems(ui, r.plugin));
-    const form = rowNamed(groups, t("universe.settings.form"))!.setting.components;
-    expect(form).toHaveLength(2);
-    commit(form[0], " kind ");
-    expect(r.settings.formProperty).toBe("kind");
-    expect(save).toHaveBeenCalledTimes(1);
-    const before = r.settings.formValues;
-    const keys = Object.keys(before) as (keyof typeof before)[];
-    commit(form[1], "a, , c");
-    expect(save).toHaveBeenCalledTimes(2);
-    expect(r.settings.formValues[keys[0]]).toBe("a");
-    expect(r.settings.formValues[keys[1]]).toBe(before[keys[1]]);   // a blank item keeps the saved word
-    expect(form[1].inputEl.value).toContain("a, ");
   });
 
   it("the note and folders fields store, and the note keeps its default when cleared", () => {

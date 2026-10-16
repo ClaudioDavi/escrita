@@ -12,6 +12,7 @@ export const appearsStrings: Strings = {
     "universe.appears.form.novel": "novel",
     "universe.appears.form.poem": "poem",
     "universe.appears.form.fragment": "fragment",
+    "universe.appears.form.screenplay": "screenplay",
   },
   "pt-BR": {
     "universe.appears.more": "mais {n}",
@@ -21,5 +22,6 @@ export const appearsStrings: Strings = {
     "universe.appears.form.novel": "romance",
     "universe.appears.form.poem": "poema",
     "universe.appears.form.fragment": "fragmento",
+    "universe.appears.form.screenplay": "roteiro",
   },
 };

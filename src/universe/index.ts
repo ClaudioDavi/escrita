@@ -37,7 +37,6 @@ import { UniverseNamesProvider } from "./names-provider";
 import { UNIVERSE_NOTE_TEXT, keptOut, scopeFor, universeNotePath, universeRootOf, type Scope } from "../core/scope";
 import type { EntryKind, UniverseMode } from "./settings";
 import { inScope, type ThreadRef } from "./threads";
-import { formFor } from "../core/form";
 import type { WorkInfo } from "./works-list";
 import { computeMentions, type NoteMentions } from "./mentions";
 import { segment } from "../core/markdown";
@@ -167,6 +166,7 @@ export class UniverseModule extends FeatureModule {
       rebuild: (name) => p.index.rebuild(name),
       table: () => names.globalTable(),
       settings: () => p.settings,
+      formOf: (path) => p.books.classify(path).form,
       resolve: (link, from) => p.app.metadataCache.getFirstLinkpathDest(link, from)?.path ?? null,
       timers: { ...timers, yieldNow: macrotaskYield },
     });
@@ -417,15 +417,12 @@ export class UniverseModule extends FeatureModule {
    */
   worksIn(scope: Scope): WorkInfo[] {
     if (scope.kind === "none") return [];
-    const s = this.plugin.settings;
     const out: WorkInfo[] = [];
     for (const [path, e] of this.plugin.works.list()) {
       if ((e.role !== "book" && e.role !== "note") || e.stage === null) continue;
       if (this.entriesIdx?.get(path)) continue;
       if (!inScope(this.scopeOf(path), scope)) continue;
-      const file = this.plugin.app.vault.getAbstractFileByPath(path);
-      const fm = file instanceof TFile ? this.plugin.books.frontmatter(file) : {};
-      out.push({ path, title: e.title, stage: e.stage, form: formFor(path, fm[s.formProperty], s), role: e.role });
+      out.push({ path, title: e.title, stage: e.stage, form: this.plugin.books.classify(path).form, role: e.role });
     }
     return out;
   }
@@ -550,9 +547,7 @@ export class UniverseModule extends FeatureModule {
     const title = (path: string): string => p.works.get(path)?.title ?? baseName(path);
     return {
       work: (work) => {
-        const file = p.app.vault.getAbstractFileByPath(work);
-        const fm = file instanceof TFile ? p.books.frontmatter(file) : {};
-        const form = formFor(work, fm[p.settings.formProperty], p.settings);
+        const form = p.books.classify(work).form;
         return { name: title(work), form: form ? t(`universe.appears.form.${form}`) : null };
       },
       note: (path) => (p.works.get(path) ? title(path) : defaultLabels.note(path)),

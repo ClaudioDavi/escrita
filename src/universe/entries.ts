@@ -96,7 +96,8 @@ export type EntriesSettings = Pick<UniverseSettings,
   "universeMode" | "universeNote" | "defaultUniverseFolders" | "universeProperty" | "typeProperty" | "entryTypes"
   | "caseSensitiveProperty" | "ignoreProperty" | "firstNameProperty"> & {
   templatesFolder: string;
-} & Pick<ClassifySettings, "chaptersFolder" | "snapshotsFolder" | "chapterTemplate"> & Partial<ClassifySettings>;
+} & Pick<ClassifySettings, "chaptersFolder" | "snapshotsFolder" | "chapterTemplate"> & Partial<ClassifySettings>
+  & { screenplaySceneHeadings?: string; screenplayTransitions?: string };
 
 /**
  * classifyKey and scopeKey of the settings a universe index reads (its values depend on

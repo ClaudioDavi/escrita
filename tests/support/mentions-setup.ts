@@ -1,4 +1,5 @@
 import { IndexHub, type HubEvents } from "../../src/core/index-hub";
+import type { FormKind } from "../../src/core/form";
 import { compileTerms, type NameSource, type TermTable } from "../../src/core/names";
 import { MentionsIndex } from "../../src/universe/mentions-index";
 import type { EntriesSettings } from "../../src/universe/entries";
@@ -14,7 +15,7 @@ export function settings(): EntriesSettings {
   return { ...defaultUniverseSettings(), universeMode: "universe", chaptersFolder: "Chapters", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "" };
 }
 
-export function setup(files: Record<string, string>, sources: NameSource[], opts: { batch?: number; resolve?: (l: string, from: string) => string | null; timers?: ManualTimers } = {}) {
+export function setup(files: Record<string, string>, sources: NameSource[], opts: { batch?: number; resolve?: (l: string, from: string) => string | null; timers?: ManualTimers; formOf?: (path: string) => FormKind | null } = {}) {
   const vault = new MemoryVault(files);
   const timers = opts.timers ?? new ManualTimers();
   const cbs = { modify: [] as ((f: MemFile) => void)[], rename: [] as ((f: MemFile, o: string) => void)[], del: [] as ((f: MemFile) => void)[], create: [] as ((f: MemFile) => void)[] };
@@ -43,6 +44,7 @@ export function setup(files: Record<string, string>, sources: NameSource[], opts
     rebuild: (n) => hub.rebuild(n),
     table: () => state.table,
     settings,
+    formOf: opts.formOf ?? (() => null),
     resolve: opts.resolve ?? (() => null),
     timers,
   });

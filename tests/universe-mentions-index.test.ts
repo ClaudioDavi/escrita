@@ -42,6 +42,15 @@ describe("MentionsIndex lifecycle", () => {
     expect(s.vault.readCount).toBe(2);
   });
 
+  it("reads a screenplay's cues through the note's form, without counting a name twice", async () => {
+    const text = "INT. SALA - DIA\n\nTEO\nOi.\n\nTEO (V.O.)\nTchau.\n";
+    const s = setup({ "Roteiros/a.md": text }, [A], { formOf: (p) => (p.startsWith("Roteiros/") ? "screenplay" : null) });
+    s.mentions.start();
+    s.mentions.demand();
+    await settle();
+    expect(s.mentions.get("Roteiros/a.md")?.occurrences).toHaveLength(2);
+  });
+
   it("follows modify (after the 4 s settle), rename and delete", async () => {
     const s = setup({ "Contos/a.md": "Teo chegou." }, [A]);
     s.mentions.start();

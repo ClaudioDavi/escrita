@@ -148,7 +148,7 @@ describe("MentionCtx over the mentions index", () => {
     const settings: EntriesSettings = { ...defaultUniverseSettings(), universeMode: "universe", chaptersFolder: "Capítulos", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "" };
     const table = compileTerms([teo], { lang: "pt", extraTitles: [] });
     const mentions = new MentionsIndex<MemFile>({
-      add: (spec) => hub.add(spec), rebuild: (n) => hub.rebuild(n), table: () => table, settings: () => settings,
+      add: (spec) => hub.add(spec), rebuild: (n) => hub.rebuild(n), table: () => table, settings: () => settings, formOf: () => null,
       resolve: (l, f) => s.deps.resolve(l, f), timers,
     });
     mentions.start();
