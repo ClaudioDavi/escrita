@@ -3,7 +3,8 @@ import type { ChapterRef } from "../src/core/book-source";
 import { measureText } from "../src/core/measure";
 import { registerStrings } from "../src/i18n";
 import type { LastExport } from "../src/data";
-import { ChaptersModal, ExportModal, type BookOptions, type ExportHost, type ExportModalOptions, type ModalState } from "../src/export/modal";
+import { ChaptersModal } from "../src/export/dialogs";
+import { ExportModal, type BookOptions, type ExportHost, type ExportModalOptions, type ModalState } from "../src/export/modal";
 import { exportStrings } from "../src/export/strings";
 import { buildExport, withWarning, type Built, type ExportPlan } from "../src/export/source";
 

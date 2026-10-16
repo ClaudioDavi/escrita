@@ -17,16 +17,12 @@
 // same book and layout give the same bytes. EPUBCheck validates the fixture book in CI
 // (task 1.4, gate G0a).
 
-import { fillTemplate, type ExportDoc, type ManuscriptWriter, type Preset } from "../../core/export-pipeline";
+import { bylineOf, type EpubCover, type ExportDoc, type ManuscriptWriter, type Preset } from "../../core/export-pipeline";
 import type { Block, Run } from "../../core/manuscript";
 import { zipStore } from "../../core/zip";
-import { xmlEscape } from "./docx";
+import { xmlEscape } from "./xml";
 
-/** The cover image (Q8), read as binary through the book source by the export module. */
-export interface EpubCover {
-  data: Uint8Array;
-  mediaType: "image/jpeg" | "image/png";
-}
+export type { EpubCover };
 
 /** Everything one EPUB is made of: the prose model plus what only an ebook needs. */
 export interface EpubBook {
@@ -195,7 +191,7 @@ function write(book: EpubBook, layout: EpubLayout): Uint8Array {
     add("cover", page(lang, layout.coverLabel,
       `<div class="cover"><img src="${coverPath}" alt="${esc(doc.title)}"/></div>`, "cover"));
   }
-  const bylineText = author ? fillTemplate(layout.byline, { name: author }) : "";
+  const bylineText = bylineOf(author, layout.byline);
   add("title", page(lang, doc.title,
     `<div class="title-page">\n<h1>${esc(doc.title)}</h1>${bylineText ? `\n<p class="byline">${esc(bylineText)}</p>` : ""}\n</div>`, "titlepage"));
   // the front matter pages, then the visible table of contents (nav) after them (Q6)

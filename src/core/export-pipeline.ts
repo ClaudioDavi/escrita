@@ -9,7 +9,7 @@
 // (after 1.0) adds a script model, its layout data and its own writers (Fountain, PDF, FDX) without changing this file.
 // Presets are plain data; the writers read them and nothing else about layout.
 //
-// The pure helpers below (exportDocOf, droppedIn, aboutCount, chapterHeadings, fillTemplate) feed every writer.
+// The pure helpers below (exportDocOf, droppedIn, aboutCount, titlePageOf, minHeadingOf, chapterHeadings, fillTemplate) feed every writer.
 
 import { countedNumbers } from "./book";
 import type { Markdown } from "./markdown";
@@ -41,6 +41,12 @@ export interface ExportPart {
   /** the chapter's own title (ChapterRef.title), for dropping a leading heading that repeats it; null for front matter and a single note */
   title?: string | null;
   md: Markdown;
+}
+
+/** The cover image (Q8), read as binary through the book source by the export module. */
+export interface EpubCover {
+  data: Uint8Array;
+  mediaType: "image/jpeg" | "image/png";
 }
 
 /** What the export module hands the pipeline: everything read, nothing formatted. */
@@ -185,6 +191,38 @@ export function aboutCount(amount: number): number {
   if (!Number.isFinite(amount) || amount <= 0) return 0;
   const step = amount < 10000 ? 100 : 500;
   return Math.max(100, Math.round(amount / step) * step);
+}
+
+/** What the title page says, worked out once for every writer and the preview. */
+export interface TitlePage {
+  /** the name, then the contact lines, trimmed, empty ones left out */
+  contact: string[];
+  /** the rounded count in the preset's words and number format ("about 18,500 words"); "" for an empty work */
+  count: string;
+  /** the byline ("by Ana Souza"); "" when the author has no name */
+  byline: string;
+}
+
+/** The byline for an author's name: `template` with `{name}`; "" when the name is blank. */
+export function bylineOf(name: string, template: string): string {
+  const n = name.trim();
+  return n === "" ? "" : fillTemplate(template, { name: n });
+}
+
+/** The title page's contact lines, count line and byline (Q8), shared by DOCX, Markdown and the preview. */
+export function titlePageOf(doc: ExportDoc, preset: Pick<Preset, "countLabel" | "byline" | "language">): TitlePage {
+  return {
+    contact: [doc.author.name.trim(), ...doc.author.contact.map((c) => c.trim())].filter((c) => c !== ""),
+    count: doc.count.amount > 0
+      ? fillTemplate(preset.countLabel[doc.count.unit], { n: new Intl.NumberFormat(preset.language).format(aboutCount(doc.count.amount)) })
+      : "",
+    byline: bylineOf(doc.author.name, preset.byline),
+  };
+}
+
+/** The lowest heading level a body block may use: a book's chapters own H1-H2, a single note's title owns H1. */
+export function minHeadingOf(doc: ExportDoc): number {
+  return isBookDoc(doc) ? 3 : 2;
 }
 
 /**
