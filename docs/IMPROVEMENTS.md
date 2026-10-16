@@ -180,7 +180,7 @@ interface lives. Test through the interface.
 
 ### 34. Navigation helpers in `src/ui/`
 
-**Strength:** strong · **Pairs with:** known issue "beat click"
+**Strength:** strong · **Related:** the beat click, checked and closed in 1.1 (not a bug)
 
 - **Problem.**
   - "Open a note at a line" is written 9 times with different rules
@@ -376,24 +376,6 @@ interface lives. Test through the interface.
   basename while the note gets `fileToLinktext`. One `universeInfo(note)`; the preview calls
   `universeLinkValue`.
 
-### 46. Export writers share the title page; the modal splits
-
-**Strength:** medium · **Pairs with:** candidates 25 and 30
-
-- **Problem.** The count line, contact lines, byline and `minHeading = book ? 3 : 2` are worked
-  out separately in `export/writers/docx.ts`, `markdown.ts`, `epub.ts` and `preview.ts`; the
-  preview "can't drift from the file" only by copy. `epub.ts:23` imports `xmlEscape` from
-  `./docx`, and `export/source.ts:9` imports `EpubCover` from a writer. `export/modal.ts` (714
-  lines) holds four classes and repeats what the module knows: the heading format
-  (`modal.ts:128`, `index.ts:206`), the state from the last export (`modal.ts:498`,
-  `index.ts:306`), `baseName` (`index.ts:42`, `modal.ts:81`). Export reads properties three
-  ways (`frontPages` trims, `readCover` doesn't, the compile property ignores case).
-- **Change.** `titlePageOf(doc, preset)` and `minHeadingOf(doc)` next to `aboutCount` in
-  `core/export-pipeline.ts`; `writers/xml.ts`; `EpubCover` in the pipeline. `stateOfLast` and
-  `headingFormat` in `logic.ts`; the three small dialogs in `export/dialogs.ts`; a
-  `sentenceWithPath` helper; stop exporting `ChaptersModal`. Every property goes through
-  `propertyValue`. The fixture outputs pin it byte for byte.
-
 ### 47. The lens prepares each pass once
 
 **Strength:** small to medium
@@ -467,6 +449,20 @@ interface lives. Test through the interface.
   `tests/support/obsidian.ts`.
 - `VaultTree` fakes in 7 files. Add `tests/support/fake-tree.ts`.
 
+### 52. "Read the book" rebuilds when the metadata cache is ready
+
+**Strength:** small · **Found:** in 1.1, Wave 2 (PLAN-1.1)
+
+- **Problem.** The reader decides which chapters to include from each chapter's `compile`
+  property (`outline/reader-view.ts`). Run "Read the book" before Obsidian's metadata cache has
+  indexed the chapters (right after startup) and a chapter with `compile: false` is read as
+  included. The view redraws only on create, delete and rename (`reader-view.ts:92-94`), so the
+  wrong chapter stays until one of those happens.
+- **Change.** Also rebuild on the metadata cache's `resolved` event (registered through the
+  module's context), keeping the reading position. A spec (`e2e/`) starts the command before the
+  cache is ready and checks that the chapter leaves the list.
+- **Cost.** One more redraw at startup; the position is kept by the measured anchor from 1.1.
+
 ## Measured and set aside
 
 ### 12. Content indexes share one read and one segmentation per file
@@ -498,17 +494,21 @@ The four from 0.2.1 were closed in 0.8.0 (see "Done").
 
 ## Known issues
 
-Found by the review of 2026-10-08. Each is small; fix them before the refactors.
+Found by the review of 2026-10-08. All five were closed in 1.1 (see "Done"). Suspected, not
+confirmed:
 
-- **Beat click may land at the restored cursor.** `outline/view.ts:1491` sets the cursor after
-  opening, which `ui/open-work.ts:57` says Obsidian's restore undoes; it doesn't clamp either.
-  Unverified in Obsidian. Fix with candidate 34.
+- **Darlings note in a split editor (intermittent).** `e2e/specs/release-fixes.spec.ts:133`
+  ("the first cut creates the darlings note; open it in a tab beside the conto") failed once in
+  a full run of 204 tests: the darlings editor did not show the first cut within 8 s. The file
+  then passed alone, 9 of 9. Not reproduced, no cause found. If it comes back, look at the order
+  of the note's creation, the split and the editor's first load.
 
 ## Done
 
 | Version | Improvement |
 |---|---|
-| 1.1 | Known issues from the review of 2026-10-08, except the beat click: "Appears in" reads chapter numbers with `core/book.ts` (`chapterNumber`, `chapterTitle`); export reads the cover property through `propertyValue`, ignoring case like `Compile:`; `templatesFolder` and `globalDarlingsNote` follow renames (data followers in `TemplatesFeature` and `DarlingsModule`, also while off); `submissionsOffNotice` passes the language. Test-only aliases gone: `export/logic.ts` `inFolder`, `universe/migrate-plan.ts` `basename` and `dirname`, and `placeholders/logic.ts` `parentPath` (the tests and `placeholders/view.ts` use `core/paths.ts`) |
+| 1.1 | Export writers share the title page; the modal splits (candidate 46): `core/export-pipeline.ts` has `titlePageOf(doc, preset)`, `bylineOf` and `minHeadingOf`, and `EpubCover` lives there; the title page type is `ManuscriptTitle` (the screenplay's `TitlePage` is in `core/fountain.ts`); `writers/xml.ts` holds `xmlEscape` (`epub.ts` no longer imports `docx.ts`); `logic.ts` has `headingFormat`, `ExportState` and `stateOfLast`; the dialogs are in `export/dialogs.ts` and `modal.ts` went from 714 to 576 lines before the screenplay options. Every property read goes through `propertyValue`. No export expectation changed (`tests/export-title-page.test.ts`) |
+| 1.1 | The five known issues from the review of 2026-10-08. 1: the beat click lands on the beat, not at the restored cursor; closed, not a bug (three regression specs in `e2e/specs/beat-click.spec.ts`: cursor near the top, the leaf's history restoring an old cursor, a background tab). 2: "Appears in" reads chapter numbers with `core/book.ts` (`chapterNumber`, `chapterTitle`). 3: export reads the cover property through `propertyValue`, ignoring case like `Compile:`. 4: `templatesFolder` and `globalDarlingsNote` follow renames (data followers in `TemplatesFeature` and `DarlingsModule`, also while off). 5: `submissionsOffNotice` passes the language. Test-only aliases gone: `export/logic.ts` `inFolder`, `universe/migrate-plan.ts` `basename` and `dirname`, and `placeholders/logic.ts` `parentPath` (the tests and `placeholders/view.ts` use `core/paths.ts`) |
 | 1.0.4 | Path helpers in core (candidate 33): `core/paths.ts` (`parentOf`, `baseName`, `noteName`, `withMd`, `cleanFolder`, `joinPath`, `isUnder` with `emptyMatches`), edge cases pinned in `tests/paths.test.ts` first. Adopted in the new-work module and in place of the six `parentOf` copies (`core/classify.ts`, `placeholders/logic.ts`, `snapshots/store.ts`, `snapshots/fs.ts`, `universe/migrate-plan.ts`, `export/logic.ts`), `core/scope.ts`'s `withMd`, `noMd` and `inFolder`, and export's path join (renamed `joinPath`, no longer named like core's containment test). `outline/rows.ts` strips `.md` in any letter case. `cleanFolder` keeps today's rule; the `\` rule of `classify.ts` `folderRoot` stays there on purpose |
 | 1.0.3 | The settings tab on Obsidian's declarative settings API (candidate 51): `EscritaSettingTab` implements `getSettingDefinitions()` in `src/settings-tab.ts`, one group per slot of `core/settings-order.ts` under the slot's heading, so Escrita's rows show in the settings search; `display()` and the `settings.ts` lint exceptions are gone, `minAppVersion` is 1.13.0, and the tab rebuilds (`update()`) only on a change of structure (`refresh()`, `features.onApplied`) |
 | 1.0.3 | Settings rows, with fallbacks from the install's defaults (candidate 36): `FeatureModule.settingsItems` returns `SettingsBlock[]`, built with `textRow`, `toggleRow`, `dropdownRow`, `numberRow`, `folderRow`, `noteRow`, `customRow` and `drawnRow` in `src/ui/settings-rows.ts`; one commit path for text fields (`ui.saveOnCommit` with an optional `read`, plain inputs too: the universe tables, the stage words, the status and summary row; no second copy in the lens or the tab); one number parser (`digitsNumber`), snapshots shares `folderRow`, and a cleared field falls back to `ui.defaults()` of the install's language in every section (the known issue "English defaults in the settings tab" is closed). `ui/confirm.ts` uses `setDestructive` |

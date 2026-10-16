@@ -41,7 +41,7 @@ outlined and exported.
 
 | Phase | Contents | Effort |
 |---|---|---|
-| 1 | Screenplay notes and the Fountain parser (SP 1) · Export: Fountain and PDF (SP 6) | M + L |
+| 1 | Screenplay notes and the Fountain parser (SP 1) · Export: Fountain and PDF (SP 6) | M + L. **Built in 1.1.0 (unreleased)** |
 | 2 | Writing in screenplay format (SP 2) · Pages, not words (SP 4) · Scene outline (SP 3) | M + S + S |
 | 3 | Revision for scripts (SP 5) · FDX export and Fountain import (SP 6) · Feature-length scripts as a book (SP 7) | M + M + M |
 
@@ -51,6 +51,29 @@ help from the editor, but can't hand in the script without a correct PDF.
 ---
 
 ## 1. Screenplay notes and the Fountain parser
+
+**Built in 1.1.0 (unreleased), PLAN-1.1.** What phase 1 has, where it differs from the text below:
+
+- The form: `screenplay` is the seventh value of `FORM_KINDS` (pt-BR `roteiro`), in
+  `core/form.ts`; `classify()` gives `form` on every result, so it works with the universe off. The
+  three form rows (form property, form values, form by folder) moved from the Universe section to a
+  "Forms" group after Books, always shown. Nothing saved changes; an old six-value list gains
+  `screenplay` on its own. The Works tab has a seventh group, "Roteiros".
+- The parser: `parseFountain` in `core/fountain.ts`, on `segment()`'s lines, with boneyard, the
+  `Title:` block, forced elements, dual dialogue, emphasis and lyrics. An indented line is action
+  (so a tab-indented `CUT TO:` is action), a `---` line is action, an unclosed `/*` is text:
+  nothing is lost. Centered lines with no blank between them are one centered block. The
+  Markdown disagreements are pinned in `tests/fountain.test.ts`.
+- Settings (Export section, "Screenplays" group): scene heading prefixes, transition endings,
+  page size, scene numbers, the "more" and "continued" labels, the credit line, and the source and
+  draft date properties. **Deviation:** the title page's author and contact use the export settings
+  that already exist (`authorProperty`, `authorName`, `contactLines`), not three new property names.
+  The time-of-day words wait for phase 2.
+- The title page: the note's title; credit, source and draft date from the settings; a `Title:`
+  block fills only what is still empty.
+- Character cues count as mentions in "Appears in" (universe on), unless the prose matcher or a
+  link already covers them, so a cue is never counted twice. The unlinked list reads the prose
+  matcher only.
 
 - **Parser** in `src/core/fountain.ts`, pure, no `obsidian` import. It turns a note's
   body (after `segment()`, so frontmatter, code and `%%` comments are already known)
@@ -125,6 +148,41 @@ scene heading as the boundary.
   out (see the end of this file). Snapshots (SF 4) already compare drafts word by word.
 
 ## 6. Export
+
+**Built in 1.1.0 (unreleased), PLAN-1.1.** Phase 1 has the Fountain and PDF writers; FDX and
+import stay in phase 3. What it does, and the decisions:
+
+- A screenplay is a **single note** whose form is screenplay. It exports as PDF (US Letter by
+  default, or A4) or Fountain only; no prose format. Books and collections stay prose even if
+  they hold screenplay notes (feature-length scripts are SP 7).
+- The PDF is `core/pdf.ts` (PDF 1.4, the base-14 Courier faces, WinAnsi, `?` for what Courier
+  can't print, listed in the preview first) and `core/screenplay-pages.ts` (`paginate`).
+  **Lines per page: Letter 55, A4 57** (Afterwriting's A4 profile; the first guess of 58 was
+  wrong). **Columns (the industry layout):** action 60 characters from column 15 (A4 57), dialogue
+  35 from column 25, parenthetical from 30 to 55, the cue at column 37.
+- **Splits:** a speech splits across pages only at a sentence end, with the "more" label at the
+  bottom and `NAME (continued)` at the top; a speech with no sentence end moves whole to the next
+  page. There is **no automatic CONT'D** when a character speaks again after action, and **no
+  CONTINUED: marks**: the writer types the extension when wanted. A scene heading is never left
+  alone at the bottom (it keeps a short action or a speech with it), a parenthetical never ends a
+  page, a transition stays with the scene before.
+- The Fountain writer inverts the parser's rules (`@`, `.`, `!`), checking each forced mark with the
+  parser itself. `%%` notes are dropped; "Keep notes" in the modal writes them as `[[note]]`
+  paragraphs (off each time). Escrita's parser reads those back as link text, so notes are not in
+  the round trip, and there is no Fountain import.
+- File names `<title>.fountain` and `<title> (Letter).pdf` / `(A4).pdf`. "Export again" repeats a
+  numbered PDF. The modal and the settings follow boards 43 and 44.
+- **Checked against Afterwriting 1.17.3** (`scripts/compare-screenplay.mjs`, dev only, never
+  bundled). Page counts match on all five fixtures except *My Living Memory* on A4 (16 against 15).
+  Each remaining difference is decided and pinned in `tests/screenplay-pages.test.ts`: sentence-end
+  splits, the industry columns, and trailing spaces are kept as ours; consecutive centered lines
+  follow theirs.
+- **Two questions are still open with the author (G2):** (1) a long speech with no sentence end
+  moves whole to the next page; (2) an indented `CUT TO:` is action, where Fountain's spec ignores
+  leading spaces outside action and would make it a transition. Today's behavior is the first
+  reading in both; the fixture *Brick & Steel* on A4 gains a page from (2).
+
+The original plan for the feature follows.
 
 The main feature. It reuses the export pipeline from 0.8 (N 7: choose the source, strip
 Escrita's markers, warn on placeholders, write the file), with screenplay writers
