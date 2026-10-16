@@ -1,6 +1,8 @@
 // "Appears in": where an entry is mentioned (0.7 plan Q30-Q34, U 1.2). Pure: no
 // Obsidian or CodeMirror imports.
 
+import type { FormKind } from "../core/form";
+import { parseFountain, type FountainOptions } from "../core/fountain";
 import type { Markdown } from "../core/markdown";
 import { pickEntry, type Occurrence } from "../core/names";
 import { readerMask } from "../core/wordcount";
@@ -10,13 +12,43 @@ export interface NoteMentions {
   links: readonly { from: number; to: number; linkpath: string }[];   // prose wikilinks and Markdown links (Q30)
 }
 
-/** `find` is injected so the model is tested without the matcher. */
-export function computeMentions(md: Markdown, find: (mask: string) => Occurrence[]): NoteMentions {
+/** Where cues count (Q8, SP 1): the note's form and the parser words; only a screenplay reads them. */
+export interface CueSource { form: FormKind | null; options: FountainOptions }
+
+/**
+ * `find` is injected so the model is tested without the matcher. In a screenplay (`cues`), each
+ * character cue whose name the matcher takes whole (JOÃO, JOÃO (V.O.): the extension is already
+ * split off by the parser) is one more occurrence, unless the prose matcher found it or a link
+ * covers it. The shape is the same: a cue is an occurrence at the name's place in the note.
+ */
+export function computeMentions(md: Markdown, find: (mask: string) => Occurrence[], cues?: CueSource): NoteMentions {
   const links = proseLinks(md.masked());
   const occurrences = find(readerMask(md)).filter(
     (o) => !links.some((l) => o.from < l.to && o.to > l.from),   // the link already counts (Q30)
   );
+  if (cues?.form === "screenplay") {
+    for (const c of cueOccurrences(md, find, cues.options)) {
+      const taken = (r: { from: number; to: number }) => c.from < r.to && c.to > r.from;
+      if (!occurrences.some(taken) && !links.some(taken)) occurrences.push(c);
+    }
+    occurrences.sort((a, b) => a.from - b.from || a.to - b.to);
+  }
   return { occurrences, links };
+}
+
+/** The cues of a screenplay that the matcher reads whole, at their place in the note. */
+function cueOccurrences(md: Markdown, find: (mask: string) => Occurrence[], options: FountainOptions): Occurrence[] {
+  const out: Occurrence[] = [];
+  for (const el of parseFountain(md.text, md, options).elements) {
+    if (el.type !== "character" || el.name.trim() === "") continue;
+    const name = el.name.trim();
+    const start = md.lineStart(el.line);
+    const at = md.text.slice(start, md.lineEnd(el.line)).indexOf(name);   // emphasis and `@` stay outside the name
+    if (at < 0) continue;
+    const whole = find(name).find((o) => o.from === 0 && o.to === name.length);
+    if (whole) out.push({ ...whole, from: start + at, to: start + at + name.length });
+  }
+  return out;
 }
 
 const WIKILINK = /(!?)\[\[([^\]]*)\]\]/g;

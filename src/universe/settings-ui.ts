@@ -1,7 +1,7 @@
 // The Universe section of the settings tab (boards 19, 24 and 40), built by the universe module
 // (`UniverseModule.settingsItems`). The tab's core draws the slot's heading (the slot is shared
 // with threads); this builds the rows: the description, the mode pointer, the note and folders, the
-// form rows, the thread words (while threads is loaded: `threadWordRows`), then the "Types" and
+// thread words (while threads is loaded: `threadWordRows`), then the "Types" and
 // "Names" blocks, each a group with its own heading. With the mode off only the thread words
 // draw. A mode change rebuilds the tab, so the rows are chosen when they are built. Text fields
 // save when the writer leaves them (the row helpers, ui.saveOnCommit, or a change event), so a
@@ -14,7 +14,6 @@ import type EscritaPlugin from "../main";
 import { customRow, noteRow, textAreaRow, textRow, toggleRow, type SettingsBlock } from "../ui/settings-rows";
 import { ENTRY_KINDS, normalizeNotePath } from "./settings";
 import { builtinTitlesText } from "./names-settings";
-import { formValuesText, parseFormValues } from "../core/form";
 import { threadWordRows } from "./threads-settings-ui";
 
 const stripSlashes = (p: string) => p.replace(/^\/+|\/+$/g, "");
@@ -33,7 +32,7 @@ export function universeSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): Se
   const words = plugin.features.isOn("threads");
   if (mode === "off") return words ? [{ items: threadWordRows(ui, s) }] : [];
   return [
-    { items: formItems(ui, plugin, mode) },
+    { items: introItems(ui, plugin, mode) },
     { heading: t("universe.settings.types"), items: typesItems(ui, plugin, mode) },
     { heading: t("universe.settings.names"), items: namesItems(ui, plugin) },
   ];
@@ -50,8 +49,8 @@ async function createNote(plugin: EscritaPlugin): Promise<void> {
   }
 }
 
-/** The description, the note and folders, the form rows, then the thread words (today's order). */
-function formItems(ui: SettingsUi, plugin: EscritaPlugin, mode: "perBook" | "universe"): SettingGroupItem[] {
+/** The description, the note and folders, then the thread words. The form rows moved to the books slot in 1.1. */
+function introItems(ui: SettingsUi, plugin: EscritaPlugin, mode: "perBook" | "universe"): SettingGroupItem[] {
   const s = plugin.settings;
   const d = ui.defaults();
   const items: SettingGroupItem[] = [
@@ -84,38 +83,7 @@ function formItems(ui: SettingsUi, plugin: EscritaPlugin, mode: "perBook" | "uni
     );
   }
 
-  const form = textRow(ui, {
-    name: t("universe.settings.form"),
-    desc: t(mode === "universe" ? "universe.settings.form.desc" : "universe.settings.form.desc.perBook"),
-    key: "formProperty",
-    placeholder: d.formProperty,
-    inputCls: "escrita-universe-narrow",
-    get: () => s.formProperty,
-    set: (v) => { s.formProperty = v; },
-  });
-  if (mode === "universe") {
-    // the values sit in the same row, after the property; they parse on change (an unreadable text keeps the saved ones)
-    items.push(withControls(form, (setting) => {
-      setting.addText((c) => {
-        c.setPlaceholder(formValuesText(d.formValues)).setValue(formValuesText(s.formValues));
-        c.inputEl.addClass("escrita-universe-wide");
-        c.inputEl.setAttr("aria-label", t("universe.settings.form.values"));
-        // blank or unreadable text keeps the saved values (parseFormValues)
-        ui.saveOnCommit(c, () => formValuesText(s.formValues), (v) => { s.formValues = parseFormValues(v, s.formValues); c.setValue(formValuesText(s.formValues)); }, () => formValuesText(s.formValues));
-      });
-    }));
-    items.push(textAreaRow(ui, {
-      name: t("universe.settings.formFolders"),
-      desc: t("universe.settings.formFolders.desc"),
-      placeholder: t("universe.settings.formFolders.example"),
-      get: () => s.formFolders,
-      set: (v) => { s.formFolders = v; },
-    }));
-  } else {
-    items.push(form);
-  }
-
-  // The thread words sit between the form rows and the types (today's order).
+  // The thread words sit between the note rows and the types.
   if (plugin.features.isOn("threads")) items.push(...threadWordRows(ui, s));
   return items;
 }

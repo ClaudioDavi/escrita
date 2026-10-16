@@ -40,6 +40,7 @@ async function indexFor(files: Record<string, string>, table: ReturnType<typeof 
     rebuild: (n) => hub.rebuild(n),
     table: () => table,
     settings: () => ({ ...defaultUniverseSettings(), universeMode: "universe", chaptersFolder: "Chapters", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "" }),
+    formOf: () => null,
     resolve,
     timers,
   });

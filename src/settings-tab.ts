@@ -21,6 +21,7 @@ import { switchesOf } from "./core/feature-registry";
 import { sectionOrder, type SectionSlot } from "./core/settings-order";
 import type { FeatureModule, SettingsUi } from "./core/module-context";
 import type { UniverseMode } from "./universe/settings";
+import { formValuesText, parseFormValues } from "./core/form";
 import { exportRoot, snapshotsRoot, submissionsRoot } from "./core/classify";
 import { holdsOwnNotes, pluginFolderProblem, type BookPaths } from "./core/folder-problem";
 import { FolderSuggest, NoteSuggest } from "./ui/suggest";
@@ -184,7 +185,8 @@ export class EscritaSettingTab extends PluginSettingTab {
       case "features": return this.featuresBlocks(ui);
       case "shared": return [{ items: this.sharedItems(ui) }];
       case "books": return [{ items: this.booksItems(ui, shown("templatesFolder")) }];
-      case "dayEnds": return shown("dayEndsAt") ? [{ items: [this.dayEndsRow(ui)] }] : [];
+      // The writing day continues the Books group; the Forms group (1.1) follows it, so it never splits Books.
+      case "dayEnds": return [...(shown("dayEndsAt") ? [{ items: [this.dayEndsRow(ui)] }] : []), { heading: t("settings.forms"), items: this.formItems(ui) }];
       case "newWorks": return [{ items: this.newWorksItems(ui, shown("booksFolder")) }];
       case "stages": return [{ items: this.stagesItems(ui) }];
       case "placeholders":
@@ -272,6 +274,37 @@ export class EscritaSettingTab extends PluginSettingTab {
         set: (v) => { s.unnumberedTitles = v; },
       }),
       statusAndSummaryRow(ui, s),
+    ];
+  }
+
+  /** The form rows (1.1, PLAN-1.1 Q1): they moved here from the universe, because the form matters with it off. */
+  private formItems(ui: SettingsUi): SettingGroupItem[] {
+    const s = this.plugin.settings;
+    return [
+      textRow(ui, {
+        name: t("settings.formProperty"),
+        desc: t("settings.formProperty.desc"),
+        placeholder: ui.defaults().formProperty,
+        key: "formProperty",
+        get: () => s.formProperty,
+        set: (v) => { s.formProperty = v; },
+      }),
+      // by position; a blank or unreadable text keeps the saved words (parseFormValues)
+      textRow(ui, {
+        name: t("settings.formValues"),
+        desc: t("settings.formValues.desc"),
+        placeholder: formValuesText(ui.defaults().formValues),
+        get: () => formValuesText(s.formValues),
+        set: (v) => { s.formValues = parseFormValues(v, s.formValues); },
+        fallback: () => formValuesText(s.formValues),
+      }),
+      textAreaRow(ui, {
+        name: t("settings.formFolders"),
+        desc: t("settings.formFolders.desc"),
+        placeholder: t("settings.formFolders.example"),
+        get: () => s.formFolders,
+        set: (v) => { s.formFolders = v; },
+      }),
     ];
   }
 

@@ -29,7 +29,8 @@ import * as deskUi from "../src/desk/settings-ui";
 import * as exportUi from "../src/export/settings-ui";
 import * as submissionsUi from "../src/submissions/settings-ui";
 import { resetSettingLog, settingLog } from "./support/obsidian";
-import { openTab } from "./support/definitions";
+import { openTab, renderBlocks, rowNamed } from "./support/definitions";
+import { commit } from "./support/section-ui";
 
 beforeAll(() => { registerStrings(coreStrings); registerStrings(exportStrings); registerStrings(submissionsStrings); });
 beforeEach(() => resetSettingLog());
@@ -87,7 +88,7 @@ const names = () => settingLog.map((r) => r.name);
 describe("the tab draws from the order list", () => {
   it("with every feature loaded, the headings come in today's order", () => {
     openTab(tabWith().tab);
-    const want = ["settings.features", ...groupHeadings, "settings.shared", "settings.books", "settings.newWorks", "settings.goals", "settings.publishing",
+    const want = ["settings.features", ...groupHeadings, "settings.shared", "settings.books", "settings.forms", "settings.newWorks", "settings.goals", "settings.publishing",
       "export.settings.heading", "submissions.settings.heading", "settings.outline",
       "settings.placeholders", "settings.darlings", "settings.editor", "settings.lens", "settings.lens.rules", "settings.lens.measures",
       "settings.stages", "settings.homeNoteHeading", "settings.snapshots", "universe.settings", "universe.settings.types", "universe.settings.names"];
@@ -109,7 +110,38 @@ describe("the tab draws from the order list", () => {
   it("the core sections stay when every module is off", () => {
     openTab(tabWith([...FEATURE_IDS]).tab);
     // the Features page lists every feature, loaded or not, in its groups
-    expect(headings()).toEqual([t("settings.features"), ...FEATURE_GROUPS.map(featureGroupHeading), ...["settings.shared", "settings.books", "settings.newWorks", "settings.stages"].map((k) => t(k))]);
+    expect(headings()).toEqual([t("settings.features"), ...FEATURE_GROUPS.map(featureGroupHeading), ...["settings.shared", "settings.books", "settings.forms", "settings.newWorks", "settings.stages"].map((k) => t(k))]);
+  });
+
+  it("the form rows draw in the books slot under their own Forms heading, with every module off", () => {
+    for (const off of [[], [...FEATURE_IDS]] as FeatureId[][]) {
+      resetSettingLog();
+      openTab(tabWith(off).tab);
+      const n = names();
+      for (const key of ["settings.formProperty", "settings.formValues", "settings.formFolders"]) {
+        expect(n.filter((x) => x === t(key)), `${key} with ${off.length} off`).toHaveLength(1);
+        expect(n.indexOf(t(key))).toBeGreaterThan(n.indexOf(t("settings.unnumberedTitles")));
+        expect(n.indexOf(t(key))).toBeLessThan(n.indexOf(t("settings.storiesFolder")));
+      }
+    }
+  });
+
+  it("the form rows save: the property and the folders as typed, the values by position", () => {
+    const { tab, settings, saves } = tabWith();
+    const ui = (tab as unknown as { makeUi(): SettingsUi }).makeUi();
+    const items = (tab as unknown as { formItems(ui: SettingsUi): SettingsBlock["items"] }).formItems(ui);
+    const { groups } = renderBlocks([{ items }]);
+    const field = (key: string) => rowNamed(groups, t(key))!.setting.components[0];
+    commit(field("settings.formProperty"), " kind ");
+    expect(settings.formProperty).toBe("kind");
+    const before = { ...settings.formValues };
+    commit(field("settings.formValues"), "a, , c");
+    expect(settings.formValues.shortStory).toBe("a");
+    expect(settings.formValues.essay).toBe(before.essay);   // a blank item keeps the saved word
+    expect(settings.formValues.screenplay).toBe(before.screenplay);
+    commit(field("settings.formFolders"), "Roteiros: roteiro");
+    expect(settings.formFolders).toBe("Roteiros: roteiro");
+    expect(saves).toHaveBeenCalledTimes(3);
   });
 
   it("the export and submissions folders draw in the shared section with both features off (the classifier reads them)", () => {
@@ -147,12 +179,11 @@ describe("the tab draws from the order list", () => {
     expect(headings()).not.toContain(t("universe.settings"));
   });
 
-  it("with the universe loaded, its section draws the thread words once, between the form and the types", () => {
+  it("with the universe loaded, its section draws the thread words once, before the types", () => {
     openTab(tabWith().tab);
     const n = names();
     const word = n.indexOf(t("universe.settings.threadWord"));
     expect(n.filter((x) => x === t("universe.settings.threadWord"))).toHaveLength(1);
-    expect(word).toBeGreaterThan(n.indexOf(t("universe.settings.form")));
     expect(word).toBeLessThan(n.indexOf(t("universe.settings.types")));
     resetSettingLog();
     openTab(tabWith(["threads"]).tab);

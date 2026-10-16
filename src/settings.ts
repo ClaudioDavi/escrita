@@ -428,6 +428,7 @@ export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "a
   targetProperty: "always", limitProperty: "always", unitProperty: "always", deadlineProperty: "always",
   goalProperty: "always", povProperty: "always", chapterTargetProperty: "always",
   trackFolders: "always", excludeFolders: "always",
+  formProperty: "always", formValues: "always", formFolders: "always",
   templatesFolder: ["templates", "universe"],
   storiesFolder: "always", storyTemplate: "always", booksFolder: ["outline"], bookNoteTemplate: ["outline"],
   homeNote: ["desk"], openHomeOnStartup: ["desk"], openInWritingMode: ["desk"],

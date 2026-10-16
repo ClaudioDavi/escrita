@@ -47,7 +47,7 @@ describe("the Features page text", () => {
 
 describe("settings rows and features (Q13)", () => {
   // The switches and the universe section's own rows are not rows of this table.
-  const notRows = new Set(["features", "explorerCounts", "spellcheckOnDemand", ...Object.keys(defaultUniverseSettings())]);
+  const notRows = new Set(["features", "explorerCounts", "spellcheckOnDemand", ...Object.keys(defaultUniverseSettings()).filter((k) => !["formProperty", "formValues", "formFolders"].includes(k))]);   // the form rows moved to the books slot in 1.1
   const rowKeys = Object.keys(DEFAULT_SETTINGS).filter((k) => !notRows.has(k));
 
   it("every settings row maps to a feature or to always", () => {

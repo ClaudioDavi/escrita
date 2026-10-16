@@ -35,7 +35,7 @@ describe("the New works rows", () => {
   it("a group after Books, with the four rows; the writing day stays in Books", () => {
     const { open } = build();
     const headings = open.groups().map((g) => g.def.heading);
-    expect(headings.indexOf(t("settings.newWorks"))).toBe(headings.indexOf(t("settings.books")) + 1);
+    expect(headings.indexOf(t("settings.newWorks"))).toBe(headings.indexOf(t("settings.forms")) + 1);   // Books, its writing day, Forms, then New works
     expect(names(group(open.groups(), t("settings.newWorks")))).toEqual([
       t("settings.storiesFolder"), t("settings.storyTemplate"), t("settings.booksFolder"), t("settings.bookNoteTemplate"),
     ]);
