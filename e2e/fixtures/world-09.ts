@@ -70,6 +70,7 @@ export function world09(o: World09Options = {}): VaultSpec {
     "Contos/Teste 0.9/O farol apagado.md": FAROL,
     "Contos/Teste 0.9/Maré.md": MARE,
     "Contos/Teste 0.9/Sal.md": SAL,
+    "Textos/Sobre o mar.md": "---\nstatus: rascunho\n---\nUm ensaio curto sobre o mar.\n",
     "Textos/Noite.md": "---\nstatus: rascunho\nuniverse: false\n---\nNoite. Willian saiu e Almeida ficou.\n",
     // a second book, with three chapters, the second with a POV
     "Romances/Teste 0.9/Livro Teste.md": "---\nstatus: rascunho\n---\n",
