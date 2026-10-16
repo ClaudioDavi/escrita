@@ -5,8 +5,8 @@ notes for later, typing without friction, moving text around, and seeing your co
 starts with the task, then names the commands and settings it uses.
 
 Other pages: [Getting started](getting-started.md), [Revision](revision.md),
-[Tracking](tracking.md), [Publishing](publishing.md), [The world](the-world.md) and
-[Features and settings](features-and-settings.md). Every part below has a switch on the Features
+[Tracking](tracking.md), [Publishing](publishing.md), [Screenplays](screenplays.md),
+[The world](the-world.md) and [Features and settings](features-and-settings.md). Every part below has a switch on the Features
 page, so you can turn off what you don't use.
 
 ## Start a new work

@@ -9,7 +9,7 @@ sem um clique seu:
 - os **darlings**, trechos que você cortou mas não quer perder.
 
 Outras páginas: [Recursos e configurações](features-and-settings.md), [Escrita](writing.md),
-[Acompanhamento](tracking.md), [Publicação](publishing.md) e [O mundo](the-world.md). Cada parte tem o seu interruptor em
+[Acompanhamento](tracking.md), [Publicação](publishing.md), [Roteiros](screenplays.md) e [O mundo](the-world.md). Cada parte tem o seu interruptor em
 Recursos, no grupo Revisão: **Lente de revisão**, **Versões** e **Darlings**. Desligue um e os
 comandos, o painel e os itens de menu dele somem. Os seus dados ficam (a nota de listas de
 palavras, os arquivos de versões, a nota de darlings).

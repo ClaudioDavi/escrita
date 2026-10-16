@@ -4,7 +4,7 @@ Escrita has many features, and most writers use a few. Since 0.7 you can turn of
 you don't use. A feature that is off isn't loaded: it adds no commands, panels, menu items or
 background work. Your data stays, and comes back when you turn the feature on again.
 
-Other pages: [Getting started](getting-started.md), [Writing](writing.md), [Publishing](publishing.md) and [The world](the-world.md).
+Other pages: [Getting started](getting-started.md), [Writing](writing.md), [Publishing](publishing.md), [Screenplays](screenplays.md) and [The world](the-world.md).
 
 ## Finding a setting
 
@@ -14,7 +14,7 @@ type "chapters folder" to find that row. Click a result and Obsidian lands on it
 feature that is off don't show, because the feature isn't loaded.
 
 Each section of Escrita's tab is a card under its own heading: Features, Properties and
-folders, Books, New works, Goals, Publishing · the check, Export, Submissions, Outline, Placeholders,
+folders, Books, Forms, New works, Goals, Publishing · the check, Export, Submissions, Outline, Placeholders,
 Darlings, Editor, Revision · the lens, Stages, Home note, Snapshots and Universe. A section
 of a feature that is off is gone until you turn the feature on.
 
@@ -119,7 +119,8 @@ What the Brazilian set holds:
 | Folders to ignore | Templates | Modelos |
 | Universe note | Universe.md | Universo.md |
 | Entry types and their folders | character (Characters), place (Places), object (Objects), group (Groups), event (Events) | personagem (Personagens), lugar (Lugares), objeto (Objetos), grupo (Grupos), evento (Eventos) |
-| Form values | short story, essay, novella, novel, poem, fragment | conto, ensaio, novela, romance, poema, fragmento |
+| Form values | short story, essay, novella, novel, poem, fragment, screenplay | conto, ensaio, novela, romance, poema, fragmento, roteiro |
+| Screenplay words (Transition endings, Continues label, Continued label, Credit line) | TO:, (MORE), (CONT'D), Written by | TO:, PARA:, (MAIS), (CONT.), Roteiro de |
 | Thread words | thread, closed | thread, fechada |
 
 The darlings notes keep the name `Darlings.md` in both. **Property names** (`status`, `target`,
@@ -151,7 +152,7 @@ the words Escrita writes into your vault.
 | Snapshot at each stage | A stage change takes no snapshot. |
 | Works block and where you left off | The `escrita-works` block shows as plain code; Escrita stops recording where you left off; no home note command or open on startup. |
 | Publish check | No publish, unpublish or **Publish next chapter** commands. |
-| Export | No **Export…** or **Export again** command, no file-menu item (and no **Create a collection…**), and no Export section in the settings. The export folder row stays. |
+| Export | No **Export…** or **Export again** command, no file-menu item (and no **Create a collection…**), and no Export section in the settings, **Screenplays** group included. The export folder row stays, and so do the **Forms** rows. |
 | Submissions | No **Record a submission** command or menu item, no pending count in the home block, and no Submissions section in the settings. The submissions folder row stays. |
 | Shared universe | No panel, no universe commands, no "Appears in", no name marks or lens names. |
 | Threads | No thread commands, margin flag or panel tab. |
@@ -235,6 +236,17 @@ The **New works** section comes after Books. It sets where **New work…**, **Ne
 | Book note template | Outline | A note of yours to use instead of the built-in book note. Empty by default (built-in). The first chapter follows the chapter template. |
 
 The setup fills the two folder rows with the folders it creates, but only while they are empty. The commands are explained in [Writing](writing.md).
+
+## Settings added in 1.1
+
+**Forms** is a new group after Books. It holds **Form property**, **Form values** and **Form by
+folder**, which used to sit in the Universe section. It is always shown, and the rows now apply with the universe off. Nothing you saved
+changes. Screenplay is the seventh form value (`screenplay`, or `roteiro` in a Portuguese install), and a list of six words saved before 1.1 gains it on its own.
+
+**Screenplays** is a new group in the Export section, shown while Export is on. It has nine rows:
+scene heading prefixes, transition endings, page size, scene numbers, the two page-break labels,
+the credit line and two title page properties. The title page's author and contact are the
+Export rows that already exist. All of it is in [Screenplays](screenplays.md#settings).
 
 ## Folder rows and how fields save
 

@@ -6,8 +6,8 @@ inicial com o seu bloco de obras, como o Escrita lembra onde você parou e o mod
 esconde tudo menos a nota.
 
 Outras páginas: [Primeiros passos](getting-started.md), [Escrita](writing.md),
-[Revisão](revision.md), [Publicação](publishing.md), [O mundo](the-world.md) e
-[Recursos e configurações](features-and-settings.md).
+[Revisão](revision.md), [Publicação](publishing.md), [Roteiros](screenplays.md),
+[O mundo](the-world.md) e [Recursos e configurações](features-and-settings.md).
 
 ## Diga em que pé está uma obra: estágios e palavras de status
 

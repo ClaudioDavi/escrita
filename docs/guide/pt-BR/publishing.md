@@ -5,14 +5,15 @@ publicar, exportar um conto, um livro ou uma coleção como manuscrito ou EPUB, 
 enviou. O Escrita nunca envia nada para lugar nenhum. Ele confere, grava um arquivo e
 registra o que você disser.
 
-Outras páginas: [Recursos e configurações](features-and-settings.md), [Escrita](writing.md) e
-[O mundo](the-world.md). Cada parte tem o seu interruptor em Recursos › Publicação:
+Outras páginas: [Recursos e configurações](features-and-settings.md), [Escrita](writing.md),
+[Roteiros](screenplays.md) e [O mundo](the-world.md). Cada parte tem o seu interruptor em Recursos › Publicação:
 **Checagem de publicação**, **Exportar** e **Envios**.
 
 - [Conferir uma nota e marcá-la como publicada](#conferir-uma-nota-e-marcá-la-como-publicada)
 - [Enviar um conto a uma revista](#enviar-um-conto-a-uma-revista)
 - [Exportar uma nota ou um livro](#exportar-uma-nota-ou-um-livro)
 - [Exportar um EPUB](#exportar-um-epub)
+- [Exportar um roteiro](#exportar-um-roteiro)
 - [Exportar uma coleção de contos](#exportar-uma-coleção-de-contos)
 - [Publicar um livro um capítulo por vez](#publicar-um-livro-um-capítulo-por-vez)
 - [Registrar um envio](#registrar-um-envio)
@@ -125,7 +126,8 @@ O texto de cada nota ligada vira uma página própria, sem título, antes do pri
 A janela as cita na linha "Folha de rosto com…". Só um livro as tem. Uma nota avulsa tem só
 a folha de rosto. Os nomes das propriedades são configurações.
 
-**Formato.** **DOCX** (o padrão) ou **Markdown**.
+**Formato.** **DOCX** (o padrão) ou **Markdown**. (Uma nota cuja forma é roteiro oferece **PDF** e
+**Fountain**. Veja [Roteiros](screenplays.md).)
 
 **Modelo.** **Shunn** (Carta, inglês) ou **pt-BR** (A4, travessão). O que combina com o idioma
 do Obsidian aparece primeiro e vem escolhido na primeira vez. Os dois têm o mesmo layout:
@@ -276,6 +278,14 @@ no EPUB** (`* * *` por padrão). Não é o `#` do modelo de manuscrito. Vazio vo
 Você não precisa conferir o arquivo por outros meios. Abra-o no seu leitor de e-books para ler.
 
 A prévia de um EPUB mostra a capa e o sumário nos lugares deles.
+
+## Exportar um roteiro
+
+Uma nota cuja forma é roteiro sai como **PDF** (US Letter ou A4) ou como arquivo **Fountain**, e
+de nenhum outro jeito. A janela, os avisos, a prévia, **Exportar de novo** e os nomes dos
+arquivos funcionam como acima. Um livro ou uma coleção com notas de roteiro dentro continua
+saindo como prosa. A história toda, da forma à folha de rosto e às quebras de página, está em
+[Roteiros](screenplays.md).
 
 ## Exportar uma coleção de contos
 
@@ -436,6 +446,9 @@ As palavras de status ficam em Estágios, e a propriedade de status em Livros.
 | Separador de cena no EPUB | A linha que o EPUB mostra entre cenas. `* * *`. |
 | Propriedade da coleção | Uma nota com esta propriedade, uma lista de links para contos na ordem de leitura, é exportada como coleção. `contents`. |
 
+A seção de exportação também tem um grupo **Roteiros**, com o tamanho da página, os números de
+cena, os rótulos e as propriedades da folha de rosto. Veja [Roteiros](screenplays.md#configurações).
+
 **Envios:**
 
 | Configuração | O que faz |
@@ -461,7 +474,7 @@ Os campos de texto salvam quando você sai deles.
 |---|---|
 | Publicar esta nota | Confere a nota, depois define status e data. |
 | Despublicar esta nota | Devolve o status anterior. Aparece para uma nota publicada. |
-| Exportar… | Abre a janela de exportação da nota ativa, do livro ou da coleção dela. Escolha DOCX, Markdown ou EPUB. |
+| Exportar… | Abre a janela de exportação da nota ativa, do livro ou da coleção dela. Escolha DOCX, Markdown ou EPUB. Para um roteiro, PDF ou Fountain. |
 | Exportar de novo | Repete a última exportação da obra. Aparece quando a obra tem uma. |
 | Publicar o próximo capítulo | Abre a checagem de publicação do primeiro capítulo não publicado do livro. Aparece com um capítulo ou a nota do livro aberta. |
 | Registrar envio | Cria uma nota de envio para a obra ativa. |
