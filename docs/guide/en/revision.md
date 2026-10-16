@@ -9,7 +9,7 @@ your text without a click from you:
 - **darlings**, passages you cut but can't bear to lose.
 
 Other pages: [Features and settings](features-and-settings.md), [Writing](writing.md),
-[Tracking](tracking.md), [Publishing](publishing.md) and [The world](the-world.md). Each part has its own switch in
+[Tracking](tracking.md), [Publishing](publishing.md), [Screenplays](screenplays.md) and [The world](the-world.md). Each part has its own switch in
 Features, under Revision: **Revision lens**, **Snapshots** and **Darlings**. Turn one off and
 its commands, panel and menu items go away. Your data stays (the word lists note, the
 snapshot files, the darlings note).

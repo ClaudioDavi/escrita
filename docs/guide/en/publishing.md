@@ -5,14 +5,15 @@ publish it, exporting a short story, a book or a collection as a manuscript or a
 sent it. Escrita never sends anything anywhere. It checks, it writes a file, and it
 records what you tell it.
 
-Other pages: [Features and settings](features-and-settings.md), [Writing](writing.md) and
-[The world](the-world.md). Each part has its own switch in Features › Publishing: **Publish
+Other pages: [Features and settings](features-and-settings.md), [Writing](writing.md),
+[Screenplays](screenplays.md) and [The world](the-world.md). Each part has its own switch in Features › Publishing: **Publish
 check**, **Export** and **Submissions**.
 
 - [Check a note and mark it published](#check-a-note-and-mark-it-published)
 - [Send a short story to a magazine](#send-a-short-story-to-a-magazine)
 - [Export a note or a book](#export-a-note-or-a-book)
 - [Export an EPUB](#export-an-epub)
+- [Export a screenplay](#export-a-screenplay)
 - [Export a collection of stories](#export-a-collection-of-stories)
 - [Publish a book one chapter at a time](#publish-a-book-one-chapter-at-a-time)
 - [Record a submission](#record-a-submission)
@@ -121,7 +122,8 @@ The text of each linked note becomes a page of its own, with no heading, before 
 chapter. The window shows them in its "Title page with…" line. Only a book has them. A single
 note has only its title page. The property names are settings.
 
-**Format.** **DOCX** (the default) or **Markdown**.
+**Format.** **DOCX** (the default) or **Markdown**. (A note whose form is screenplay offers **PDF**
+and **Fountain** instead. See [Screenplays](screenplays.md).)
 
 **Template.** **Shunn** (Letter, English) or **pt-BR** (A4, dialogue dash). The one that
 matches Obsidian's language is listed first and is chosen the first time. Both set the same
@@ -269,6 +271,14 @@ default.
 You don't need to check the file yourself. Open it in your ebook reader to read it.
 
 The preview of an EPUB shows the cover and the contents in their own places.
+
+## Export a screenplay
+
+A note whose form is screenplay exports as a **PDF** (US Letter or A4) or as a **Fountain** file,
+and as nothing else. The window, the warnings, the preview, **Export again** and the file names
+work as above. A book or a collection with screenplay notes inside still exports as prose. The
+whole story, from the form to the title page and the page breaks, is in
+[Screenplays](screenplays.md).
 
 ## Export a collection of stories
 
@@ -429,6 +439,9 @@ The status words are under Stages, and the status property under Books.
 | EPUB scene break | The line an EPUB shows between scenes. `* * *`. |
 | Collection property | A note with this property, a list of links to stories in reading order, exports as a collection. `contents`. |
 
+The export section also has a **Screenplays** group, with the page size, scene numbers, the
+labels and the title page properties. See [Screenplays](screenplays.md#settings).
+
 **Submissions:**
 
 | Setting | What it does |
@@ -454,7 +467,7 @@ fields save when you leave them.
 |---|---|
 | Publish this note | Checks the note, then sets status and date. |
 | Unpublish this note | Puts the earlier status back. Offered for a published note. |
-| Export… | Opens the export window for the active note, its book or its collection. Choose DOCX, Markdown or EPUB. |
+| Export… | Opens the export window for the active note, its book or its collection. Choose DOCX, Markdown or EPUB. For a screenplay, PDF or Fountain. |
 | Export again | Repeats the last export of the work. Offered when the work has one. |
 | Publish next chapter | Opens the publish check of the first unpublished chapter of the book. Offered with a chapter or the book note open. |
 | Record a submission | Makes a submission note for the active work. |

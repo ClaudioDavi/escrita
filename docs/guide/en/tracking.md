@@ -6,8 +6,8 @@ stage, the home note with its works block, how Escrita remembers where you left 
 writing mode, which hides everything but the note.
 
 Other pages: [Getting started](getting-started.md), [Writing](writing.md),
-[Revision](revision.md), [Publishing](publishing.md), [The world](the-world.md) and
-[Features and settings](features-and-settings.md).
+[Revision](revision.md), [Publishing](publishing.md), [Screenplays](screenplays.md),
+[The world](the-world.md) and [Features and settings](features-and-settings.md).
 
 ## Say where a work stands: stages and status words
 

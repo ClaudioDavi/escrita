@@ -2,8 +2,8 @@
 
 Como usar o universo (0.6), o que a 0.7 acrescenta e como configurar tudo. O README lista
 cada recurso e cada configuração; este guia percorre os recursos na ordem em que você os
-encontra. Outras páginas: [Recursos e configurações](features-and-settings.md) e
-[Escrita](writing.md). Os nomes aparecem em português (pt-BR), como na interface.
+encontra. Outras páginas: [Recursos e configurações](features-and-settings.md),
+[Escrita](writing.md) e [Roteiros](screenplays.md). Os nomes aparecem em português (pt-BR), como na interface.
 
 Tudo aqui é opcional. O universo vem desligado, threads e modelos não fazem nada até você usar,
 e nenhum recurso escreve numa nota sem um clique.
@@ -36,7 +36,9 @@ esconde as coisas; suas entradas continuam no cofre.
    entradas novas, uma nota modelo opcional e o nome mostrado nos menus. Você pode renomear os
    tipos, mas não acrescentar nem remover.
 4. **Propriedade de forma e Forma por pasta**: que tipo de obra uma nota é (conto, ensaio,
-   novela, romance, poema, fragmento), usado para agrupar a aba Obras. Veja a seção 6.
+   novela, romance, poema, fragmento, roteiro), usado para agrupar a aba Obras. Desde a 1.1 elas
+   não estão na seção Universo: têm um grupo **Formas** próprio, depois de Livros, e valem com o
+   universo desligado. Veja a seção 6.
 5. **Palavra das threads** e a palavra de fechada: as palavras nos marcadores de thread. Veja
    a seção 7.
 
@@ -189,7 +191,16 @@ A forma de uma obra vem de:
 Obras sem nenhuma das duas ficam em **Sem forma**. Nada é escrito nas suas notas.
 
 As palavras de forma são um campo separado por vírgulas, nesta ordem: conto, ensaio, novela,
-romance, poema, fragmento. Exemplo: `conto, ensaio, novela, romance, poema, fragmento`.
+romance, poema, fragmento, roteiro. Exemplo: `conto, ensaio, novela, romance, poema, fragmento,
+roteiro`. Roteiro é a sétima forma, e uma lista salva antes da 1.1, com seis palavras, ganha
+essa sozinha.
+
+**Onde ficam as configurações.** As três linhas (**Propriedade de forma**, **Valores de forma** e
+**Forma por pasta**) ficavam na seção Universo. Na 1.1 elas foram para um grupo **Formas**, logo
+depois de Livros. O grupo fica sempre à vista, porque a forma importa também com o universo
+desligado: ela decide, por exemplo, que uma nota é um roteiro e sai como PDF (veja
+[Roteiros](screenplays.md)). Nada do que você salvou muda. A aba Obras mostra os roteiros num
+grupo próprio, **Roteiros**.
 
 ## 7. Threads abertas
 
@@ -259,6 +270,9 @@ atualizam em poucos segundos.
 - O Escrita lê o que o leitor vê: o texto das suas notas, títulos inclusos. Ele pula
   propriedades, `%% comentários %%`, código, endereços de links e embeds.
 - Um link conta. `[[Maria]]` é uma menção. `[[Maria|ela]]` conta uma vez, não duas.
+- Num roteiro (uma nota cuja forma é roteiro), o nome da personagem acima de uma fala também
+  conta. `MARIA` ou `MARIA (V.O.)` é uma menção da entrada Maria, sem a extensão. Um nome que o
+  texto já conta, ou que um link cobre, não é contado duas vezes.
 - Uma menção só conta para uma entrada em notas do escopo dela: as obras do universo, no modo
   Universo; os capítulos do livro, no modo por livro. Uma nota com `universe: false` fica de
   fora.
@@ -431,7 +445,7 @@ Pastas no universo:     Contos
                         Romances
 Propriedade de tipo:    tipo                  (personagem, lugar, objeto, grupo, evento)
 Modelos por tipo:       Modelos/Personagem.md, Modelos/Lugar.md
-Propriedade de forma:   forma                 (conto, ensaio, novela, romance, poema, fragmento)
+Propriedade de forma:   forma                 (conto, ensaio, novela, romance, poema, fragmento, roteiro)
 Forma por pasta:        Contos: conto
                         Textos: ensaio
                         Romances: romance

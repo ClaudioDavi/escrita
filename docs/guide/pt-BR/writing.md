@@ -5,8 +5,8 @@ para depois, digitar sem atrito, mover texto de lugar e ver as suas contagens. C
 pela tarefa e depois nomeia os comandos e as configurações que ela usa.
 
 Outras páginas: [Primeiros passos](getting-started.md), [Revisão](revision.md),
-[Acompanhamento](tracking.md), [Publicação](publishing.md), [O mundo](the-world.md) e
-[Recursos e configurações](features-and-settings.md). Cada parte abaixo tem um interruptor na
+[Acompanhamento](tracking.md), [Publicação](publishing.md), [Roteiros](screenplays.md),
+[O mundo](the-world.md) e [Recursos e configurações](features-and-settings.md). Cada parte abaixo tem um interruptor na
 página Recursos, então você pode desligar o que não usa.
 
 ## Começar uma obra

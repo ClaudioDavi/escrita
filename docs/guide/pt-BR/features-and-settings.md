@@ -5,7 +5,7 @@ desligar os que não usa. Um recurso desligado não é carregado: não acrescent
 painéis, itens de menu nem trabalho em segundo plano. Os seus dados ficam, e voltam quando
 você liga o recurso de novo.
 
-Outras páginas: [Primeiros passos](getting-started.md), [Escrita](writing.md), [Publicação](publishing.md) e [O mundo](the-world.md).
+Outras páginas: [Primeiros passos](getting-started.md), [Escrita](writing.md), [Publicação](publishing.md), [Roteiros](screenplays.md) e [O mundo](the-world.md).
 
 ## Achar uma configuração
 
@@ -16,7 +16,7 @@ resultado e o Obsidian leva você até ela. As linhas de um recurso desligado n�
 porque o recurso não está carregado.
 
 Cada seção da aba do Escrita é um cartão sob o próprio título: Recursos, Propriedades e pastas,
-Livros, Novas obras, Metas, Publicação · a checagem, Exportação, Envios, Esboço, Marcadores, Darlings, Editor,
+Livros, Formas, Novas obras, Metas, Publicação · a checagem, Exportação, Envios, Esboço, Marcadores, Darlings, Editor,
 Revisão · a lente, Estágios, Nota inicial, Versões e Universo. A seção de um recurso desligado
 some até você ligar o recurso de novo.
 
@@ -100,7 +100,7 @@ que tiver uma, use o comando de mesmo nome. A preparação é explicada em
 O Escrita escreve algumas palavras nas suas notas e lê outras como nomes de pastas e notas: as
 palavras dos estágios, a pasta dos capítulos, os títulos que não levam número de capítulo, os
 resultados de um envio, as pastas de exportações, envios e versões, a nota do universo e as
-palavras dos tipos, os valores de forma e as palavras das threads. Tudo isso são configurações, e
+palavras dos tipos, os valores de forma, as palavras de roteiro e as palavras das threads. Tudo isso são configurações, e
 elas partem de um conjunto de padrões num idioma. Desde a 1.0 há dois conjuntos, **English** e
 **Português (Brasil)**. A preparação mostra a escolha como **Idioma dos padrões**.
 
@@ -125,7 +125,8 @@ O que o conjunto brasileiro contém:
 | Pastas ignoradas | Templates | Modelos |
 | Nota do universo | Universe.md | Universo.md |
 | Tipos de entrada e pastas | character (Characters), place (Places), object (Objects), group (Groups), event (Events) | personagem (Personagens), lugar (Lugares), objeto (Objetos), grupo (Grupos), evento (Eventos) |
-| Valores de forma | short story, essay, novella, novel, poem, fragment | conto, ensaio, novela, romance, poema, fragmento |
+| Valores de forma | short story, essay, novella, novel, poem, fragment, screenplay | conto, ensaio, novela, romance, poema, fragmento, roteiro |
+| Palavras de roteiro (Finais de transição, Rótulo de continua, Rótulo de continuação, Linha de crédito) | TO:, (MORE), (CONT'D), Written by | TO:, PARA:, (MAIS), (CONT.), Roteiro de |
 | Palavras das threads | thread, closed | thread, fechada |
 
 As notas de darlings mantêm o nome `Darlings.md` nos dois. Os **nomes das propriedades**
@@ -158,7 +159,7 @@ as palavras que o Escrita escreve no seu cofre.
 | Versão a cada estágio | Uma mudança de estágio não guarda versão. |
 | Bloco de obras e onde você parou | O bloco `escrita-works` aparece como código simples; o Escrita para de registrar onde você parou; sem comando da nota inicial nem abrir ao iniciar. |
 | Checagem de publicação | Sem os comandos de publicar, despublicar e **Publicar o próximo capítulo**. |
-| Exportar | Sem os comandos **Exportar…** e **Exportar de novo**, sem item no menu do arquivo (nem **Criar uma coleção…**) e sem a seção Exportação nas configurações. A linha da pasta das exportações continua. |
+| Exportar | Sem os comandos **Exportar…** e **Exportar de novo**, sem item no menu do arquivo (nem **Criar uma coleção…**) e sem a seção Exportação nas configurações, grupo **Roteiros** incluído. A linha da pasta das exportações continua, e as linhas de **Formas** também. |
 | Envios | Sem o comando nem o item de menu **Registrar envio**, sem a contagem de pendentes no bloco de obras e sem a seção Envios nas configurações. A linha da pasta dos envios continua. |
 | Universo compartilhado | Sem painel, sem comandos do universo, sem "Aparece em", sem marcas de nomes nem nomes na lente. |
 | Threads | Sem comandos de thread, sinal na margem nem aba no painel. |
@@ -245,6 +246,20 @@ A seção **Novas obras** vem depois de Livros. Ela define onde **Nova obra…**
 | Modelo da nota do livro | Esboço | Uma nota sua no lugar da nota de livro embutida. Vazio por padrão (embutido). O primeiro capítulo segue o modelo de capítulo. |
 
 A preparação preenche as duas linhas de pasta com as pastas que ela cria, mas só enquanto estiverem vazias. Os comandos são explicados em [Escrita](writing.md).
+
+## Configurações acrescentadas na 1.1
+
+**Formas** é um grupo novo depois de Livros. Ele tem **Propriedade de forma**, **Valores de forma**
+e **Forma por pasta**, que ficavam na seção Universo. Fica sempre à vista, e as linhas agora valem
+com o universo desligado. Nada do que você salvou muda. Roteiro é o sétimo valor de forma
+(`screenplay`, ou `roteiro` numa instalação em português), e uma lista de seis palavras salva
+antes da 1.1 ganha esse valor sozinha.
+
+**Roteiros** é um grupo novo na seção Exportação, que aparece enquanto a Exportação está ligada.
+Tem nove linhas: começos de cabeçalho de cena, finais de transição, tamanho da página, números de
+cena, os dois rótulos de quebra de página, a linha de crédito e duas propriedades da folha de
+rosto. O autor e o contato da folha de rosto são as linhas de Exportação que já existem. Tudo está
+em [Roteiros](screenplays.md#configurações).
 
 ## Linhas de pasta e como os campos salvam
 

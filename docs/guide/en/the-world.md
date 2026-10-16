@@ -2,8 +2,8 @@
 
 How to use the universe (0.6) and what 0.7 adds to it, and how to set it up. The README
 lists every feature and setting; this guide walks through them in the order a writer
-meets them. Other pages: [Features and settings](features-and-settings.md) and
-[Writing](writing.md). Names are given in English, with the Portuguese (pt-BR) labels in parentheses where they help.
+meets them. Other pages: [Features and settings](features-and-settings.md),
+[Writing](writing.md) and [Screenplays](screenplays.md). Names are given in English, with the Portuguese (pt-BR) labels in parentheses where they help.
 
 Everything here is opt-in. The universe is off by default, threads and templates do
 nothing until you use them, and no feature writes to a note without a click.
@@ -36,8 +36,9 @@ and hides things; your entries stay in your vault.
    go in, an optional template note, and the name shown in menus. You can rename the
    types, but not add or remove them.
 4. **Form property and Form by folder** (Propriedade de forma, Forma por pasta): what kind
-   of work a note is (short story, essay, novella, novel, poem, fragment), used to group
-   the Works tab. See section 6.
+   of work a note is (short story, essay, novella, novel, poem, fragment, screenplay), used to
+   group the Works tab. Since 1.1 they are not in the Universe section: they have a **Forms**
+   group of their own, after Books, and they work with the universe off. See section 6.
 5. **Thread word and closed word** (Palavra das threads): the words in thread markers. See
    section 7.
 
@@ -189,8 +190,16 @@ A work's form comes from:
 Works with neither go under **No form** (Sem forma). Nothing is written to your notes.
 
 The form words are one comma-separated field, in this order: short story, essay, novella,
-novel, poem, fragment. Example in Portuguese: `conto, ensaio, novela, romance, poema,
-fragmento`.
+novel, poem, fragment, screenplay. Example in Portuguese: `conto, ensaio, novela, romance,
+poema, fragmento, roteiro`. Screenplay is the seventh form, and a list saved before 1.1, with
+six words, gains it on its own.
+
+**Where the settings are.** The three rows (**Form property**, **Form values** and **Form by
+folder**) used to sit in the Universe section. In 1.1 they moved to a **Forms** group right
+after Books. The group is always shown, because a form matters with the universe off too: it
+decides, for example, that a note is a screenplay and exports as a PDF (see
+[Screenplays](screenplays.md)). Nothing you saved changes. The Works tab shows the screenplays
+in their own group, **Screenplays**.
 
 ## 7. Open threads
 
@@ -261,6 +270,9 @@ the counts update within a few seconds.
 - Escrita reads what a reader sees: the text of your notes, headings included. It skips
   properties, `%% comments %%`, code, link addresses and embeds.
 - A link counts. `[[Maria]]` is a mention. `[[Maria|her]]` counts once, not twice.
+- In a screenplay (a note whose form is screenplay), a character cue counts too. `MARIA` or
+  `MARIA (V.O.)` above a speech is a mention of the entry Maria, with the extension left out.
+  A cue that the text already counts, or that a link covers, is not counted twice.
 - A mention counts for an entry only in notes in that entry's scope: the universe's works in
   universe mode, the book's chapters in per-book mode. A note with `universe: false` is out.
 
@@ -430,7 +442,7 @@ Folders in universe:    Contos
                         Romances
 Type property:          tipo                  (personagem, lugar, objeto, grupo, evento)
 Templates per type:     Modelos/Personagem.md, Modelos/Lugar.md
-Form property:          forma                 (conto, ensaio, novela, romance, poema, fragmento)
+Form property:          forma                 (conto, ensaio, novela, romance, poema, fragmento, roteiro)
 Form by folder:         Contos: conto
                         Textos: ensaio
                         Romances: romance

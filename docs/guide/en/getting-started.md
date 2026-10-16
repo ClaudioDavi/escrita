@@ -6,8 +6,8 @@ anything. Or you can skip the setup and start from **New work…**, which works 
 the last two parts of the page show how, and how to do it by hand.
 
 Other pages: [Features and settings](features-and-settings.md), [Writing](writing.md),
-[Revision](revision.md), [Tracking](tracking.md), [Publishing](publishing.md) and
-[The world](the-world.md).
+[Revision](revision.md), [Tracking](tracking.md), [Publishing](publishing.md),
+[Screenplays](screenplays.md) and [The world](the-world.md).
 
 - [Install Escrita](#install-escrita)
 - [The first-run notice](#the-first-run-notice)
@@ -101,7 +101,7 @@ make:
 |---|---|
 | **Folders** (on the first new folder) | The new folders, adding them to **Folders that count**, and filling **Short stories folder** and **Books folder**. |
 | **Examples** | All the example notes together. |
-| **Language of the defaults** | The language and every word-bearing setting: **Statuses**, **Chapters folder**, **Unnumbered chapter titles**, **Submission results**, **Export folder**, **Submissions folder**, the darlings notes, **Universe note**, **Entry types**, **Form values**, **Thread keyword**, **Closed-thread word**, and **Writing language**. |
+| **Language of the defaults** | The language and every word-bearing setting: **Statuses**, **Chapters folder**, **Unnumbered chapter titles**, **Submission results**, **Export folder**, **Submissions folder**, the darlings notes, **Universe note**, **Entry types**, **Form values**, the four screenplay words (**Screenplay transitions**, **Screenplay "more" label**, **Screenplay "continued" label** and **Screenplay credit line**), **Thread keyword**, **Closed-thread word**, and **Writing language**. |
 | **Home note** | Creating the home note and setting it as your **Home note**. |
 | **Open the home note on startup** | Opens the home note when Obsidian starts. |
 | **Features** | Turns the switches to match the preset you chose. |

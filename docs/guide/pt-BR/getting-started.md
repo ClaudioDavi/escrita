@@ -6,8 +6,8 @@ criar qualquer coisa. Ou você pode pular o preparo e começar por **Nova obra�
 em qualquer cofre: as duas últimas partes da página mostram como, e como fazer à mão.
 
 Outras páginas: [Recursos e configurações](features-and-settings.md), [Escrita](writing.md),
-[Revisão](revision.md), [Acompanhamento](tracking.md), [Publicação](publishing.md) e
-[O mundo](the-world.md).
+[Revisão](revision.md), [Acompanhamento](tracking.md), [Publicação](publishing.md),
+[Roteiros](screenplays.md) e [O mundo](the-world.md).
 
 - [Instalar o Escrita](#instalar-o-escrita)
 - [O aviso da primeira vez](#o-aviso-da-primeira-vez)
@@ -101,7 +101,7 @@ tem escolha a fazer:
 |---|---|
 | **Pastas** (na primeira pasta nova) | As pastas novas, incluí-las em **Pastas que contam** e preencher **Pasta dos contos** e **Pasta dos livros**. |
 | **Exemplos** | Todas as notas de exemplo juntas. |
-| **Idioma dos padrões** | O idioma e cada configuração que leva palavras: **Status**, **Pasta de capítulos**, **Títulos de capítulo sem número**, **Resultados dos envios**, **Pasta de exportações**, **Pasta de envios**, as notas de darlings, **Nota do universo**, **Tipos de entrada**, **Valores de forma**, **Palavra das threads**, **Palavra de thread fechada** e **Idioma da escrita**. |
+| **Idioma dos padrões** | O idioma e cada configuração que leva palavras: **Status**, **Pasta de capítulos**, **Títulos de capítulo sem número**, **Resultados dos envios**, **Pasta de exportações**, **Pasta de envios**, as notas de darlings, **Nota do universo**, **Tipos de entrada**, **Valores de forma**, as quatro palavras de roteiro (**Transições do roteiro**, **Rótulo de "continua" do roteiro**, **Rótulo de "continuação" do roteiro** e **Linha de crédito do roteiro**), **Palavra das threads**, **Palavra de thread fechada** e **Idioma da escrita**. |
 | **Nota inicial** | Criar a nota inicial e defini-la como a sua **Nota inicial**. |
 | **Abrir a nota inicial ao iniciar** | Abre a nota inicial quando o Obsidian inicia. |
 | **Recursos** | Põe os interruptores como a predefinição que você escolheu. |
