@@ -59,3 +59,26 @@ export function setProperty(app: App, vaultPath: string, key: string, value: unk
     });
   }, [vaultPath, key, value] as const);
 }
+
+/** Waits for the export window's build to finish after a change (the change starts it within 250 ms). */
+export async function buildSettled(app: App): Promise<void> {
+  await new Promise((r) => setTimeout(r, 450));
+  await app.page.waitForFunction(() => !document.querySelector(".escrita-export-modal")?.textContent?.includes("Lendo o texto"), null, { timeout: 30_000 });
+}
+
+/** Shows files in the file explorer (opens the folders) and returns the locator of each row. */
+export async function revealInExplorer(app: App, paths: string[]): Promise<void> {
+  await app.page.evaluate(async (ps) => {
+    app.workspace.leftSplit.expand();
+    const leaf = app.workspace.getLeavesOfType("file-explorer")[0];
+    await app.workspace.revealLeaf(leaf);
+    for (const p of ps) leaf.view.revealInFolder(app.vault.getAbstractFileByPath(p));
+  }, paths);
+}
+
+export const explorerRow = (app: App, p: string): Locator => app.page.locator(`.nav-file-title[data-path="${p}"]`);
+
+/** The titles of the open context menu's items. */
+export function menuItems(app: App): Promise<string[]> {
+  return app.page.locator(".menu .menu-item-title").allTextContents();
+}
