@@ -79,7 +79,7 @@ Como é cada elemento:
 | Elemento | Como escrever |
 |---|---|
 | Cabeçalho de cena | Uma linha depois de uma linha em branco que começa com um dos **Começos de cabeçalho de cena** (`INT`, `EXT`, `EST`, `INT./EXT`, `INT/EXT`, `I/E`), seguido de ponto ou espaço. Para forçar um, comece a linha com ponto: `.O SÓTÃO`. Um número entre cerquilhas no fim, `INT. COZINHA - DIA #12#`, é o número da cena. |
-| Ação | Qualquer outro parágrafo. Uma linha que começa com tab ou quatro espaços também é ação, mantida como você digitou. Para forçar ação, comece a linha com `!`. |
+| Ação | Qualquer outro parágrafo. Uma linha de ação que começa com tab ou quatro espaços mantém o recuo. Para forçar ação, comece a linha com `!`. |
 | Nome da personagem | Uma linha em maiúsculas depois de uma linha em branco, com uma linha logo abaixo. Acentos não atrapalham (`JOÃO`). Uma extensão vai entre parênteses: `JOÃO (V.O.)`. Para um nome que não está em maiúsculas, comece com `@`. Um `^` no fim faz da fala um diálogo duplo, lado a lado com a anterior. |
 | Indicação entre parênteses | Uma linha entre parênteses dentro de uma fala. |
 | Diálogo | As linhas abaixo do nome. Uma fala vai até a próxima linha em branco. |
@@ -94,7 +94,7 @@ itálico***` e `_sublinhado_`. Uma barra invertida antes de uma marca a deixa co
 
 Onde o Fountain e o Markdown discordam, **o roteiro vence** dentro de uma nota de roteiro. `#` é
 uma seção, não um título. `>` começa uma transição ou um texto centralizado, não uma citação. Uma
-linha com recuo é ação, não código. Uma linha `---` é ação, não uma quebra de cena. Nada se
+linha com recuo nunca é código. Uma linha `---` é ação, não uma quebra de cena. Nada se
 perde: toda linha é lida como alguma coisa, e uma linha desconhecida é ação.
 
 Mais três coisas que você pode escrever:
@@ -244,8 +244,11 @@ Duas coisas que o Escrita não faz. Ele não acrescenta `(CONT.)` quando a mesma
 falar depois de uma linha de ação. Ele não imprime marcas `CONTINUED:` no pé e no alto das
 páginas. Se quiser um `(CONT.)` depois do nome, digite como extensão.
 
-Uma linha com recuo é ação, então um `CORTA PARA:` com tab é ação, não transição. Escreva sem o
-recuo para ter uma transição.
+Os recuos seguem a especificação do Fountain: tabs e espaços no começo da linha são ignorados
+em todo elemento, menos na ação. Um `CORTA PARA:` com tab é uma transição, um nome com recuo
+acima de uma fala é um nome de personagem, e assim por diante. Só uma linha que é ação depois de
+todas as regras mantém o recuo. Para manter como ação uma linha com recuo que parece outro
+elemento, digite `!` antes do recuo: `!    CORTA PARA:`.
 
 ## Configurações
 
@@ -285,7 +288,7 @@ As linhas de forma ficam num grupo próprio, **Formas**, logo depois de Livros:
 |---|---|---|
 | **Exportar…** oferece DOCX e não PDF | A forma da nota não é roteiro | Defina a propriedade de forma, ou ponha a pasta em **Forma por pasta** |
 | Um livro com roteiros dentro sai como prosa | Só uma nota avulsa é um roteiro | Exporte cada roteiro a partir da própria nota |
-| Uma fala é lida como ação | Ela tem recuo de tab ou de quatro espaços | Tire o recuo |
+| Uma linha de ação com recuo é lida como nome de personagem, cabeçalho ou transição | Os recuos são ignorados fora da ação, como na especificação do Fountain | Digite `!` antes do recuo |
 | Um nome de personagem é lido como ação | Tem letras minúsculas, ou não há linha logo abaixo | Escreva o nome em maiúsculas, ou comece a linha com `@` |
 | Um cabeçalho é lido como ação | O começo dele não está em **Começos de cabeçalho de cena**, ou não há linha em branco acima | Acrescente o começo, ou inicie a linha com ponto |
 | Uma transição é lida como ação | O final dela não está em **Finais de transição**, ou não há linhas em branco em volta | Acrescente o final, ou inicie a linha com `>` |

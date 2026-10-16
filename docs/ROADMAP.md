@@ -81,9 +81,9 @@ changes; setting up again in a finished vault says there is nothing to do.
 | The reader's startup race (a `compile: false` chapter read as included) | Candidate 52 in IMPROVEMENTS.md (not in 1.1) |
 | Phone gates | Waived (no phone to test on, 2026-10-05) |
 
-**Open with the author before release (G2):** (1) a speech with no sentence end moves whole to
-the next page (kept; confirm), and (2) an indented `CUT TO:` is action, where Fountain's spec would
-make it a transition (keep, or follow the spec). Today's behavior is the first reading in both.
+**Closed by the author (2026-10-16, follow the spec and other tools):** a speech with no sentence
+end moves whole to the next page (kept), and indents follow the Fountain spec (ignored outside
+action; an indented `CUT TO:` is a transition).
 
 After screenwriting: universe phase 2 (timeline, dates, facts over time, continuity and
 canon; U 2.1–2.4), moved out of 0.9 on 2026-10-06.
