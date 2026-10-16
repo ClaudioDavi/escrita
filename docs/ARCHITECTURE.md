@@ -92,6 +92,9 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   `core/export-pipeline.ts`, `core/book-source.ts`, `core/readiness.ts`, `core/zip.ts`,
   `core/pending.ts`, `core/folder-problem.ts`, `core/folder-setting.ts` and
   `core/settings-order.ts`.
+  The 1.1 core, each with its own section below: `core/form.ts`, `core/fountain.ts`,
+  `core/screenplay-pages.ts`, `core/pdf.ts`, `core/screenplay-pdf.ts`,
+  `core/screenplay-presets.ts` and `core/export-formats.ts`.
   Reuse these; don't duplicate.
 - **Never re-detect frontmatter, fences, inline code or comments**: ask
   `segment(text)` or `segmentDoc(doc)` from `core/markdown.ts` (see "Markdown
@@ -208,6 +211,8 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
 - **Checks.** `npm run typecheck`, `npm test`, `npm run build` must pass, and
   `npm run test:bundle` after a build. Other modules are being written at the same time,
   so errors outside your folder may appear transiently; your files must be clean.
+  `npm run e2e` is separate and local only (see "The end-to-end harness"); it is not a check CI
+  runs.
   `npm test` runs the `node` and `dom` projects (every `tests/lifecycle-*.test.ts` and
   `tests/module-context.test.ts` run in happy-dom), then the `timing` project on its own.
   A test that asserts elapsed time goes in `tests/timing/`: it runs one file at a time,
@@ -334,7 +339,8 @@ folder, not inside (or holding) a track folder, not a folder that already has `.
 **`classifyKey(settings)`** (0.8) is one string for every setting classify reads except the
 scope keys: the track, exclude, chapters and chapter template folders, the three plugin folders
 (normalized, so an empty value and the default give the same key), the status property,
-the stages and the four piece properties. Every index spec whose values depend on classify
+the stages, the four piece properties and (1.1) the three form keys (`formProperty`,
+`formValues`, `formFolders`). Every index spec whose values depend on classify
 puts it in its `settingsKey` (works, explorer, placeholders, entries, threads, mentions, names),
 so a new classify input is added to the key once and every index rebuilds on it.
 **`scopeKey(settings)`** (0.9) is the four scope keys (`universeMode`, `universeNote`,
@@ -365,6 +371,10 @@ same way.
   lowercase; a word listed under two stages belongs to the first stage in order.
 - `scope` (0.9, IMPROVEMENTS 9): which world the path lives in, a `Scope` from
   `core/scope.ts`, set on every placement, folders and `none` included. See "Scope".
+- `form` (1.1, PLAN-1.1 Q1): the work's `FormKind` from `core/form.ts`, or null. Set for any
+  Markdown file, whatever its kind or stage (a chapter, a book note, a note), and null for
+  everything else (folders, other files, `none`). It follows the form settings, **not the
+  feature switches**, so it is known with the universe off. See "Form".
 
 ## Scope (`core/scope.ts`, 0.9)
 
@@ -395,6 +405,39 @@ that the classifier can answer it (IMPROVEMENTS 9). Pure, no Obsidian imports.
   `UniverseModule` still calls `scopeFor` and `keptOut` directly, with a lookup it builds, for
   the entries and the mentions: a placement's scope would need a feature check in every caller.
   `universe/scope.ts` is deleted; nothing imports it.
+
+## Form (`core/form.ts`, 1.1)
+
+What kind of piece a note is: short story, essay, novella, novel, poem, fragment or screenplay.
+It lived in the universe until 1.1 (it was read only inside `universe/works-list.ts`), so a
+screenplay would have been invisible with the universe off. PLAN-1.1 Q1 moved it to core as a
+field on the classifier, the way `scope` moved in 0.9. Pure, no Obsidian imports.
+
+- **`FORM_KINDS`** is seven values, in this order: `shortStory`, `essay`, `novella`, `novel`,
+  `poem`, `fragment`, `screenplay`. `FormKind` is their type; `FORM_DEFAULTS` are the English
+  words (`short story`… `screenplay`) and `DEFAULT_FORM_PROPERTY` is `form`.
+- **`formOf(value, values)`** maps a property value to a kind (NFC, trim and lowercase on both
+  sides; a first list item counts; a number is read as text). **`formFor(path, value, settings)`**
+  is the one rule: the note's own property first, else the deepest folder in `formFolders` that
+  holds the path. **`parseFormFolders`** reads the `Folder: form word` lines (malformed lines
+  are skipped). `formValuesText` and `parseFormValues` convert the comma-separated settings
+  field; a text saved before 1.1 with six words keeps the screenplay word.
+- **Settings keys are unchanged** (`formProperty`, `formValues`, `formFolders`), so `data.json`
+  needs no migration. `UniverseSettings` still declares and normalizes them (an old six-word
+  `formValues` gains `screenplay` on its own) and `universe/settings.ts` re-exports `FORM_KINDS`
+  and `FormKind` for its callers; the rule itself is not there any more.
+- **In the classifier.** `ClassifySettings` has the three keys, optional so hand-built test
+  settings stay valid (missing means the English defaults), and `classifyKey` includes them, so
+  a change to a form word or a folder line rebuilds every index that keys on classify.
+  `formOfFile` in `core/classify.ts` reads the frontmatter the classifier already has for the
+  path and never throws.
+- **Who reads it.** The universe's Works tab groups by `classify().form` (`worksIn`), the mentions
+  index passes it to `computeMentions` (cues, see the universe), and the export module reads it
+  to pick the formats (`core/export-formats.ts`, see "Screenplays").
+- **Settings rows.** The three rows are a "Forms" group right after Books and the writing day
+  (the `forms` slot of `core/settings-order.ts`, `settings.forms` and `settings.form*` strings in
+  core). They are always drawn (`SETTING_FEATURES` marks them `always`), because forms matter
+  with the universe off. They were in the Universe section before 1.1; nothing saved changed.
 
 ## Markdown segmentation (`core/markdown.ts`)
 
@@ -935,9 +978,10 @@ The seam between reading a work and writing a file. Pure, no Obsidian imports.
 
 ```
 ExportSource  →  ExportDoc  →  ManuscriptWriter<M, P>  →  string | Uint8Array
-(read by the     (exportDocOf,   (Markdown, DOCX and the     (written by the export module
- export module)   manuscriptOf     preview, in src/export/     through plugin.notes.create)
-                  per part)        writers/)
+(read by the     (exportDocOf,   (Markdown, DOCX, EPUB and    (written by the export module
+ export module)   manuscriptOf     the preview, in src/export/    through plugin.notes.create)
+                  per part)        writers/; for a screenplay
+                                   a Script, see "Screenplays")
 ```
 
 - **`ExportSource`**: `title`, `author` (`Author { name, surname, contact[] }`), `count`
@@ -953,8 +997,9 @@ ExportSource  →  ExportDoc  →  ManuscriptWriter<M, P>  →  string | Uint8Ar
   lists what was dropped with its part.
 - **`ManuscriptWriter<M, P = Preset>`**: `id`, `ext`, and a pure `write(model, preset)`
   returning text (written as UTF-8) or bytes. It is generic over the model `M` and its layout
-  data `P`, so screenplay export (after 1.0) brings a script model, its own presets and its
-  own writers (Fountain, PDF, FDX) without changing this file. The three 0.8 writers
+  data `P`, so screenplay export (1.1) brought a script model, its own preset and its own
+  writers (Fountain, PDF) without changing the interface: `ManuscriptWriter<ScriptDoc,
+  ScreenplayPreset>` and `ManuscriptWriter<FountainDoc, FountainOptions>`. The three 0.8 writers
   all take `ExportDoc`: `markdownWriter` (reads only `byline`, `chapterHeading` and
   `sceneBreak` from the preset), `docxWriter` (the layout) and `PreviewWriter` (DOM). 0.9 adds
   `epubWriter` (`ManuscriptWriter<EpubBook, EpubLayout>`, see "EPUB writer").
@@ -967,6 +1012,16 @@ ExportSource  →  ExportDoc  →  ManuscriptWriter<M, P>  →  string | Uint8Ar
   `shunn` (US Letter, English labels) and `ptbr` (A4, Portuguese labels, "Capítulo {n} —
   {title}", "FIM", "Sumário"). `presetForLanguage(lang)` is the language's preset (`ptbr`
   for pt-BR, else `shunn`): export's default and the reader's heading.
+- **One title page, not four copies** (1.1, IMPROVEMENTS 46). `titlePageOf(doc, preset)` returns
+  a `ManuscriptTitle { contact, count, byline }`: the contact block (the author's name, then the
+  contact lines, trimmed, blanks left out), the rounded count in the preset's words and number
+  format, and the byline (`bylineOf(name, template)`, empty for a blank name). DOCX, Markdown,
+  EPUB and the preview all call it, and the screenplay title page reads its contact lines from it
+  (`export/screenplay.ts`). `minHeadingOf(doc)` is the lowest heading level a body block may use
+  (3 for a book, whose chapters own H1 and H2; 2 for a single note, whose title owns H1), shared
+  the same way. `EpubCover` is declared here, so a writer never imports another writer. The
+  prose type is `ManuscriptTitle` so the screenplay's `TitlePage` (core/fountain.ts) keeps its name.
+  `writers/xml.ts` holds `xmlEscape`, which DOCX and EPUB share (it was inside `docx.ts`).
 - **Helpers.** `aboutCount` (the title page count: nearest 100 below 10,000, nearest 500
   above, never below 100 for a non-empty work), `chapterHeadings` (numbering counts only
   chapters numbered 1 or more, so a "00 Prólogo" doesn't shift the numbers; a 00 chapter
@@ -1014,6 +1069,73 @@ give the same bytes.
   the latest release; the plugin itself stays offline). Run locally on the `ptbr` fixture with
   the cover: no errors or warnings. The job first runs on a GitHub runner when 0.9 opens its pull
   request.
+
+## Screenplays (`core/fountain.ts`, `screenplay-pages.ts`, `pdf.ts`, `screenplay-pdf.ts`, `screenplay-presets.ts`, `export-formats.ts`, 1.1)
+
+SP 1 and SP 6 (PLAN-1.1). A screenplay is **a note whose form is `screenplay`**, written in plain
+Fountain; it is not a feature module and has no switch (Q2). Reading it, paginating it and
+drawing the PDF are pure core files. The module side (the formats, the title page, the modal) is
+in "export". All of it is offline and needs no dependency.
+
+```
+note text → segment() → parseFountain → Script ─┬→ paginate → Page[] → screenplayPdf → PDF bytes
+                                                └→ Fountain writer → .fountain text
+```
+
+- **`core/fountain.ts`, the model and the parser.** `Script { titleBlock, elements }`;
+  `ScriptElement` is a union with `scene` (optional number, `forced`), `action` (`forced`,
+  `centered`), `character` (`name`, `extension`, `dual`, `forced`), `parenthetical`, `dialogue`,
+  `lyric`, `transition`, `pageBreak`, `section` (`depth`) and `synopsis`. Every element has its
+  source `line` and its `runs` (`ScriptRun { text, bold?, italic?, underline? }`). The cue's
+  extension stays one string (`V.O.`, `CONT'D`); the writers print `(V.O.) (CONT'D)` as two groups.
+  `TitlePage` is the title, credit, author, source, draft date and contact lines.
+  `parseFountain(text, md, opts)` runs on `segment()`'s lines, so the frontmatter, code and
+  `%% %%` notes are skipped; boneyard (`/* … */`, which `segment()` does not know) is its own
+  step, and an unclosed `/*` is plain text. `FountainOptions` are the scene heading prefixes and
+  the transition endings, built from the settings by `fountainOptions(s)` (rule 6: every word
+  is a setting). `parseRuns` (emphasis) is exported for the writers.
+- **Where Fountain and Markdown disagree, the screenplay wins** (Q6; pinned in
+  `tests/fountain.test.ts`): `#` is a section, `>` a transition or centered text (centered lines
+  with no blank between are one block), `_x_` is underline. An **indented line is action**, so a
+  tab-indented `CUT TO:` is action, not a transition (Fountain's own spec would read a
+  transition; this is one of the two open by-hand questions, PLAN-1.1 "By-hand checks"). A
+  `---` line is action, so nothing is lost. `[[…]]` stays a link and prints as its text.
+- **`core/screenplay-presets.ts`.** `ScreenplayPreset`: the page in points, the top margin, the
+  lines per page, the columns of each element (`ElementColumns`, in characters from the left
+  edge), the `more` and `continued` labels and `sceneNumbers`. `LETTER` is 612 by 792 with 55
+  lines; `A4` is 595.28 by 841.89 with 57 lines (the same left margin, narrowed on the right).
+  Columns are the US layout in Courier 12: action 15 to 75, dialogue 25 to 60, parenthetical
+  30 to 55, the cue at 37. `screenplayPreset(id, settings)` adds the writer's labels and the scene
+  numbers choice; `SCREENPLAY_PAGES` lists the ids.
+- **`core/screenplay-pages.ts`, `paginate(script, preset) → Page[]`.** Pure arithmetic on rows
+  and columns (Courier 12 is 10 characters per inch and 6 lines per inch). Each `PageRow` has its
+  row, column, runs and source line. Rules (SP 6): a scene heading never ends a page and keeps
+  lines of what follows with it; **a speech splits across pages only at a sentence end**, with
+  the `more` label under it at the cue's column and `NAME (continued)` at the top of the next
+  page; a speech with no sentence end to split at moves whole to the next page; a parenthetical
+  and a cue never end a page; a transition never starts one; action splits by lines, two or more
+  on each side; dual dialogue sits side by side and never splits; sections and synopses do not
+  print; a forced page break starts a page. **Not done, decided:** no automatic `(CONT'D)` when a
+  character speaks again, and no `CONTINUED:` marks; the writer types an extension when they want
+  one. Differences from Afterwriting (the dev-only reference, `scripts/compare-screenplay.mjs`,
+  never bundled) are decided and pinned in `tests/screenplay-pages.test.ts`, "reference
+  differences, decided".
+- **`core/pdf.ts`.** A small PDF 1.4 writer that knows nothing about screenplays:
+  `pdfOf(pages, meta) → Uint8Array`, with the four base-14 Courier faces (`PdfFace`), WinAnsi
+  encoding, no font embedded, one content stream per page, underlines as plain lines and a
+  correct xref table. `winAnsiByte`, `unsupportedIn(text)` and `pdfString` say which characters
+  Courier can print: the rest print as `?` and are listed (Q7).
+- **`core/screenplay-pdf.ts`.** `screenplayPdf(script, titlePage, preset) → ScreenplayPdf
+  { bytes, pages, unsupported }`: the unnumbered title page, then `paginate`'s pages with the
+  page number top right from page 2, drawn through `pdfOf`. `unsupported` lists each character
+  Courier cannot print with its note line, for the warning and the preview; a title page row has
+  `TITLE_PAGE_LINE` (-1), which names the character with no link.
+- **`core/export-formats.ts`.** `ExportFormat` is `md`, `docx`, `epub`, `pdf` and `fountain`
+  (re-exported from `data.ts`); `PROSE_FORMATS` (DOCX first), `SCREENPLAY_FORMATS` (PDF first),
+  `isScreenplayFormat` and `formatsFor({ single, form })`. **Only a single note whose form is
+  `screenplay` is offered PDF and Fountain, and then none of the prose formats.** A book or a
+  collection exports as prose even when its notes are screenplays (feature-length scripts are
+  SP 7, phase 3). A PDF is US Letter by default or A4; there is no screenplay DOCX.
 
 ## Book source (`core/book-source.ts`, 0.8)
 
@@ -1125,12 +1247,14 @@ module internals (`tests/settings-imports.test.ts`: only shared core, top-level 
 `<module>/settings.ts`).
 
 - **One order list, with headings.** `SECTION_ORDER` in `core/settings-order.ts` names the core
-  and module slots together (`features`, `shared`, `books`, `dayEnds`, `goals`, `publish`,
+  and module slots together (`features`, `shared`, `books`, `dayEnds`, `forms` (1.1), `goals`, `publish`,
   `export`, `submissions`, `outline`, `placeholders`, `darlings`, `editor`, `lens`, `stages`,
   `desk`, `snapshots`, `universe`, `threads`). A slot has the `feature` that draws it (null for
   shared core), optional `also` (other features that read a row the core draws there) and a
   `heading`: the i18n key of its group heading, or null when its rows continue the group above
-  (the writing day under Books, the thread words under the Universe). Headings are unique,
+  (the writing day under Books, the thread words under the Universe). The `forms` slot has its
+  own heading and no feature (always drawn); before the slot existed, the Forms group was
+  returned from the writing-day slot, a trick the slot replaced. Headings are unique,
   because Obsidian matches groups by heading on re-render. `sectionOrder(loaded)` returns the
   slots to draw: core always, a module's slot while it is loaded, and a slot with `also` while
   any of those is loaded (the core part only).
@@ -1442,6 +1566,38 @@ hotkeys keep working.
 - **View ids** (`core/view-types.ts` `VIEW_TYPES`): the outline, lens, placeholders and
   universe panels' ids, from which each module defines its own constant. Code that only
   places a panel (the setup's layout) reads them here and imports no module folder.
+
+## The end-to-end harness (`e2e/`, `playwright.config.ts`, 1.1)
+
+The checks that used to be by-hand steps in Obsidian are Playwright specs that drive a real
+Obsidian (PLAN-1.1 Q12 to Q14). It is **dev only**: nothing in `src/` or `main.js` knows it
+exists, `@playwright/test` is a dev dependency, `tests/no-network.test.ts` still scans only `src/`
+and `main.js`, and it is not in CI (CI has no flatpak Obsidian). How to run it, what each spec
+replaces and how to add one: `docs/TESTING.md`.
+
+- **Run.** `npm run e2e` (`playwright test`) after `npm run build`; `workers: 1`, because the
+  author's machine has limited resources: one Obsidian at a time, and under
+  `flock <scratchpad>/heavy.lock` when other agents are working. The full run is 204 tests in
+  about 8 minutes. `npx tsc -p e2e` typechecks the harness.
+- **It launches its own Obsidian and never touches the writer's.** `e2e/lib/obsidian.ts` runs
+  `flatpak run md.obsidian.Obsidian` with its own `--user-data-dir`, a free
+  `--remote-debugging-port` and `--ozone-platform=headless`, and attaches with
+  `chromium.connectOverCDP`. The profile's `obsidian.json` lists one vault, a fresh copy of a
+  fixture with Escrita's three built files copied in. Everything lives in
+  `~/.cache/escrita-e2e/run-<id>/` (the flatpak cannot see `/tmp`). The author's
+  `~/.var/app/md.obsidian.Obsidian/` config, vaults and running Obsidian are never touched, and
+  `close()` kills only the instances that were new when it started. A real vault (G2c) is
+  tested on a copy (`VaultSpec.copyFrom`), hashed before and after.
+- **Layout.** `e2e/lib/` (`obsidian.ts` launch, restart, close; `app.ts` the `App` helpers:
+  `command(id)`, `openFile`, `setSettings`, `readVaultFile`, `placement`, `emulateMobile`,
+  `longTasks`…; `setup-modal.ts`, `more.ts`, `panels.ts`, `export-ui.ts`, `zip-read.ts`,
+  `measure.ts`), `e2e/fixtures/` (`emptyPt`, `emptyEn`, `writer`, `world()`, `long-book`,
+  `screenplays`), `e2e/specs/` (one file per old test page section, and `screenplay.spec.ts`
+  for 1.1's own checks). Screenshots for the checks that need an eye go into the HTML report
+  (`e2e/report/`, git-ignored).
+- **Exceptions to the guidelines.** None needed in `src/`: the harness is outside the bundle, so
+  its use of Node, the flatpak CLI and the DevTools protocol is not plugin code. The PDF
+  writer needs none either: it is pure bytes, written through `plugin.notes.create` like DOCX.
 
 ## Module specs
 
@@ -1831,13 +1987,40 @@ this module reads the vault, calls the writer and writes the file.
   (`classify`'s `snapshot`, `submission`, `export`). A chapter or a book note exports its book
   (a chapter also offers "This chapter"); any other note exports itself. The key of a work's
   remembered choices is the book note's path, or the note's.
-- **Modal** (`modal.ts`, boards 26 and 27). Two views of one `ExportModal`: the options (what,
+- **Modal** (`modal.ts`, boards 26 and 27; the four small dialogs, `ChaptersModal`, `WhereModal`
+  and `ExistsModal` with `askChapters`, are in `dialogs.ts` since IMPROVEMENTS 46). Two views of
+  one `ExportModal`: the options (what,
   the chapters: all, a range or ticked, each shown with its manuscript heading and with the
   `compile: false` chapters named as left out; the format, Markdown, DOCX or (0.9) EPUB; the preset, Shunn
   or pt-BR; where it writes; the readiness warnings with "Export anyway"; and a caption for the
   last export with an "Export again" button) and the preview. The modal reaches Obsidian only
   through `ExportHost`, which `index.ts` implements. It opens with the work's remembered choices
   or defaults (DOCX, the preset of the writing language).
+- **Screenplays in the modal** (1.1, boards 43). For a single note whose form is `screenplay`
+  (`formatsFor`, from `classify().form`), the format chips are PDF and Fountain, the preset is
+  the **Page** (US Letter or A4, default the `screenplayPage` setting, remembered per work), and
+  there are two checkboxes: "Scene numbers in the margins" (PDF; starts from the
+  `screenplaySceneNumbers` setting each time) and "Keep the %% … %% notes as Fountain notes"
+  (Fountain; off each time). A work whose form changed since its last choice starts again from
+  the defaults. The "Writes" box says the PDF's page count and credit, or what Fountain is. The
+  warnings are the usual readiness ones plus `unsupported` (characters Courier prints as `?`,
+  each with a link to its line). The preview is a page view, not the reading column
+  (`script-preview.ts`).
+- **Screenplay build** (`screenplay.ts`, pure). `withScreenplay(built, o)` takes the prose build
+  of the single note and adds `built.screenplay`: the `Script` (`parseFountain` on the text the
+  build already read), the merged `TitlePage` (`screenplayTitlePage`), the notes for "Keep notes"
+  (`scriptNotes`), the `ScreenplayPreset` (`pageOf` maps the chosen preset to `letter` or `a4`),
+  and for a PDF the `ScreenplayPdf`. It drops the `embeds` warning (embeds are not dropped from
+  a script) and adds `unsupportedWarning`. **The title page** (Q9): the title is the note's; the
+  author and contact lines follow the prose rule (`titlePageOf(...).contact`: `authorProperty`,
+  `authorName`, `contactLines`); the credit line is the `screenplayCredit` setting (dropped when
+  there is no author); source and draft date come from the properties named by
+  `screenplaySourceProperty` and `screenplayDraftDateProperty`, read through `propertyValue`
+  (case-insensitive). A `Title:` block in the body fills only what is still empty.
+- **Script preview** (`script-preview.ts`). `drawScriptPages(parent, built, labels)` draws the
+  title page and then the pages from the same `paginate` output the PDF uses, so the breaks
+  match, in em units (a column is 0.6 em, a line 1 em) on light pages with Obsidian's element
+  helpers only. A click on a row opens its note at that line.
 - **Preview** (`writers/preview.ts`). `PreviewWriter` is a third `ManuscriptWriter<ExportDoc>`
   that draws the same model the file gets into the modal with `createEl`, so it can't drift
   from the file. A reading column, not pages: no page breaks or numbers, since Escrita doesn't
@@ -1876,8 +2059,13 @@ this module reads the vault, calls the writer and writes the file.
   the note through `notes.create` (`exists: "unique"`) beside the first story with `[[Name]]`
   list items (a story whose name another note shares is linked by its path), in the file
   explorer's sort order (`explorerSortOf`, `sortLikeExplorer`), and opens it (D9).
-- **Writing** (`index.ts`, `write`). The file goes through `plugin.notes.create` into the export
-  folder (`exportFolder`, default `Escrita/Exports`): `<title>.md` or `<title> (<preset>).docx` / `.epub`.
+- **Writing** (`index.ts`, `write`). The writer comes from `WRITERS` in `writers/table.ts`, a
+  table by format (it replaced a ternary): each entry is `kind: "prose"` (takes the `ExportDoc`
+  and a `Preset`, plus the EPUB inputs) or `kind: "script"` (takes the `ScriptDoc`, the page
+  preset, the parser words and the notes), so a module hands a writer only inputs it understands.
+  The file goes through `plugin.notes.create` into the export
+  folder (`exportFolder`, default `Escrita/Exports`): `<title>.md` or `<title> (<preset>).docx` / `.epub`;
+  for a screenplay `<title>.fountain` or `<title> (Letter).pdf` / `(A4).pdf` (`exportFileName`).
   It never replaces without asking. When the name is taken, the modal asks to replace or keep
   both (keep both names the new file with the date and time, `<title> (<preset>) YYYY-MM-DD
   HHhMM.docx`, written with `exists: "unique"`). Replace is offered only for an export at exactly
@@ -1886,8 +2074,10 @@ this module reads the vault, calls the writer and writes the file.
   write offers "Show in the file explorer" (see the documented exceptions).
 - **Export again** (Q17). `data.exportChoices[key]` is `ExportChoice { format, preset, whole,
   chapters?, last? }` and `last` is `LastExport { format, preset, whole, chapters,
-  chapterCount?, at, path, folder, name, source? }`: enough to repeat the export and to say what
-  it was (`source` is the note a "This chapter" export came from). "Export again" writes at once
+  chapterCount?, pages?, sceneNumbers?, at, path, folder, name, source? }`: enough to repeat the export and to say what
+  it was (`source` is the note a "This chapter" export came from; since 1.1 a screenplay PDF's page
+  count is `pages` and its scene numbers choice `sceneNumbers`, so "Export again" repeats a
+  numbered PDF, and `chapterCount` is only for books). "Export again" writes at once
   when nothing needs a confirmation and it is the same kind of export (`canRepeat`: a chapter
   exported alone is repeated only from that chapter); otherwise the modal opens with those
   choices and the warnings. It overwrites the last file only while that file is still where it
@@ -1898,6 +2088,15 @@ this module reads the vault, calls the writer and writes the file.
   deleted one (`dropChoices`; a last export whose file was deleted keeps its record), and moves
   the `exportFolder` setting when the folder, or one holding it, is renamed. They run while the
   feature is off. Renaming the export folder is not "moving" the last export.
+- **Script writers** (1.1). `writers/pdf.ts` is a thin call to `screenplayPdf` (`pdfWriter`,
+  `pdfOfScript`, which also returns the page count and the unprintable characters).
+  `writers/fountain.ts` is the inverse of the parser: it writes the plain form of every element
+  where the parser would read it back as that element, and a forced mark (`.` `@` `!` `>`) only
+  where the plain form would read as something else, checking each case with `parseFountain`
+  itself, so the two cannot drift (its round-trip test parses what it writes). Escrita's own
+  markers (beats, placeholders, threads) never go in the file; other `%%` notes become
+  `[[notes]]` only with "Keep notes" (`scriptNotes`). The notes are not part of the round trip,
+  because Escrita's parser reads a `[[note]]` back as link text (there is no Fountain import).
 - **Writers** (`writers/markdown.ts`, `writers/docx.ts`). The Markdown writer escapes text that
   would turn prose into structure and writes a title block, chapter headings (`##`), scene breaks
   and the front pages. The DOCX writer builds the OOXML parts with `core/zip.ts` (9 parts): a
@@ -1910,10 +2109,18 @@ this module reads the vault, calls the writer and writes the file.
   `epigraphProperty`, `authorProperty`), `authorName`, `authorSurname` (empty means the last word
   of the name), `contactLines` and `chapterHeadingFormat`; since 0.9 also `coverProperty` (default `cover`),
   `epubSceneBreak` (default `* * *`, blank falls back) and `collectionProperty` (default
-  `contents`). The export folder row is drawn by the core. An `author` property on the book note or the note overrides the settings.
+  `contents`). Since 1.1 a "Screenplays" group (a second block, shown while export is on): the
+  scene heading prefixes (`screenplaySceneHeadings`), the transition endings
+  (`screenplayTransitions`), the page (`screenplayPage`, `letter` or `a4`), scene numbers
+  (`screenplaySceneNumbers`, off), the more and continued labels (`screenplayMore`,
+  `screenplayContinued`), the credit line (`screenplayCredit`) and the source and draft date
+  properties (`screenplaySourceProperty`, `screenplayDraftDateProperty`). The words come from the
+  install's set (`core/defaults.ts`; pt-BR has `PARA:`, `(MAIS)`, `(CONT.)`, `Roteiro de`). The
+  title page's author and contact use the rows above. The export folder row is drawn by the core. An `author` property on the book note or the note overrides the settings.
 - **Tests.** `tests/export-*.test.ts` (logic, source, Markdown, DOCX unzipped through
-  `tests/support/zip-reader.ts`), `tests/lifecycle-export*.test.ts` (lifecycle, modal, preview,
-  renames). Strings in `strings.ts` (English and pt-BR), styles in `styles.css`.
+  `tests/support/zip-reader.ts`, title page, Fountain, screenplay), `tests/lifecycle-export*.test.ts`
+  (lifecycle, modal, preview, renames, screenplay), and for the core
+  `classify-form`, `export-formats`, `fountain`, `screenplay-pages`, `pdf` and `screenplay-pdf`. Strings in `strings.ts` (English and pt-BR), styles in `styles.css`.
 
 ### submissions (`src/submissions/`, 0.8)
 
@@ -2291,7 +2498,7 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
 - **Settings** (`settings.ts`, pure). `UniverseSettings` extends the plugin settings;
   `normalizeUniverse` fills any missing or wrong-typed value with the English default.
   Five fixed entry types (`ENTRY_KINDS`), each `{ value, folder, template, label }`;
-  five forms (`FORM_KINDS`); `threadClosedWord`; `universeNote` (path, `.md` added);
+  the seven forms (`FORM_KINDS`, declared in core since 1.1: see "Form"); `threadClosedWord`; `universeNote` (path, `.md` added);
   `defaultUniverseFolders`. The author's own words live in `data.json`. The section in
   Settings is drawn by `settings-ui.ts`.
 - **Entries index** (`entries.ts`). A `plugin.index` spec over notes whose type property
@@ -2315,14 +2522,21 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   that may mention an entry and answers `appearsIn(entry)`: the works and chapters that
   mention it with counts, the first and last mention (only inside a book), a group of "Other
   notes", and a range for "click to jump" that is checked against the live text before it is
-  selected (otherwise the note opens at the top). It builds on demand and rebuilds as described
+  selected (otherwise the note opens at the top). **Character cues** (1.1, Q8): in a screenplay
+  note (`deps.formOf(path)`, which is `classify().form`), `computeMentions(md, find, cues)` also
+  counts each character cue (`JOÃO`, the extension like `(V.O.)` taken off) as a mention when the
+  matcher takes the name whole, unless the prose matcher or a link already covers it, so a cue is
+  never counted twice. The shape of `NoteMentions` is unchanged, and the index re-indexes when the
+  screenplay words (scene headings, transitions) change. It builds on demand and rebuilds as described
   in "Names matcher"; its `include` skips the export and submission folders as well as snapshots,
   templates and the universe note, and the entries and threads indexes skip them too
   (`isUniverseNote`). Threads read `segmentDoc`. `appears-in.ts` draws the list for the Entries tab and `appears-in-widget.ts`
   draws it as a block widget at the end of an entry note in Live Preview and Source mode,
   from a `StateField` in an editor slot; it is never written into the file, so it is not
-  selectable, exported or counted. Reading view shows nothing yet (gate G0d is open: the
-  Markdown post-processor route is unproven). Neither file writes to a note.
+  selectable, exported or counted. **Reading view shows the panel only**: there is no Markdown
+  post-processor (0.7's G0d, closed as decided in 1.1 and checked by
+  `e2e/specs/appears-in-reading.spec.ts` across five toggles, a split and a 200-line entry).
+  Neither file writes to a note.
 - **Unlinked mentions and names without an entry** (0.9, U 2.5). The universe feeds both from
   the mentions and names indexes; their pure parts, rules and the write are in "Names matcher"
   (unlinked mentions, name runs, the names index). `UniverseModule` adds `unlinkedFor(file)`
@@ -2338,7 +2552,8 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   edits in between. Decorations only. Whether the squiggle goes away on a phone is gate
   G0c, still open; the lens half works regardless.
 - **Works tab** (`works-list.ts`, `view-works.ts`). The universe's works from
-  `plugin.works`, grouped by the form property (unknown or missing → "No form"), sorted by
+  `plugin.works`, grouped by `classify().form` (unknown or missing → "No form"; the seventh group
+  is "Screenplays", pt-BR "Roteiros"), sorted by
   stage (published first) then name; the count comes from `plugin.measure`, filled in
   after the first draw, and a redraw happens only when a count actually landed.
 - **Panel** (`view.ts`, `view-entries.ts`, `view-threads.ts`, `view-works.ts`,
