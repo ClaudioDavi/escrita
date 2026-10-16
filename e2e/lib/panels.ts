@@ -77,3 +77,14 @@ export async function snap(app: App, name: string, element?: Locator): Promise<v
 export function editorCursor(app: App): Promise<{ line: number; ch: number } | null> {
   return app.page.evaluate(`(() => { const ed = ${EDITOR}; if (!ed) return null; const c = ed.getCursor(); return { line: c.line, ch: c.ch }; })()`) as Promise<{ line: number; ch: number } | null>;
 }
+
+/** The settings window: Obsidian 1.14 opens it as its own about:blank page, not in the vault window. */
+export async function settingsPage(app: App) {
+  for (let i = 0; i < 50; i++) {
+    for (const p of app.page.context().pages()) {
+      if (p !== app.page && !p.isClosed() && (await p.locator(".setting-item").count()) > 0) return p;
+    }
+    await sleep(100);
+  }
+  throw new Error("the settings window did not open");
+}
