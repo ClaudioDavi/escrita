@@ -1,4 +1,4 @@
-> **Automated (1.1):** G2a and G2b run as `e2e/specs/setup.spec.ts` (`npm run e2e`, see [TESTING.md](TESTING.md)). What stays by eye: reading the screenshots in the report, G2c and the rest of this page.
+> **Automated (1.1):** every section of this page now runs as an e2e spec (`npm run e2e`, see [TESTING.md](TESTING.md)); each section below starts with a pointer to its spec and lists the steps that stay by eye. What stays by eye overall: reading the screenshots in the report, third-party themes and plugins (Minimal, zen mode, Typewriter), colours and the legend in the progress chart, the two "Decide" items, the open gates at the end and a real phone (the author has none).
 
 # Escrita 1.0: manual test plan (G2 and G4)
 
@@ -67,6 +67,8 @@ No `data.json` in either: that is what makes them a fresh install. Open each wit
 
 ## G2a: the setup in an empty vault, in Portuguese
 
+> **Spec:** `e2e/specs/setup.spec.ts`, steps 1 to 11 (step 11 is pinned with `test.fail()`, see the comment in the spec).
+
 Obsidian in Portuguese (Brasil), vault `vazio-pt`.
 
 1. Turn on Escrita for the first time.
@@ -121,6 +123,8 @@ Obsidian in Portuguese (Brasil), vault `vazio-pt`.
 
 ## G2b: the setup in an empty vault, in English
 
+> **Spec:** `e2e/specs/setup.spec.ts`, steps 1 to 4.
+
 Obsidian in English, vault `empty-en`. Repeat G2a with the English names, with these changes:
 
 1. Pick **Short fiction** only, **Essentials**, and the **Writing mode** layout card.
@@ -141,6 +145,8 @@ Obsidian in English, vault `empty-en`. Repeat G2a with the English names, with t
    book in the outline.
 
 ## G2c: the setup in the author's vault (changes no note, no saved setting)
+
+> **Spec:** `e2e/specs/author-vault.spec.ts`, steps 1 to 6, against a **copy** of `~/Projects/website/escrita/` made in the run folder (the spec skips itself when the folder is not on the machine, and checks that the source is unchanged afterwards). Nothing on this page needs to be run in the author's own Obsidian any more; the `cp` and `git status` lines below are the by-hand way. Two expectations differ from what the spec reads: "Abrir a nota inicial ao iniciar" is `=` ("Já está assim.") in this vault because it is already on, not unticked; and the settings diff is empty.
 
 Vault `~/projects/website/escrita/`, Obsidian in Portuguese, the new build copied in:
 
@@ -188,6 +194,8 @@ cp ~/projects/website/escrita/.obsidian/plugins/escrita/data.json ~/escrita-test
 
 ## Presets on the Features page
 
+> **Spec:** `e2e/specs/features-presets.spec.ts`, steps 1 to 7 (step 7 sets the home note setting to a name that is not a note, since the desk follows a real rename).
+
 In `vazio-pt` after G2a (on **Tudo**).
 
 1. **Configurações › Escrita › Recursos**.
@@ -211,6 +219,8 @@ In `vazio-pt` after G2a (on **Tudo**).
    opens the setup. Rename it back.
 
 ## Writing mode next to the Minimal theme and a zen plugin
+
+> **Spec:** `e2e/specs/writing-mode.spec.ts`, steps 2, 3 and 6 to 9. **By eye:** steps 1, 4 and 5 (the Minimal theme and a zen plugin) and the "Decide" in step 10.
 
 In `empty-en` (Essentials, Writing mode on startup). Install the **Minimal** theme and one
 zen plugin (**Zen Mode** or **Ultra Zen Mode**).
@@ -243,6 +253,8 @@ zen plugin (**Zen Mode** or **Ultra Zen Mode**).
 
 ## G4: the emulated phone
 
+> **Spec:** `e2e/specs/phone.spec.ts`, steps 1 to 5 and the checklist of [MOBILE-1.0.md](MOBILE-1.0.md) that a script can see (views, modals, the outline's ⋯, the lens step, the Settings page). **By eye:** touch itself, the soft keyboard, the load time (checklist 8). Checklist 9 is `tests/no-lookbehind.test.ts`.
+
 Vault `~/projects/website/escrita/`, window about 390 px wide, in the developer console
 (Ctrl+Shift+I): `app.emulateMobile(true)`. Follow "Checklist for G4" in
 [MOBILE-1.0.md](MOBILE-1.0.md), plus:
@@ -262,6 +274,8 @@ Vault `~/projects/website/escrita/`, window about 390 px wide, in the developer 
 
 ## Release-candidate fixes (2026-10-09)
 
+> **Spec:** `e2e/specs/release-fixes.spec.ts`, steps 1 to 4.
+
 In `vazio-pt` unless noted.
 
 1. **Settings fall back to the install's language.** Clear **Palavra de thread fechada**
@@ -280,6 +294,8 @@ In `vazio-pt` unless noted.
    following the cursor.
 
 ## Demo findings (2026-10-09)
+
+> **Spec:** `e2e/specs/demo-findings.spec.ts`, findings 1 to 10 and 13 to 18. **By eye:** the Typewriter theme in 1 and 6, and the colours and legend of 16 (screenshots are attached). Two findings are pinned with `test.fail()` (the comment above each says what was seen): 16 with no book (the chart throws) and 17 (the entry opens in front).
 
 The fixes for `escrita-demo/FINDINGS.md`, numbered as there. In `vazio-pt` unless noted.
 Findings 11 and 12 were settled by the author (threads are "thread", closed "fechada") and

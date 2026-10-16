@@ -41,6 +41,15 @@ function freePort(): Promise<number> {
   });
 }
 
+/** A plain recursive copy of a vault (read-only on the source), without the workspace files and the git folder. */
+function copyVault(from: string, to: string): void {
+  fs.cpSync(from, to, {
+    dereference: true,
+    recursive: true,
+    filter: (src) => !/(^|\/)\.git$/.test(src) && !/\.obsidian\/workspace[^/]*\.json$/.test(src),
+  });
+}
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Deletes the run folders left by earlier runs (this run's folder is newer than any of them). */
@@ -118,6 +127,7 @@ export class Obsidian {
       fs.writeFileSync(p, text);
     };
     fs.mkdirSync(this.vaultDir, { recursive: true });
+    if (vault.copyFrom) copyVault(vault.copyFrom, this.vaultDir);
     for (const [rel, text] of Object.entries(vault.files)) put(rel, text);
     put(".obsidian/community-plugins.json", JSON.stringify(["escrita"]));
     const plugin = path.join(this.vaultDir, ".obsidian", "plugins", "escrita");

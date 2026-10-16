@@ -11,6 +11,11 @@ export interface VaultSpec {
   files: Record<string, string>;
   /** the plugin's data.json, when the vault should have one */
   data?: Record<string, unknown>;
+  /**
+   * A folder on the host copied (recursively, as it is) into the run's vault before `files` is
+   * written. Only author-vault.spec.ts uses it; the source is never written to.
+   */
+  copyFrom?: string;
 }
 
 export interface FixtureOptions {
