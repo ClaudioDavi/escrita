@@ -102,13 +102,14 @@ describe("darlings lifecycle", () => {
     expect(JSON.stringify([plugin.settings.darlingsNote, plugin.settings.globalDarlingsNote, plugin.data])).toBe(before);
   });
 
-  it("has no data followers and no index specs, so a module never loaded adds none", () => {
-    expect(mod.dataFollowers).toBeUndefined();
-    expect(plugin.followers.size).toBe(0);
+  it("has one data follower (the global darlings note) and no index specs, loaded or not", () => {
+    expect(mod.dataFollowers).toBeDefined();
+    expect(plugin.followers.size).toBe(1);
     expect(plugin.indexAdded).toHaveLength(0);
     reg.apply();
+    expect(plugin.followers.size).toBe(1);
     setOn(false);
-    expect(plugin.followers.size).toBe(0);
+    expect(plugin.followers.size).toBe(1);
     expect(plugin.indexAdded).toHaveLength(0);
   });
 

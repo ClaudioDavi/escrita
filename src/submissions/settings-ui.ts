@@ -42,7 +42,7 @@ export function submissionsSettingsItems(ui: SettingsUi, plugin: EscritaPlugin):
 
 /** What stays when the feature is turned off: the notes in the folder (read from the vault, not from live state). */
 export async function submissionsOffNotice(plugin: EscritaPlugin): Promise<string | null> {
-  const folder = submissionsRoot(plugin.settings.submissionsFolder);
+  const folder = submissionsRoot(plugin.settings.submissionsFolder, plugin.settings.defaultsLanguage);
   const n = plugin.app.vault.getMarkdownFiles().filter((f) => inFolder(f.path, folder)).length;
   if (n === 0) return t("settings.features.off.submissions.none");
   return plural("settings.features.off.submissions", n, { n: fmt(n), folder });

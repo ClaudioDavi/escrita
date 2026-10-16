@@ -17,6 +17,8 @@ import {
 import { ConfirmModal, DarlingsView, VIEW_DARLINGS } from "./view";
 import { darlingsOffNotice, darlingsSettingsItems } from "./settings-ui";
 import type { SettingsBlock } from "../ui/settings-rows";
+import type { Follower } from "../core/vault-index";
+import { movedPath } from "../core/path-keys";
 
 export { VIEW_DARLINGS };
 
@@ -33,6 +35,20 @@ export class DarlingsModule extends FeatureModule {
   private refreshTimer: number | null = null;
 
   constructor(private plugin: EscritaPlugin) { super(); }
+
+  /** The global darlings note (or a folder holding it) was renamed: the setting follows, even while the feature is off. */
+  dataFollowers(): Follower[] {
+    return [{
+      moved: (oldPath, newPath) => {
+        const s = this.plugin.settings;
+        if (s.globalDarlingsNote.trim() === "") return;
+        const next = movedPath(normalizePath(withMd(s.globalDarlingsNote)), oldPath, newPath);
+        if (next === null) return;
+        s.globalDarlingsNote = next;
+        void this.plugin.saveSettings();
+      },
+    }];
+  }
 
   override onload(): void {
     const { plugin, ctx } = this;

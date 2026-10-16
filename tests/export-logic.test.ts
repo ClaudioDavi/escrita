@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { ChapterRef } from "../src/core/book-source";
+import { joinPath } from "../src/core/paths";
 import { cleanExportChoices, type ExportChoice } from "../src/data";
 import {
-  authorOf, choiceOfLast, coverLink, coverMediaType, dropChoices, exportFileName, fileTitle, inFolder, keepBothName, linkTarget, planChapters,
+  authorOf, choiceOfLast, coverLink, coverMediaType, dropChoices, exportFileName, fileTitle, keepBothName, linkTarget, planChapters,
   presetLabel, renameChoices, stamp, whenText, dayMonthText,
 } from "../src/export/logic";
 
@@ -94,9 +95,9 @@ describe("file names (Q3, G1)", () => {
     expect(fileTitle("///")).toBe("Export");
   });
   it("joins the folder without doubled slashes", () => {
-    expect(inFolder("Escrita/Exports", "a.md")).toBe("Escrita/Exports/a.md");
-    expect(inFolder("/Escrita//Exports/", "a.md")).toBe("Escrita/Exports/a.md");
-    expect(inFolder("", "a.md")).toBe("a.md");
+    expect(joinPath("Escrita/Exports", "a.md")).toBe("Escrita/Exports/a.md");
+    expect(joinPath("/Escrita//Exports/", "a.md")).toBe("Escrita/Exports/a.md");
+    expect(joinPath("", "a.md")).toBe("a.md");
   });
 });
 

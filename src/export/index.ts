@@ -7,7 +7,7 @@ import type { Follower } from "../core/vault-index";
 import type { ExportChoice, ExportSelection, LastExport } from "../data";
 import { chapterTitle } from "../core/book";
 import { bookSource, collectionAt, type Book } from "../core/books";
-import type { BookSource, ChapterRef } from "../core/book-source";
+import { propertyValue, type BookSource, type ChapterRef } from "../core/book-source";
 import { storyChapters, type Collection } from "../core/collection";
 import { exportRoot, followFolderSetting } from "../core/classify";
 import { NoteExistsError, FolderBlockedError } from "../core/notes";
@@ -264,7 +264,7 @@ export class ExportModule extends FeatureModule {
     const { app, settings } = this.plugin;
     const prop = settings.coverProperty;
     const holder = target.book && state.whole ? target.book.note.path : target.file.path;
-    const link = coverLink(this.frontmatter(holder)[prop]);
+    const link = coverLink(propertyValue(this.frontmatter(holder), prop));
     if (link === null) return { cover: null, name: null };
     const dest = app.metadataCache.getFirstLinkpathDest(link, holder);
     if (!(dest instanceof TFile)) return { cover: null, name: link };
