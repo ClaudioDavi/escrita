@@ -244,13 +244,7 @@ test.describe("G2a: the setup in an empty vault, in Portuguese", () => {
     await app.screenshot("11. the second run");
   });
 
-  // FINDING (task E, 2026-10-16): TEST-1.0 G2a step 11 expects "nothing to do" and only Voltar and Fechar.
-  // The step-2 list still holds the layout row ("Arrumar a tela uma vez", unticked because the vault has
-  // works), which is never "kept", so the summary reads "Nada marcado. Marque uma linha para criar ou
-  // mudar." and the buttons are Voltar, Cancelar and a disabled Criar. Drop test.fail() if the layout
-  // row should count as done (or change the expectation in TEST-1.0 if this is intended).
   test("11b. nothing to do: the summary says so and the only button besides Voltar is Fechar", async () => {
-    test.fail();
     expect(await setup.summary()).toBe("Tudo o que você escolheu já existe. Nada a fazer.");
     expect((await setup.root.locator(".escrita-setup-buttons button").allInnerTexts()).sort()).toEqual(["Fechar", "Voltar"]);
   });

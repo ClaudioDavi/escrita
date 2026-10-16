@@ -174,6 +174,17 @@ describe("the preview", () => {
     expect(planCounts(items, { examples: false }).items).toBeLessThan(c.items);
   });
 
+  it("counts nothing to do when only the default-unticked layout row is left (board 36 b)", () => {
+    const base = { target: "x", tick: null, ticked: true, reason: { key: "k" } } as const;
+    const kept = { ...base, kind: "folder", state: "kept" } as unknown as SetupItem;
+    const layout = { ...base, kind: "layout", target: "layout", state: "new", tick: "layout", ticked: false } as unknown as SetupItem;
+    expect(planCounts([kept, layout], {}).available).toBe(0);
+    // ticking the layout row brings Create back
+    expect(planCounts([kept, layout], { layout: true }).available).toBe(1);
+    // a ticked-by-default layout (a fresh vault) always counts
+    expect(planCounts([kept, { ...layout, ticked: true }], {}).available).toBe(1);
+  });
+
   it("shows a value as short text", () => {
     expect(valueText("A\nB")).toBe("A, B");
     expect(valueText({ idea: { words: "idea, notion", color: "#000" }, draft: { words: "draft", color: "#111" } })).toBe("idea, draft");

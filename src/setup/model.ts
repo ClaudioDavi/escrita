@@ -121,7 +121,11 @@ export function isSetting(item: SetupItem): boolean {
 export interface PlanCounts {
   items: number;
   settings: number;
-  /** items that could run at all (not kept), ticked or not */
+  /**
+   * items that could run at all (not kept), ticked or not. The layout row does not count while
+   * it is unticked by default and the writer has not ticked it (board 36 b: a set-up vault with
+   * works says "nothing to do"); ticking it counts it again.
+   */
   available: number;
 }
 
@@ -130,7 +134,7 @@ export function planCounts(items: readonly SetupItem[], ticks: SetupTicks): Plan
   return {
     items: run.filter(isMade).length,
     settings: run.filter(isSetting).length,
-    available: items.filter((i) => i.state !== "kept").length,
+    available: items.filter((i) => i.state !== "kept" && !(i.kind === "layout" && !i.ticked && !tickOn(i, ticks))).length,
   };
 }
 
