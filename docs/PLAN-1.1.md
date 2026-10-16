@@ -35,7 +35,7 @@ property (or a folder mapped to the screenplay form).
 | Q3 | How does export pick formats for a screenplay? | **By the source's form.** A single note whose form is `screenplay` offers PDF and Fountain (PDF first) and none of the prose formats; every other source is unchanged. A book or collection with screenplay notes inside exports as prose, as today (feature-length scripts are phase 3, SP 7). `ExportFormat` gains `"pdf"` and `"fountain"`; the ternary at `export/index.ts:397` becomes a small table of writers by format, each with its own preset kind. |
 | Q4 | Settings for screenplays: where, and how many? | **One "Screenplays" group in the export section**, shown while export is on: scene heading prefixes, transition endings, page size (Letter, A4), scene numbers in the PDF (off), the more and continued labels, and the title page property names (`credit`, `author`, `source`, `draftDate`, `contact`). The time-of-day words and the editor font wait for phase 2 (they serve the suggestions and the layout, not export). Every word is a setting with English defaults and pt-BR defaults through `core/defaults.ts` (rule 6). |
 | Q5 | Fountain notes and Obsidian links | **As SP 1 says.** `[[…]]` stays a link and is exported as its link text; `%% … %%` are Escrita's notes and are dropped from the PDF. In the `.fountain` file they become `[[…]]` notes only when "Keep notes" is ticked in the modal (off by default). Boneyard (`/* … */`) is read by the Fountain parser, since `segment()` doesn't know it. |
-| Q6 | Where Fountain and Markdown disagree | **The screenplay wins inside a screenplay note.** `#` is a section, `>` a transition or centered text, `_x_` is underline, and 4-space indents are action (`segment()` doesn't mark indented code, `core/markdown.ts:36`, so nothing is lost). Each case is pinned in `tests/fountain.test.ts`, next to the existing parity tests. |
+| Q6 | Where Fountain and Markdown disagree | **The screenplay wins inside a screenplay note.** `#` is a section, `>` a transition or centered text, `_x_` is underline, and a `---` line is action (`segment()` doesn't mark indented code, `core/markdown.ts:36`, so nothing is lost). **Indents reversed 2026-10-16:** the author chose to follow the Fountain spec and what other tools do ("Indenting": leading tabs and spaces are ignored outside action), so an indented line that is another element is read as that element; only action keeps its indent. Each case is pinned in `tests/fountain.test.ts`, next to the existing parity tests. |
 | Q7 | Characters outside Courier's WinAnsi encoding (emoji, `ő`, non-Latin) | **The preview lists them before export, and the PDF prints `?` in their place.** Never silently dropped: the list has the line of each one, like placeholders. Portuguese (`ã ç é —`, curly quotes, `…`) is all in WinAnsi. |
 | Q8 | Character cues in "Appears in" (SP 1) | **Yes, small.** In a screenplay note, `computeMentions` (`universe/mentions.ts:14`) adds each cue (`JOÃO`, extension like `(V.O.)` removed) as an occurrence when it folds to an entry's name or alias (`foldName`). The `NoteMentions` shape is unchanged; the mentions index passes the note's `form`. |
 | Q9 | Title page | **From the note's properties** (title = the note's title; the other five property names are settings), with a Fountain `Title:` block at the top read as a fallback for pasted scripts. Built through improvement 46's `titlePageOf`, so it is not a fifth copy. |
@@ -623,13 +623,43 @@ three links still point at this repo's `main.js`, `manifest.json` and `styles.cs
 
 **Left before the release:**
 
-1. G2 by the author ("By-hand checks" below), including the two pagination calls. If the author
-   picks the spec's reading of indents, the guide's "An indented line is action" paragraph and
-   table row, the README entry, ARCHITECTURE's "Screenplays" and SP 6 change with it.
+1. G2 by the author ("By-hand checks" below). The two pagination calls are decided (2026-10-16,
+   "Follow-up: indents").
 2. The release mechanics: `npm version minor --no-git-tag-version` (manifest and versions to
    1.1.0); ROADMAP's 1.1 section to "Shipped"; the README changelog heading dated, and
    "(unreleased)" taken out of `screenplays.md` (both languages), ROADMAP-screenplay and the
    ROADMAP table; CONTEXT's 1.1 line to shipped; commit `1.1.0`, tag `1.1.0`, push the tag.
+
+### Follow-up: indents (2026-10-16)
+
+The author decided to follow the Fountain spec and what other tools do. Q6 is reversed for indents
+(an indented scene heading, transition, cue with its speech, centered text, section, synopsis,
+page break, lyric, note or forced element is that element; only action keeps its indent), and R1
+stays. Branch `1.1-q6`: `parseFountain` drops its indent rule and an action line keeps a tab or
+4-space indent when it falls through to action (`src/core/fountain.ts`); the Fountain writer needed
+no change (it already forces with `!` what the parser would read as another element, checked in
+`tests/export-fountain.test.ts`). Tests: "ignores leading whitespace on every other element" in
+`tests/fountain.test.ts`, the indented `CUT TO:` in `tests/screenplay-pages.test.ts` (now a
+transition), and a round-trip block in `tests/export-fountain.test.ts`.
+
+Comparison (`scripts/compare-screenplay.mjs`, Afterwriting 1.17.3; Escrita / Afterwriting pages,
+then pages that start differently; before, then after):
+
+| Fixture | Letter before | Letter after | A4 before | A4 after |
+|---|---|---|---|---|
+| en-short | 5 / 5, 1 | 5 / 5, 1 | 5 / 5, 3 | 5 / 5, 3 |
+| pt-short | 5 / 5, 3 | 5 / 5, 3 | 5 / 5, 0 | 5 / 5, 0 |
+| brick_and_steel | 4 / 4, 0 | **5 / 4, 3** | 4 / 4, 2 | **4 / 4, 0** |
+| my_living_memory | 16 / 16, 9 | 16 / 16, 9 | 16 / 15, 9 | 16 / 15, 9 |
+| printing_trouble | 12 / 12, 0 | 12 / 12, 0 | 12 / 12, 0 | 12 / 12, 0 |
+
+Brick & Steel A4 now agrees with Afterwriting: the indented `CUT TO:` is a transition, and the
+page 3 and 4 differences are gone. Brick & Steel Letter is a new difference, not decided here:
+its tab-indented `JACK` and `DAN` lines are now cues with speeches, as Afterwriting reads them, and
+Escrita's narrower parenthetical column (30 to 55) wraps "(in Vietnamese, subtitled)" onto two
+lines where Afterwriting keeps one, which pushes `THE END` onto a fifth page. With Afterwriting's
+columns (`ESCRITA_COMPARE_AW_COLUMNS=1`) Brick & Steel agrees on both sizes, so the cause is R3
+(columns), not the indent rule. Open: keep R3 for parentheticals too, or widen them.
 
 ## By-hand checks (G2)
 
@@ -641,12 +671,9 @@ The harness runs everything a script can see (204 tests). What is left for the a
    and dark.
 2. **A PDF in a reader app:** the Portuguese fixture and *Brick & Steel*, on Letter and A4:
    Courier, page numbers from page 2, `(MAIS)` and `(CONT.)` where a speech breaks, the title page.
-3. **Two pagination calls:** a long speech with no sentence end moves whole to the next page
-   (R1, kept), and an indented `CUT TO:` is action (Q6) where Fountain's spec would make it a
-   transition. Keep Q6, or follow the spec?
-4. **By eye, as before:** writing mode with a third-party theme (Typewriter, Minimal, zen; demo
+3. **By eye, as before:** writing mode with a third-party theme (Typewriter, Minimal, zen; demo
    findings 1 and 6). Phone checks stay waived.
-5. **The author's user** tries a short film of their own and says whether the PDF is what they
+4. **The author's user** tries a short film of their own and says whether the PDF is what they
    submit.
 
 ## Risks

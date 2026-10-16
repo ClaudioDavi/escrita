@@ -62,9 +62,18 @@ describe("action", () => {
     expect(e).toMatchObject({ type: "action", centered: true });
     expect(plain(e)).toBe("THE END");
   });
-  it("keeps tabs and 4-space indents as action, indent included", () => {
-    expect(brief("\tBOB\n\tHello")).toEqual(["action:\tBOB\n\tHello"]);
-    expect(brief("    JOHN\n    (hello)")).toEqual(["action:    JOHN\n    (hello)"]);
+  it("keeps tabs and 4-space indents in action, indent included", () => {
+    expect(brief("\tHe walks.\n\tShe waits.")).toEqual(["action:\tHe walks.\n\tShe waits."]);
+    expect(brief("    He walks.")).toEqual(["action:    He walks."]);
+  });
+  it("ignores leading whitespace on every other element (Fountain, 'Indenting')", () => {
+    expect(brief("\tBOB\n\tHello")).toEqual(["character:BOB", "dialogue:Hello"]);
+    expect(brief("    JOHN\n    (hello)\n    Hi.")).toEqual(["character:JOHN", "parenthetical:(hello)", "dialogue:Hi."]);
+    expect(brief("A line.\n\n\t\tCUT TO:\n\n    INT. HOUSE - DAY")).toEqual(["action:A line.", "transition:CUT TO:", "scene:INT. HOUSE - DAY"]);
+    expect(brief("    > THE END <")).toEqual(["action:THE END"]);
+    expect(brief("    # Act one\n\n\t= beat\n\n    ===")).toEqual(["section:Act one", "synopsis:beat", "pageBreak:"]);
+    expect(brief("\t.forced scene\n\n    >TRANSITION")).toEqual(["scene:forced scene", "transition:TRANSITION"]);
+    expect(brief("    @McBride\n    Hi.\n\n    !INT. NOT A SCENE")).toEqual(["character:McBride", "dialogue:Hi.", "action:INT. NOT A SCENE"]);
   });
   it("uppercase text with no dialogue after it is action", () => {
     expect(brief("BANG!")).toEqual(["action:BANG!"]);
@@ -283,7 +292,7 @@ describe("where the screenplay wins over Markdown (Q6)", () => {
   it("_x_ is underline, not italic", () => {
     expect(els("an _underlined_ word")[0].runs[1]).toEqual({ text: "underlined", underline: true });
   });
-  it("a 4-space indent is action, not code", () => {
+  it("a 4-space indent in action is action, not code", () => {
     expect(brief("    not code")).toEqual(["action:    not code"]);
   });
   it("a '---' line is action text, nothing is dropped", () => {

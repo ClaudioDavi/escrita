@@ -1,7 +1,7 @@
 // A screenplay note read as Fountain (SP 1, PLAN-1.1; no Obsidian imports). The note is
 // Markdown on disk; inside a screenplay note the screenplay wins where Fountain and Markdown
-// disagree (`#` is a section, `>` a transition or centered text, `_x_` underline, a 4-space
-// indent is action: PLAN-1.1 Q6). Escrita's `%% … %%` notes are skipped through `segment()`;
+// disagree (`#` is a section, `>` a transition or centered text, `_x_` underline; leading whitespace is
+// ignored except in action, as Fountain's spec says: PLAN-1.1 Q6). Escrita's `%% … %%` notes are skipped through `segment()`;
 // `[[…]]` stays an Obsidian link, written as its text; boneyard `/* … */` is read here
 // (Q5). The model is what the Fountain and PDF writers take (src/export/writers/), and
 // core/screenplay-pages.ts paginates it.
@@ -304,7 +304,7 @@ interface Draft {
  * action).
  *
  * Reading order of a line, outside a speech: page break, section, synopsis, forced marks (`!`
- * `.` `@` `>` `~`), an indent (action), scene heading, transition, character cue, action. A
+ * `.` `@` `>` `~`; leading whitespace is ignored), scene heading, transition, character cue, action (an action line keeps a 4-space or tab indent). A
  * speech (cue, then parentheticals and dialogue) runs to the next blank line; a line of only
  * spaces keeps it going. Emphasis in a cue is read, then dropped from `name`.
  */
@@ -376,7 +376,7 @@ export function parseFountain(text: string, md: Markdown, opts: FountainOptions)
     };
 
     // forced elements
-    if (t.startsWith("!")) { addAction(t.slice(1).trimEnd(), true); continue; }
+    if (trimmed.startsWith("!")) { addAction(t.trimStart().slice(1).trimEnd(), true); continue; }
     if (trimmed.startsWith(".") && !trimmed.startsWith("..")) {
       const { rest, number } = sceneNumber(trimmed.slice(1).trim());
       emit({ type: "scene", line, forced: true, ...(number !== undefined ? { number } : {}), runs: [] }, rest);
@@ -407,9 +407,6 @@ export function parseFountain(text: string, md: Markdown, opts: FountainOptions)
       continue;
     }
 
-    // an indent is action, kept as written
-    if (/^(\t| {4})/.test(t)) { addAction(t.trimEnd(), false); continue; }
-
     if (startsBlock && sceneRe && sceneRe.test(trimmed)) {
       const { rest, number } = sceneNumber(trimmed);
       emit({ type: "scene", line, ...(number !== undefined ? { number } : {}), runs: [] }, rest);
@@ -429,7 +426,8 @@ export function parseFountain(text: string, md: Markdown, opts: FountainOptions)
         continue;
       }
     }
-    addAction(trimmed, false);
+    // action keeps its indent (Fountain's "Indenting"); every other element ignores it
+    addAction(/^(\t| {4})/.test(t) ? t.trimEnd() : trimmed, false);
   }
 
   const elements = drafts.map(({ el, raw }) => {

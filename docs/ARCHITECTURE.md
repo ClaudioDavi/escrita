@@ -1096,9 +1096,12 @@ note text → segment() → parseFountain → Script ─┬→ paginate → Page
   is a setting). `parseRuns` (emphasis) is exported for the writers.
 - **Where Fountain and Markdown disagree, the screenplay wins** (Q6; pinned in
   `tests/fountain.test.ts`): `#` is a section, `>` a transition or centered text (centered lines
-  with no blank between are one block), `_x_` is underline. An **indented line is action**, so a
-  tab-indented `CUT TO:` is action, not a transition (Fountain's own spec would read a
-  transition; this is one of the two open by-hand questions, PLAN-1.1 "By-hand checks"). A
+  with no blank between are one block), `_x_` is underline. **Indents follow the Fountain spec** (reversed on
+  2026-10-16; "Indenting": leading tabs and spaces are ignored outside action): an indented scene
+  heading, transition, cue (with its speech), centered text, section, synopsis, page break, lyric or
+  forced element is read as that element, and only a line that is action after all the rules keeps
+  its 4-space or tab indent (`parseFountain`, last line of its loop). `!` forces an indented line to
+  action, and the Fountain writer forces it that way when the parser would read it as anything else. A
   `---` line is action, so nothing is lost. `[[…]]` stays a link and prints as its text.
 - **`core/screenplay-presets.ts`.** `ScreenplayPreset`: the page in points, the top margin, the
   lines per page, the columns of each element (`ElementColumns`, in characters from the left

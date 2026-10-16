@@ -77,7 +77,7 @@ What each element looks like:
 | Element | How to write it |
 |---|---|
 | Scene heading | A line after a blank line that starts with one of the **Scene heading prefixes** (`INT`, `EXT`, `EST`, `INT./EXT`, `INT/EXT`, `I/E`) followed by a period or a space. To force one, start the line with a period: `.THE ATTIC`. A number between hashes at the end, `INT. KITCHEN - DAY #12#`, is the scene number. |
-| Action | Any other paragraph. A line that starts with a tab or four spaces is action too, kept as you typed it. To force action, start the line with `!`. |
+| Action | Any other paragraph. An action line that starts with a tab or four spaces keeps its indent. To force action, start the line with `!`. |
 | Character cue | A line of capitals after a blank line, with a line right below it. Accents are fine (`JOÃO`). An extension goes in parentheses: `JOHN (V.O.)`. For a name that is not in capitals, start with `@`. A `^` at the end makes the speech dual dialogue, side by side with the one before. |
 | Parenthetical | A line in parentheses inside a speech. |
 | Dialogue | The lines below the cue. A speech runs to the next blank line. |
@@ -92,7 +92,7 @@ Emphasis works inside any element: `*italic*`, `**bold**`, `***bold italic***` a
 
 Where Fountain and Markdown disagree, **the screenplay wins** inside a screenplay note. `#` is a
 section, not a heading. `>` starts a transition or centered text, not a quote. An indented line
-is action, not code. A `---` line is action, not a scene break. Nothing is lost: every line is
+is never code. A `---` line is action, not a scene break. Nothing is lost: every line is
 read as something, and an unknown line is action.
 
 Three more things you can write:
@@ -237,8 +237,10 @@ Two things Escrita does not do. It adds no `(CONT'D)` when the same character sp
 a line of action. It prints no `CONTINUED:` marks at the bottom and top of pages. If you want a
 `(CONT'D)` after a cue, type it as an extension.
 
-An indented line is action, so a tab-indented `CUT TO:` is action, not a transition. Write it
-without the indent to have a transition.
+Indents follow the Fountain spec: leading tabs and spaces are ignored on every line except action. An
+indented `CUT TO:` is a transition, an indented name above a line is a character cue, and so on. Only
+a line that is action after all the rules keeps its indent. To keep an indented line as action even
+when it looks like another element, start it with `!`.
 
 ## Settings
 
@@ -278,7 +280,7 @@ The form rows are in their own group, **Forms**, right after Books:
 |---|---|---|
 | **Export…** offers DOCX and not PDF | The note's form is not screenplay | Set the form property, or add the folder to **Form by folder** |
 | A book with screenplays in it exports as prose | Only a single note is a screenplay | Export each screenplay from its own note |
-| A line of dialogue is read as action | It is indented with a tab or four spaces | Take the indent out |
+| An indented action line is read as a cue, a heading or a transition | Indents are ignored outside action, as in the Fountain spec | Start the line with `!` |
 | A cue is read as action | It has lowercase letters, or no line right below it | Write the name in capitals, or start the line with `@` |
 | A heading is read as action | Its prefix is not in **Scene heading prefixes**, or no blank line is above it | Add the prefix, or start the line with a period |
 | A transition is read as action | Its ending is not in **Transition endings**, or it has no blank lines around it | Add the ending, or start the line with `>` |

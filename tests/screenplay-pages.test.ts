@@ -301,8 +301,8 @@ describe("reference differences, decided", () => {
     expect(p.rows.map((r) => r.row)).toEqual([0, 2]);
   });
 
-  it("indented transition, keep ours (Q6): an indented CUT TO: is action, so it may start a page", () => {
-    expect(parsed("A line.\n\n\t\tCUT TO:\n\nINT. HOUSE - DAY").elements.map((e) => e.type)).toEqual(["action", "action", "scene"]);
+  it("indented transition, follow the spec and Afterwriting (Q6, 2026-10-16): an indented CUT TO: is a transition", () => {
+    expect(parsed("A line.\n\n\t\tCUT TO:\n\nINT. HOUSE - DAY").elements.map((e) => e.type)).toEqual(["action", "transition", "scene"]);
   });
 
   it("the page holds 55 rows on Letter and 57 on A4, blank rows counted (Afterwriting's lines_per_page)", () => {

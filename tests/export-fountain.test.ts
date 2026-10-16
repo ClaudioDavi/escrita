@@ -69,6 +69,18 @@ describe("the round trip", () => {
   });
 });
 
+describe("indented action (Q6, the spec's reading of indents)", () => {
+  it("forces an indented action line that would now read as another element, and round-trips the rest", () => {
+    for (const text of ["!    CUT TO:", "!\tINT. HOUSE - DAY", "!    BOB\n    Hello", "!    # not a section", "He walks.\n    # not a section", "He walks.\n\t= not a synopsis", "    plain indent\n    kept"]) {
+      const { first, again, out } = roundTrip(text);
+      expect(bare(again.elements), out).toEqual(bare(first.elements));
+    }
+  });
+  it("writes the '!' for an indented CUT TO: action", () => {
+    expect(write({ titleBlock: null, elements: [{ type: "action", line: 0, runs: [{ text: "    CUT TO:" }] }] }, { title: "" })).toBe("!    CUT TO:\n");
+  });
+});
+
 describe("forced marks, only where needed", () => {
   it("writes the plain form when the parser reads it back, and a mark when not", () => {
     const script: Script = {

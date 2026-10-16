@@ -60,8 +60,8 @@ help from the editor, but can't hand in the script without a correct PDF.
   "Forms" group after Books, always shown. Nothing saved changes; an old six-value list gains
   `screenplay` on its own. The Works tab has a seventh group, "Screenplays" ("Roteiros" in pt-BR).
 - The parser: `parseFountain` in `core/fountain.ts`, on `segment()`'s lines, with boneyard, the
-  `Title:` block, forced elements, dual dialogue, emphasis and lyrics. An indented line is action
-  (so a tab-indented `CUT TO:` is action), a `---` line is action, an unclosed `/*` is text:
+  `Title:` block, forced elements, dual dialogue, emphasis and lyrics. Indents follow the Fountain spec
+  (ignored outside action, so a tab-indented `CUT TO:` is a transition), a `---` line is action, an unclosed `/*` is text:
   nothing is lost. Centered lines with no blank between them are one centered block. The
   Markdown disagreements are pinned in `tests/fountain.test.ts`.
 - Settings (Export section, "Screenplays" group): scene heading prefixes, transition endings,
@@ -177,10 +177,9 @@ import stay in phase 3. What it does, and the decisions:
   Each remaining difference is decided and pinned in `tests/screenplay-pages.test.ts`: sentence-end
   splits, the industry columns, and trailing spaces are kept as ours; consecutive centered lines
   follow theirs.
-- **Two questions are still open with the author (G2):** (1) a long speech with no sentence end
-  moves whole to the next page; (2) an indented `CUT TO:` is action, where Fountain's spec ignores
-  leading spaces outside action and would make it a transition. Today's behavior is the first
-  reading in both; the fixture *Brick & Steel* on A4 gains a page from (2).
+- **The two G2 questions are closed (2026-10-16, follow the spec and other tools):** a long speech
+  with no sentence end moves whole to the next page (R1, Final Draft's rule, kept), and indents
+  follow the Fountain spec (ignored outside action), as Afterwriting reads them.
 
 The original plan for the feature follows.
 
