@@ -72,7 +72,9 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   - `books.classify(x)`: what a file is (chapter, book note, note…), its book,
     `tracked`, `piece`, `snapshot`, `stage`, `submission`, `export`, `scope` (0.9: which
     universe or book it lives in, from `core/scope.ts`; set whenever the universe mode is on,
-    even with the feature off). Backed by `core/classify.ts`.
+    even with the feature off), `form` (1.1: short story, essay… or screenplay, from
+    `core/form.ts`; set for any Markdown file, with the universe off too). Backed by
+    `core/classify.ts`.
   - `measure`: every count shown or recorded (`core/measurer.ts`, cached by mtime).
   - `notes`: every write into a note's text (editor when open, else `vault.process`;
     check-then-replace through `core/note-text.ts`).
@@ -106,6 +108,17 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   footer and the outline's empty state call, so they never import the module. Path questions
   (parent, base name, `.md`, folder cleaning, joins, "is inside") go through `core/paths.ts`;
   folder and note suggests are in `src/ui/suggest.ts`.
+- **1.1 additions.** A screenplay is a note whose `form` is `screenplay`, not a module and not a
+  switch (the feature count stays 19). The form rule moved from the universe to `core/form.ts`
+  (`FORM_KINDS` now has seven values; the settings keys keep their names, and the three rows are
+  a "Forms" group after Books, always shown). Pure core: `core/fountain.ts` (the `Script` model
+  and `parseFountain`), `core/screenplay-pages.ts` (`paginate`), `core/pdf.ts` and
+  `core/screenplay-pdf.ts` (the PDF), `core/screenplay-presets.ts` (US Letter and A4),
+  `core/export-formats.ts` (`formatsFor`: a single screenplay note gets PDF and Fountain, every
+  other source the prose formats). The export module has a writer table (`export/writers/table.ts`)
+  and `export/screenplay.ts`; its "Screenplays" settings group holds the words. Character cues
+  count as mentions in "Appears in". Improvement 46: `titlePageOf`, `bylineOf` and `minHeadingOf`
+  in `core/export-pipeline.ts`. Details: ARCHITECTURE.md, "Form" and "Screenplays".
 - **Markdown questions** (frontmatter, code, comments, what a line is) go through
   `segment(text)` / `segmentDoc(doc)` in `core/markdown.ts`. Line predicates live next
   to `isSceneBreakLine` in `core/markers.ts`.
@@ -148,6 +161,10 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
 - **Collection** (0.9): a note with a `contents` property, a list of links to contos in reading
   order, exported as one DOCX, EPUB or Markdown file (`core/collection.ts`). Not a classifier
   kind or field; a work only by the usual rule.
+- **Screenplay** (1.1): a single note whose `form` is `screenplay`, written in Fountain. It exports
+  as PDF or Fountain only. A book or a collection stays prose even if it holds screenplay notes.
+- **Fountain** (1.1): the plain-text screenplay format (`core/fountain.ts`). Inside a screenplay
+  note it wins over Markdown (`#` is a section, an indented line is action).
 - **Tracked**: counted by goals (inside track folders, outside exclude folders).
 - Deep/shallow module, seam, locality: as defined at the top of IMPROVEMENTS.md.
 
@@ -160,6 +177,13 @@ An edit at the cursor of the editor that triggered it may write straight to that
 
 - **Checks before calling something done**: `npm run typecheck`, `npm test`,
   `npm run build` (and `npm run test:bundle` after a build). CI runs all four.
+- **The end-to-end harness** (1.1, `e2e/`, `docs/TESTING.md`): `npm run e2e` runs Playwright specs
+  in a real Obsidian that it starts itself, with its own profile and a copy of a fixture vault, so
+  the author's Obsidian and vaults are never touched. Local only, not in CI; run `npm run build`
+  first. One Obsidian at a time (`workers: 1`); with several agents, run it under
+  `flock <scratchpad>/heavy.lock`. It replaced the by-hand test pages (TEST-0.9, TEST-1.0);
+  what stays by eye (pictures against the boards, a PDF in a reader app, third-party themes,
+  phones) is listed in TESTING.md and PLAN-1.1.
 - **Every release includes at least one improvement** from IMPROVEMENTS.md, named in
   ROADMAP.md under the version, preferably one the version's features lean on.
 - **When a version ships**: move its row to "Shipped" in ROADMAP.md, add the changelog
@@ -173,7 +197,7 @@ An edit at the cursor of the editor that triggered it may write straight to that
   `manifest.json`, `styles.css`.
 - **Docs style**: plain English, short sentences, sentence-case headings. Keep the
   version index in ROADMAP.md current whenever plans change.
-- Testing vault: the author's vault at `~/projects/website/escrita/` (contos in
+- Testing vault: the author's vault at `~/Projects/website/escrita/` (contos in
   `Contos/`, essays in `Textos/`; status values `ideia`, `rascunho`, `revisão`,
   `pronto`, `publicado`).
 
@@ -211,8 +235,12 @@ and what upkeep it asks of the writer.
 - **1.0.4 (shipped), start a new work**: "New work…", "New short story" and
   "New book" (SF 14), the home block footer and the "New works" settings. Improvement:
   IMPROVEMENTS 33, path helpers in core. Plan and results in `docs/PLAN-1.0.4.md`.
-- **1.1 (next)**: screenwriting, phase 1 (`docs/ROADMAP-screenplay.md`), Fountain and PDF
-  export first.
+- **1.1 (in progress, "screenplays")**: screenwriting phase 1 (SP 1, SP 6;
+  `docs/ROADMAP-screenplay.md`): a note whose form is `screenplay` is written in Fountain and
+  exports as a PDF (US Letter or A4) or a `.fountain` file; character cues count in "Appears in".
+  Also the form rule in core, the end-to-end harness, the 1.0 fixes found by it, and improvement
+  46 (the export writers share the title page; the modal splits). Plan and results in
+  `docs/PLAN-1.1.md`. It is "next" until it is released.
 - **After 1.1**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
 
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and
@@ -222,12 +250,15 @@ data follows renames on its own vault events in two places, the measurer and the
 explorer's tracked set (IMPROVEMENTS 2, done in 0.4 for everything else, which follows
 through `plugin.index.follow`; the snapshots store moved there in 0.7, and since 0.7
 those followers run even when their feature is off); the Reading-view "Appears in"
-section across re-renders is still unchecked on desktop (0.7's G0d); the phone checks
+section is closed (0.7's G0d, 1.1): Reading view shows the panel only, with no post-processor,
+and `e2e/specs/appears-in-reading.spec.ts` checks it; the phone checks
 (name marks, the names bench) are waived, because the author has no phone sync; the Markdown
 parity questions with Reading view were checked in a real vault (0.8, G0c) and the
 segmenter follows them, pinned in `tests/markdown-consumers.test.ts`. 0.9 adds: "Read the book"
-(`outline/reader-view.ts`) has no DOM test, and its timings (G0d), scroll restore and click-to-line
-are unmeasured in Obsidian (its decisions are pure, in `outline/reader-model.ts` and
-`reader-plan.ts`, whose default heading is the core preset's); the EPUB
-CI job (EPUBCheck) runs on every pull request; the unlinked rows read the note's
+(`outline/reader-view.ts`) has no DOM test, but since 1.1 it has e2e checks (`e2e/specs/read-book.spec.ts`)
+and measured timings on a 31-chapter book (G0d: first text in 8 to 18 ms, longest task 23 to 28 ms,
+accepted at 30 ms; PLAN-1.1, Wave 2). Its startup race (a `compile: false` chapter shown before
+the metadata cache is ready) is an IMPROVEMENTS candidate. Its decisions are pure, in `outline/reader-model.ts` and
+`reader-plan.ts`, whose default heading is the core preset's. The EPUB
+CI job (EPUBCheck) runs on every pull request. The unlinked rows read the note's
 live text, not the mentions index's offsets, which lag about 4 s behind edits.

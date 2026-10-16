@@ -17,7 +17,7 @@ npx playwright show-report e2e/report/html   # screenshots and failures
 
 On the author's machine, run it under the shared lock when other agents are working
 (`flock <scratchpad>/heavy.lock npx playwright test`). One Obsidian runs at a time
-(`workers: 1`). The full run takes under a minute.
+(`workers: 1`). The full run is 204 tests in about 8 minutes (plus the launches); run one spec file while iterating.
 
 A test marked `test.fail()` is a known finding: the list reporter shows it with a cross, and
 Playwright counts it as passed while the bug is still there. When the bug is fixed the test
@@ -104,6 +104,9 @@ same profile and vault.
    `{ seeded: true }` to skip the first-run notice (`data.json` holds `setupOffered: true`; the
    settings are a fresh install's). A fixture is a map of files, the language and optional
    `data.json`, so a new one is a few lines.
+   Bigger fixtures live beside it: `h1.ts` (`world()`, `WORLD_SETTINGS`), `world-09.ts`, `long-book.ts`
+   (31 chapters, about 91,000 words) and `screenplays.ts` (the Fountain samples and a Portuguese short).
+   A `VaultSpec` can also `copyFrom` a folder (a read-only recursive copy, used for the author's vault).
 2. Create `e2e/specs/<name>.spec.ts`:
 
    ```ts
