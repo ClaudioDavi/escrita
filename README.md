@@ -95,7 +95,7 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
-### 1.0.4 (unreleased)
+### 1.0.4 (2026-10-16)
 
 You can start a new short story or a new book from a title and be writing in seconds.
 

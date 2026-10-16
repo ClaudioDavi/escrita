@@ -45,7 +45,7 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 | 1.0.1 | Fixes from Obsidian's community plugin review: an empty snapshot folder goes to the trash, no `:has` selector in the file explorer, build and type warnings |
 | 1.0.2 | Escrita is in the community plugins list: install links in the README and the guides, "short story" for "conto" in the English docs. No change in behavior |
 | 1.0.3 | Settings search: Escrita's rows appear in Obsidian's settings search, through the declarative settings tab (PLAN-1.0.3) · Minimum Obsidian 1.13.0 · Fixes from the community review: no `display()`, no deprecated `setWarning`, a `moment` wrapper · Improvements: settings rows with fallbacks from the install's defaults (candidate 36) and the settings tab on the declarative settings API (candidate 51) |
-| 1.0.4 (unreleased) | Start a new work: New work…, New short story, New book, the home block footer and the New works settings (SF 14, PLAN-1.0.4) · Improvement: path helpers in core (candidate 33) |
+| 1.0.4 | Start a new work: New work…, New short story, New book, the home block footer and the New works settings (SF 14, PLAN-1.0.4) · Deadlines by month · Improvement: path helpers in core (candidate 33) |
 
 ## Next: 1.1, screenwriting (phase 1)
 

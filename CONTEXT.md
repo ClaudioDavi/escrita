@@ -208,7 +208,7 @@ and what upkeep it asks of the writer.
   the fuller change (scope as a field on the classifier result). Plan and results in `docs/PLAN-0.9.md`.
 - **1.0 (shipped)**: universe + manuscript export complete, setup with presets (Essentials,
   Writer, Everything), mobile pass, docs in both languages, community plugin submission.
-- **1.0.4 (shipped, unreleased), start a new work**: "New work…", "New short story" and
+- **1.0.4 (shipped), start a new work**: "New work…", "New short story" and
   "New book" (SF 14), the home block footer and the "New works" settings. Improvement:
   IMPROVEMENTS 33, path helpers in core. Plan and results in `docs/PLAN-1.0.4.md`.
 - **1.1 (next)**: screenwriting, phase 1 (`docs/ROADMAP-screenplay.md`), Fountain and PDF
