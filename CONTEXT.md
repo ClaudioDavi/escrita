@@ -181,7 +181,7 @@ An edit at the cursor of the editor that triggered it may write straight to that
   in a real Obsidian that it starts itself, with its own profile and a copy of a fixture vault, so
   the author's Obsidian and vaults are never touched. Local only, not in CI; run `npm run build`
   first. One Obsidian at a time (`workers: 1`); with several agents, run it under
-  `flock <scratchpad>/heavy.lock`. It replaced the by-hand test pages (TEST-0.9, TEST-1.0);
+  `flock <scratchpad>/heavy.lock`. It runs the checks of the by-hand test pages (TEST-0.9, TEST-1.0);
   what stays by eye (pictures against the boards, a PDF in a reader app, third-party themes,
   phones) is listed in TESTING.md and PLAN-1.1.
 - **Every release includes at least one improvement** from IMPROVEMENTS.md, named in

@@ -64,8 +64,8 @@ submitting. Upkeep: none beyond marking a note as a screenplay.
 | End-to-end checks: a Playwright harness that drives Obsidian and runs the by-hand checks (`e2e/`, `npm run e2e`, local only, see [TESTING.md](TESTING.md)) | not a feature | M | Built (204 tests) |
 
 **Improvement (built):** export writers share the title page, the modal splits (candidate 46),
-plus the five known issues and the test-only aliases from 33. Moves to "Done" in IMPROVEMENTS.md
-with the release (already listed there under 1.1).
+plus the five known issues and the test-only aliases from 33. Already in "Done" under 1.1 in
+IMPROVEMENTS.md.
 
 **Also fixed in 1.1:** the Progress chart is back for anyone who has met a goal; creating an entry
 from a selection keeps the chapter in front; "Read the book" keeps the text in view when a chapter

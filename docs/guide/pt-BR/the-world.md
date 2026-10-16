@@ -193,7 +193,7 @@ Obras sem nenhuma das duas ficam em **Sem forma**. Nada é escrito nas suas nota
 As palavras de forma são um campo separado por vírgulas, nesta ordem: conto, ensaio, novela,
 romance, poema, fragmento, roteiro. Exemplo: `conto, ensaio, novela, romance, poema, fragmento,
 roteiro`. Roteiro é a sétima forma, e uma lista salva antes da 1.1, com seis palavras, ganha
-essa sozinha.
+esse valor sozinha.
 
 **Onde ficam as configurações.** As três linhas (**Propriedade de forma**, **Valores de forma** e
 **Forma por pasta**) ficavam na seção Universo. Na 1.1 elas foram para um grupo **Formas**, logo

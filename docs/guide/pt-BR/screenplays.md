@@ -40,7 +40,7 @@ distingue um conto de um romance. Há dois jeitos de definir:
   como `Roteiros: roteiro`. Toda nota dessa pasta recebe a forma, a menos que tenha a própria
   propriedade de forma.
 
-Nada é escrito nas suas notas por você. As palavras de forma são os **Valores de forma**, nesta
+O Escrita nunca escreve a forma nas suas notas. As palavras de forma são os **Valores de forma**, nesta
 ordem: conto, ensaio, novela, romance, poema, fragmento, roteiro. Se você salvou uma lista com
 seis palavras antes da 1.1, ela ganha a palavra do roteiro sozinha.
 
@@ -83,8 +83,8 @@ Como é cada elemento:
 | Nome da personagem | Uma linha em maiúsculas depois de uma linha em branco, com uma linha logo abaixo. Acentos não atrapalham (`JOÃO`). Uma extensão vai entre parênteses: `JOÃO (V.O.)`. Para um nome que não está em maiúsculas, comece com `@`. Um `^` no fim faz da fala um diálogo duplo, lado a lado com a anterior. |
 | Indicação entre parênteses | Uma linha entre parênteses dentro de uma fala. |
 | Diálogo | As linhas abaixo do nome. Uma fala vai até a próxima linha em branco. |
-| Letra de música | Uma linha começando com `~` dentro de uma fala. |
-| Transição | Uma linha em maiúsculas que termina com um dos **Finais de transição** (`TO:` e `PARA:` numa instalação em português), com linhas em branco em volta. Para forçar uma, comece a linha com `>`: `> FUSÃO PARA O BRANCO.` |
+| Letra de música | Uma linha começando com `~`. |
+| Transição | Uma linha em maiúsculas que termina com um dos **Finais de transição** (`TO:` e `PARA:` numa instalação em português), com linhas em branco em volta. Para forçar uma, comece a linha com `>`: `> FADE OUT.` |
 | Texto centralizado | `> FIM <` |
 | Quebra de página | Uma linha com três ou mais `=`. |
 | Seção e sinopse | `# Primeiro ato` e `= João descobre a lanterna apagada`. São para você: nunca saem impressas. |
@@ -130,7 +130,7 @@ da nota é roteiro, a linha **Formato** oferece duas opções, e só elas:
 - **PDF**, no layout que um concurso ou um produtor espera.
 - **Fountain**, texto puro que você abre em outro aplicativo de roteiro.
 
-Um roteiro não é enviado em DOCX, Markdown nem EPUB. Os avisos, a prévia, **Exportar de novo** e
+Um roteiro não sai em DOCX, Markdown nem EPUB. Os avisos, a prévia, **Exportar de novo** e
 **O arquivo já existe** funcionam como em
 [Publicação](publishing.md#exportar-uma-nota-ou-um-livro).
 
@@ -241,7 +241,7 @@ linhas na Letter e 57 na A4.
 - Seções e sinopses não são impressas.
 
 Duas coisas que o Escrita não faz. Ele não acrescenta `(CONT.)` quando a mesma personagem volta a
-falar depois de uma linha de ação. Ele não imprime marcas `CONTINUA:` no pé e no alto das
+falar depois de uma linha de ação. Ele não imprime marcas `CONTINUED:` no pé e no alto das
 páginas. Se quiser um `(CONT.)` depois do nome, digite como extensão.
 
 Uma linha com recuo é ação, então um `CORTA PARA:` com tab é ação, não transição. Escreva sem o

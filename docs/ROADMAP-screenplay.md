@@ -58,7 +58,7 @@ help from the editor, but can't hand in the script without a correct PDF.
   `core/form.ts`; `classify()` gives `form` on every result, so it works with the universe off. The
   three form rows (form property, form values, form by folder) moved from the Universe section to a
   "Forms" group after Books, always shown. Nothing saved changes; an old six-value list gains
-  `screenplay` on its own. The Works tab has a seventh group, "Roteiros".
+  `screenplay` on its own. The Works tab has a seventh group, "Screenplays" ("Roteiros" in pt-BR).
 - The parser: `parseFountain` in `core/fountain.ts`, on `segment()`'s lines, with boneyard, the
   `Title:` block, forced elements, dual dialogue, emphasis and lyrics. An indented line is action
   (so a tab-indented `CUT TO:` is action), a `---` line is action, an unclosed `/*` is text:

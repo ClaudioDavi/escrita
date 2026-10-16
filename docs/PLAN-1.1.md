@@ -556,6 +556,81 @@ TEST-1.0 says. The forms text has `screenplay` added, and the closed thread word
 - `docs/ROADMAP.md`: SP 1 and SP 6 shipped, G0d's numbers, 0.7's G0d closed, "Still open after 1.0"
   cleared. TEST-0.9's text in the four places H2 listed.
 
+### Wave 3 (2026-10-16)
+
+Four Sonnet tasks wrote the release docs on branches from e6d55c8, merged in order with
+`--no-ff` and no conflicts (each owned its own files).
+
+- **K, the user guide** (`1befe0c`): a new `screenplays.md` in English and pt-BR (the form, Fountain
+  in a note, the export window, the title page, the page breaks, the "Screenplays" and "Forms"
+  settings, a "When something looks wrong" table). `publishing.md` gains "Export a screenplay" and
+  pointers; `features-and-settings.md` gains "Settings added in 1.1" (the upgrade note), the Forms
+  heading, the screenplay words in the language table and the Export switch row; `the-world.md`
+  has the seventh form, where the rows are now, and cues in "What counts as a mention";
+  `getting-started.md` lists the four screenplay words the setup's language step sets. Every other
+  page links the new one.
+- **L, README and TEST-0.9** (`4bc61c6`): the Publishing line names screenplays and links the new
+  page; a "1.1.0 (unreleased)" changelog entry (screenplays, the settings, the form outside the
+  universe, cues, the setup run again, seven fixes, the Forms upgrade note, improvement 46).
+  TEST-0.9's four places from H2 (the collection's "O quê" row, the bracketed missing-story name,
+  the gap warning naming "04 A escada", Livro Longo absent from the Works tab without a `status`).
+- **M, ARCHITECTURE, CONTEXT, TESTING** (`a2dc089`): new "Form", "Screenplays" and "The
+  end-to-end harness" sections; the export pipeline (`titlePageOf`, `bylineOf`, `minHeadingOf`,
+  `ManuscriptTitle`), the module's modal, writer table, script writers, `LastExport.pages` and
+  the settings group; cues in mentions and the closed 0.7 G0d in the universe. CONTEXT has `form`
+  in the classifier, "1.1 additions", the harness under "Working process", the 1.1 line as in
+  progress, Screenplay and Fountain in the vocabulary, the updated weak spots and the vault path
+  in its real case. TESTING has the real run time and the bigger fixtures.
+- **N, IMPROVEMENTS and the roadmaps** (`9fdeb55`): 46 and the five known issues in "Done" under
+  1.1 (issue 1 closed, not a bug); candidate 52 for the reader's startup race; the darlings
+  split-editor flake noted as suspected. ROADMAP's 1.1 section is "built, not released", with the
+  "what was open after 1.0" table and the two G2 questions; SP 1 and SP 6 are marked built in
+  1.1.0 (unreleased) with the decisions; ROADMAP-novel has G0d's numbers.
+
+**Review against the code.** Every setting name, description, English and pt-BR default in the
+two settings tables matches `src/export/strings.ts`, `src/strings.ts`, `src/core/defaults.ts` and
+`src/settings.ts`; the modal labels, hints, the "Writes" lines, the warning, the "Last export"
+shape, the file names and the dialogs match the strings and `export/modal.ts`; the Fountain rules
+match `core/fountain.ts` and the page rules `core/screenplay-pages.ts` and
+`core/screenplay-presets.ts`; the setup's four labels match `setup/strings.ts`; the Works group is
+"Screenplays" / "Roteiros". The guide follows boards 43 and 44, except the board's settings path
+"Livros e obras › Formas": the code's group heading is "Forms" / "Formas", and the guide follows
+the code. Every relative link and anchor in the changed docs resolves (the only misses are
+examples inside code spans, there before 1.1). Every backticked identifier and file path the new
+text names exists. Nothing says 1.1 is released. Both G2 questions are written as today's
+behavior and, in ROADMAP and ROADMAP-screenplay, as open.
+
+**Fixes in the review:**
+
+- `docs/guide/en/screenplays.md`, `pt-BR/screenplays.md`: "Nothing is written to your notes for
+  you" (pt-BR "por você" read as "by you") is now "Escrita never writes the form into your notes";
+  lyrics are a `~` line anywhere, not only inside a speech (the parser takes both); "a screenplay
+  is not sent as DOCX" is now "doesn't export as"; pt-BR names the `CONTINUED:` marks by their
+  industry name, not an invented `CONTINUA:`, and the forced transition example is `> FADE OUT.`,
+  as Brazilian scripts write it.
+- `docs/guide/pt-BR/the-world.md`: "ganha essa sozinha" is "ganha esse valor sozinha".
+- `docs/ARCHITECTURE.md`: the presets section named `LETTER` and `A4` constants that don't exist
+  (they are private `LETTER_PAGE` and `A4_PAGE`); the `pieceSource` bullet's "task 1.1" now says
+  it is 1.0's task, not version 1.1.
+- `docs/ROADMAP-screenplay.md`: the Works group is "Screenplays" ("Roteiros" in pt-BR).
+- `docs/ROADMAP.md`: improvement 46 is already in "Done", not "moves there with the release".
+- `CONTEXT.md`: the harness "runs the checks of" the by-hand pages instead of "replaced" them
+  (what needs an eye is still by hand).
+
+**Checks** (main checkout, after the fixes): typecheck, vitest 231 files with 3765 passed and 2
+skipped (14.2 s), build, `test:bundle` 4 passed, lint. No e2e run (docs only). The test vault's
+three links still point at this repo's `main.js`, `manifest.json` and `styles.css`.
+
+**Left before the release:**
+
+1. G2 by the author ("By-hand checks" below), including the two pagination calls. If the author
+   picks the spec's reading of indents, the guide's "An indented line is action" paragraph and
+   table row, the README entry, ARCHITECTURE's "Screenplays" and SP 6 change with it.
+2. The release mechanics: `npm version minor --no-git-tag-version` (manifest and versions to
+   1.1.0); ROADMAP's 1.1 section to "Shipped"; the README changelog heading dated, and
+   "(unreleased)" taken out of `screenplays.md` (both languages), ROADMAP-screenplay and the
+   ROADMAP table; CONTEXT's 1.1 line to shipped; commit `1.1.0`, tag `1.1.0`, push the tag.
+
 ## By-hand checks (G2)
 
 The harness runs everything a script can see (204 tests). What is left for the author:

@@ -313,7 +313,7 @@ drives it with an in-memory tree. The result:
   `"book"` (a chapter's book default, `chapterTargetProperty` on the book note) or null
   (no target). The rule is `effectivePiece` in `core/measure.ts`, per field: the note's own
   target wins, `limit` and `deadline` are only its own. In 1.0 Wave 0 the field is set
-  from today's `piece`; task 1.1 computes the book default in classify and makes `piece`
+  from today's `piece`; 1.0's task 1.1 computes the book default in classify and makes `piece`
   the effective piece, so the outline, the explorer and the goals status bar agree.
 - `snapshot`: the path is the snapshots folder or inside it (`inSnapshots`). Such a
   path is never a book, a chapter or tracked, even when the folder sits inside a book
@@ -1102,8 +1102,8 @@ note text → segment() → parseFountain → Script ─┬→ paginate → Page
   `---` line is action, so nothing is lost. `[[…]]` stays a link and prints as its text.
 - **`core/screenplay-presets.ts`.** `ScreenplayPreset`: the page in points, the top margin, the
   lines per page, the columns of each element (`ElementColumns`, in characters from the left
-  edge), the `more` and `continued` labels and `sceneNumbers`. `LETTER` is 612 by 792 with 55
-  lines; `A4` is 595.28 by 841.89 with 57 lines (the same left margin, narrowed on the right).
+  edge), the `more` and `continued` labels and `sceneNumbers`. The Letter page is 612 by 792 points with 55
+  lines; A4 is 595.28 by 841.89 with 57 lines (the same left margin, narrowed on the right).
   Columns are the US layout in Courier 12: action 15 to 75, dialogue 25 to 60, parenthetical
   30 to 55, the cue at 37. `screenplayPreset(id, settings)` adds the writer's labels and the scene
   numbers choice; `SCREENPLAY_PAGES` lists the ids.

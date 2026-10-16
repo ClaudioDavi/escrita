@@ -39,7 +39,7 @@ tells a short story from a novel. Two ways to set it:
   `Screenplays: screenplay`. Every note in that folder takes the form, unless it has its own
   form property.
 
-Nothing is written to your notes for you. The form words are **Form values**, in this order:
+Escrita never writes the form into your notes. The form words are **Form values**, in this order:
 short story, essay, novella, novel, poem, fragment, screenplay. If you saved a list with six
 words before 1.1, it gains the screenplay word on its own.
 
@@ -81,7 +81,7 @@ What each element looks like:
 | Character cue | A line of capitals after a blank line, with a line right below it. Accents are fine (`JOÃO`). An extension goes in parentheses: `JOHN (V.O.)`. For a name that is not in capitals, start with `@`. A `^` at the end makes the speech dual dialogue, side by side with the one before. |
 | Parenthetical | A line in parentheses inside a speech. |
 | Dialogue | The lines below the cue. A speech runs to the next blank line. |
-| Lyrics | A line starting with `~` inside a speech. |
+| Lyrics | A line starting with `~`. |
 | Transition | A line of capitals that ends in one of the **Transition endings** (`TO:`, and `PARA:` in a Portuguese install), with blank lines around it. To force one, start the line with `>`: `> FADE OUT.` |
 | Centered text | `> THE END <` |
 | Page break | A line of three or more `=`. |
@@ -127,7 +127,7 @@ note's form is screenplay, the **Format** row offers two choices, and only these
 - **PDF**, in the layout a contest or a producer expects.
 - **Fountain**, plain text you can open in another screenwriting app.
 
-A screenplay is not sent as DOCX, Markdown or EPUB. The warnings, the preview, **Export again**
+A screenplay doesn't export as DOCX, Markdown or EPUB. The warnings, the preview, **Export again**
 and **The file already exists** work as they do in [Publishing](publishing.md#export-a-note-or-a-book).
 
 ### PDF
