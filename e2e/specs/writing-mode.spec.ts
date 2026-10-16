@@ -13,10 +13,10 @@ test.describe("Writing mode", () => {
   let app: App;
 
   const shown = (sel: string) => app.page.locator(sel).first().evaluate((e) => getComputedStyle(e).display !== "none");
-  const sidebars = () => app.page.evaluate(() => ({ left: !app.workspace.leftSplit.collapsed, right: !app.workspace.rightSplit.collapsed }));
+  const sidebars = () => app.page.evaluate(() => ({ left: !window.app.workspace.leftSplit.collapsed, right: !window.app.workspace.rightSplit.collapsed }));
   const setSidebars = (left: boolean, right: boolean) => app.page.evaluate(([l, r]) => {
-    l ? app.workspace.leftSplit.expand() : app.workspace.leftSplit.collapse();
-    r ? app.workspace.rightSplit.expand() : app.workspace.rightSplit.collapse();
+    l ? window.app.workspace.leftSplit.expand() : window.app.workspace.leftSplit.collapse();
+    r ? window.app.workspace.rightSplit.expand() : window.app.workspace.rightSplit.collapse();
   }, [left, right] as const);
   const waitMode = (on: boolean) => app.waitFor(`writing mode ${on ? "on" : "off"}`, async () => (await inWritingMode(app)) === on, 10_000);
 
@@ -70,8 +70,8 @@ test.describe("Writing mode", () => {
     expect(await app.commandListed("exit-writing-mode")).toBe(true);
     const hotkeys = await app.page.evaluate(() => ["escrita:enter-writing-mode", "escrita:exit-writing-mode"].map((id) => ({
       id,
-      keys: app.hotkeyManager.getHotkeys(id) ?? app.hotkeyManager.getDefaultHotkeys(id) ?? [],
-      defaults: app.hotkeyManager.getDefaultHotkeys(id) ?? [],
+      keys: window.app.hotkeyManager.getHotkeys(id) ?? window.app.hotkeyManager.getDefaultHotkeys(id) ?? [],
+      defaults: window.app.hotkeyManager.getDefaultHotkeys(id) ?? [],
     })));
     for (const h of hotkeys) {
       expect(h.keys, `${h.id} keys`).toEqual([]);
@@ -81,14 +81,14 @@ test.describe("Writing mode", () => {
 
   test("7. a click on a work in the home block opens it in the same tab, at the left-off spot, and the mode stays", async () => {
     await app.openFile("Home.md");
-    const leavesBefore = await app.page.evaluate(() => { let n = 0; app.workspace.iterateRootLeaves(() => { n++; }); return n; });
+    const leavesBefore = await app.page.evaluate(() => { let n = 0; window.app.workspace.iterateRootLeaves(() => { n++; }); return n; });
     const row = app.page.locator(".escrita-desk-row", { hasText: "Example · The crossing" });
     await expect(row).toBeVisible();
     await app.screenshot("7. the home block in writing mode");
     await row.click();
     await app.waitFor("the work", async () => (await app.activeFile()) === "Stories/Example · The crossing.md");
     await settle(800);
-    const leavesAfter = await app.page.evaluate(() => { let n = 0; app.workspace.iterateRootLeaves(() => { n++; }); return n; });
+    const leavesAfter = await app.page.evaluate(() => { let n = 0; window.app.workspace.iterateRootLeaves(() => { n++; }); return n; });
     expect(leavesAfter).toBe(leavesBefore);
     expect(await inWritingMode(app)).toBe(true);
     // the spot: the first beat that still waits for prose (the second of the example's two)

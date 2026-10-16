@@ -142,7 +142,7 @@ test.describe("G4 (5) and MOBILE-1.0's checklist: the views, the modals and the 
   /** A drawer closes with the menu opened from it: show the panel again. */
   const reveal = async (type: string) => {
     await app.page.evaluate((ty) => {
-      const leaf = app.workspace.getLeavesOfType(ty)[0];
+      const leaf = window.app.workspace.getLeavesOfType(ty)[0];
       leaf.parent.selectTab?.(leaf);
       leaf.getRoot().expand?.();
     }, type);
@@ -177,7 +177,7 @@ test.describe("G4 (5) and MOBILE-1.0's checklist: the views, the modals and the 
     expect(await items()).toEqual(viaButton);
     await closeMenu();
     await reveal("escrita-universe"); // the drawer closes with the menu
-    await expect(row.locator(".escrita-universe-entry-text"), JSON.stringify(await app.page.evaluate(() => [app.workspace.leftSplit.collapsed, app.workspace.rightSplit.collapsed]))).toBeVisible();
+    await expect(row.locator(".escrita-universe-entry-text"), JSON.stringify(await app.page.evaluate(() => [window.app.workspace.leftSplit.collapsed, window.app.workspace.rightSplit.collapsed]))).toBeVisible();
     await row.locator(".escrita-universe-entry-text").click();
     await app.waitFor("the entry", async () => (await app.activeFile()) === "Universo/Personagens/Maria.md", 8000);
   });
@@ -204,7 +204,7 @@ test.describe("G4 (5) and MOBILE-1.0's checklist: the views, the modals and the 
         opened.push(id);
         expect(await outsideWindow(app, selector.split(",")[0]), id).toEqual([]);
       }
-      await app.page.evaluate(() => { app.workspace.rightSplit.collapse(); app.workspace.leftSplit.collapse(); });
+      await app.page.evaluate(() => { window.app.workspace.rightSplit.collapse(); window.app.workspace.leftSplit.collapse(); });
     }
     expect(opened.length, `views whose selector matched: ${opened}`).toBeGreaterThanOrEqual(4);
   });
@@ -235,7 +235,7 @@ test.describe("G4 (5) and MOBILE-1.0's checklist: the views, the modals and the 
     await app.closeModals();
     await app.openFile("Contos/O afogado.md");
     await app.page.evaluate(() => {
-      const ed = app.workspace.activeEditor!.editor!;
+      const ed = window.app.workspace.activeEditor!.editor!;
       const i = ed.getValue().indexOf("Teo");
       ed.setSelection(ed.offsetToPos(i), ed.offsetToPos(i + 3));
     });
@@ -268,13 +268,13 @@ test.describe("G4 (5) and MOBILE-1.0's checklist: the views, the modals and the 
     await settle(800);
     await app.openFile("Contos/Lente.md");
     await app.command("toggle-revision-lens");
-    await app.page.evaluate(() => app.workspace.rightSplit.expand());
+    await app.page.evaluate(() => window.app.workspace.rightSplit.expand());
     const rule = app.page.locator(".escrita-lens-row", { hasText: "Advérbios" }).locator(".escrita-lens-rulename");
     await expect(rule).toBeEnabled({ timeout: 10_000 });
     await app.dismissNotices();
     await rule.click();
     await app.notice(/Advérbios|1 de 3|1\/3|1 of 3/);
-    await app.waitFor("the drawer closed", () => app.page.evaluate(() => app.workspace.rightSplit.collapsed), 5000);
+    await app.waitFor("the drawer closed", () => app.page.evaluate(() => window.app.workspace.rightSplit.collapsed), 5000);
   });
 
   test("checklist 7: the Features page and a long section (the lens) scroll without going sideways", async () => {

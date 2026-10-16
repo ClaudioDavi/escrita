@@ -56,7 +56,7 @@ export function smallTargets(scope: Locator, selector = "button, [role=button], 
     for (const el of root.querySelectorAll(sel as string)) {
       const r = (el as HTMLElement).getBoundingClientRect();
       if (r.width === 0 || r.height === 0) continue;
-      if (r.width < (m as number) || r.height < (m as number)) {
+      if (r.width < (m as number) - 0.5 || r.height < (m as number) - 0.5) { // half a pixel of rounding is not a small target
         out.push(`${(el as HTMLElement).className || el.tagName} ${Math.round(r.width)}x${Math.round(r.height)} "${((el as HTMLElement).innerText || el.getAttribute("aria-label") || "").slice(0, 30)}"`);
       }
     }

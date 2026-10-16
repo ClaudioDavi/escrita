@@ -72,8 +72,8 @@ test.describe("Demo findings: the setup (1, 7, 8, 9, 10)", () => {
     await setup.button(/Cancelar/).click();
     await app.page.evaluate(async () => {
       for (const name of ["Primeira", "Segunda"]) {
-        const f = await app.vault.create(`${name}.md`, `${name}\n`);
-        await app.workspace.getLeaf("tab").openFile(f, { active: true });
+        const f = await window.app.vault.create(`${name}.md`, `${name}\n`);
+        await window.app.workspace.getLeaf("tab").openFile(f, { active: true });
       }
     });
     await settle();
@@ -190,7 +190,7 @@ test.describe("Demo findings: the home note on startup (2)", () => {
     await app.openFile("Início.md");
     // the core Outline panel, on the home note
     await app.page.evaluate(async () => {
-      const leaf = app.workspace.getRightLeaf(false)!;
+      const leaf = window.app.workspace.getRightLeaf(false)!;
       await leaf.setViewState({ type: "outline", active: true });
     });
     await app.command("open-outline"); // Escrita's outline comes to the front of the right sidebar
@@ -200,15 +200,15 @@ test.describe("Demo findings: the home note on startup (2)", () => {
     expect(before["outline"]).toMatchObject({ side: "right" });
     expect(before["escrita-outline"]).toMatchObject({ side: "right", front: "escrita-outline" });
     // let Obsidian write the layout before the window is closed
-    await app.page.evaluate(async () => { await app.workspace.requestSaveLayout.run?.(); });
+    await app.page.evaluate(async () => { await window.app.workspace.requestSaveLayout.run?.(); });
     await settle(2500);
 
     await app.restart();
     await app.waitFor("the home note", async () => (await app.activeFile()) === "Início.md", 20_000);
     await settle(1500);
     const where = await app.page.evaluate(() => {
-      const leaf = app.workspace.getLeavesOfType("markdown").find((l: any) => l.view.file?.path === "Início.md");
-      return leaf ? (leaf.getRoot() === app.workspace.rootSplit ? "main" : "side") : "none";
+      const leaf = window.app.workspace.getLeavesOfType("markdown").find((l: any) => l.view.file?.path === "Início.md");
+      return leaf ? (leaf.getRoot() === window.app.workspace.rootSplit ? "main" : "side") : "none";
     });
     expect(where).toBe("main");
     const after = await app.placement(["escrita-outline", "outline"]);
@@ -230,7 +230,7 @@ test.describe("Demo findings: the compare title (5)", () => {
 
   /** The compare view's tab title and its header title, from the DOM. */
   const titles = () => app.page.evaluate(() => {
-    const leaf = app.workspace.getLeavesOfType("escrita-snapshot-compare")[0];
+    const leaf = window.app.workspace.getLeavesOfType("escrita-snapshot-compare")[0];
     if (!leaf) return null;
     const header = leaf.tabHeaderEl?.querySelector(".workspace-tab-header-inner-title")?.textContent ?? "";
     const view = (leaf.view.containerEl.querySelector(".view-header-title") as HTMLElement | null)?.innerText ?? "";
@@ -251,7 +251,7 @@ test.describe("Demo findings: the compare title (5)", () => {
     expect(await titles()).toEqual({ header: "Comparar “O afogado”", view: "Comparar “O afogado”", display: "Comparar “O afogado”" });
     await app.screenshot("5. the compare view");
 
-    await app.page.evaluate(async () => { await app.workspace.requestSaveLayout.run?.(); });
+    await app.page.evaluate(async () => { await window.app.workspace.requestSaveLayout.run?.(); });
     await settle(2500);
     await app.restart();
     await app.waitFor("the compare view after the restart", async () => (await titles()) !== null, 20_000);
@@ -259,7 +259,7 @@ test.describe("Demo findings: the compare title (5)", () => {
     expect(await titles()).toEqual({ header: "Comparar “O afogado”", view: "Comparar “O afogado”", display: "Comparar “O afogado”" });
 
     await app.page.evaluate(async () => {
-      await app.fileManager.renameFile(app.vault.getFileByPath("Contos/O afogado.md")!, "Contos/O náufrago.md");
+      await window.app.fileManager.renameFile(window.app.vault.getFileByPath("Contos/O afogado.md")!, "Contos/O náufrago.md");
     });
     await app.waitFor("the renamed title", async () => (await titles())?.header === "Comparar “O náufrago”", 10_000);
     expect(await titles()).toEqual({ header: "Comparar “O náufrago”", view: "Comparar “O náufrago”", display: "Comparar “O náufrago”" });
@@ -325,7 +325,7 @@ test.describe("Demo findings: Escape on a new beat (4)", () => {
     await enterOnBeat(1);
     const edited = app.readVaultFile(CHAPTER) + "\nUma linha escrita no editor.\n";
     // an edit through the editor (it is open on this chapter)
-    await app.page.evaluate((text) => { app.workspace.getLeavesOfType("markdown").map((l: any) => l.view).find((v: any) => v.file.path.endsWith("02 A tempestade.md"))?.editor.setValue(text); }, edited);
+    await app.page.evaluate((text) => { window.app.workspace.getLeavesOfType("markdown").map((l: any) => l.view).find((v: any) => v.file.path.endsWith("02 A tempestade.md"))?.editor.setValue(text); }, edited);
     await app.waitFor("the editor's edit on disk", () => app.readVaultFile(CHAPTER).includes("Uma linha escrita no editor."), 8000);
     await app.page.locator(".escrita-outline-beat-text").nth(2).focus();
     await app.page.locator(".escrita-outline-beat-text").nth(2).press("Escape");
@@ -375,8 +375,8 @@ test.describe("Demo findings: name variants in the lens (6)", () => {
     await app.openFile("Contos/O afogado.md");
     await app.command("toggle-revision-lens");
     await app.page.evaluate(() => {
-      app.workspace.rightSplit.expand();
-      const rs: any = app.workspace.rightSplit;
+      window.app.workspace.rightSplit.expand();
+      const rs: any = window.app.workspace.rightSplit;
       rs.size = 320;
       rs.containerEl.style.width = "320px";
     });
@@ -442,11 +442,11 @@ test.describe("Demo findings: a new entry (13, 17, 18)", () => {
     await app.openFile(SOURCE);
     groupsBefore = await app.page.evaluate(() => {
       const roots = new Set<unknown>();
-      app.workspace.iterateRootLeaves((l: any) => roots.add(l.parent));
+      window.app.workspace.iterateRootLeaves((l: any) => roots.add(l.parent));
       return roots.size;
     });
     const at = await app.page.evaluate(() => {
-      const ed = app.workspace.activeEditor!.editor!;
+      const ed = window.app.workspace.activeEditor!.editor!;
       const text = ed.getValue();
       const i = text.indexOf("Teo chegou");
       ed.setSelection(ed.offsetToPos(i), ed.offsetToPos(i + 3));
@@ -463,7 +463,7 @@ test.describe("Demo findings: a new entry (13, 17, 18)", () => {
     await app.page.evaluate((path) => {
       const w = window as any;
       w.__ai = [];
-      const src = app.plugins.plugins.escrita.features.get("universe")?.appearsInSource?.();
+      const src = window.app.plugins.plugins.escrita.features.get("universe")?.appearsInSource?.();
       const last = { dom: "", model: "" };
       w.__aiTimer = setInterval(() => {
         const dom = (document.querySelector(".escrita-ai-summary") as HTMLElement | null)?.innerText ?? "";
@@ -474,18 +474,18 @@ test.describe("Demo findings: a new entry (13, 17, 18)", () => {
     }, ENTRY);
     await app.page.keyboard.press("Enter"); // creates it
     await app.waitFor("the entry note", () => app.vaultFileExists(ENTRY), 8000);
-    await app.waitFor("the entry open", async () => app.page.evaluate((p) => app.workspace.getLeavesOfType("markdown").some((l: any) => l.view.file?.path === p), ENTRY), 8000);
+    await app.waitFor("the entry open", async () => app.page.evaluate((p) => window.app.workspace.getLeavesOfType("markdown").some((l: any) => l.view.file?.path === p), ENTRY), 8000);
     await settle(800); // the modal returns the focus to the chapter once the note is open
     layout = await app.page.evaluate((p) => {
-      const leaf = app.workspace.getLeavesOfType("markdown").find((l: any) => l.view.file?.path === p)!;
+      const leaf = window.app.workspace.getLeavesOfType("markdown").find((l: any) => l.view.file?.path === p)!;
       const roots = new Set<unknown>();
-      app.workspace.iterateRootLeaves((l: any) => roots.add(l.parent));
+      window.app.workspace.iterateRootLeaves((l: any) => roots.add(l.parent));
       const group = leaf.parent;
       return {
-        inMain: leaf.getRoot() === app.workspace.rootSplit,
+        inMain: leaf.getRoot() === window.app.workspace.rootSplit,
         groups: roots.size,
-        active: app.workspace.getActiveFile()?.path ?? null,
-        cursorFile: app.workspace.activeEditor?.file?.path ?? null,
+        active: window.app.workspace.getActiveFile()?.path ?? null,
+        cursorFile: window.app.workspace.activeEditor?.file?.path ?? null,
         current: group.currentTab,
         tabs: group.children.map((c: any) => c.view.file?.path),
       };
@@ -510,8 +510,8 @@ test.describe("Demo findings: a new entry (13, 17, 18)", () => {
 
   test("13. 'Aparece em' goes from 'contando…' (if at all) to '2 obras · 3 menções', never 'nenhuma obra ainda' first", async () => {
     await app.page.evaluate((p) => {
-      const leaf = app.workspace.getLeavesOfType("markdown").find((l: any) => l.view.file?.path === p)!;
-      app.workspace.setActiveLeaf(leaf, { focus: true });
+      const leaf = window.app.workspace.getLeavesOfType("markdown").find((l: any) => l.view.file?.path === p)!;
+      window.app.workspace.setActiveLeaf(leaf, { focus: true });
     }, ENTRY);
     await app.waitFor("the final answer", async () =>
       (await app.page.evaluate(() => ((window as any).__ai as { model: string }[]).some((s) => s.model === "2 works 3 mentions"))), 15_000)

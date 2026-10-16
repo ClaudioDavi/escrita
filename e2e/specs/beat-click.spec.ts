@@ -35,7 +35,7 @@ test.describe("known issue 1: the beat click and the restored cursor", () => {
   });
 
   const setCursor = (line: number) => app.page.evaluate((l) => {
-    const ed = app.workspace.activeEditor!.editor!;
+    const ed = window.app.workspace.activeEditor!.editor!;
     ed.setCursor({ line: l, ch: 0 });
     ed.scrollIntoView({ from: { line: l, ch: 0 }, to: { line: l, ch: 0 } }, true);
   }, line);
@@ -73,7 +73,7 @@ test.describe("known issue 1: the beat click and the restored cursor", () => {
     await app.openFile(FAR);
     await setCursor(2);
     await app.openFile(OTHER);
-    await app.page.evaluate(() => { void app.workspace.getLeaf(false).history.back(); });
+    await app.page.evaluate(() => { void window.app.workspace.getLeaf(false).history.back(); });
     await app.waitFor("the chapter back", async () => (await app.cursor())?.file === FAR);
     await new Promise((r) => setTimeout(r, 500));
     // what Obsidian restored (recorded, not asserted: it is Obsidian's behavior)
@@ -87,8 +87,8 @@ test.describe("known issue 1: the beat click and the restored cursor", () => {
     await app.openFile(FAR);
     await setCursor(2);
     await app.page.evaluate(async () => {
-      const file = app.vault.getFileByPath("Livros/O farol/Capítulos/02 A tempestade.md")!;
-      await app.workspace.getLeaf("tab").openFile(file, { active: true });
+      const file = window.app.vault.getFileByPath("Livros/O farol/Capítulos/02 A tempestade.md")!;
+      await window.app.workspace.getLeaf("tab").openFile(file, { active: true });
     });
     await clickBeat();
     await expectOnBeat();
