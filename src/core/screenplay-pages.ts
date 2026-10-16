@@ -190,9 +190,18 @@ function dualCols(p: ScreenplayPreset): [Cols, Cols] {
   return [mk(l, l + side), mk(r - side, r)];
 }
 
-function cueTextOf(el: ScriptElement & { type: "character" }): string {
+/** The label's own word: "CONT'D" for "(CONT'D)". */
+const labelWord = (label: string): string => label.replace(/^\(|\)$/g, "").trim().toUpperCase();
+
+function cueTextOf(el: ScriptElement & { type: "character" }, continued: string): string {
   let t = el.name.toUpperCase();
-  if (el.extension) t += ` (${el.extension.toUpperCase()})`;
+  if (el.extension) {
+    // the parser joins "(V.O.) (CONT'D)" into one extension; the writer typed two groups, so print two
+    const ext = el.extension.toUpperCase();
+    const word = labelWord(continued);
+    if (word !== "" && ext.endsWith(` ${word}`)) t += ` (${ext.slice(0, -word.length).trim()}) (${word})`;
+    else t += ` (${ext})`;
+  }
   return t;
 }
 
@@ -308,7 +317,7 @@ function buildUnits(script: Script, preset: ScreenplayPreset): Unit[] {
           }
           items.push({ kind: n.type, chars, line: n.line });
         }
-        const g: Group = { cueText: cueTextOf(el), cueLine: lineOfEl, items, continued: false };
+        const g: Group = { cueText: cueTextOf(el, preset.continued), cueLine: lineOfEl, items, continued: false };
         const prev = units[units.length - 1];
         if (el.dual && prev && prev.kind === "group" && prev.group) {
           const pair: [Group, Group] = [prev.group, g];
@@ -391,6 +400,18 @@ export function paginate(script: Script, preset: ScreenplayPreset): Page[] {
 
   const room = (unit: Unit) => max - used - (placed.length > 0 ? unit.blank : 0);
 
+  /** The fewest lines of `unit` that may share a page with a scene heading above it. */
+  const minLead = (unit: Unit): number => {
+    const h = heightOf(unit);
+    if (unit.kind === "text") return unit.lines.length >= 4 ? 2 : h; // a short action never splits
+    if (unit.kind === "group" && unit.group) {
+      let least = h;
+      for (const sp of splitPoints(unit.group)) least = Math.min(least, groupLines({ ...unit.group, items: sp.a }, cols).length + 1);
+      return least;
+    }
+    return h;
+  };
+
   const textUnit = (blank: number, lines: Line[]): Unit => ({ kind: "text", blank, lines });
 
   let qi = 0;
@@ -408,7 +429,7 @@ export function paginate(script: Script, preset: ScreenplayPreset): Page[] {
 
     if (u.kind === "scene") {
       const next = q[qi + 1];
-      const follow = next && next.kind !== "break" ? 1 + Math.min(2, heightOf(next)) : 0;
+      const follow = next && next.kind !== "break" ? next.blank + minLead(next) : 0;
       if (h + follow <= r || placed.length === 0) {
         put(u, u.lines);
         qi++;
@@ -493,6 +514,8 @@ export function paginate(script: Script, preset: ScreenplayPreset): Page[] {
 /** "NAME (CONT'D)" for the top of the next page; the cue text was built without the label. */
 function continuedCue(g: Group, preset: ScreenplayPreset): string {
   const label = preset.continued;
-  const already = g.cueText.toUpperCase().endsWith(label.toUpperCase());
+  // the writer may have typed it already, as "ANA (CONT'D)" or inside an extension, "ANA (V.O. CONT'D)"
+  const word = labelWord(label);
+  const already = word !== "" && g.cueText.toUpperCase().includes(word);
   return already ? g.cueText : `${g.cueText} ${label}`;
 }
