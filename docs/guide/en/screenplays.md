@@ -2,7 +2,7 @@
 
 This page covers writing a screenplay in a note and sending it out: how a note becomes a
 screenplay, how to write the script in plain Fountain, exporting it as a PDF or a Fountain
-file, the title page, the page breaks, and the settings. It is new in 1.1.0 (unreleased).
+file, the title page, the page breaks, and the settings. It is new in 1.1.0.
 
 Escrita does not lay the script out in the editor yet. You write Fountain as plain text, in a
 note like any other, and the layout happens when you export. Planning and revising work as

@@ -151,7 +151,8 @@ aliases go.
   version; the spike reports which one works before the harness is built on it.
 - **G2** (before release): `npm run e2e` green, the screenshots reviewed by the author, the
   reference comparison (Q10) with every difference decided, and a PDF from the author's user
-  opened in a PDF reader.
+  opened in a PDF reader. **Passed** 2026-10-16: `npm run e2e` 204 of 204 on `1fe9bb7`, every
+  reference difference decided ("Follow-up: indents"), the by-hand checks done by the author.
 
 ## Waves
 

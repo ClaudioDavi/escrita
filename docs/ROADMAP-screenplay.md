@@ -41,7 +41,7 @@ outlined and exported.
 
 | Phase | Contents | Effort |
 |---|---|---|
-| 1 | Screenplay notes and the Fountain parser (SP 1) · Export: Fountain and PDF (SP 6) | M + L. **Built in 1.1.0 (unreleased)** |
+| 1 | Screenplay notes and the Fountain parser (SP 1) · Export: Fountain and PDF (SP 6) | M + L. **Shipped in 1.1.0** |
 | 2 | Writing in screenplay format (SP 2) · Pages, not words (SP 4) · Scene outline (SP 3) | M + S + S |
 | 3 | Revision for scripts (SP 5) · FDX export and Fountain import (SP 6) · Feature-length scripts as a book (SP 7) | M + M + M |
 
@@ -52,7 +52,7 @@ help from the editor, but can't hand in the script without a correct PDF.
 
 ## 1. Screenplay notes and the Fountain parser
 
-**Built in 1.1.0 (unreleased), PLAN-1.1.** What phase 1 has, where it differs from the text below:
+**Shipped in 1.1.0, PLAN-1.1.** What phase 1 has, where it differs from the text below:
 
 - The form: `screenplay` is the seventh value of `FORM_KINDS` (pt-BR `roteiro`), in
   `core/form.ts`; `classify()` gives `form` on every result, so it works with the universe off. The
@@ -149,7 +149,7 @@ scene heading as the boundary.
 
 ## 6. Export
 
-**Built in 1.1.0 (unreleased), PLAN-1.1.** Phase 1 has the Fountain and PDF writers; FDX and
+**Shipped in 1.1.0, PLAN-1.1.** Phase 1 has the Fountain and PDF writers; FDX and
 import stay in phase 3. What it does, and the decisions:
 
 - A screenplay is a **single note** whose form is screenplay. It exports as PDF (US Letter by

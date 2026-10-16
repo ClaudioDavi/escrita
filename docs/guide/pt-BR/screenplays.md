@@ -2,8 +2,7 @@
 
 Esta página cobre como escrever um roteiro numa nota e enviá-lo: como uma nota vira roteiro,
 como escrever o roteiro em Fountain puro, exportar em PDF ou em arquivo Fountain, a folha de
-rosto, as quebras de página e as configurações. É novidade da 1.1.0 (ainda sem data de
-lançamento).
+rosto, as quebras de página e as configurações. É novidade da 1.1.0.
 
 O Escrita ainda não monta o roteiro no editor. Você escreve Fountain como texto puro, numa nota
 como outra qualquer, e o layout acontece na exportação. Planejar e revisar funcionam como num

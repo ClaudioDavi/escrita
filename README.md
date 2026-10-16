@@ -95,7 +95,7 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
-### 1.1.0 (unreleased)
+### 1.1.0 (2026-10-16)
 
 You can write a screenplay in a note and export it as a PDF.
 

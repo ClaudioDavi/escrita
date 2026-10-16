@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (1.0.4 at the time of writing). The author's
+Current version: see `manifest.json` (1.1.0 at the time of writing). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down
@@ -236,13 +236,13 @@ and what upkeep it asks of the writer.
 - **1.0.4 (shipped), start a new work**: "New work…", "New short story" and
   "New book" (SF 14), the home block footer and the "New works" settings. Improvement:
   IMPROVEMENTS 33, path helpers in core. Plan and results in `docs/PLAN-1.0.4.md`.
-- **1.1 (in progress, "screenplays")**: screenwriting phase 1 (SP 1, SP 6;
+- **1.1 (shipped), screenplays**: screenwriting phase 1 (SP 1, SP 6;
   `docs/ROADMAP-screenplay.md`): a note whose form is `screenplay` is written in Fountain and
   exports as a PDF (US Letter or A4) or a `.fountain` file; character cues count in "Appears in".
   Also the form rule in core, the end-to-end harness, the 1.0 fixes found by it, and improvement
   46 (the export writers share the title page; the modal splits). Plan and results in
-  `docs/PLAN-1.1.md`. It is "next" until it is released.
-- **After 1.1**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
+  `docs/PLAN-1.1.md`.
+- **Next**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
 
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and
 `goals/progress-modal.ts` are large and mostly untested (IMPROVEMENTS 5; the chapter rows
