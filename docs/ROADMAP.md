@@ -49,7 +49,7 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 
 ## Next: 1.1, screenwriting (phase 1)
 
-Plan: to write (`PLAN-1.1.md`), from [ROADMAP-screenplay.md](ROADMAP-screenplay.md).
+Plan: [PLAN-1.1.md](PLAN-1.1.md) (approved 2026-10-16), from [ROADMAP-screenplay.md](ROADMAP-screenplay.md).
 
 A screenplay is a note in Fountain. Phase 1 makes a script a first-class note and gets it
 out the door as a correct PDF; the editor help comes in phase 2. Serves drafting and
@@ -60,8 +60,10 @@ submitting. Upkeep: none beyond marking a note as a screenplay.
 | Screenplay notes and the Fountain parser | SP 1 | M | |
 | Export: Fountain and PDF in industry format | SP 6 | L | |
 
-**Improvement:** to pick when the plan is written. Candidates 33 and 36 are done;
-pick from the rest of IMPROVEMENTS.md (or run a new architecture review if the list is low).
+| End-to-end checks: a Playwright harness that drives Obsidian and runs the by-hand checks | — | M | Not a feature; `e2e/`, `npm run e2e`, local only |
+
+**Improvement:** export writers share the title page, the modal splits (candidate 46), plus the
+five known issues and the test-only aliases from 33.
 
 Still open after 1.0, on desktop: gate G0d (the Reading-view "Appears in" section across
 re-renders) and the by-hand checks in [TEST-1.0.md](TEST-1.0.md) that were not run before
