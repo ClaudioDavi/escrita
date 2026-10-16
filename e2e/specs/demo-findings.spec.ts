@@ -496,13 +496,8 @@ test.describe("Demo findings: a new entry (13, 17, 18)", () => {
     await app.screenshot("17. after the entry is created");
   });
 
-  // FINDING (task H1, 2026-10-16, Obsidian 1.14.4): src/universe/create.ts `openBeside` opens the entry with
-  // `getLeaf("tab")` and `openFile(file, { active: false })`, expecting the chapter to stay in front. On 1.14.4 the
-  // new tab becomes the group's current tab and the active leaf, whatever `active` says (plain Obsidian calls do the
-  // same), so the chapter is hidden and the writer's cursor is in the entry note. Drop test.fail() when the entry
-  // opens in the background (for example by selecting the old tab again after openFile) or the expectation changes.
+  // Was a finding (task H1, Obsidian 1.14.4): the new tab came to the front. openBeside now puts the chapter back.
   test("17. ...and the cursor stays in the chapter", async () => {
-    test.fail();
     expect(layout.current, "the chapter's tab is still in front").toBe(0);
     expect(layout.active).toBe(SOURCE);
     expect(layout.cursorFile).toBe(SOURCE);
@@ -662,13 +657,8 @@ test.describe("Demo findings: progress for a book (16)", () => {
     await app.screenshot("16. progress from a conto (colours: by eye)", modal());
   });
 
-  // FINDING (task H1, 2026-10-16, Obsidian 1.14.4): with no book or piece, a day that met the goal makes
-  // src/goals/progress-modal.ts:374 call createSvg("rect", { cls: "escrita-chart-bar is-met" }). Obsidian's
-  // createSvg adds `cls` with classList.add, which throws InvalidCharacterError on a token with a space, so the
-  // whole chart (bars, goal line, legend) is missing from "Progress" for anyone who ever met a daily goal.
-  // The fix is `cls: ["escrita-chart-bar", "is-met"]` (or two class names). Drop test.fail() once fixed.
+  // Was a finding (task H1, Obsidian 1.14.4): "escrita-chart-bar is-met" threw in classList.add; now two classes.
   test("16. with no book or piece: the goal colour and the 'Meta batida' legend entry are back", async () => {
-    test.fail();
     await open("Início.md");
     const items = await legend();
     expect(items).toContain("Meta batida");

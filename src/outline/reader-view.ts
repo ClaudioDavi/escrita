@@ -4,7 +4,7 @@ import { bookSource, type Book } from "../core/books";
 import { movedPath } from "../core/path-keys";
 import type { BookSource } from "../core/book-source";
 import { lang, plural, t } from "../i18n";
-import { readerBlocks, type ReaderBlock } from "./reader-model";
+import { anchorAfterEdit, readerBlocks, type ReaderBlock } from "./reader-model";
 import {
   blockForLine, readerChapters, readerHeadingFormat, readingPoint, restoreTarget,
   type ReaderChapter, type SectionBox,
@@ -157,8 +157,8 @@ export class ReaderView extends ItemView {
         continue;
       }
       const scroller = this.contentEl;
-      const before = c.section.getBoundingClientRect();
-      const above = before.bottom <= scroller.getBoundingClientRect().top;
+      const anchor = this.anchor();
+      const oldTexts = c.texts;
       const oldComp = c.comp;
       this.restoring = true;
       try {
@@ -166,12 +166,37 @@ export class ReaderView extends ItemView {
         await this.render(c, fresh ?? undefined);
         if (token !== this.token) return;
         if (oldComp) this.removeChild(oldComp);
-        // a chapter above the window changed height: move the page by the difference, so the text in view stays put
-        if (above) scroller.scrollTop += c.section.getBoundingClientRect().height - before.height;
+        // the text in view stays put: move the page by however far the block at the top of the window moved.
+        // Measured, not computed from the height change, so Chromium's scroll anchoring is never applied twice.
+        if (anchor) {
+          let el: HTMLElement | null = anchor.el;
+          if (anchor.chapter === c) {
+            const i = oldTexts && c.texts ? anchorAfterEdit(oldTexts, anchor.index, c.texts) : -1;
+            el = i >= 0 ? c.blocks[i].el : null;
+          }
+          if (el?.isConnected) scroller.scrollTop += el.getBoundingClientRect().top - anchor.top;
+        }
       } finally {
         scroller.win.setTimeout(() => { if (token === this.token) this.restoring = false; }, 150);
       }
     }
+  }
+
+  /** The first drawn block whose top is in the window (below the sticky bar), and where it sits; null when none is. */
+  private anchor(): { chapter: ChapterEls; index: number; el: HTMLElement; top: number } | null {
+    const box = this.contentEl.getBoundingClientRect();
+    const edge = box.top + (this.contentEl.querySelector(".escrita-reader-bar")?.getBoundingClientRect().height ?? 0);
+    for (const c of this.chapters) {
+      if (c.state !== "done") continue;
+      const r = c.section.getBoundingClientRect();
+      if (r.bottom <= edge) continue;
+      if (r.top >= box.bottom) return null;
+      for (let i = 0; i < c.blocks.length; i++) {
+        const top = c.blocks[i].el.getBoundingClientRect().top;
+        if (top >= edge && top < box.bottom) return { chapter: c, index: i, el: c.blocks[i].el, top };
+      }
+    }
+    return null;
   }
 
   /** Draws the book's chapters as placeholders, then renders the one to restore and, as they scroll in, the rest. */

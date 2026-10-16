@@ -68,3 +68,20 @@ export function readerBlocks(text: string, o: Pick<ManuscriptOptions, "placehold
   const { blocks } = manuscriptOf(text, { placeholderMarker: o.placeholderMarker });
   return blocks.map((b) => ({ text: blockMarkdown(b), line: b.line ?? 0 }));
 }
+
+/**
+ * After a chapter is drawn again, the block that was at the top of the window (index `at` of
+ * the old texts), so the text in view is kept in place. An edit above it shifts it by the
+ * change in the block count, an edit below leaves it where it was; otherwise the nearest block
+ * with the same text. -1 when no new block has that text (the edit was in that very block).
+ */
+export function anchorAfterEdit(old: readonly string[], at: number, fresh: readonly string[]): number {
+  const text = old[at];
+  if (text === undefined) return -1;
+  for (const i of [at + fresh.length - old.length, at]) if (fresh[i] === text) return i;
+  let best = -1;
+  fresh.forEach((t, i) => {
+    if (t === text && (best < 0 || Math.abs(i - at) < Math.abs(best - at))) best = i;
+  });
+  return best;
+}

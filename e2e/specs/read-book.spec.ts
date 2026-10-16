@@ -203,12 +203,8 @@ const visibleBlock = (chapter: string) => ob.page.evaluate((p) => {
 }, chapter);
 
 test("8. editing the chapter above the one in view: the reading tab shows the new sentence, the text in view stays put", async () => {
-  // Finding: with chapter 13 in view and chapter 12 (wholly above) edited, the text in view moves UP
-  // by the height the new sentence added (78 px for 3 lines). refreshDirty adds the height difference
-  // to scrollTop, and Chromium's scroll anchoring has already made the same adjustment, so the
-  // compensation is applied twice (the reader has no `overflow-anchor: none`). Measured: scrollTop
-  // 20683 -> 20839 for a 78 px change.
-  test.fail(true, "reader-view.ts refreshDirty: scrollTop compensation doubles Chromium's scroll anchoring; the text in view jumps");
+  // Was a finding (Wave 2 h2): refreshDirty added the height difference after Chromium's scroll anchoring had
+  // already made it, so the text in view jumped by twice the change. It now sets scrollTop (Wave 2 judge).
   const c12 = CH("12 O quarto escuro");
   const c13 = CH("13 A sombra");
   await showReader();
@@ -231,7 +227,8 @@ test("8. editing the chapter above the one in view: the reading tab shows the ne
 
 test("8b. editing the top of the chapter that is being read: the text in view stays put", async () => {
   // TEST-0.9 step 8 as written: the reader is inside chapter 12 and a sentence is added at its top.
-  // Chromium's scroll anchoring keeps the text in view (no compensation by the plugin applies).
+  // The block at the top of the window is found again by its text after the redraw and kept in place
+  // (Chromium's anchoring alone loses it, since the chapter's blocks are all replaced).
   const c12 = CH("12 O quarto escuro");
   await showReader();
   await goTo(c12, true);

@@ -514,8 +514,8 @@ export class ExportModal extends Modal {
     if (!last) return;
     const parts = [t(`export.format.${last.format}`)];
     if (last.format !== "fountain") parts.push(presetLabel(last.preset));
-    // the count is chapters for a book and pages for a PDF
-    if (last.chapterCount !== undefined) parts.push(plural(last.format === "pdf" ? "export.last.pages" : "export.last.chapters", last.chapterCount));
+    if (last.chapterCount !== undefined) parts.push(plural("export.last.chapters", last.chapterCount));
+    if (last.pages !== undefined) parts.push(plural("export.last.pages", last.pages));
     const text = t("export.last", { summary: parts.join(" · "), when: whenText(last.at, lang()) });
     el.createSpan({ text });
     const name = last.path.split("/").pop() ?? last.path;
@@ -555,7 +555,9 @@ export class ExportModal extends Modal {
 
   /** Export again (Q17): the last choices, the same warnings; it runs by itself only when nothing needs a confirmation. */
   private async again(last: LastExport): Promise<void> {
-    this.state = { ...stateOfLast(last, this.o.book !== null, this.o.book?.offerChapter ?? false), sceneNumbers: this.state.sceneNumbers, keepNotes: this.state.keepNotes };
+    // a PDF repeats its scene numbers; the notes checkbox is not remembered, so it stays as it is
+    const sceneNumbers = last.format === "pdf" ? last.sceneNumbers === true : this.state.sceneNumbers;
+    this.state = { ...stateOfLast(last, this.o.book !== null, this.o.book?.offerChapter ?? false), sceneNumbers, keepNotes: this.state.keepNotes };
     this.render();
     // One build only: a pending timer would start a second one and drop this call's result.
     if (this.timer !== null) { window.clearTimeout(this.timer); this.timer = null; }

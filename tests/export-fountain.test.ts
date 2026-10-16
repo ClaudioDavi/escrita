@@ -22,6 +22,12 @@ const roundTrip = (text: string, opts = EN): { again: Script; first: Script; out
 };
 
 describe("the round trip", () => {
+  it("writes a centered block of several lines as one > … < line each", () => {
+    const { again, first, out } = roundTrip("> BRICK & STEEL <\n> FULL RETIRED <");
+    expect(out).toContain("> BRICK & STEEL <\n> FULL RETIRED <");
+    expect(bare(again.elements)).toEqual(bare(first.elements));
+  });
+
   it("gives the same elements for every sample script", () => {
     for (const [file, opts] of [
       ["tests/fixtures/fountain/roteiro.md", PT],

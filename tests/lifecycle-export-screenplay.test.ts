@@ -79,7 +79,7 @@ describe("a screenplay as a PDF (board 43 a)", () => {
   });
 
   it("the last export line has the page count and Export again comes first", async () => {
-    const last: LastExport = { format: "pdf", preset: "a4", whole: false, chapters: { mode: "all" }, chapterCount: 14, at: "2026-10-15T21:04:00", path: "Escrita/Exports/O farol (A4).pdf" };
+    const last: LastExport = { format: "pdf", preset: "a4", whole: false, chapters: { mode: "all" }, pages: 14, at: "2026-10-15T21:04:00", path: "Escrita/Exports/O farol (A4).pdf" };
     const { el } = open({ host: fakeHost(), last });
     await settle();
     expect(el.querySelector(".escrita-export-last")!.textContent).toMatch(/^Last export: PDF · A4 · 14 pages · .*21:04 · O farol \(A4\)\.pdf$/);

@@ -117,7 +117,7 @@ function blockOf(els: ScriptElement[], opts: FountainOptions): string[] {
     }
     case "action": {
       const text = textOf(el);
-      if (el.centered) return [`> ${text} <`];
+      if (el.centered) return text.split("\n").map((l) => `> ${l} <`);
       if (el.forced) return [`!${text}`];
       const read = firstOf(text, opts);
       const same = read !== null && read.type === "action" && !(read as { forced?: boolean }).forced && !(read as { centered?: boolean }).centered;

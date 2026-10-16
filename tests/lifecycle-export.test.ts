@@ -7,7 +7,7 @@ import type { FeatureModule, SettingsUi } from "../src/core/module-context";
 import { NoteExistsError } from "../src/core/notes";
 import { measureText } from "../src/core/measure";
 import { registerStrings } from "../src/i18n";
-import type { ExportChoice } from "../src/data";
+import { cleanExportChoices, type ExportChoice } from "../src/data";
 import { exportStrings } from "../src/export/strings";
 import type { ExportHost, ExportModalOptions, ModalState } from "../src/export/modal";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
@@ -965,7 +965,8 @@ describe("a screenplay's export (PLAN-1.1 Q3)", () => {
     expect(new TextDecoder("latin1").decode((created[0].data as Uint8Array).slice(0, 8))).toBe("%PDF-1.4");
     const choice = plugin.data.exportChoices[SCRIPT];
     expect(choice).toMatchObject({ format: "pdf", preset: "a4", whole: false });
-    expect(choice.last).toMatchObject({ format: "pdf", preset: "a4", chapterCount: 2, path: "Escrita/Exports/O farol (A4).pdf" });
+    expect(choice.last).toMatchObject({ format: "pdf", preset: "a4", pages: 2, path: "Escrita/Exports/O farol (A4).pdf" });
+    expect(choice.last!.chapterCount).toBeUndefined();
     expect(noticeLog.at(-1)).toBe("Exported: O farol (A4).pdf, 2 pages.");
     expect(openIt().state).toMatchObject({ format: "pdf", preset: "a4" });
     expect(opts().last).not.toBeNull();
@@ -997,6 +998,15 @@ describe("a screenplay's export (PLAN-1.1 Q3)", () => {
     await host().write(without, await host().build(without), false).catch(() => {});
     const bytes = (i: number) => new TextDecoder("latin1").decode(created[i].data as Uint8Array);
     expect(bytes(0)).not.toBe(bytes(1));
+  });
+
+  it("a PDF with scene numbers remembers them in its last export, and the data keeps them", async () => {
+    openIt();
+    const s = sstate({ sceneNumbers: true });
+    await host().write(s, await host().build(s));
+    const last = plugin.data.exportChoices[SCRIPT].last!;
+    expect(last).toMatchObject({ pages: 2, sceneNumbers: true });
+    expect(cleanExportChoices(JSON.parse(JSON.stringify(plugin.data.exportChoices)))[SCRIPT].last).toMatchObject({ pages: 2, sceneNumbers: true });
   });
 
   it("Export again: a last export of the other kind is not offered", () => {

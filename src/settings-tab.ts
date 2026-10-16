@@ -185,8 +185,8 @@ export class EscritaSettingTab extends PluginSettingTab {
       case "features": return this.featuresBlocks(ui);
       case "shared": return [{ items: this.sharedItems(ui) }];
       case "books": return [{ items: this.booksItems(ui, shown("templatesFolder")) }];
-      // The writing day continues the Books group; the Forms group (1.1) follows it, so it never splits Books.
-      case "dayEnds": return [...(shown("dayEndsAt") ? [{ items: [this.dayEndsRow(ui)] }] : []), { heading: t("settings.forms"), items: this.formItems(ui) }];
+      case "dayEnds": return shown("dayEndsAt") ? [{ items: [this.dayEndsRow(ui)] }] : [];
+      case "forms": return [{ items: this.formItems(ui) }];
       case "newWorks": return [{ items: this.newWorksItems(ui, shown("booksFolder")) }];
       case "stages": return [{ items: this.stagesItems(ui) }];
       case "placeholders":

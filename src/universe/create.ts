@@ -60,9 +60,15 @@ async function linkOccurrence(plugin: EscritaPlugin, o: Occurrence, target: stri
 /** Opens the note in a new tab of the main area (not a split, which squeezes both panes) without taking focus from the writer's text. */
 async function openBeside(plugin: EscritaPlugin, file: TFile, editor: Editor | null): Promise<void> {
   const ws = plugin.app.workspace;
+  const writing = ws.getActiveViewOfType(MarkdownView)?.leaf ?? null;
   try {
     const leaf = ws.getLeaf("tab");
     await leaf.openFile(file, { active: false });
+    // Obsidian (1.14) brings the new tab to the front whatever `active` says: put the writer's tab back in front
+    if (writing && writing !== leaf) {
+      await ws.revealLeaf(writing);
+      ws.setActiveLeaf(writing, { focus: true });
+    }
   } catch {
     new Notice(t("universe.create.notice.failed"));
   }

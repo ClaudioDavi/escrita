@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { readerBlocks } from "../src/outline/reader-model";
+import { anchorAfterEdit, readerBlocks } from "../src/outline/reader-model";
 import { manuscriptOf } from "../src/core/manuscript";
 
 const dir = "tests/fixtures/manuscript/";
@@ -101,5 +101,17 @@ describe("readerBlocks (N 8, Q14, Q20)", () => {
   it("empty and comment-only chapters give no blocks", () => {
     expect(readerBlocks("", O)).toEqual([]);
     expect(readerBlocks("---\nstatus: x\n---\n\n%% beat: só isto %%\n", O)).toEqual([]);
+  });
+});
+
+describe("anchorAfterEdit (the block kept in place after a redraw)", () => {
+  it("finds the same text nearest to where it was, or -1 when that block changed", () => {
+    expect(anchorAfterEdit(["a", "b", "c"], 2, ["a new", "b", "c"])).toBe(2);
+    expect(anchorAfterEdit(["a", "b", "c"], 1, ["x", "a", "b", "c"])).toBe(2);
+    // a scene break repeats: a block added above shifts it by one, not to the nearest copy
+    expect(anchorAfterEdit(["a", "*", "b", "*"], 3, ["new", "a", "*", "b", "*"])).toBe(4);
+    expect(anchorAfterEdit(["a", "*", "b", "*"], 1, ["a", "*", "b", "*", "more"])).toBe(1);
+    expect(anchorAfterEdit(["a", "b"], 0, ["a changed", "b"])).toBe(-1);
+    expect(anchorAfterEdit(["a"], 3, ["a"])).toBe(-1);
   });
 });

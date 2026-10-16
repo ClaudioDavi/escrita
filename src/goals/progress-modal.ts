@@ -371,7 +371,8 @@ export class ProgressModal extends Modal {
     });
     for (const b of g.bars) {
       const rect = svg.createSvg("rect", {
-        cls: `escrita-chart-bar${b.met ? " is-met" : ""}`,
+        // one class per item: Obsidian adds an SVG's classes with classList.add, which throws on a space (Wave 2 h1)
+        cls: b.met ? ["escrita-chart-bar", "is-met"] : "escrita-chart-bar",
         attr: { x: b.x, y: b.y, width: b.width, height: b.height, rx: Math.min(2, b.width / 2) },
       });
       rect.createSvg("title").textContent = `${fmtDay(days[b.index])}: ${unitAmount("words", b.value)}`;

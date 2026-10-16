@@ -340,7 +340,8 @@ export class ExportModule extends FeatureModule {
   }
 
   private stateOfLast(target: Target, last: LastExport): ModalState {
-    return this.withScriptChoices(target, stateOfLast(last, this.multi(target), target.chapter));
+    const state = this.withScriptChoices(target, stateOfLast(last, this.multi(target), target.chapter));
+    return last.format === "pdf" ? { ...state, sceneNumbers: last.sceneNumbers === true } : state;
   }
 
   /**
@@ -517,8 +518,11 @@ export class ExportModule extends FeatureModule {
     };
     if (!book) last.source = target.file.path;
     if (book) last.chapterCount = built.source.parts.filter((x) => x.role === "body").length;
-    // a PDF keeps its page count in the same field: the unit of the export (chapters of a book, pages of a script)
-    else if (built.screenplay?.pdf && state.format === "pdf") last.chapterCount = built.screenplay.pdf.pages;
+    // a PDF keeps its page count and its scene numbers, so "Export again" repeats it as it was
+    else if (built.screenplay?.pdf && state.format === "pdf") {
+      last.pages = built.screenplay.pdf.pages;
+      if (state.sceneNumbers === true) last.sceneNumbers = true;
+    }
     data.exportChoices[target.key] = {
       format: state.format,
       preset: state.preset,

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { paginate, rowText, type Page } from "../src/core/screenplay-pages";
 import { screenplayPreset } from "../src/core/screenplay-presets";
+import { fountainOptions, parseFountain } from "../src/core/fountain";
+import { segment } from "../src/core/markdown";
 import { action, actionOf, cue, dialogue, pageBreak, paren, scene, script, section, synopsis, transition } from "./screenplay-helpers";
 
 const labels = { screenplayMore: "(MORE)", screenplayContinued: "(CONT'D)", screenplaySceneNumbers: false };
@@ -257,5 +259,54 @@ describe("scene numbers", () => {
     expect(p.rows.filter((r) => r.sceneNumber).map((r) => r.sceneNumber)).toEqual(["1", "7A"]);
     const [q] = paginate(script(scene("int. a - day")), LETTER);
     expect(q.rows[0].sceneNumber).toBeUndefined();
+  });
+});
+
+// The differences from Afterwriting (scripts/compare-screenplay.mjs, Wave 2 task P), each decided
+// by the Wave 2 judge and pinned here (PLAN-1.1 Q10, Results, Wave 2).
+describe("reference differences, decided", () => {
+  const words = fountainOptions({ screenplaySceneHeadings: "INT, EXT, EST, INT./EXT, INT/EXT, I/E", screenplayTransitions: "TO:" });
+  const parsed = (text: string) => parseFountain(text, segment(text), words);
+
+  it("R1, keep ours: dialogue splits only at a sentence end, never at any line (SP 6)", () => {
+    const long = Array.from({ length: 12 }, () => "and on and on").join(" ");
+    const pages = paginate(script(...fill(51), cue("ANA"), dialogue(`${long} without a stop`)), LETTER);
+    expect(pages).toHaveLength(2);
+    expect(texts(pages[0])).not.toContain("(MORE)");
+    expect(rowText(pages[1].rows[0])).toBe("ANA");
+  });
+
+  it("R3, keep ours: the US columns, action 60 (57 on A4), dialogue 35 from 25, cue at 37", () => {
+    expect(LETTER.columns.action).toEqual({ left: 15, right: 75 });
+    expect(A4.columns.action).toEqual({ left: 15, right: 72 });
+    expect(LETTER.columns.dialogue).toEqual({ left: 25, right: 60 });
+    expect(LETTER.columns.character.left).toBe(37);
+    expect(LETTER.columns.parenthetical).toEqual({ left: 30, right: 55 });
+  });
+
+  it("R4, follow theirs: centered lines with no blank between are one block, with no blank rows inside", () => {
+    const s = parsed("> BRICK & STEEL <\n> FULL RETIRED <\n\nAction.");
+    expect(s.elements.map((e) => e.type)).toEqual(["action", "action"]);
+    const [p] = paginate(s, LETTER);
+    expect(p.rows.map((r) => [r.row, rowText(r)])).toEqual([[0, "BRICK & STEEL"], [1, "FULL RETIRED"], [3, "Action."]]);
+  });
+
+  it("R4: a blank line between centered lines still makes two blocks", () => {
+    expect(parsed("> ONE <\n\n> TWO <").elements).toHaveLength(2);
+  });
+
+  it("R5, keep ours: a trailing space never wraps a full line onto an empty one", () => {
+    const s = parsed(`${"a".repeat(60)} \n\nNext.`);
+    const [p] = paginate(s, LETTER);
+    expect(p.rows.map((r) => r.row)).toEqual([0, 2]);
+  });
+
+  it("indented transition, keep ours (Q6): an indented CUT TO: is action, so it may start a page", () => {
+    expect(parsed("A line.\n\n\t\tCUT TO:\n\nINT. HOUSE - DAY").elements.map((e) => e.type)).toEqual(["action", "action", "scene"]);
+  });
+
+  it("the page holds 55 rows on Letter and 57 on A4, blank rows counted (Afterwriting's lines_per_page)", () => {
+    expect(LETTER.linesPerPage).toBe(55);
+    expect(A4.linesPerPage).toBe(57);
   });
 });

@@ -10,6 +10,9 @@ import type { ScreenplayPreset } from "./screenplay-presets";
 const SIZE = 12;
 const COL = SIZE * COURIER_ADVANCE;
 const LINE = SIZE;
+/** The line of a title page row: it comes from the properties and the settings, not from a line of the note. */
+export const TITLE_PAGE_LINE = -1;
+
 /** the baseline sits this far below the top of its line box */
 const BASE = 9;
 
@@ -17,7 +20,7 @@ export interface ScreenplayPdf {
   bytes: Uint8Array;
   /** every page, the title page included */
   pages: number;
-  /** characters Courier's WinAnsi cannot print (shown as "?"), with the 0-based note line (Q7) */
+  /** characters Courier's WinAnsi cannot print (shown as "?"), with the 0-based note line (Q7); `TITLE_PAGE_LINE` on the title page */
   unsupported: { char: string; line: number }[];
 }
 
@@ -42,7 +45,7 @@ function titleRows(tp: TitlePage, preset: ScreenplayPreset): PageRow[] {
   const center = (text: string, row: number, runs?: ScriptRun[]) => {
     const rs = runs ?? [{ text }];
     const n = [...text].length;
-    rows.push({ row, col: a.left + Math.max(0, Math.floor((width - n) / 2)), runs: rs, line: 0 });
+    rows.push({ row, col: a.left + Math.max(0, Math.floor((width - n) / 2)), runs: rs, line: TITLE_PAGE_LINE });
   };
   const wrapped = (text: string, w: number): string[] => {
     const out: string[] = [];
@@ -75,7 +78,7 @@ function titleRows(tp: TitlePage, preset: ScreenplayPreset): PageRow[] {
   bottom.push(...(tp.contact ?? []));
   let r = preset.linesPerPage - bottom.length;
   for (const l of bottom) {
-    if (l !== "") rows.push({ row: r, col: a.left, runs: [{ text: l }], line: 0 });
+    if (l !== "") rows.push({ row: r, col: a.left, runs: [{ text: l }], line: TITLE_PAGE_LINE });
     r++;
   }
   return rows;

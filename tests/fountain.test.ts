@@ -275,6 +275,11 @@ describe("where the screenplay wins over Markdown (Q6)", () => {
   it("> is a transition or centered text, not a quote", () => {
     expect(brief("> A quote\n\n> CENTER <")).toEqual(["transition:A quote", "action:CENTER"]);
   });
+  it("centered lines with no blank between are one centered block (Wave 2 judge, R4)", () => {
+    const [e, ...rest] = els("> BRICK & STEEL <\n> FULL RETIRED <\n\n> ONE <");
+    expect(e).toMatchObject({ type: "action", centered: true, runs: [{ text: "BRICK & STEEL\nFULL RETIRED" }] });
+    expect(rest).toHaveLength(1);
+  });
   it("_x_ is underline, not italic", () => {
     expect(els("an _underlined_ word")[0].runs[1]).toEqual({ text: "underlined", underline: true });
   });

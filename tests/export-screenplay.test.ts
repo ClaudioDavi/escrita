@@ -4,6 +4,7 @@ import { SHUNN, PTBR } from "../src/core/presets";
 import { measureText } from "../src/core/measure";
 import { registerStrings } from "../src/i18n";
 import { exportFileName, keepBothName, presetLabel } from "../src/export/logic";
+import { screenplayPdf } from "../src/core/screenplay-pdf";
 import { propertyText, screenplayTitlePage, unsupportedWarning, withScreenplay, type ScreenplaySettings } from "../src/export/screenplay";
 import { buildExport, needsConfirm, type ExportPlan } from "../src/export/source";
 import { exportStrings } from "../src/export/strings";
@@ -160,5 +161,11 @@ describe("unsupportedWarning", () => {
     const w = unsupportedWarning({ bytes: new Uint8Array(), pages: 1, unsupported: [{ char: "★", line: 4 }, { char: "★", line: 4 }, { char: "ő", line: 1 }] }, "a.md", "a")!;
     expect(w.n).toBe(3);
     expect(w.links.map((l) => l.line)).toEqual([1, 4]);
+  });
+
+  it("names a title page character with no link (it is not on a line of the note)", () => {
+    const w = unsupportedWarning(screenplayPdf({ titleBlock: null, elements: [] }, { title: "O farol ★" }, screenplayPreset("a4", { screenplayMore: "(MAIS)", screenplayContinued: "(CONT.)", screenplaySceneNumbers: false })), "a.md", "a")!;
+    expect(w.names).toEqual(["★"]);
+    expect(w.links).toEqual([]);
   });
 });

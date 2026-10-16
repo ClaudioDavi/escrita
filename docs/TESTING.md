@@ -29,6 +29,28 @@ Playwright counts it as passed while the bug is still there. When the bug is fix
 |---|---|
 | `e2e/specs/new-work.spec.ts` | PLAN-1.0.4.md, "By-hand checks" 1 to 9 (Nova obra…, the modal, the footer, phone width) |
 | `e2e/specs/setup.spec.ts` | TEST-1.0.md G2a (the setup in an empty Portuguese vault) and G2b (English, writing mode) |
+| `e2e/specs/features-presets.spec.ts` | TEST-1.0.md, Presets 1 to 7 |
+| `e2e/specs/writing-mode.spec.ts` | TEST-1.0.md, writing mode without a third-party theme (steps 2, 3, 6 to 9) |
+| `e2e/specs/release-fixes.spec.ts` | TEST-1.0.md, the release-candidate fixes 1 to 4 |
+| `e2e/specs/demo-findings.spec.ts` | TEST-1.0.md, the demo findings 1 to 10 and 13 to 18 |
+| `e2e/specs/phone.spec.ts` | TEST-1.0.md G4 1 to 5 and the MOBILE-1.0 items a script can see (390 px, `emulateMobile`) |
+| `e2e/specs/author-vault.spec.ts` | TEST-1.0.md G2c, on a copy of `~/Projects/website/escrita` (skips when it is missing; the source is hashed before and after) |
+| `e2e/specs/beat-click.spec.ts` | IMPROVEMENTS known issue 1 (beat click and the restored cursor), kept as a regression check |
+| `e2e/specs/unlinked.spec.ts`, `names.spec.ts` | TEST-0.9.md, unlinked mentions and the names rule |
+| `e2e/specs/epub.spec.ts`, `collections.spec.ts`, `publish-next.spec.ts` | TEST-0.9.md, EPUB, collections, "Publish next chapter" |
+| `e2e/specs/read-book.spec.ts` | TEST-0.9.md, "Read the book", and 0.9's G0d timings on the `long-book` fixture |
+| `e2e/specs/scope.spec.ts`, `switches.spec.ts` | TEST-0.9.md, scope and the feature switches |
+| `e2e/specs/appears-in-reading.spec.ts` | 0.7's G0d, closed as decided: Reading view shows the panel only |
+| `e2e/specs/screenplay.spec.ts` | PLAN-1.1's own checks: a screenplay's export (PDF, Fountain, page, warnings, preview, settings) |
+
+Helpers beyond `app.ts`: `e2e/lib/more.ts` (the settings page, overlap, small targets, sideways
+scroll), `panels.ts` (side panels, the universe tab, the settings window), `export-ui.ts`,
+`zip-read.ts` (reads a DOCX or EPUB), and `measure.ts` (`timeToFirstText`, `Trace` for the longest
+main-thread task over CDP, `scrollToEnd`).
+
+A fixture's `data.json` with a `settings` block but no `stages` counts as an install from before
+the setup, so its stage words and folders are the English defaults. Specs that need the pt-BR set
+change settings after launch with `app.setSettings` (`WORLD_SETTINGS` in `e2e/fixtures/h1.ts`).
 
 Each test is one numbered check. Screenshots are attached to the report for anything that
 needs an eye (light and dark, "looks right"): review the pictures instead of clicking through.

@@ -391,7 +391,11 @@ export function parseFountain(text: string, md: Markdown, opts: FountainOptions)
     }
     if (trimmed.startsWith(">")) {
       if (trimmed.endsWith("<") && trimmed.length >= 2) {
-        emit({ type: "action", line, centered: true, runs: [] }, trimmed.slice(1, -1).trim());
+        const inner = trimmed.slice(1, -1).trim();
+        // centered lines with no blank between are one centered block (Brick & Steel's titles, as Afterwriting reads them)
+        const prev: Draft | null = open;
+        if (!startsBlock && prev && prev.el.type === "action" && (prev.el as { centered?: boolean }).centered) prev.raw += "\n" + inner;
+        else open = emit({ type: "action", line, centered: true, runs: [] }, inner);
       } else {
         emit({ type: "transition", line, forced: true, runs: [] }, trimmed.slice(1).trim());
       }

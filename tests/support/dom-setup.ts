@@ -34,6 +34,7 @@ if (typeof HTMLElement !== "undefined") {
   proto.empty = function (this: HTMLElement): void { this.replaceChildren(); };
   proto.setAttr = function (this: HTMLElement, k: string, v: string): void { this.setAttribute(k, v); };
   proto.setCssStyles = function (this: HTMLElement, styles: Record<string, string>): void { Object.assign(this.style, styles); };
+  proto.setCssProps = function (this: HTMLElement, props: Record<string, string>): void { for (const [k, v] of Object.entries(props)) this.style.setProperty(k, v); };
   proto.toggle = function (this: HTMLElement, show: boolean): void { this.style.display = show ? "" : "none"; };
   // Obsidian's global createDiv: a detached div
   const g = globalThis as unknown as Record<string, unknown>;

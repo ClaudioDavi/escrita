@@ -113,7 +113,8 @@ export function unsupportedWarning(pdf: ScreenplayPdf, path: string, where: stri
   const lines: number[] = [];
   for (const u of pdf.unsupported) {
     if (!names.includes(u.char)) names.push(u.char);
-    if (!lines.includes(u.line)) lines.push(u.line);
+    // a title page character has no line of the note to go to: it is named, with no link
+    if (u.line >= 0 && !lines.includes(u.line)) lines.push(u.line);
   }
   lines.sort((a, b) => a - b);
   return { id: "unsupported", level: "warning", n: pdf.unsupported.length, names, links: lines.map((line) => ({ path, line, where })) };

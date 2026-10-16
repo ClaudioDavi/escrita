@@ -48,6 +48,9 @@ export interface LastExport {
   chapters: ExportSelection;
   /** how many chapters went into a book export; absent for a single note */
   chapterCount?: number;
+  /** a screenplay PDF (1.1): its page count, title page included, and whether it had scene numbers */
+  pages?: number;
+  sceneNumbers?: boolean;
   /** when it was written, ISO 8601 */
   at: string;
   /** the vault path of the file it wrote */
@@ -94,6 +97,8 @@ function cleanLast(raw: unknown): LastExport | undefined {
     at: c.at, path: c.path,
   };
   if (typeof c.chapterCount === "number" && Number.isFinite(c.chapterCount)) out.chapterCount = c.chapterCount;
+  if (typeof c.pages === "number" && Number.isFinite(c.pages)) out.pages = c.pages;
+  if (c.sceneNumbers === true) out.sceneNumbers = true;
   if (typeof c.folder === "string") out.folder = c.folder;
   if (typeof c.name === "string" && c.name !== "") out.name = c.name;
   if (typeof c.source === "string" && c.source !== "") out.source = c.source;

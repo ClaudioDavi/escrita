@@ -6,7 +6,7 @@
 import type { FeatureId } from "./features";
 
 export type SectionId =
-  | "features" | "shared" | "books" | "dayEnds" | "newWorks" | "goals" | "publish" | "export" | "submissions" | "outline" | "placeholders"
+  | "features" | "shared" | "books" | "dayEnds" | "forms" | "newWorks" | "goals" | "publish" | "export" | "submissions" | "outline" | "placeholders"
   | "darlings" | "editor" | "lens" | "stages" | "desk" | "snapshots"
   | "universe" | "threads";
 
@@ -30,7 +30,7 @@ export interface SectionSlot {
 
 /**
  * Today's order (settings.ts before 0.8): Features, shared names and folders, Books, the
- * writing day, New works (1.0.4), then goals, publishing, outline, placeholders, darlings, editor, lens,
+ * writing day, Forms (1.1), New works (1.0.4), then goals, publishing, outline, placeholders, darlings, editor, lens,
  * stages, home note, snapshots, universe. The thread words sit in the middle of the universe's
  * section: its module draws them there while threads is loaded; the threads slot draws them
  * only with the universe off.
@@ -40,6 +40,7 @@ export const SECTION_ORDER: readonly SectionSlot[] = [
   { id: "shared", heading: "settings.shared", feature: null },
   { id: "books", heading: "settings.books", feature: null },
   { id: "dayEnds", heading: null, feature: null },
+  { id: "forms", heading: "settings.forms", feature: null },
   { id: "newWorks", heading: "settings.newWorks", feature: null },
   { id: "goals", heading: "settings.goals", feature: "goals" },
   { id: "publish", heading: "settings.publishing", feature: "publish" },
