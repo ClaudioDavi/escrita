@@ -63,6 +63,7 @@ export function languageOf(obsidianLanguage: string | null | undefined): Default
 export const WORD_KEYS = [
   "stages", "chaptersFolder", "unnumberedTitles", "submissionResults", "exportFolder", "submissionsFolder",
   "darlingsNote", "globalDarlingsNote", "universeNote", "entryTypes", "formValues", "threadKeyword", "threadClosedWord",
+  "screenplayTransitions", "screenplayMore", "screenplayContinued", "screenplayCredit",
 ] as const;
 export type WordKey = typeof WORD_KEYS[number];
 
@@ -114,9 +115,13 @@ const EN: LanguageDefaults = {
     group: ["group", "Groups", "Group"],
     event: ["event", "Events", "Event"],
   }),
-  formValues: { shortStory: "short story", essay: "essay", novella: "novella", novel: "novel", poem: "poem", fragment: "fragment" },
+  formValues: { shortStory: "short story", essay: "essay", novella: "novella", novel: "novel", poem: "poem", fragment: "fragment", screenplay: "screenplay" },
   threadKeyword: "thread",
   threadClosedWord: "closed",
+  screenplayTransitions: "TO:",
+  screenplayMore: "(MORE)",
+  screenplayContinued: "(CONT'D)",
+  screenplayCredit: "Written by",
   snapshotsFolder: "Escrita/Snapshots",
   excludeFolders: "Templates",
 };
@@ -141,9 +146,14 @@ const PT_BR: LanguageDefaults = {
     group: ["grupo", "Grupos", "Grupo"],
     event: ["evento", "Eventos", "Evento"],
   }),
-  formValues: { shortStory: "conto", essay: "ensaio", novella: "novela", novel: "romance", poem: "poema", fragment: "fragmento" },
+  formValues: { shortStory: "conto", essay: "ensaio", novella: "novela", novel: "romance", poem: "poema", fragment: "fragmento", screenplay: "roteiro" },
   threadKeyword: "thread",
   threadClosedWord: "fechada",
+  // Brazilian scripts: CORTA PARA:, FUSÃO PARA: (SP 1); the English TO: stays for pasted scripts
+  screenplayTransitions: "TO:, PARA:",
+  screenplayMore: "(MAIS)",
+  screenplayContinued: "(CONT.)",
+  screenplayCredit: "Roteiro de",
   snapshotsFolder: "Escrita/Versões",
   excludeFolders: "Modelos",
 };

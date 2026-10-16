@@ -14,7 +14,7 @@ import type EscritaPlugin from "../main";
 import { customRow, noteRow, textAreaRow, textRow, toggleRow, type SettingsBlock } from "../ui/settings-rows";
 import { ENTRY_KINDS, normalizeNotePath } from "./settings";
 import { builtinTitlesText } from "./names-settings";
-import { formValuesText, parseFormValues } from "./works-list";
+import { formValuesText, parseFormValues } from "../core/form";
 import { threadWordRows } from "./threads-settings-ui";
 
 const stripSlashes = (p: string) => p.replace(/^\/+|\/+$/g, "");

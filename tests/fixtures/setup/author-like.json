@@ -316,7 +316,8 @@
         "novella": "novela",
         "novel": "romance",
         "poem": "poema",
-        "fragment": "fragmento"
+        "fragment": "fragmento",
+        "screenplay": "screenplay"
       }
     },
     {
@@ -340,6 +341,50 @@
         "key": "setup.reason.settingOwn"
       },
       "value": "fechado"
+    },
+    {
+      "kind": "setting",
+      "target": "screenplayTransitions",
+      "state": "change",
+      "tick": "language",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingHasWorks"
+      },
+      "value": "TO:, PARA:"
+    },
+    {
+      "kind": "setting",
+      "target": "screenplayMore",
+      "state": "change",
+      "tick": "language",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingHasWorks"
+      },
+      "value": "(MAIS)"
+    },
+    {
+      "kind": "setting",
+      "target": "screenplayContinued",
+      "state": "change",
+      "tick": "language",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingHasWorks"
+      },
+      "value": "(CONT.)"
+    },
+    {
+      "kind": "setting",
+      "target": "screenplayCredit",
+      "state": "change",
+      "tick": "language",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingHasWorks"
+      },
+      "value": "Roteiro de"
     },
     {
       "kind": "setting",

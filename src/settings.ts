@@ -118,6 +118,27 @@ export interface EscritaSettings extends UniverseSettings {
   /** the property of a collection note listing its stories in reading order (0.9, SF 13, PLAN-0.9 Q24) */
   collectionProperty: string;
 
+  // Screenplays (1.1, SP 1, SP 6, PLAN-1.1 Q4; drawn by the export module's section). The title
+  // page's author and contact come from authorProperty, authorName and contactLines above.
+  /** scene heading prefixes, comma or newline separated (Fountain's list) */
+  screenplaySceneHeadings: string;
+  /** a line in capitals ending in one of these is a transition, comma or newline separated */
+  screenplayTransitions: string;
+  /** the PDF's page: US Letter or A4 */
+  screenplayPage: "letter" | "a4";
+  /** scene numbers in both margins of the PDF (a shooting script) */
+  screenplaySceneNumbers: boolean;
+  /** printed under a speech that goes on to the next page */
+  screenplayMore: string;
+  /** printed after the character's name where the speech goes on */
+  screenplayContinued: string;
+  /** the credit line on the title page, above the author */
+  screenplayCredit: string;
+  /** the work property naming what the script is based on; its line is left out when absent */
+  screenplaySourceProperty: string;
+  /** the work property holding the draft date on the title page */
+  screenplayDraftDateProperty: string;
+
   // Submissions (0.8, SF 12; drawn by the submissions module's section, task 3.2)
   /** vault folder of submission notes; kept out of tracking (classify `submission`, task 1.6) */
   submissionsFolder: string;
@@ -247,6 +268,15 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
   coverProperty: "cover",
   epubSceneBreak: "* * *",
   collectionProperty: "contents",
+  screenplaySceneHeadings: "INT, EXT, EST, INT./EXT, INT/EXT, I/E",
+  screenplayTransitions: "TO:",
+  screenplayPage: "letter",
+  screenplaySceneNumbers: false,
+  screenplayMore: "(MORE)",
+  screenplayContinued: "(CONT'D)",
+  screenplayCredit: "Written by",
+  screenplaySourceProperty: "source",
+  screenplayDraftDateProperty: "draftDate",
   submissionsFolder: "Escrita/Submissions",
   submissionResults: "pending, accepted, rejected, withdrawn",
   submissionWorkProperty: "work",
@@ -335,6 +365,12 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   s.lensRulesOff = Array.isArray(s.lensRulesOff) ? s.lensRulesOff.filter((x): x is string => typeof x === "string") : [];
   s.lensRulesOn = Array.isArray(s.lensRulesOn) ? s.lensRulesOn.filter((x): x is string => typeof x === "string") : [];
   s.notNames = typeof s.notNames === "string" ? s.notNames : "";
+  // 1.1 screenplays: a blank word comes back from the install's set; the page is letter unless saved as a4
+  for (const k of ["screenplaySceneHeadings", "screenplayTransitions", "screenplayMore", "screenplayContinued", "screenplayCredit"] as const) {
+    s[k] = (typeof s[k] === "string" ? s[k].trim() : "") || d[k];
+  }
+  s.screenplayPage = s.screenplayPage === "a4" ? "a4" : "letter";
+  s.screenplaySceneNumbers = s.screenplaySceneNumbers === true;
   // a blank scene break would vanish in the book: the default instead
   s.epubSceneBreak = (typeof s.epubSceneBreak === "string" ? s.epubSceneBreak.trim() : "") || DEFAULT_SETTINGS.epubSceneBreak;
   s.templatesFolder = typeof s.templatesFolder === "string" ? s.templatesFolder.trim().replace(/^\/+|\/+$/g, "") : "";
@@ -375,7 +411,8 @@ function clampInt(v: unknown, min: number, max: number, fallback: number): numbe
 /** Frontmatter property names a piece or book is read from; normalizeSettings trims them and restores empty ones. */
 const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadlineProperty", "goalProperty", "povProperty", "chapterTargetProperty",
   "compileProperty", "dedicationProperty", "epigraphProperty", "coverProperty", "collectionProperty",
-  "submissionWorkProperty", "submissionMarketProperty", "submissionSentProperty", "submissionResultProperty", "submissionRespondedProperty"] as const;
+  "submissionWorkProperty", "submissionMarketProperty", "submissionSentProperty", "submissionResultProperty", "submissionRespondedProperty",
+  "screenplaySourceProperty", "screenplayDraftDateProperty"] as const;
 
 /**
  * Which features read each setting (0.7 plan Q13). A row draws while any of them is on;
@@ -407,6 +444,9 @@ export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "a
   compileProperty: ["export"], dedicationProperty: ["export"], epigraphProperty: ["export"], authorProperty: ["export"],
   authorName: ["export"], authorSurname: ["export"], contactLines: ["export"], chapterHeadingFormat: ["export"],
   coverProperty: ["export"], epubSceneBreak: ["export"], collectionProperty: ["export"],
+  screenplaySceneHeadings: ["export"], screenplayTransitions: ["export"], screenplayPage: ["export"], screenplaySceneNumbers: ["export"],
+  screenplayMore: ["export"], screenplayContinued: ["export"], screenplayCredit: ["export"],
+  screenplaySourceProperty: ["export"], screenplayDraftDateProperty: ["export"],
   submissionResults: ["submissions"],
   submissionWorkProperty: ["submissions"], submissionMarketProperty: ["submissions"], submissionSentProperty: ["submissions"],
   submissionResultProperty: ["submissions"], submissionRespondedProperty: ["submissions"],

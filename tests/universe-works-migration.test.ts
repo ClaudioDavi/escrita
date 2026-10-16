@@ -1,10 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { formFor, formOf, formValuesText, groupWorks, parseFormFolders, parseFormValues, type WorkInfo } from "../src/universe/works-list";
+import { formFor, formOf, formValuesText, parseFormFolders, parseFormValues } from "../src/core/form";
+import { groupWorks, type WorkInfo } from "../src/universe/works-list";
 import { planMigration, type MigrationInput } from "../src/universe/migration";
 import { entryFileName, entryFolder, entryPath, entryText, yamlValue } from "../src/universe/new-entry";
 import { defaultUniverseSettings } from "../src/universe/settings";
 
-const forms = { shortStory: "conto", essay: "ensaio", novella: "novela", novel: "romance", poem: "poema", fragment: "fragmento" };
+const forms = { shortStory: "conto", essay: "ensaio", novella: "novela", novel: "romance", poem: "poema", fragment: "fragmento", screenplay: "roteiro" };
 const w = (title: string, stage: WorkInfo["stage"], form: WorkInfo["form"]): WorkInfo => ({ path: `${title}.md`, title, stage, form, role: "note" });
 
 describe("works", () => {
@@ -39,9 +40,13 @@ describe("works", () => {
     expect(g.map((x) => x.form)).toEqual(["shortStory", "novel", null]);
     expect(g[0].works.map((x) => x.title)).toEqual(["B", "Zeta", "A", "Z"]);
   });
+  it("a forms text saved before 1.1 (six words) keeps the screenplay word", () => {
+    expect(parseFormValues("a, b, c, d, e, f", forms).screenplay).toBe("roteiro");
+    expect(formOf("Roteiro", forms)).toBe("screenplay");
+  });
   it("the forms settings field round-trips and keeps a blank item's value", () => {
-    expect(formValuesText(forms)).toBe("conto, ensaio, novela, romance, poema, fragmento");
-    expect(parseFormValues("a, b,, d", forms)).toEqual({ shortStory: "a", essay: "b", novella: "novela", novel: "d", poem: "poema", fragment: "fragmento" });
+    expect(formValuesText(forms)).toBe("conto, ensaio, novela, romance, poema, fragmento, roteiro");
+    expect(parseFormValues("a, b,, d", forms)).toEqual({ shortStory: "a", essay: "b", novella: "novela", novel: "d", poem: "poema", fragment: "fragmento", screenplay: "roteiro" });
   });
 });
 

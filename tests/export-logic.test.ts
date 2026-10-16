@@ -191,7 +191,7 @@ describe("cleanExportChoices", () => {
   it("keeps old entries and drops what is not a choice", () => {
     const out = cleanExportChoices({
       "a.md": { format: "md", preset: "shunn", whole: false },
-      "b.md": { format: "pdf", preset: "shunn", whole: false },
+      "b.md": { format: "rtf", preset: "shunn", whole: false },
       "c.md": { format: "docx", preset: "ptbr", whole: true, chapters: { mode: "range", from: 2.7, to: 5 },
         last: { format: "docx", preset: "ptbr", whole: true, chapters: { mode: "bogus" }, at: "2026-10-05T10:00:00Z", path: "x.docx", chapterCount: 3 } },
       "d.md": { format: "docx", preset: "ptbr", whole: true, chapters: { mode: "pick", paths: ["x", 3] }, last: { format: "docx", preset: "ptbr", whole: true, at: "t", path: "" } },

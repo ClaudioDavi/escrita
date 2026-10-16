@@ -4,6 +4,7 @@ import type { Dismissal } from "./lens/types";
 import type { SeenStore } from "./universe/first-seen";
 import type { PovColor } from "./outline/pov";
 import { safeEntries } from "./core/records";
+import { EXPORT_FORMATS, type ExportFormat } from "./core/export-formats";
 
 /** One book's writing on one day. `total` is the book's word count at the last change that day. */
 export interface DayBook {
@@ -32,9 +33,8 @@ export type ExportSelection =
   | { mode: "range"; from: number; to: number }
   | { mode: "pick"; paths: string[] };
 
-/** The export formats (0.8: Markdown and DOCX; 0.9 adds EPUB, PLAN-0.9 Q5). */
-export type ExportFormat = "md" | "docx" | "epub";
-export const EXPORT_FORMATS: readonly ExportFormat[] = ["md", "docx", "epub"];
+// the formats moved to core in 1.1 (PLAN-1.1 Q3), with the screenplay ones
+export { EXPORT_FORMATS, type ExportFormat };
 
 function isFormat(v: unknown): v is ExportFormat {
   return typeof v === "string" && (EXPORT_FORMATS as readonly string[]).includes(v);

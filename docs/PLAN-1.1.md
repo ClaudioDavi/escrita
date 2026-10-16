@@ -200,6 +200,56 @@ module folder imports another.
 - `docs/IMPROVEMENTS.md`: 46 and the known issues to "Done". `docs/ROADMAP.md`, SP 1 and SP 6:
   shipped; G0d's numbers and the closed 0.7 G0d written down; "Still open after 1.0" cleared.
 
+## Results
+
+### Wave 0 (2026-10-16)
+
+**Contracts (Opus, main loop).**
+
+- `core/form.ts`: the form rule moved from `universe/settings.ts` and `universe/works-list.ts`
+  (`formOf`, `parseFormFolders`, `formFor`, `formValuesText`, `parseFormValues`), with
+  `screenplay` as the seventh kind (`screenplay`, pt-BR `roteiro`). `universe/settings.ts`
+  re-exports `FORM_KINDS` and `FormKind`. `classify()` gives `form` on every placement (null
+  for anything but a Markdown file), read for any kind and stage. The three form keys are
+  optional on `ClassifySettings` and are part of `classifyKey`. A forms text saved before 1.1
+  (six words) keeps the screenplay word. Tests: `tests/classify-form.test.ts`.
+- `core/export-formats.ts`: `ExportFormat` (now with `pdf` and `fountain`, re-exported from
+  `data.ts`), `PROSE_FORMATS`, `SCREENPLAY_FORMATS`, `formatsFor({ single, form })`.
+- `core/fountain.ts`: the `Script` model, `TitlePage`, `FountainOptions`, `fountainOptions(s)`,
+  and a `parseFountain` stub for task B.
+- `core/screenplay-presets.ts`: `ScreenplayPreset`, Letter (55 lines) and A4 (58 lines, a first
+  guess for task C to check), `screenplayPreset(id, settings)`.
+- Settings: `screenplaySceneHeadings`, `screenplayTransitions`, `screenplayPage` (`letter`),
+  `screenplaySceneNumbers` (off), `screenplayMore`, `screenplayContinued`, `screenplayCredit`,
+  `screenplaySourceProperty` (`source`), `screenplayDraftDateProperty` (`draftDate`), all behind
+  the export switch. The transitions and the three labels are word keys: pt-BR has `TO:, PARA:`,
+  `(MAIS)`, `(CONT.)`, `Roteiro de`, and the setup shows them in its language step.
+- **Deviation from Q4:** the title page's author and contact use the export settings that already
+  exist (`authorProperty`, `authorName`, `contactLines`) instead of three more property names.
+  Only the credit line (text), the source and the draft date are new.
+- Strings: the two format names and the "Screenplays" settings group, in both languages. The
+  modal's strings wait for the boards (G1) and come with task F.
+- Fixtures: the 0.9 expected settings and the two setup fixtures gained the new keys and rows;
+  `tests/export-logic.test.ts` used `pdf` as an unknown format and now uses `rtf`.
+
+**S0, the harness spike (Sonnet). Passed.**
+
+- `flatpak run md.obsidian.Obsidian --user-data-dir=<run>/profile --remote-debugging-port=<port>
+  --ozone-platform=headless` starts a second Obsidian with no window; the flatpak wrapper
+  forwards the arguments. CDP is up in 0.5–1 s and the layout is ready in 0.8–1.5 s.
+- The profile's `obsidian.json` opens the vault copy. Restricted mode is a localStorage key
+  (`enable-plugin-<appId>`), so the harness calls `app.plugins.setEnable(true)` after the layout
+  is ready, and Escrita loads without the trust prompt.
+- `escrita:new-work` opens a `.prompt` (suggest), not a `.modal`. A fresh vault shows Escrita's
+  setup notice; fixtures that don't test the setup pre-seed the plugin's `data.json`.
+- A headless window starts at 200×150, so the harness sets a 1280×800 viewport.
+- Cleanup: each launch adds two `flatpak ps` instances (the app and its sandbox); the harness
+  kills only the new ids with `flatpak kill`. The author's `obsidian.json` hash was unchanged
+  and their Obsidian kept running.
+- Vault folders get unique names (`escrita-e2e-<id>`), since the author has a vault named `vault`.
+- The spike is in `e2e/spike/` (`run.mjs`, `NOTES.md`); task E builds the harness on it and
+  removes it.
+
 ## By-hand checks (G2)
 
 What stays by hand is short, and most of it is reading the harness's screenshots:

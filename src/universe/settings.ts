@@ -7,8 +7,9 @@ export type UniverseMode = "off" | "perBook" | "universe";
 export const ENTRY_KINDS = ["character", "place", "object", "group", "event"] as const;
 export type EntryKind = (typeof ENTRY_KINDS)[number];
 
-export const FORM_KINDS = ["shortStory", "essay", "novella", "novel", "poem", "fragment"] as const;
-export type FormKind = (typeof FORM_KINDS)[number];
+// the form rule moved to core in 1.1 (PLAN-1.1 Q1); re-exported for the universe's callers
+import { FORM_DEFAULTS, FORM_KINDS, type FormKind } from "../core/form";
+export { FORM_KINDS, type FormKind };
 
 /** One entry type: the value of the type property, where new entries go and an optional template note. */
 export interface EntryTypeSetting {
@@ -58,15 +59,6 @@ const ENTRY_DEFAULTS: Record<EntryKind, { folder: string; label: string }> = {
   object: { folder: "Objects", label: "Object" },
   group: { folder: "Groups", label: "Group" },
   event: { folder: "Events", label: "Event" },
-};
-
-const FORM_DEFAULTS: Record<FormKind, string> = {
-  shortStory: "short story",
-  essay: "essay",
-  novella: "novella",
-  novel: "novel",
-  poem: "poem",
-  fragment: "fragment",
 };
 
 /** Fresh copies each call, so live settings never share objects with the defaults. */

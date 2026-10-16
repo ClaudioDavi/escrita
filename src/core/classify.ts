@@ -8,6 +8,7 @@ import { folderList, folderListOf } from "./lists";
 import { parentOf } from "./paths";
 import { effectivePiece, parseUnit, readChapterDefault, readPiece, type Piece, type PieceProperties, type PieceUnit } from "./measure";
 import { LANGUAGE_DEFAULTS, isDefaultsLanguage } from "./defaults";
+import { DEFAULT_FORM_PROPERTY, FORM_DEFAULTS, formFor, type FormKind, type FormSettings } from "./form";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, readStatus, stageOf, type Stage, type StageMapping } from "./stages";
 // one direction only: classify imports scope, scope never imports classify (no cycle at load)
 import { inFolder, NO_SCOPE, scopeFor, type Scope, type ScopeLookup, type ScopeMode, type ScopeSettings } from "./scope";
@@ -89,6 +90,14 @@ export interface ClassifySettings extends PieceProperties {
   universeProperty?: string;
   /** the install's default set (1.0): a blank export or submissions folder falls back to its words; missing is "en" */
   defaultsLanguage?: string;
+  /**
+   * The form keys (1.1, PLAN-1.1 Q1): what `Placement.form` reads. EscritaSettings has all
+   * three. Optional so hand-built test settings stay valid: missing means "form", the English
+   * words and no folders.
+   */
+  formProperty?: string;
+  formValues?: FormSettings["formValues"];
+  formFolders?: string;
 }
 
 /** The snapshots folder when the setting is empty or unusable. */
@@ -208,6 +217,13 @@ export interface Placement<F extends Named, D extends Named> {
    * growth rule). The frontmatter read is shared with `piece` and `stage`.
    */
   scope: Scope;
+  /**
+   * The work's form (1.1, PLAN-1.1 Q1): core/form.ts `formFor` on a markdown file's form
+   * property, else its folder's line in `formFolders`. null for anything else, and for a
+   * markdown file with neither. Read for every markdown file, whatever its kind or stage: a
+   * screenplay draft that is not tracked is still a screenplay. A field, never a new kind.
+   */
+  form: FormKind | null;
 }
 
 /**
@@ -269,6 +285,7 @@ export function classifyKey(s: ClassifySettings): string {
     snapshotsRoot(s.snapshotsFolder), submissionsRoot(s.submissionsFolder, s.defaultsLanguage), exportRoot(s.exportFolder, s.defaultsLanguage),
     str(s.statusProperty), s.stages ?? null,
     str(s.targetProperty), str(s.limitProperty), str(s.unitProperty), str(s.deadlineProperty), str(s.chapterTargetProperty),
+    str(s.formProperty), s.formValues ?? null, str(s.formFolders),
   ]);
 }
 
@@ -487,13 +504,19 @@ export function scopeSettings(settings: ClassifySettings): ScopeSettings {
   };
 }
 
+/** A markdown file's form from its frontmatter and folder (PLAN-1.1 Q1); never throws. */
+function formOfFile(path: string, fm: Record<string, unknown> | undefined, settings: ClassifySettings): FormKind | null {
+  const prop = settings.formProperty || DEFAULT_FORM_PROPERTY;
+  return formFor(path, fm?.[prop], { formValues: settings.formValues ?? FORM_DEFAULTS, formFolders: settings.formFolders ?? "" });
+}
+
 /**
  * `p` with its `scope` (never throws; none when the mode is off). Computed at once: a lazy
  * getter (Object.defineProperty per placement) measured slower on the bench than the
  * scope itself, once its frontmatter read is shared with classify's (`own`).
  */
 function withScope<F extends Named, D extends Named>(
-  p: Omit<Placement<F, D>, "scope">, tree: VaultTree<F, D>, settings: ClassifySettings,
+  p: Omit<Placement<F, D>, "scope" | "form"> & { form?: FormKind | null }, tree: VaultTree<F, D>, settings: ClassifySettings,
   own?: { fm: Record<string, unknown> | undefined },
 ): Placement<F, D> {
   let scope: Scope = NO_SCOPE;
@@ -504,7 +527,7 @@ function withScope<F extends Named, D extends Named>(
       // a failing lookup reads as no scope
     }
   }
-  return { ...p, scope };
+  return { ...p, form: p.form ?? null, scope };
 }
 
 /**
@@ -515,7 +538,7 @@ function withScope<F extends Named, D extends Named>(
 export function classify<F extends Named, D extends Named>(
   tree: VaultTree<F, D>, settings: ClassifySettings, path: string | null,
 ): Placement<F, D> {
-  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, pieceSource: null, snapshot: false, stage: null, submission: false, export: false, scope: NO_SCOPE };
+  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, pieceSource: null, snapshot: false, stage: null, submission: false, export: false, scope: NO_SCOPE, form: null };
   if (typeof path !== "string" || path === "") return none;
   if (path === "/") return { ...none, kind: "folder" };
   try {
@@ -545,15 +568,16 @@ export function classify<F extends Named, D extends Named>(
       // The book note comes first: a book note inside another book's folder belongs to its own book.
       const own = markdown ? bookAt(tree, path.slice(0, -3), ch) : null;
       const read = markdown ? { fm } : undefined;
-      if (own) return withScope({ path, kind: "book-note", markdown, book: own, tracked, piece, pieceSource, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false }, tree, settings, read);
+      const form = markdown ? formOfFile(path, fm, settings) : null;
+      if (own) return withScope({ path, kind: "book-note", markdown, book: own, tracked, piece, pieceSource, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false, form }, tree, settings, read);
       const book = ancestorBook(tree, path, ch);
       if (book) {
         // compare against the handle's path, never the settings string
         const kind: Kind = markdown && parentOf(path) === book.chaptersFolder.path ? "chapter" : "book-file";
         const eff = kind === "chapter" ? chapterPieceOf(tree, book, fm, piece, settings) : { piece, source: pieceSource };
-        return withScope({ path, kind, markdown, book, tracked, piece: eff.piece, pieceSource: eff.source, snapshot: false, stage: null, submission: false, export: false }, tree, settings, read);
+        return withScope({ path, kind, markdown, book, tracked, piece: eff.piece, pieceSource: eff.source, snapshot: false, stage: null, submission: false, export: false, form }, tree, settings, read);
       }
-      return withScope({ path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, pieceSource, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false }, tree, settings, read);
+      return withScope({ path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, pieceSource, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false, form }, tree, settings, read);
     }
     if (tree.folder(path)) {
       const own = bookAt(tree, path, ch);

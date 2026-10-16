@@ -11,13 +11,16 @@ const dir = (p: string) => fileURLToPath(new URL(`./fixtures/${p}`, import.meta.
 const read = <T>(p: string): T => JSON.parse(readFileSync(dir(p), "utf8")) as T;
 
 describe("fixtures: settings-0.9", () => {
-  it("parses, and the expected settings add only the two 1.0 settings (setupOffered is data)", () => {
+  it("parses, and the expected settings add only the two 1.0 settings (setupOffered is data) and 1.1's screenplay word", () => {
     const data = read<EscritaData>("settings-0.9/data.json");
     const expected = read<EscritaSettings>("settings-0.9/expected-settings.json");
     expect(data.version).toBe(1);
     const saved = data.settings as unknown as Record<string, unknown>;
     const exp = expected as unknown as Record<string, unknown>;
-    for (const k of Object.keys(saved)) expect(exp[k], k).toEqual(saved[k]);
+    // 1.1 adds one form word (PLAN-1.1 Q1); a 0.9 install's default set is English
+    const { screenplay, ...forms } = expected.formValues;
+    expect(screenplay).toBe("screenplay");
+    for (const k of Object.keys(saved)) expect(k === "formValues" ? forms : exp[k], k).toEqual(saved[k]);
     expect(expected.defaultsLanguage).toBe("en");
     expect(expected.openInWritingMode).toBe(false);
     expect(Object.keys(history(data)).length).toBe(2);
