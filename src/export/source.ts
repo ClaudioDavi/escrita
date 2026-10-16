@@ -6,8 +6,7 @@
 //     → buildExport (reads each part once, through plugin.notes, so unsaved text counts)
 //     → { source: ExportSource, labels, warnings }
 
-import type { EpubCover } from "./writers/epub";
-import type { Author, ExportDoc, ExportPart, ExportSource } from "../core/export-pipeline";
+import type { Author, EpubCover, ExportDoc, ExportPart, ExportSource } from "../core/export-pipeline";
 import { droppedIn, exportDocOf } from "../core/export-pipeline";
 import { segment } from "../core/markdown";
 import { countIn, sumCounts, type Counts, type PieceUnit } from "../core/measure";

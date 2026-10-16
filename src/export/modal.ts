@@ -3,24 +3,20 @@
 // preview (the document the file will have, drawn by the preview writer). Everything it
 // needs from Obsidian comes through `ExportHost`, which index.ts implements.
 import { App, Modal } from "obsidian";
-import type { ExportFormat, ExportSelection, LastExport } from "../data";
+import type { ExportFormat, LastExport } from "../data";
+import { noteName } from "../core/paths";
 import type { ChapterRef } from "../core/book-source";
 import { aboutCount } from "../core/export-pipeline";
 import type { PieceUnit } from "../core/measure";
 import { fmt, lang, plural, t } from "../i18n";
-import { choiceOfLast, planChapters, whenText, dayMonthText, presetLabel, type ChapterPlan } from "./logic";
+import { headingFormat, planChapters, presetLabel, stateOfLast, whenText, type ChapterPlan, type ExportState } from "./logic";
+import { ExistsModal, WhereModal, askChapters, type ExistsAnswer } from "./dialogs";
 import { presetById, PRESETS } from "../core/presets";
 import { needsConfirm, type Built, type Warning } from "./source";
 import { epubLayout } from "./writers/epub";
 import { PreviewWriter } from "./writers/preview";
 
-export interface ModalState {
-  /** the whole book (when there is one), or just the active note */
-  whole: boolean;
-  selection: ExportSelection;
-  format: ExportFormat;
-  preset: string;
-}
+export type ModalState = ExportState;
 
 /** What the modal asks of the module. */
 export interface ExportHost {
@@ -77,11 +73,6 @@ export interface ExportModalOptions {
 
 const FORMATS: ExportFormat[] = ["docx", "md", "epub"];
 
-/** The file name part of a path, without the extension. */
-function baseName(path: string): string {
-  return (path.split("/").pop() ?? path).replace(/\.md$/i, "");
-}
-
 export class ExportModal extends Modal {
   private state: ModalState;
   private view: "options" | "preview" = "options";
@@ -125,7 +116,7 @@ export class ExportModal extends Modal {
   private plan(): ChapterPlan | null {
     const b = this.o.book;
     if (!b || !this.state.whole) return null;
-    const format = b.headingOverride.trim() || presetById(this.state.preset).chapterHeading;
+    const format = headingFormat(b.headingOverride, presetById(this.state.preset).chapterHeading);
     return planChapters(b.chapters, this.state.selection, format, b.unnumberedTitles);
   }
 
@@ -338,7 +329,7 @@ export class ExportModal extends Modal {
       parent.createDiv({
         cls: "escrita-export-hint",
         text: plural("export.chapters.left", plan.left.length, {
-          names: plan.left.map((c) => baseName(c.path)).join(", "),
+          names: plan.left.map((c) => noteName(c.path)).join(", "),
           property: book.compileProperty,
         }),
       });
@@ -496,13 +487,7 @@ export class ExportModal extends Modal {
 
   /** Export again (Q17): the last choices, the same warnings; it runs by itself only when nothing needs a confirmation. */
   private async again(last: LastExport): Promise<void> {
-    const c = choiceOfLast(last);
-    this.state = {
-      whole: this.o.book ? (this.o.book.offerChapter ? c.whole : true) : false,
-      selection: c.chapters ?? { mode: "all" },
-      format: c.format,
-      preset: c.preset,
-    };
+    this.state = stateOfLast(last, this.o.book !== null, this.o.book?.offerChapter ?? false);
     this.render();
     // One build only: a pending timer would start a second one and drop this call's result.
     if (this.timer !== null) { window.clearTimeout(this.timer); this.timer = null; }
@@ -578,74 +563,7 @@ export class ExportModal extends Modal {
   }
 }
 
-// ------------------------------------------------------------------ the chapter picker (board 26 b)
-
-/**
- * Ask which chapters to export. `chapters` is the whole book in order; `headings` has
- * the manuscript heading of each included chapter (a chapter without one is left out
- * by `compile: false` and greyed). Resolves to the ticked paths, in book order, or
- * null when dismissed.
- */
-export function askChapters(app: App, chapters: readonly ChapterRef[], headings: ReadonlyMap<string, string>, checked: ReadonlySet<string>, compileProperty = "compile", collection = false): Promise<string[] | null> {
-  return new Promise((resolve) => new ChaptersModal(app, chapters, headings, checked, resolve, compileProperty, collection).open());
-}
-
-export class ChaptersModal extends Modal {
-  private answer: string[] | null = null;
-  private boxes: { path: string; input: HTMLInputElement }[] = [];
-
-  constructor(
-    app: App,
-    private chapters: readonly ChapterRef[],
-    private headings: ReadonlyMap<string, string>,
-    private checked: ReadonlySet<string>,
-    private done: (v: string[] | null) => void,
-    private compileProperty = "compile",
-    private collection = false,
-  ) {
-    super(app);
-  }
-
-  onOpen(): void {
-    this.setTitle(t(this.collection ? "export.stories" : "export.chapters"));
-    this.modalEl?.addClass("escrita-export-picker");
-    const list = this.contentEl.createDiv({ cls: "escrita-export-picklist" });
-    for (const ref of this.chapters) {
-      const left = !ref.include;
-      const row = list.createEl("label", { cls: "escrita-export-pick" });
-      const input = row.createEl("input", { attr: { type: "checkbox" } });
-      input.checked = !left && this.checked.has(ref.path);
-      input.disabled = left;
-      if (left) row.addClass("is-left");
-      row.createSpan({ cls: "escrita-export-pick-name", text: baseName(ref.path) });
-      row.createSpan({
-        cls: left ? "escrita-export-pick-head escrita-export-mono" : "escrita-export-pick-head",
-        text: left ? `${this.compileProperty}: false` : this.headings.get(ref.path) ?? ref.title,
-      });
-      if (!left) this.boxes.push({ path: ref.path, input });
-    }
-    const buttons = this.contentEl.createDiv({ cls: "modal-button-container" });
-    buttons.createEl("button", { text: t("export.picker.all") }).addEventListener("click", () => this.setAll(true));
-    buttons.createEl("button", { text: t("export.picker.none") }).addEventListener("click", () => this.setAll(false));
-    buttons.createEl("button", { cls: "mod-cta", text: t("export.picker.ok") }).addEventListener("click", () => {
-      this.answer = this.boxes.filter((b) => b.input.checked).map((b) => b.path);
-      this.close();
-    });
-  }
-
-  private setAll(on: boolean): void {
-    for (const b of this.boxes) b.input.checked = on;
-  }
-
-  onClose(): void {
-    this.contentEl.empty();
-    this.done(this.answer);
-  }
-}
-
-// ------------------------------------------------------------------ the file exists (board 26 d)
-
-export type ExistsAnswer = "cancel" | "both" | "replace";
+// ------------------------------------------------------------------ the dialogs' entry points (board 26 d)
 
 /** The file is already there: cancel, keep both (a new name), or replace. Closing the dialog is a cancel. */
 export function askExists(app: App, path: string, mtime: number | null, canReplace = true): Promise<ExistsAnswer> {
@@ -655,60 +573,4 @@ export function askExists(app: App, path: string, mtime: number | null, canRepla
 /** Export again found the last file moved or gone: ask before writing at the usual place. True to write. */
 export function askWhere(app: App, path: string): Promise<boolean> {
   return new Promise((resolve) => new WhereModal(app, path, resolve).open());
-}
-
-class WhereModal extends Modal {
-  private answer = false;
-
-  constructor(app: App, private path: string, private done: (write: boolean) => void) {
-    super(app);
-  }
-
-  onOpen(): void {
-    this.setTitle(t("export.where.title"));
-    this.modalEl?.addClass("escrita-export-exists");
-    const body = this.contentEl.createDiv({ cls: "escrita-export-existsbody" });
-    const [before, after] = t("export.where.ask", { path: "\u0000" }).split("\u0000");
-    body.createSpan({ text: before });
-    body.createSpan({ cls: "escrita-export-mono", text: this.path });
-    body.createSpan({ text: after });
-    const buttons = this.contentEl.createDiv({ cls: "modal-button-container" });
-    buttons.createEl("button", { text: t("export.exists.cancel") }).addEventListener("click", () => this.close());
-    buttons.createEl("button", { cls: "mod-cta", text: t("export.where.write") }).addEventListener("click", () => { this.answer = true; this.close(); });
-  }
-
-  onClose(): void {
-    this.contentEl.empty();
-    this.done(this.answer);
-  }
-}
-
-class ExistsModal extends Modal {
-  private answer: ExistsAnswer = "cancel";
-
-  constructor(app: App, private path: string, private mtime: number | null, private done: (a: ExistsAnswer) => void, private canReplace = true) {
-    super(app);
-  }
-
-  onOpen(): void {
-    this.setTitle(t("export.exists.title"));
-    this.modalEl?.addClass("escrita-export-exists");
-    const date = this.mtime === null ? "" : dayMonthText(new Date(this.mtime), lang());
-    const body = this.contentEl.createDiv({ cls: "escrita-export-existsbody" });
-    const [before, after] = t("export.exists.body", { path: "\u0000", date }).split("\u0000");
-    body.createSpan({ text: before });
-    body.createSpan({ cls: "escrita-export-mono", text: this.path });
-    body.createSpan({ text: after });
-    const buttons = this.contentEl.createDiv({ cls: "modal-button-container" });
-    const pick = (a: ExistsAnswer) => () => { this.answer = a; this.close(); };
-    buttons.createEl("button", { text: t("export.exists.cancel") }).addEventListener("click", pick("cancel"));
-    buttons.createEl("button", { text: t("export.exists.both") }).addEventListener("click", pick("both"));
-    if (this.canReplace) buttons.createEl("button", { cls: "mod-cta", text: t("export.exists.replace") }).addEventListener("click", pick("replace"));
-    else buttons.lastElementChild?.classList.add("mod-cta");
-  }
-
-  onClose(): void {
-    this.contentEl.empty();
-    this.done(this.answer);
-  }
 }

@@ -4,7 +4,7 @@
 // column, not pages: no page breaks, no page numbers. Bands mark where the file starts a
 // page for the front matter and the text. No obsidian imports: createEl and friends are
 // Obsidian's HTMLElement helpers, present in the app and in the tests' DOM setup.
-import { aboutCount, fillTemplate, isBookDoc, type ExportDoc, type ManuscriptWriter, type Preset } from "../../core/export-pipeline";
+import { bylineOf, isBookDoc, titlePageOf, type ExportDoc, type ManuscriptWriter, type Preset } from "../../core/export-pipeline";
 import type { Block, Run } from "../../core/manuscript";
 
 /** CSS pixels per point: a 12 pt manuscript reads at 15 px in the column. */
@@ -50,10 +50,7 @@ function appendRuns(el: HTMLElement, runs: readonly Run[]): void {
 
 /** The title page's count, in the preset's language ("cerca de 18.500 palavras"). */
 export function countLine(doc: ExportDoc, preset: Preset): string {
-  if (doc.count.amount <= 0) return "";
-  return fillTemplate(preset.countLabel[doc.count.unit], {
-    n: new Intl.NumberFormat(preset.language).format(aboutCount(doc.count.amount)),
-  });
+  return titlePageOf(doc, preset).count;
 }
 
 export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
@@ -124,8 +121,8 @@ export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
       if (epub.coverUrl) box.createEl("img", { attr: { src: epub.coverUrl, alt: "" } });
     }
     paper.createDiv({ cls: "escrita-export-title is-epub", text: doc.title });
-    const name = doc.author.name.trim();
-    if (name !== "") paper.createDiv({ cls: "escrita-export-byline", text: fillTemplate(preset.byline, { name }) });
+    const byline = bylineOf(doc.author.name, preset.byline);
+    if (byline !== "") paper.createDiv({ cls: "escrita-export-byline", text: byline });
   }
 
   /** The EPUB's table of contents: after the front matter pages, before the first chapter (Q6). */
@@ -139,8 +136,7 @@ export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
   }
 
   private titlePage(paper: HTMLElement, doc: ExportDoc, preset: Preset): void {
-    const count = countLine(doc, preset);
-    const contact = [doc.author.name.trim(), ...doc.author.contact.map((c) => c.trim())].filter((c) => c !== "");
+    const { contact, count, byline } = titlePageOf(doc, preset);
     if (contact.length > 0 || count !== "") {
       const top = paper.createDiv({ cls: "escrita-export-top" });
       const left = top.createDiv({ cls: "escrita-export-contact" });
@@ -148,8 +144,7 @@ export class PreviewWriter implements ManuscriptWriter<ExportDoc> {
       if (count !== "") top.createDiv({ cls: "escrita-export-count", text: count });
     }
     paper.createDiv({ cls: isBookDoc(doc) ? "escrita-export-title is-book" : "escrita-export-title", text: doc.title });
-    const name = doc.author.name.trim();
-    if (name !== "") paper.createDiv({ cls: "escrita-export-byline", text: fillTemplate(preset.byline, { name }) });
+    if (byline !== "") paper.createDiv({ cls: "escrita-export-byline", text: byline });
   }
 
   private zone(paper: HTMLElement, kind: "dedication" | "epigraph" | "text" | "cover" | "contents"): void {

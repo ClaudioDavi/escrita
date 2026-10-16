@@ -2,7 +2,7 @@
 // Reads only `byline` and `sceneBreak` from the preset (chapter headings arrive
 // formatted on each part); layout fields are the DOCX writer's.
 // Output rules: tests/fixtures/manuscript/README.md.
-import { fillTemplate, isBookDoc, type ExportDoc, type ManuscriptWriter, type Preset } from "../../core/export-pipeline";
+import { isBookDoc, minHeadingOf, titlePageOf, type ExportDoc, type ManuscriptWriter, type Preset } from "../../core/export-pipeline";
 import type { Block, Run } from "../../core/manuscript";
 
 /** Characters that would turn prose into Markdown structure are escaped. */
@@ -94,9 +94,10 @@ function blocksToMarkdown(blocks: readonly Block[], minHeading: number, preset: 
 
 function write(doc: ExportDoc, preset: Preset): string {
   const book = isBookDoc(doc);
-  const minHeading = book ? 3 : 2;
+  const minHeading = minHeadingOf(doc);
   const chunks: string[] = [`# ${escapeText(doc.title)}`];
-  if (doc.author.name.trim() !== "") chunks.push(escapeLead(escapeText(fillTemplate(preset.byline, { name: doc.author.name }))));
+  const { byline } = titlePageOf(doc, preset);
+  if (byline !== "") chunks.push(escapeLead(escapeText(byline)));
   // a novel has a separate title page, a short story starts below its title
   if (book) chunks.push("---");
   for (const part of doc.parts) {

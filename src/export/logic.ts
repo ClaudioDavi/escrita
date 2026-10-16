@@ -46,6 +46,11 @@ export function planChapters(all: readonly ChapterRef[], selection: ExportSelect
   return { chosen, included, left };
 }
 
+/** The chapter heading format: the writer's setting when there is one, else the preset's (Q5). */
+export function headingFormat(override: string, presetHeading: string): string {
+  return override.trim() || presetHeading;
+}
+
 // ------------------------------------------------------------------ names
 
 /** Fixed file-name label of a preset: "Shunn", "pt-BR" (the same in every language). */
@@ -171,6 +176,25 @@ export function whenText(iso: string, locale: string): string {
 /** The choice to repeat: what the last export used. */
 export function choiceOfLast(last: LastExport): ExportChoice {
   return { format: last.format, preset: last.preset, whole: last.whole, chapters: last.chapters, last };
+}
+
+/** What the export modal holds while it is open. */
+export interface ExportState {
+  /** the whole book (when there is one), or just the active note */
+  whole: boolean;
+  selection: ExportSelection;
+  format: ExportFormat;
+  preset: string;
+}
+
+/**
+ * The modal's state for "Export again" (Q17): the last choices. `multi`: the work is a book or
+ * a collection (a single note is never "whole"); `inChapter`: the active note is a chapter, so
+ * "This chapter" was a choice and the last `whole` stands; from the book note it is the whole book.
+ */
+export function stateOfLast(last: LastExport, multi: boolean, inChapter: boolean): ExportState {
+  const c = choiceOfLast(last);
+  return { whole: multi && (inChapter ? c.whole : true), selection: c.chapters ?? { mode: "all" }, format: c.format, preset: c.preset };
 }
 
 // ------------------------------------------------------------------ following renames (Q17)

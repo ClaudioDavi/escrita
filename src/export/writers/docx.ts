@@ -7,35 +7,16 @@
 // starts a new page (`pageBreakBefore` on its first paragraph); for a single note
 // the body starts under the byline on page 1 (README choice 5). The running header
 // ("Surname / Title / page", live PAGE field) shows from page 2 on (`titlePg`).
-import { aboutCount, fillTemplate, isBookDoc, type ExportDoc, type ManuscriptWriter, type Preset } from "../../core/export-pipeline";
+import { fillTemplate, isBookDoc, minHeadingOf, titlePageOf, type ExportDoc, type ManuscriptWriter, type Preset } from "../../core/export-pipeline";
 import type { Block, Run } from "../../core/manuscript";
 import { zipStore } from "../../core/zip";
+import { xmlEscape } from "./xml";
 
 const NS_W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const NS_R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 
 const twips = (pt: number) => Math.round(pt * 20);
-
-// A loop, not a regex: a regex with control characters trips no-control-regex.
-function stripForbidden(s: string): string {
-  let out = "";
-  for (const ch of s) {
-    const c = ch.charCodeAt(0);
-    if (c <= 0x08 || c === 0x0b || c === 0x0c || (c >= 0x0e && c <= 0x1f) || c === 0xfffe || c === 0xffff) continue;
-    out += ch;
-  }
-  return out;
-}
-
-/** XML text: the five entities, and characters XML 1.0 forbids dropped. */
-export function xmlEscape(s: string): string {
-  return stripForbidden(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 function runXml(r: Run): string {
   const props = (r.bold ? "<w:b/>" : "") + (r.italic ? "<w:i/>" : "");
@@ -70,10 +51,7 @@ function blockXml(b: Block, preset: Preset, minHeading: number, pageBreak = fals
 /** The title page lines. `tab` is the right tab stop, the text width. */
 function titlePageXml(doc: ExportDoc, preset: Preset, book: boolean): string {
   const textWidth = twips(preset.page.width - 2 * preset.page.margin);
-  const contact = [doc.author.name.trim(), ...doc.author.contact.map((c) => c.trim())].filter((c) => c !== "");
-  const n = doc.count.amount > 0
-    ? fillTemplate(preset.countLabel[doc.count.unit], { n: new Intl.NumberFormat(preset.language).format(aboutCount(doc.count.amount)) })
-    : "";
+  const { contact, count: n, byline } = titlePageOf(doc, preset);
   const out: string[] = [];
   const tab = `<w:tabs><w:tab w:val="right" w:pos="${textWidth}"/></w:tabs>`;
   const lines = contact.length ? contact : n ? [""] : [];
@@ -84,13 +62,13 @@ function titlePageXml(doc: ExportDoc, preset: Preset, book: boolean): string {
   });
   const before = book ? 4320 : 2880;
   out.push(para(plain(doc.title), { style: "Title", extra: `<w:spacing w:before="${before}"/>` }));
-  if (doc.author.name.trim() !== "") out.push(para(plain(fillTemplate(preset.byline, { name: doc.author.name.trim() })), { style: "Byline" }));
+  if (byline !== "") out.push(para(plain(byline), { style: "Byline" }));
   return out.join("");
 }
 
 function documentXml(doc: ExportDoc, preset: Preset): string {
   const book = isBookDoc(doc);
-  const minHeading = book ? 3 : 2;
+  const minHeading = minHeadingOf(doc);
   const body: string[] = [titlePageXml(doc, preset, book)];
   let wrote = false;
   for (const part of doc.parts) {

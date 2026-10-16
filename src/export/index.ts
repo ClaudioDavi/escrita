@@ -12,18 +12,20 @@ import { storyChapters, type Collection } from "../core/collection";
 import { exportRoot, followFolderSetting } from "../core/classify";
 import { NoteExistsError, FolderBlockedError } from "../core/notes";
 import { macrotaskYield, yieldBudget } from "../core/vault-index";
+import { noteName } from "../core/paths";
 import { lang, t } from "../i18n";
 import {
-  authorOf, canRepeat, choiceOfLast, coverLink, coverMediaType, dropChoices, exportFileName, joinPath, keepBothName, lastInPlace, linkTarget, placeOf, planChapters, renameChoices,
+  authorOf, canRepeat, coverLink, coverMediaType, dropChoices, exportFileName, headingFormat, joinPath, keepBothName, lastInPlace, linkTarget, placeOf, planChapters, renameChoices, stateOfLast,
 } from "./logic";
 import { ExportModal, askExists, askWhere, type BookOptions, type ExportHost, type ModalState } from "./modal";
 import { presetById, presetForLanguage } from "../core/presets";
+import type { EpubCover } from "../core/export-pipeline";
 import type { SettingsBlock } from "../ui/settings-rows";
 import { exportSettingsItems } from "./settings-ui";
 import { buildExport, needsConfirm, sourceKindOf, withWarning, type Built, type ExportPlan, type PartPlan } from "./source";
 import { onFilesMenu } from "./collection-menu";
 import { docxWriter } from "./writers/docx";
-import { epubIdentifier, epubLayout, epubModified, epubWriter, type EpubCover } from "./writers/epub";
+import { epubIdentifier, epubLayout, epubModified, epubWriter } from "./writers/epub";
 import { markdownWriter } from "./writers/markdown";
 
 type Frontmatter = Record<string, unknown>;
@@ -39,8 +41,6 @@ interface Target {
   /** the note lists stories in its collection property (SF 13): exported like a book, whose chapters are the stories; null for a book or a note */
   collection: Collection | null;
 }
-
-const baseName = (path: string): string => (path.split("/").pop() ?? path).replace(/\.md$/i, "");
 
 /**
  * Export (N 7, PLAN-0.8): one "Export…" command for the active note or its book, a
@@ -204,11 +204,11 @@ export class ExportModule extends FeatureModule {
     const base = { placeholderMarker: s.placeholderMarker };
     if (this.multi(target) && state.whole) {
       const holder = target.book ? target.book.note : target.file;
-      const format = s.chapterHeadingFormat.trim() || preset.chapterHeading;
+      const format = headingFormat(s.chapterHeadingFormat, preset.chapterHeading);
       const chapters = planChapters(this.chaptersOf(target), state.selection, format, s.unnumberedTitles);
       const parts: PartPlan[] = [
-        ...this.frontPages(holder.path).map((f): PartPlan => ({ role: f.role, path: f.path, heading: null, title: null, label: baseName(f.path) })),
-        ...chapters.chosen.map((c): PartPlan => ({ role: "body", path: c.ref.path, heading: c.heading, title: c.ref.title, label: baseName(c.ref.path) })),
+        ...this.frontPages(holder.path).map((f): PartPlan => ({ role: f.role, path: f.path, heading: null, title: null, label: noteName(f.path) })),
+        ...chapters.chosen.map((c): PartPlan => ({ role: "body", path: c.ref.path, heading: c.heading, title: c.ref.title, label: noteName(c.ref.path) })),
       ];
       return {
         ...base, single: false, parts,
@@ -305,8 +305,7 @@ export class ExportModule extends FeatureModule {
   }
 
   private stateOfLast(target: Target, last: LastExport): ModalState {
-    const c = choiceOfLast(last);
-    return { whole: this.multi(target) && (target.chapter ? c.whole : true), selection: c.chapters ?? { mode: "all" }, format: c.format, preset: c.preset };
+    return stateOfLast(last, this.multi(target), target.chapter);
   }
 
   /**
