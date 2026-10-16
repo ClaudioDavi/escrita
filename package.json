@@ -11,6 +11,7 @@
     "lint": "eslint src --max-warnings 0",
     "test": "vitest run --project node --project dom && vitest run --project timing",
     "bench": "vitest bench --run --project node tests/perf",
+    "e2e": "playwright test",
     "test:bundle": "ESCRITA_REQUIRE_BUNDLE=1 vitest run tests/no-network.test.ts",
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },

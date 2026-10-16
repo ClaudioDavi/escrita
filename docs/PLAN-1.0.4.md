@@ -195,6 +195,8 @@ module folder imports another.
 
 ## By-hand checks (G2, the author's vault `~/projects/website/escrita/`)
 
+> **Automated (1.1):** checks 1 to 9 run as `e2e/specs/new-work.spec.ts` (`npm run e2e`, see [TESTING.md](TESTING.md)); the light and dark screenshots of check 8 are in its report.
+
 1. Ctrl+P, "Nova obra…": the list shows Conto and Livro with where each goes.
 2. Conto: type a title, Enter. The note opens in the stories folder with status, form,
    blank target and deadline, the beat, and the cursor under it. It shows in "Escrevendo".
