@@ -654,12 +654,13 @@ then pages that start differently; before, then after):
 | printing_trouble | 12 / 12, 0 | 12 / 12, 0 | 12 / 12, 0 | 12 / 12, 0 |
 
 Brick & Steel A4 now agrees with Afterwriting: the indented `CUT TO:` is a transition, and the
-page 3 and 4 differences are gone. Brick & Steel Letter is a new difference, not decided here:
-its tab-indented `JACK` and `DAN` lines are now cues with speeches, as Afterwriting reads them, and
-Escrita's narrower parenthetical column (30 to 55) wraps "(in Vietnamese, subtitled)" onto two
-lines where Afterwriting keeps one, which pushes `THE END` onto a fifth page. With Afterwriting's
-columns (`ESCRITA_COMPARE_AW_COLUMNS=1`) Brick & Steel agrees on both sizes, so the cause is R3
-(columns), not the indent rule. Open: keep R3 for parentheticals too, or widen them.
+page 3 and 4 differences are gone. Brick & Steel Letter is a new difference, decided (2026-10-16): keep ours, R3 (Final Draft's
+parenthetical column, 3.0" to 5.5"). Its tab-indented `JACK` and `DAN` lines are now cues with
+speeches, as Afterwriting reads them, and Escrita's parenthetical column (30 to 55, 25 characters)
+wraps "(in Vietnamese, subtitled)" (26 characters) onto two lines where Afterwriting's wider column
+keeps one, which pushes `THE END` onto a fifth page. Cause confirmed: with Afterwriting's columns
+(`ESCRITA_COMPARE_AW_COLUMNS=1`) Brick & Steel gives 4 / 4 pages and 0 differences on both sizes.
+Pinned in `tests/screenplay-pages.test.ts`, "reference differences, decided".
 
 ## By-hand checks (G2)
 

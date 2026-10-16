@@ -284,6 +284,19 @@ describe("reference differences, decided", () => {
     expect(LETTER.columns.parenthetical).toEqual({ left: 30, right: 55 });
   });
 
+  it("R3, keep ours: a 26-character parenthetical wraps in the 25-wide column (why Brick & Steel is 5 pages on Letter to Afterwriting's 4)", () => {
+    // R3 keeps Final Draft's parenthetical column, 3.0"-5.5" (cols 30-55, 25 characters).
+    // Afterwriting's wider column keeps "(in Vietnamese, subtitled)" on one line, so Brick & Steel
+    // on Letter is 5 pages here and 4 there. With ESCRITA_COMPARE_AW_COLUMNS=1 both give 4.
+    const line = "(in Vietnamese, subtitled)";
+    expect(line).toHaveLength(26);
+    const width = LETTER.columns.parenthetical.right - LETTER.columns.parenthetical.left;
+    expect(width).toBe(25);
+    const [p] = paginate(script(cue("ANA"), paren(line), dialogue("Hello.")), LETTER);
+    const rows = p.rows.filter((r) => r.col === LETTER.columns.parenthetical.left);
+    expect(rows.map(rowText)).toEqual(["(in Vietnamese,", "subtitled)"]);
+  });
+
   it("R4, follow theirs: centered lines with no blank between are one block, with no blank rows inside", () => {
     const s = parsed("> BRICK & STEEL <\n> FULL RETIRED <\n\nAction.");
     expect(s.elements.map((e) => e.type)).toEqual(["action", "action"]);
