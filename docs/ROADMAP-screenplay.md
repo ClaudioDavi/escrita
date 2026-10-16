@@ -60,9 +60,9 @@ help from the editor, but can't hand in the script without a correct PDF.
   "Forms" group after Books, always shown. Nothing saved changes; an old six-value list gains
   `screenplay` on its own. The Works tab has a seventh group, "Screenplays" ("Roteiros" in pt-BR).
 - The parser: `parseFountain` in `core/fountain.ts`, on `segment()`'s lines, with boneyard, the
-  `Title:` block, forced elements, dual dialogue, emphasis and lyrics. Indents follow the Fountain spec
-  (ignored outside action, so a tab-indented `CUT TO:` is a transition), a `---` line is action, an unclosed `/*` is text:
-  nothing is lost. Centered lines with no blank between them are one centered block. The
+  `Title:` block, forced elements, dual dialogue, emphasis and lyrics. Indents follow the Fountain
+  spec (ignored outside action, so a tab-indented `CUT TO:` is a transition), a `---` line is
+  action, an unclosed `/*` is text: nothing is lost. Centered lines with no blank between them are one centered block. The
   Markdown disagreements are pinned in `tests/fountain.test.ts`.
 - Settings (Export section, "Screenplays" group): scene heading prefixes, transition endings,
   page size, scene numbers, the "more" and "continued" labels, the credit line, and the source and

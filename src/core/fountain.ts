@@ -1,8 +1,9 @@
 // A screenplay note read as Fountain (SP 1, PLAN-1.1; no Obsidian imports). The note is
 // Markdown on disk; inside a screenplay note the screenplay wins where Fountain and Markdown
-// disagree (`#` is a section, `>` a transition or centered text, `_x_` underline; leading whitespace is
-// ignored except in action, as Fountain's spec says: PLAN-1.1 Q6). Escrita's `%% … %%` notes are skipped through `segment()`;
-// `[[…]]` stays an Obsidian link, written as its text; boneyard `/* … */` is read here
+// disagree (`#` is a section, `>` a transition or centered text, `_x_` underline; leading
+// whitespace is ignored except in action, as Fountain's spec says: PLAN-1.1 Q6). Escrita's
+// `%% … %%` notes are skipped through `segment()`; `[[…]]` stays an Obsidian link, written as
+// its text; boneyard `/* … */` is read here
 // (Q5). The model is what the Fountain and PDF writers take (src/export/writers/), and
 // core/screenplay-pages.ts paginates it.
 
@@ -304,8 +305,9 @@ interface Draft {
  * action).
  *
  * Reading order of a line, outside a speech: page break, section, synopsis, forced marks (`!`
- * `.` `@` `>` `~`; leading whitespace is ignored), scene heading, transition, character cue, action (an action line keeps a 4-space or tab indent). A
- * speech (cue, then parentheticals and dialogue) runs to the next blank line; a line of only
+ * `.` `@` `>` `~`), scene heading, transition, character cue, action. Leading whitespace is
+ * ignored by every rule; only a line that falls through to action keeps a 4-space or tab indent
+ * (and `!` keeps what follows it as typed, indent included). A speech (cue, then parentheticals and dialogue) runs to the next blank line; a line of only
  * spaces keeps it going. Emphasis in a cue is read, then dropped from `name`.
  */
 export function parseFountain(text: string, md: Markdown, opts: FountainOptions): Script {

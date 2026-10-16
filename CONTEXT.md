@@ -164,7 +164,8 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
 - **Screenplay** (1.1): a single note whose `form` is `screenplay`, written in Fountain. It exports
   as PDF or Fountain only. A book or a collection stays prose even if it holds screenplay notes.
 - **Fountain** (1.1): the plain-text screenplay format (`core/fountain.ts`). Inside a screenplay
-  note it wins over Markdown (`#` is a section, an indented line is action).
+  note it wins over Markdown (`#` is a section, `>` a transition); indents follow the Fountain
+  spec (ignored outside action).
 - **Tracked**: counted by goals (inside track folders, outside exclude folders).
 - Deep/shallow module, seam, locality: as defined at the top of IMPROVEMENTS.md.
 

@@ -244,10 +244,11 @@ Duas coisas que o Escrita não faz. Ele não acrescenta `(CONT.)` quando a mesma
 falar depois de uma linha de ação. Ele não imprime marcas `CONTINUED:` no pé e no alto das
 páginas. Se quiser um `(CONT.)` depois do nome, digite como extensão.
 
-Os recuos seguem a especificação do Fountain: tabs e espaços no começo da linha são ignorados em todo elemento, menos na ação. Um
-`CORTA PARA:` com tab é uma transição, um nome com recuo acima de uma fala é um nome de personagem, e assim por diante. Só uma
-linha que é ação depois de todas as regras mantém o recuo. Para manter como ação uma linha com recuo que parece outro
-elemento, comece-a com `!`.
+Os recuos seguem a especificação do Fountain: tabs e espaços no começo da linha são ignorados
+em todo elemento, menos na ação. Um `CORTA PARA:` com tab é uma transição, um nome com recuo
+acima de uma fala é um nome de personagem, e assim por diante. Só uma linha que é ação depois de
+todas as regras mantém o recuo. Para manter como ação uma linha com recuo que parece outro
+elemento, digite `!` antes do recuo: `!    CORTA PARA:`.
 
 ## Configurações
 
@@ -287,7 +288,7 @@ As linhas de forma ficam num grupo próprio, **Formas**, logo depois de Livros:
 |---|---|---|
 | **Exportar…** oferece DOCX e não PDF | A forma da nota não é roteiro | Defina a propriedade de forma, ou ponha a pasta em **Forma por pasta** |
 | Um livro com roteiros dentro sai como prosa | Só uma nota avulsa é um roteiro | Exporte cada roteiro a partir da própria nota |
-| Uma linha de ação com recuo é lida como nome de personagem, cabeçalho ou transição | Os recuos são ignorados fora da ação, como na especificação do Fountain | Comece a linha com `!` |
+| Uma linha de ação com recuo é lida como nome de personagem, cabeçalho ou transição | Os recuos são ignorados fora da ação, como na especificação do Fountain | Digite `!` antes do recuo |
 | Um nome de personagem é lido como ação | Tem letras minúsculas, ou não há linha logo abaixo | Escreva o nome em maiúsculas, ou comece a linha com `@` |
 | Um cabeçalho é lido como ação | O começo dele não está em **Começos de cabeçalho de cena**, ou não há linha em branco acima | Acrescente o começo, ou inicie a linha com ponto |
 | Uma transição é lida como ação | O final dela não está em **Finais de transição**, ou não há linhas em branco em volta | Acrescente o final, ou inicie a linha com `>` |

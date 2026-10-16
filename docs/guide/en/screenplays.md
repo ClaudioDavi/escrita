@@ -237,10 +237,10 @@ Two things Escrita does not do. It adds no `(CONT'D)` when the same character sp
 a line of action. It prints no `CONTINUED:` marks at the bottom and top of pages. If you want a
 `(CONT'D)` after a cue, type it as an extension.
 
-Indents follow the Fountain spec: leading tabs and spaces are ignored on every line except action. An
-indented `CUT TO:` is a transition, an indented name above a line is a character cue, and so on. Only
-a line that is action after all the rules keeps its indent. To keep an indented line as action even
-when it looks like another element, start it with `!`.
+Indents follow the Fountain spec: leading tabs and spaces are ignored on every line except
+action. An indented `CUT TO:` is a transition, an indented name above a line is a character cue,
+and so on. Only a line that is action after all the rules keeps its indent. To keep an indented
+line as action even when it looks like another element, type `!` before the indent: `!    CUT TO:`.
 
 ## Settings
 
@@ -280,7 +280,7 @@ The form rows are in their own group, **Forms**, right after Books:
 |---|---|---|
 | **Export…** offers DOCX and not PDF | The note's form is not screenplay | Set the form property, or add the folder to **Form by folder** |
 | A book with screenplays in it exports as prose | Only a single note is a screenplay | Export each screenplay from its own note |
-| An indented action line is read as a cue, a heading or a transition | Indents are ignored outside action, as in the Fountain spec | Start the line with `!` |
+| An indented action line is read as a cue, a heading or a transition | Indents are ignored outside action, as in the Fountain spec | Type `!` before the indent |
 | A cue is read as action | It has lowercase letters, or no line right below it | Write the name in capitals, or start the line with `@` |
 | A heading is read as action | Its prefix is not in **Scene heading prefixes**, or no blank line is above it | Add the prefix, or start the line with a period |
 | A transition is read as action | Its ending is not in **Transition endings**, or it has no blank lines around it | Add the ending, or start the line with `>` |

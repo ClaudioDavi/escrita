@@ -74,6 +74,15 @@ describe("action", () => {
     expect(brief("    # Act one\n\n\t= beat\n\n    ===")).toEqual(["section:Act one", "synopsis:beat", "pageBreak:"]);
     expect(brief("\t.forced scene\n\n    >TRANSITION")).toEqual(["scene:forced scene", "transition:TRANSITION"]);
     expect(brief("    @McBride\n    Hi.\n\n    !INT. NOT A SCENE")).toEqual(["character:McBride", "dialogue:Hi.", "action:INT. NOT A SCENE"]);
+   });
+  it("'!' before the indent keeps an indented line as action, indent included; after it, the indent goes", () => {
+    expect(brief("A line.\n\n!\t\tCUT TO:\n\nINT. HOUSE - DAY")).toEqual(["action:A line.", "action:\t\tCUT TO:", "scene:INT. HOUSE - DAY"]);
+    expect(brief("\t\t!CUT TO:")).toEqual(["action:CUT TO:"]);
+  });
+  it("a line of spaces keeps an indented speech going, and an indented '^' cue is dual dialogue", () => {
+    expect(brief("\tBOB\n\tHi.\n  \n\tStill me.")).toEqual(["character:BOB", "dialogue:Hi.", "dialogue:Still me."]);
+    const e = els("BOB\nHi.\n\n\tANN ^\n\tHey.");
+    expect(e[2]).toMatchObject({ type: "character", dual: true });
   });
   it("uppercase text with no dialogue after it is action", () => {
     expect(brief("BANG!")).toEqual(["action:BANG!"]);
