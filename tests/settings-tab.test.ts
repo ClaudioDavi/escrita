@@ -89,7 +89,7 @@ describe("the tab draws from the order list", () => {
   it("with every feature loaded, the headings come in today's order", () => {
     openTab(tabWith().tab);
     const want = ["settings.features", ...groupHeadings, "settings.shared", "settings.books", "settings.forms", "settings.newWorks", "settings.goals", "settings.publishing",
-      "export.settings.heading", "submissions.settings.heading", "settings.outline",
+      "export.settings.heading", "export.settings.screenplay.heading", "submissions.settings.heading", "settings.outline",
       "settings.placeholders", "settings.darlings", "settings.editor", "settings.lens", "settings.lens.rules", "settings.lens.measures",
       "settings.stages", "settings.homeNoteHeading", "settings.snapshots", "universe.settings", "universe.settings.types", "universe.settings.names"];
     expect(headings()).toEqual(want.map((k) => (k.startsWith("group:") ? featureGroupHeading(k.slice(6) as never) : t(k))));

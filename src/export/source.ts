@@ -11,6 +11,7 @@ import { droppedIn, exportDocOf } from "../core/export-pipeline";
 import { segment } from "../core/markdown";
 import { countIn, sumCounts, type Counts, type PieceUnit } from "../core/measure";
 import { readinessOf, type ReadinessId } from "../core/readiness";
+import type { ScreenplayBuilt } from "./screenplay";
 
 /**
  * What an export reads (0.9, PLAN-0.9 Q28), the source choice task 2.7 hands the modal
@@ -79,7 +80,7 @@ export interface WarningLink {
   where: string;
 }
 
-export type WarningId = ReadinessId | "cover" | "embeds" | "missingStories";
+export type WarningId = ReadinessId | "cover" | "embeds" | "missingStories" | "unsupported";
 
 export interface Warning {
   id: WarningId;
@@ -102,13 +103,16 @@ export interface Built {
   warnings: Warning[];
   /** the EPUB cover image (Q8), when the format is EPUB and the cover property gave a usable image */
   cover?: EpubCover | null;
+  /** a single screenplay note (PLAN-1.1 Q3): its script, title page and pages, added by `withScreenplay` */
+  screenplay?: ScreenplayBuilt;
 }
 
-const ORDER: WarningId[] = ["placeholders", "unclosedComment", "unclosedHtmlComment", "unwrittenBeats", "emptyBody", "missingStories", "cover", "embeds"];
+const ORDER: WarningId[] = ["placeholders", "unclosedComment", "unclosedHtmlComment", "unwrittenBeats", "emptyBody", "missingStories", "cover", "unsupported", "embeds"];
 
 /**
  * A warning that comes from outside the readiness checks, spliced in at its place by
- * ORDER (one warning per id): the collection's missing stories (`buildExport`) and an
+ * ORDER (one warning per id): the collection's missing stories (`buildExport`), a PDF's
+ * characters Courier cannot print (`withScreenplay`) and an
  * unusable EPUB cover (the export module, Q8: missing, unreadable, or not JPEG or PNG,
  * `names` holding the link as the note writes it). Either asks for a confirmation like
  * any warning; the export goes on without it.

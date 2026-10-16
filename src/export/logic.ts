@@ -53,10 +53,12 @@ export function headingFormat(override: string, presetHeading: string): string {
 
 // ------------------------------------------------------------------ names
 
-/** Fixed file-name label of a preset: "Shunn", "pt-BR" (the same in every language). */
+/** Fixed file-name label of a preset: "Shunn", "pt-BR", and the screenplay pages "Letter" and "A4" (the same in every language). */
 export function presetLabel(id: string): string {
   if (id === "shunn") return "Shunn";
   if (id === "ptbr") return "pt-BR";
+  if (id === "letter") return "Letter";
+  if (id === "a4") return "A4";
   return id;
 }
 
@@ -66,10 +68,13 @@ export function fileTitle(title: string): string {
   return s === "" ? "Export" : s;
 }
 
-/** `<title>.md`, or `<title> (<preset>).docx` / `.epub` (Q3; D2: an EPUB names its preset as DOCX does). */
+/**
+ * `<title>.md` or `<title>.fountain` (no page: Fountain has none), or `<title> (<preset>).docx` /
+ * `.epub` / `.pdf` (Q3; D2: an EPUB names its preset as DOCX does; a PDF names its page, "(A4)").
+ */
 export function exportFileName(title: string, format: ExportFormat, preset: string): string {
   const base = fileTitle(title);
-  if (format === "md") return `${base}.md`;
+  if (format === "md" || format === "fountain") return `${base}.${format}`;
   return `${base} (${presetLabel(preset)}).${format}`;
 }
 
@@ -79,10 +84,10 @@ export function stamp(d: Date): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}h${p(d.getMinutes())}`;
 }
 
-/** The keep-both name: `<title> (<preset>) YYYY-MM-DD HHhMM.docx` (or `.epub`), or `<title> YYYY-MM-DD HHhMM.md`. */
+/** The keep-both name: `<title> (<preset>) YYYY-MM-DD HHhMM.docx` (or `.epub`, `.pdf`), or `<title> YYYY-MM-DD HHhMM.md` (`.fountain`). */
 export function keepBothName(title: string, format: ExportFormat, preset: string, at: Date): string {
   const base = fileTitle(title);
-  if (format === "md") return `${base} ${stamp(at)}.md`;
+  if (format === "md" || format === "fountain") return `${base} ${stamp(at)}.${format}`;
   return `${base} (${presetLabel(preset)}) ${stamp(at)}.${format}`;
 }
 
@@ -183,7 +188,12 @@ export interface ExportState {
   whole: boolean;
   selection: ExportSelection;
   format: ExportFormat;
+  /** a prose template id, or for a screenplay the page: "letter" or "a4" */
   preset: string;
+  /** PDF of a screenplay: numbers in both margins of every scene heading (not remembered: the setting is the default) */
+  sceneNumbers?: boolean;
+  /** Fountain: the `%% … %%` notes go in the file as `[[notes]]` (not remembered) */
+  keepNotes?: boolean;
 }
 
 /**

@@ -204,14 +204,15 @@ describe("export lifecycle", () => {
   it("draws its settings rows, one per key, under the heading the tab draws", () => {
     resetSettingLog();
     const blocks = module.settingsItems({ defaults: () => DEFAULT_SETTINGS, saveOnCommit: () => {}, save: async () => {}, redraw: () => {}, num: (v: string) => Number(v) } as unknown as SettingsUi);
-    expect(blocks.map((b) => b.heading)).toEqual([undefined]);
+    expect(blocks.map((b) => b.heading)).toEqual([undefined, "Screenplays"]);
     renderBlocks(blocks);
     expect(settingLog.map((r) => r.name)).toEqual([
       "Left-out property", "Dedication property", "Epigraph property", "Author property",
       "Author name", "Surname for the header", "Contact lines", "Chapter heading",
       "Cover property", "EPUB scene break", "Collection property",
+      "Screenplays", "Scene heading prefixes", "Transition endings", "Page size", "Scene numbers",
+      "Continues label", "Continued label", "Credit line", "Source property", "Draft date property",
     ]);
-    expect(settingLog.some((r) => r.heading)).toBe(false);
   });
 });
 
@@ -885,5 +886,133 @@ describe("the export folder follows a rename", () => {
     // an unrelated folder leaves the setting alone
     f.moved?.("Other", "Other2");
     expect(plugin.settings.exportFolder).toBe("Escrita/Saídas");
+  });
+});
+
+describe("a screenplay's export (PLAN-1.1 Q3)", () => {
+  const SCRIPT = "Roteiros/O farol.md";
+  const TEXT = "%% beat: João sobe %%\n\nEXT. FAROL - NOITE\n\nO vento empurra a porta.\n\n%% conferir a escada %%\n\nJOÃO\n(sem fôlego)\nTrinta anos subindo isso.\n\n%% XXX: cor da capa %%";
+  const place = (path: string, over: Record<string, unknown> = {}) => {
+    placement[path] = { path, kind: "note", book: null, snapshot: false, submission: false, export: false, form: "screenplay", ...over };
+  };
+  beforeEach(() => {
+    addFile(SCRIPT, TEXT, { form: "roteiro", source: "o conto \"A ilha\"" });
+    place(SCRIPT);
+    active = vaultFiles.get(SCRIPT)!;
+  });
+  const openIt = () => { run("export"); return opts(); };
+  const sstate = (over: Partial<ModalState> = {}): ModalState => ({ whole: false, selection: { mode: "all" }, format: "pdf", preset: "a4", sceneNumbers: false, keepNotes: false, ...over });
+
+  it("offers PDF then Fountain, the page from the setting, the checkboxes from the settings", () => {
+    plugin.settings.authorName = "Ana Souza";
+    const o = openIt();
+    expect(o.formats).toEqual(["pdf", "fountain"]);
+    expect(o.script).toEqual({ credit: "Written by" });
+    expect(o.state).toEqual({ whole: false, selection: { mode: "all" }, format: "pdf", preset: "letter", sceneNumbers: false, keepNotes: false });
+    plugin.settings.screenplayPage = "a4";
+    plugin.settings.screenplaySceneNumbers = true;
+    expect(openIt().state).toMatchObject({ preset: "a4", sceneNumbers: true, keepNotes: false });
+  });
+
+  it("remembers the page and the format of each script; a choice of the other kind is not used", () => {
+    plugin.data.exportChoices[SCRIPT] = { format: "fountain", preset: "a4", whole: false };
+    expect(openIt().state).toMatchObject({ format: "fountain", preset: "a4" });
+    plugin.data.exportChoices[SCRIPT] = { format: "docx", preset: "shunn", whole: false };
+    expect(openIt().state).toMatchObject({ format: "pdf", preset: "letter" });
+    // the other way: a prose note whose old choice was a PDF
+    placement[CONTO] = { path: CONTO, kind: "note", book: null, snapshot: false, submission: false, export: false, form: "shortStory" };
+    active = vaultFiles.get(CONTO)!;
+    plugin.data.exportChoices[CONTO] = { format: "pdf", preset: "a4", whole: false };
+    const o = openIt();
+    expect(o.formats).toEqual(["docx", "md", "epub"]);
+    expect(o.script).toBeNull();
+    expect(o.state).toEqual({ whole: false, selection: { mode: "all" }, format: "docx", preset: "shunn" });
+  });
+
+  it("a script inside a book, or a book note, exports as prose", () => {
+    addBook();
+    for (const p of CH) placement[p] = { ...(placement[p] as object), form: "screenplay" };
+    active = vaultFiles.get(CH[1])!;
+    expect(openIt().formats).toEqual(["docx", "md", "epub"]);
+    expect(opts().script).toBeNull();
+  });
+
+  it("names the file after the page and Fountain with none", () => {
+    openIt();
+    expect(host().pathFor(sstate({ preset: "letter" }))).toBe("Escrita/Exports/O farol (Letter).pdf");
+    expect(host().pathFor(sstate())).toBe("Escrita/Exports/O farol (A4).pdf");
+    expect(host().pathFor(sstate({ format: "fountain" }))).toBe("Escrita/Exports/O farol.fountain");
+  });
+
+  it("builds the script, the title page and the pages; the XXX marker still warns", async () => {
+    plugin.settings.authorName = "Ana Souza";
+    openIt();
+    const built = await host().build(sstate());
+    expect(built.screenplay!.script.elements.map((e) => e.type)).toEqual(["scene", "action", "character", "parenthetical", "dialogue"]);
+    expect(built.screenplay!.titlePage).toMatchObject({ title: "O farol", credit: "Written by", author: "Ana Souza", source: "o conto \"A ilha\"" });
+    expect(built.screenplay!.pdf!.pages).toBe(2);
+    expect(built.warnings.map((w) => w.id)).toEqual(["placeholders", "unwrittenBeats"].slice(0, 1));
+    const fountain = await host().build(sstate({ format: "fountain" }));
+    expect(fountain.screenplay!.pdf).toBeNull();
+  });
+
+  it("writes a PDF, remembers the page and the page count, and says so", async () => {
+    openIt();
+    const s = sstate();
+    expect(await host().write(s, await host().build(s))).toBe(true);
+    expect(created).toHaveLength(1);
+    expect(created[0].path).toBe("Escrita/Exports/O farol (A4).pdf");
+    expect(new TextDecoder("latin1").decode((created[0].data as Uint8Array).slice(0, 8))).toBe("%PDF-1.4");
+    const choice = plugin.data.exportChoices[SCRIPT];
+    expect(choice).toMatchObject({ format: "pdf", preset: "a4", whole: false });
+    expect(choice.last).toMatchObject({ format: "pdf", preset: "a4", chapterCount: 2, path: "Escrita/Exports/O farol (A4).pdf" });
+    expect(noticeLog.at(-1)).toBe("Exported: O farol (A4).pdf, 2 pages.");
+    expect(openIt().state).toMatchObject({ format: "pdf", preset: "a4" });
+    expect(opts().last).not.toBeNull();
+  });
+
+  it("writes Fountain with the notes only when asked, never Escrita's markers", async () => {
+    openIt();
+    const plain = sstate({ format: "fountain" });
+    await host().write(plain, await host().build(plain));
+    const text = created[0].data as string;
+    expect(created[0].path).toBe("Escrita/Exports/O farol.fountain");
+    expect(text).toContain("Title: O farol");
+    expect(text).toContain("EXT. FAROL - NOITE");
+    expect(text).not.toMatch(/\[\[|beat|XXX/);
+    created.length = 0;
+    const keep = sstate({ format: "fountain", keepNotes: true });
+    await host().write(keep, await host().build(keep));
+    const kept = created[0].data as string;
+    expect(kept).toContain("[[conferir a escada]]");
+    expect(kept).not.toMatch(/beat|XXX/);
+  });
+
+  it("scene numbers reach the PDF (the written file has them in both margins)", async () => {
+    addFile(SCRIPT, "INT. A - DIA\n\nx\n\nINT. B - DIA\n\ny", { form: "roteiro" });
+    openIt();
+    const with_ = sstate({ sceneNumbers: true });
+    const without = sstate({ sceneNumbers: false });
+    await host().write(with_, await host().build(with_));
+    await host().write(without, await host().build(without), false).catch(() => {});
+    const bytes = (i: number) => new TextDecoder("latin1").decode(created[i].data as Uint8Array);
+    expect(bytes(0)).not.toBe(bytes(1));
+  });
+
+  it("Export again: a last export of the other kind is not offered", () => {
+    plugin.data.exportChoices[SCRIPT] = { format: "docx", preset: "shunn", whole: false, last: { format: "docx", preset: "shunn", whole: false, chapters: { mode: "all" }, at: "t", path: "x.docx" } };
+    expect(run("export-again", true)).toBe(false);
+    plugin.data.exportChoices[SCRIPT] = { format: "pdf", preset: "a4", whole: false, last: { format: "pdf", preset: "a4", whole: false, chapters: { mode: "all" }, at: "t", path: "x.pdf" } };
+    expect(run("export-again", true)).toBe(true);
+  });
+});
+
+describe("front matter properties", () => {
+  it("the dedication and epigraph properties are read like the others, ignoring case", () => {
+    addBook();
+    fm[BOOK_NOTE] = { Dedication: "[[Dedicatória]]", author: "Beto Lima" };
+    active = vaultFiles.get(BOOK_NOTE)!;
+    run("export");
+    expect(opts().book!.front).toEqual(["dedication"]);
   });
 });

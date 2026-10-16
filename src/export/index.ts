@@ -4,7 +4,11 @@ import { FeatureModule } from "../core/module-context";
 import type { SettingsUi } from "../core/module-context";
 import type { FeatureId } from "../core/features";
 import type { Follower } from "../core/vault-index";
-import type { ExportChoice, ExportSelection, LastExport } from "../data";
+import type { ExportChoice, ExportFormat, ExportSelection, LastExport } from "../data";
+import { formatsFor, isScreenplayFormat } from "../core/export-formats";
+import type { FormKind } from "../core/form";
+import { fountainOptions } from "../core/fountain";
+import { SCREENPLAY_PAGES } from "../core/screenplay-presets";
 import { chapterTitle } from "../core/book";
 import { bookSource, collectionAt, type Book } from "../core/books";
 import { propertyValue, type BookSource, type ChapterRef } from "../core/book-source";
@@ -13,20 +17,21 @@ import { exportRoot, followFolderSetting } from "../core/classify";
 import { NoteExistsError, FolderBlockedError } from "../core/notes";
 import { macrotaskYield, yieldBudget } from "../core/vault-index";
 import { noteName } from "../core/paths";
-import { lang, t } from "../i18n";
+import { fmt, lang, plural, t } from "../i18n";
 import {
   authorOf, canRepeat, coverLink, coverMediaType, dropChoices, exportFileName, headingFormat, joinPath, keepBothName, lastInPlace, linkTarget, placeOf, planChapters, renameChoices, stateOfLast,
 } from "./logic";
 import { ExportModal, askExists, askWhere, type BookOptions, type ExportHost, type ModalState } from "./modal";
 import { presetById, presetForLanguage } from "../core/presets";
+import { pageOf, withScreenplay } from "./screenplay";
+import { screenplayPreset } from "../core/screenplay-presets";
 import type { EpubCover } from "../core/export-pipeline";
 import type { SettingsBlock } from "../ui/settings-rows";
 import { exportSettingsItems } from "./settings-ui";
 import { buildExport, needsConfirm, sourceKindOf, withWarning, type Built, type ExportPlan, type PartPlan } from "./source";
 import { onFilesMenu } from "./collection-menu";
-import { docxWriter } from "./writers/docx";
-import { epubIdentifier, epubLayout, epubModified, epubWriter } from "./writers/epub";
-import { markdownWriter } from "./writers/markdown";
+import { epubIdentifier, epubModified } from "./writers/epub";
+import { WRITERS } from "./writers/table";
 
 type Frontmatter = Record<string, unknown>;
 
@@ -40,6 +45,8 @@ interface Target {
   key: string;
   /** the note lists stories in its collection property (SF 13): exported like a book, whose chapters are the stories; null for a book or a note */
   collection: Collection | null;
+  /** the file's form (1.1): a single note whose form is a screenplay exports as a script (PLAN-1.1 Q3) */
+  form: FormKind | null;
 }
 
 /**
@@ -123,9 +130,19 @@ export class ExportModule extends FeatureModule {
     const collection = collectionAt(this.plugin.app, file, () => this.plugin.settings);
     const kind = sourceKindOf(place, collection !== null);
     if (kind === "book" && place.book) {
-      return { file, book: place.book, chapter: place.kind === "chapter", key: place.book.note.path, collection: null };
+      return { file, book: place.book, chapter: place.kind === "chapter", key: place.book.note.path, collection: null, form: place.form };
     }
-    return { file, book: null, chapter: false, key: file.path, collection: kind === "collection" ? collection : null };
+    return { file, book: null, chapter: false, key: file.path, collection: kind === "collection" ? collection : null, form: place.form };
+  }
+
+  /** The formats this target offers (Q3): PDF and Fountain for a single screenplay note, else the prose ones. */
+  private formatsOf(target: Target): readonly ExportFormat[] {
+    return formatsFor({ single: !this.multi(target), form: target.form });
+  }
+
+  /** A single screenplay note: exported as a script. */
+  private isScript(target: Target): boolean {
+    return isScreenplayFormat(this.formatsOf(target)[0]);
   }
 
   /** A book or a collection: an export of several parts, whose "whole" is the choice. */
@@ -146,7 +163,8 @@ export class ExportModule extends FeatureModule {
   private lastOf(target: Target): LastExport | null {
     const choice = this.plugin.data.exportChoices[target.key];
     const last = choice?.last;
-    if (!last) return null;
+    // a work whose form changed since (a note made a screenplay, or not) starts again
+    if (!last || !this.formatsOf(target).includes(last.format)) return null;
     if (!last.whole && choice.chapters) return { ...last, chapters: choice.chapters };
     return last;
   }
@@ -168,12 +186,22 @@ export class ExportModule extends FeatureModule {
 
   /** The modal's starting state: the work's remembered choices, else the defaults. */
   private stateOf(target: Target, choice: ExportChoice | undefined): ModalState {
-    return {
+    const formats = this.formatsOf(target);
+    // a remembered choice of the other kind (the note's form changed) is not used
+    const kept = choice && formats.includes(choice.format) ? choice : undefined;
+    const script = this.isScript(target);
+    const page = kept && (SCREENPLAY_PAGES as readonly string[]).includes(kept.preset) ? kept.preset : this.plugin.settings.screenplayPage;
+    return this.withScriptChoices(target, {
       whole: this.multi(target) && (target.chapter ? choice?.whole ?? true : true),
       selection: choice?.chapters ?? { mode: "all" },
-      format: choice?.format ?? "docx",
-      preset: choice?.preset ?? presetForLanguage(lang()).id,
-    };
+      format: kept?.format ?? formats[0],
+      preset: script ? page : kept?.preset ?? presetForLanguage(lang()).id,
+    });
+  }
+
+  /** A script's two checkboxes start from the settings (they are not remembered per work). */
+  private withScriptChoices(target: Target, state: ModalState): ModalState {
+    return this.isScript(target) ? { ...state, sceneNumbers: this.plugin.settings.screenplaySceneNumbers, keepNotes: false } : state;
   }
 
   /** The front matter pages that exist (Q7) of a book note or a collection note: the property links to a note. */
@@ -182,7 +210,7 @@ export class ExportModule extends FeatureModule {
     const fm = this.frontmatter(notePath);
     const out: { role: "dedication" | "epigraph"; path: string }[] = [];
     for (const [role, prop] of [["dedication", settings.dedicationProperty], ["epigraph", settings.epigraphProperty]] as const) {
-      const link = linkTarget(fm[prop.trim()]);
+      const link = linkTarget(propertyValue(fm, prop.trim()));
       if (link === null) continue;
       const dest = app.metadataCache.getFirstLinkpathDest(link, notePath);
       if (dest instanceof TFile && dest.extension === "md") out.push({ role, path: dest.path });
@@ -248,6 +276,12 @@ export class ExportModule extends FeatureModule {
       },
       checkpoint,
     });
+    if (this.isScript(target)) {
+      const path = target.file.path;
+      return withScreenplay(await building, {
+        state, settings: p.settings, title: plan.title, frontmatter: this.frontmatter(path), preset: presetForLanguage(lang()),
+      });
+    }
     if (state.format !== "epub") return building;
     const [built, { cover, name }] = await Promise.all([building, this.readCover(target, state)]);
     if (name === null) return { ...built, cover };
@@ -300,12 +334,13 @@ export class ExportModule extends FeatureModule {
     }
     new ExportModal(this.plugin.app, {
       book, state, last, marker: s.placeholderMarker, epubSceneBreak: s.epubSceneBreak,
+      formats: this.formatsOf(target), script: this.isScript(target) ? { credit: s.screenplayCredit } : null,
       host: this.host(target),
     }).open();
   }
 
   private stateOfLast(target: Target, last: LastExport): ModalState {
-    return stateOfLast(last, this.multi(target), target.chapter);
+    return this.withScriptChoices(target, stateOfLast(last, this.multi(target), target.chapter));
   }
 
   /**
@@ -388,18 +423,30 @@ export class ExportModule extends FeatureModule {
    */
   private async write(target: Target, state: ModalState, built: Built, again = false): Promise<boolean> {
     const p = this.plugin;
-    const preset = presetById(state.preset);
     const title = this.titleFor(target, state);
     const path = this.pathFor(title, state);
     let data: string | Uint8Array;
     try {
-      if (state.format === "epub") {
-        // the identifier is the work's: a book note's or a note's path with the title, so a re-export keeps its id
-        data = epubWriter.write(
-          { doc: built.doc, identifier: epubIdentifier(target.key, title), modified: epubModified(new Date()), cover: built.cover ?? null },
-          epubLayout(preset, p.settings.epubSceneBreak),
-        );
-      } else data = (state.format === "docx" ? docxWriter : markdownWriter).write(built.doc, preset);
+      const writer = WRITERS[state.format];
+      if (writer.kind === "script") {
+        const sp = built.screenplay;
+        if (!sp) throw new Error("not a screenplay build");
+        data = writer.write({
+          script: { script: sp.script, titlePage: sp.titlePage },
+          page: screenplayPreset(pageOf(state.preset), {
+            screenplayMore: p.settings.screenplayMore, screenplayContinued: p.settings.screenplayContinued, screenplaySceneNumbers: state.sceneNumbers === true,
+          }),
+          words: fountainOptions(p.settings),
+          notes: state.keepNotes === true ? sp.notes : [],
+        });
+      } else {
+        data = writer.write({
+          doc: built.doc,
+          preset: presetById(state.preset),
+          // the identifier is the work's: a book note's or a note's path with the title, so a re-export keeps its id
+          epub: { identifier: epubIdentifier(target.key, title), modified: epubModified(new Date()), cover: built.cover ?? null, sceneBreak: p.settings.epubSceneBreak },
+        });
+      }
     } catch (e) {
       console.error("Escrita: couldn't format the export", e);
       new Notice(t("export.error"));
@@ -413,7 +460,7 @@ export class ExportModule extends FeatureModule {
       if (last && prior instanceof TFile && lastInPlace(last) && p.books.classify(prior.path).export) {
         file = (await p.notes.create(last.path, data, { exists: "replace" })).file;
         this.remember(target, state, built, file.path);
-        this.done(file);
+        this.done(file, state, built);
         return true;
       }
       // moved or gone: always ask where to write, even when nothing sits at the usual place
@@ -453,7 +500,7 @@ export class ExportModule extends FeatureModule {
       return false;
     }
     this.remember(target, state, built, file.path);
-    this.done(file);
+    this.done(file, state, built);
     return true;
   }
 
@@ -470,6 +517,8 @@ export class ExportModule extends FeatureModule {
     };
     if (!book) last.source = target.file.path;
     if (book) last.chapterCount = built.source.parts.filter((x) => x.role === "body").length;
+    // a PDF keeps its page count in the same field: the unit of the export (chapters of a book, pages of a script)
+    else if (built.screenplay?.pdf && state.format === "pdf") last.chapterCount = built.screenplay.pdf.pages;
     data.exportChoices[target.key] = {
       format: state.format,
       preset: state.preset,
@@ -481,8 +530,9 @@ export class ExportModule extends FeatureModule {
   }
 
   /** The notice after writing (board 26 e): the name and a way to the folder. */
-  private done(file: TFile): void {
-    const msg = t("export.done", { name: file.name });
+  private done(file: TFile, state: ModalState, built: Built): void {
+    const pages = state.format === "pdf" ? built.screenplay?.pdf?.pages : undefined;
+    const msg = pages !== undefined ? plural("export.done.pdf", pages, { name: file.name, n: fmt(pages) }) : t("export.done", { name: file.name });
     if (typeof createFragment === "undefined") {
       new Notice(msg);
       return;

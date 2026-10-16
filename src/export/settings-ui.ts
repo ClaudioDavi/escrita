@@ -1,7 +1,7 @@
 import { t } from "../i18n";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
-import { textAreaRow, textRow, type SettingsBlock } from "../ui/settings-rows";
+import { dropdownRow, textAreaRow, textRow, toggleRow, type SettingsBlock } from "../ui/settings-rows";
 
 type PropertyKey = "compileProperty" | "dedicationProperty" | "epigraphProperty" | "authorProperty" | "coverProperty" | "epubSceneBreak" | "collectionProperty";
 
@@ -55,5 +55,45 @@ export function exportSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): Sett
       property("epubSceneBreak", "epubBreak"),
       property("collectionProperty", "collection"),
     ],
+  }, {
+    // the "Screenplays" group (board 44 b, PLAN-1.1 Q4): the title page's author and contact are the rows above
+    heading: t("export.settings.screenplay.heading"),
+    items: screenplayItems(ui, plugin),
   }];
+}
+
+type ScreenplayTextKey = "screenplaySceneHeadings" | "screenplayTransitions" | "screenplayMore" | "screenplayContinued" | "screenplayCredit" | "screenplaySourceProperty" | "screenplayDraftDateProperty";
+
+function screenplayItems(ui: SettingsUi, plugin: EscritaPlugin): SettingsBlock["items"] {
+  const s = plugin.settings;
+  const text = (key: ScreenplayTextKey, name: string) => textRow(ui, {
+    name: t(`export.settings.screenplay.${name}`),
+    desc: t(`export.settings.screenplay.${name}.desc`),
+    key,
+    placeholder: ui.defaults()[key],
+    get: () => s[key],
+    set: (v) => { s[key] = v; },
+  });
+  return [
+    text("screenplaySceneHeadings", "sceneHeadings"),
+    text("screenplayTransitions", "transitions"),
+    dropdownRow(ui, {
+      name: t("export.settings.screenplay.page"),
+      desc: t("export.settings.screenplay.page.desc"),
+      options: [["letter", t("export.settings.screenplay.page.letter")], ["a4", t("export.settings.screenplay.page.a4")]],
+      get: () => s.screenplayPage,
+      set: (v) => { s.screenplayPage = v; },
+    }),
+    toggleRow(ui, {
+      name: t("export.settings.screenplay.sceneNumbers"),
+      desc: t("export.settings.screenplay.sceneNumbers.desc"),
+      get: () => s.screenplaySceneNumbers,
+      set: (v) => { s.screenplaySceneNumbers = v; },
+    }),
+    text("screenplayMore", "more"),
+    text("screenplayContinued", "continued"),
+    text("screenplayCredit", "credit"),
+    text("screenplaySourceProperty", "source"),
+    text("screenplayDraftDateProperty", "draftDate"),
+  ];
 }
