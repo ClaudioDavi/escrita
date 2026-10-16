@@ -5,7 +5,7 @@ IMPROVEMENTS 46 (export writers share the title page; the modal splits), the fiv
 and an end-to-end check harness that drives Obsidian with Playwright, so the by-hand checks run
 by themselves. Written 2026-10-16 on `main` at `6ed0efd` (1.0.4). **Approved 2026-10-16:** every
 question as recommended (G0), including copying the author's vault into the run folder for G2c.
-The export boards wait for mockups (G1). The waves run as workflows, on branch `1.1`.
+Boards 43 and 44 approved 2026-10-16 (G1). The waves run as workflows, on branch `1.1`.
 
 **Goal:** a writer marks a note as a screenplay, writes it in plain Fountain, and exports a PDF
 in industry format (and a `.fountain` file) that a contest or producer accepts. Separately,
@@ -140,7 +140,9 @@ aliases go.
 
 - **G0** (before Wave 0): the questions answered. **Passed** 2026-10-16: all as recommended.
 - **G1** (before the export UI in Wave 2): the boards for the screenplay export modal and the
-  "Screenplays" settings group approved on the design canvas.
+  "Screenplays" settings group approved on the design canvas. **Passed** 2026-10-16: boards 43 (exporting a
+  screenplay: the modal, Fountain, the warnings, the PDF preview) and 44 (the note, the
+  "Screenplays" group in Export, the Forms rows in the books slot).
 - **S0** (Wave 0, the harness spike): a script starts the flatpak Obsidian with its own profile,
   attaches, loads Escrita in a vault copy, runs `escrita:new-work`, reads the modal's DOM, takes
   a screenshot and quits, leaving the author's Obsidian and config untouched. It also says
