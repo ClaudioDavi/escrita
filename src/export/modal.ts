@@ -13,6 +13,7 @@ import { headingFormat, planChapters, presetLabel, stateOfLast, whenText, type C
 import { ExistsModal, WhereModal, askChapters, type ExistsAnswer } from "./dialogs";
 import { presetById, PRESETS } from "../core/presets";
 import { needsConfirm, type Built, type Warning } from "./source";
+import { drawScriptPages } from "./script-preview";
 import { epubLayout } from "./writers/epub";
 import { PreviewWriter } from "./writers/preview";
 
@@ -68,10 +69,14 @@ export interface ExportModalOptions {
   marker: string;
   /** the `epubSceneBreak` setting, for the EPUB preview */
   epubSceneBreak: string;
+  /** the formats this source offers, in order (core/export-formats `formatsFor`) */
+  formats: readonly ExportFormat[];
+  /** a single screenplay note (boards 43): the page, scene numbers and notes rows, and the credit line the title page shows; null for prose */
+  script: { credit: string } | null;
   host: ExportHost;
 }
 
-const FORMATS: ExportFormat[] = ["docx", "md", "epub"];
+const PAGES = ["letter", "a4"] as const;
 
 export class ExportModal extends Modal {
   private state: ModalState;
@@ -123,7 +128,8 @@ export class ExportModal extends Modal {
   private key(): string {
     const s = this.state;
     // an EPUB reads its cover too, so it is built apart from the same text in another format
-    return JSON.stringify([s.whole, s.whole ? s.selection : null, s.preset, s.format === "epub"]);
+    // a PDF's pages depend on the page and the scene numbers; the notes only matter when writing
+    return JSON.stringify([s.whole, s.whole ? s.selection : null, s.preset, s.format === "epub", s.format === "pdf" ? s.sceneNumbers === true : null]);
   }
 
   private emptyChoice(): boolean {
@@ -222,24 +228,28 @@ export class ExportModal extends Modal {
     }
     if (book && this.state.whole) this.renderChapters(this.field(t(book.collection ? "export.stories" : "export.chapters")), book);
 
+    const formats = this.o.formats;
     const format = this.field(t("export.format"));
-    this.chips(format, t("export.format"), FORMATS.map((f) => ({ label: t(`export.format.${f}`), on: this.state.format === f })), (i) => {
-      const wasEpub = this.state.format === "epub";
-      this.state.format = FORMATS[i];
+    this.chips(format, t("export.format"), formats.map((f) => ({ label: t(`export.format.${f}`), on: this.state.format === f })), (i) => {
+      const was = this.state.format;
+      this.state.format = formats[i];
       this.render();
-      // the cover is read for an EPUB only: build again when the format crosses that line
-      if (wasEpub !== (this.state.format === "epub")) this.changed();
+      // the cover is read for an EPUB only, and a PDF's pages for a PDF: build again when the format crosses that line
+      if ((was === "epub") !== (this.state.format === "epub") || (was === "pdf") !== (this.state.format === "pdf")) this.changed();
     });
-    const preset = this.field(t("export.preset"));
-    // the template of the UI language comes first (board 26: pt-BR leads for a Portuguese writer)
-    const presets = [...PRESETS].sort((a, b) => Number(b.language === lang()) - Number(a.language === lang()));
-    this.chips(preset, t("export.preset"), presets.map((p) => ({
-      label: t(`export.preset.${p.id}`), hint: t(`export.preset.${p.id}.hint`), on: this.state.preset === p.id,
-    })), (i) => {
-      this.state.preset = presets[i].id;
-      this.render();
-      this.changed();
-    });
+    if (this.o.script) this.renderScriptOptions();
+    else {
+      const preset = this.field(t("export.preset"));
+      // the template of the UI language comes first (board 26: pt-BR leads for a Portuguese writer)
+      const presets = [...PRESETS].sort((a, b) => Number(b.language === lang()) - Number(a.language === lang()));
+      this.chips(preset, t("export.preset"), presets.map((p) => ({
+        label: t(`export.preset.${p.id}`), hint: t(`export.preset.${p.id}.hint`), on: this.state.preset === p.id,
+      })), (i) => {
+        this.state.preset = presets[i].id;
+        this.render();
+        this.changed();
+      });
+    }
 
     const whereBox = contentEl.createDiv({ cls: "escrita-export-wherebox" });
     const where = whereBox.createDiv({ cls: "escrita-export-where" });
@@ -247,6 +257,38 @@ export class ExportModal extends Modal {
     const footer = contentEl.createDiv({ cls: "escrita-export-footer" });
     this.dyn = { warn, where, last, footer };
     this.refresh();
+  }
+
+  /** A screenplay's rows (board 43 a, b): the page and scene numbers for a PDF, the notes for Fountain. */
+  private renderScriptOptions(): void {
+    if (this.state.format === "pdf") {
+      const page = this.field(t("export.page"));
+      this.chips(page, t("export.page"), PAGES.map((id) => ({
+        label: t(`export.page.${id}`), hint: t(`export.page.${id}.hint`), on: this.state.preset === id,
+      })), (i) => {
+        this.state.preset = PAGES[i];
+        this.render();
+        this.changed();
+      });
+      this.checkbox(t("export.sceneNumbers"), this.state.sceneNumbers === true, (on) => {
+        this.state.sceneNumbers = on;
+        this.render();
+        this.changed();
+      });
+    } else {
+      // the notes only change what is written, not what is read: nothing to build again
+      this.checkbox(t("export.keepNotes"), this.state.keepNotes === true, (on) => {
+        this.state.keepNotes = on;
+        this.render();
+      });
+    }
+  }
+
+  private checkbox(label: string, on: boolean, pick: (on: boolean) => void): void {
+    const b = this.contentEl.createEl("button", { cls: "escrita-export-check", attr: { role: "checkbox", "aria-checked": String(on) } });
+    b.createSpan({ cls: `escrita-export-box${on ? " is-on" : ""}` });
+    b.createSpan({ text: label });
+    b.addEventListener("click", () => pick(!on));
   }
 
   private field(label: string): HTMLElement {
@@ -412,6 +454,7 @@ export class ExportModal extends Modal {
       case "unclosedHtmlComment": return t("export.warn.unclosedHtmlComment");
       case "emptyBody": return t("export.warn.emptyBody");
       case "cover": return t("export.warn.cover", { names });
+      case "unsupported": return plural("export.warn.unsupported", w.n, { names });
       case "missingStories": return plural("export.warn.missingStories", w.n, { names: w.names.map((n) => `[[${n}]]`).join(", ") });
     }
   }
@@ -425,6 +468,10 @@ export class ExportModal extends Modal {
     el.createSpan({ text: after });
     const built = this.built;
     if (!built) return;
+    if (this.o.script) {
+      this.drawScriptWhere(el, built);
+      return;
+    }
     const count = this.aboutText(built.source.count.amount, built.source.count.unit);
     const book = this.o.book !== null && this.state.whole;
     let sentence: string;
@@ -441,6 +488,22 @@ export class ExportModal extends Modal {
     el.createSpan({ text: ` ${sentence}` });
   }
 
+  /** The "Writes" box of a script (board 43 a, b): the PDF's page count and title page, or what Fountain is. */
+  private drawScriptWhere(el: HTMLElement, built: Built): void {
+    if (this.state.format === "fountain") {
+      // the path sits inside the sentence, which carries on after it (board 43 b)
+      el.empty();
+      const [before, after] = t("export.where.fountain", { path: "\u0000" }).split("\u0000");
+      el.createSpan({ text: before });
+      el.createSpan({ cls: "escrita-export-mono", text: this.o.host.pathFor(this.state) });
+      el.createSpan({ text: after });
+      return;
+    }
+    const pages = built.screenplay?.pdf?.pages;
+    if (pages === undefined) return;
+    el.createSpan({ text: ` ${plural("export.where.pdf", pages, { n: fmt(pages), credit: this.o.script?.credit ?? "" })}` });
+  }
+
   private aboutText(amount: number, unit: PieceUnit): string {
     return t(`export.about.${unit}`, { n: fmt(aboutCount(amount)) });
   }
@@ -449,8 +512,10 @@ export class ExportModal extends Modal {
     el.empty();
     const last = this.o.last;
     if (!last) return;
-    const parts = [t(`export.format.${last.format}`), presetLabel(last.preset)];
-    if (last.chapterCount !== undefined) parts.push(plural("export.last.chapters", last.chapterCount));
+    const parts = [t(`export.format.${last.format}`)];
+    if (last.format !== "fountain") parts.push(presetLabel(last.preset));
+    // the count is chapters for a book and pages for a PDF
+    if (last.chapterCount !== undefined) parts.push(plural(last.format === "pdf" ? "export.last.pages" : "export.last.chapters", last.chapterCount));
     const text = t("export.last", { summary: parts.join(" · "), when: whenText(last.at, lang()) });
     el.createSpan({ text });
     const name = last.path.split("/").pop() ?? last.path;
@@ -477,9 +542,12 @@ export class ExportModal extends Modal {
     }
     const right = el.createDiv({ cls: "modal-button-container escrita-export-buttons" });
     right.createEl("button", { text: t("export.cancel") }).addEventListener("click", () => this.close());
-    const preview = right.createEl("button", { text: t("export.previewButton") });
-    preview.disabled = !this.canExport();
-    preview.addEventListener("click", () => { this.view = "preview"; this.render(); });
+    // Fountain has no pages to preview (board 43 b)
+    if (!(this.o.script && this.state.format === "fountain")) {
+      const preview = right.createEl("button", { text: t("export.previewButton") });
+      preview.disabled = !this.canExport();
+      preview.addEventListener("click", () => { this.view = "preview"; this.render(); });
+    }
     const go = right.createEl("button", { cls: "mod-cta", text: this.primaryText() });
     go.disabled = !this.canExport();
     go.addEventListener("click", () => { void this.doExport(); });
@@ -487,7 +555,7 @@ export class ExportModal extends Modal {
 
   /** Export again (Q17): the last choices, the same warnings; it runs by itself only when nothing needs a confirmation. */
   private async again(last: LastExport): Promise<void> {
-    this.state = stateOfLast(last, this.o.book !== null, this.o.book?.offerChapter ?? false);
+    this.state = { ...stateOfLast(last, this.o.book !== null, this.o.book?.offerChapter ?? false), sceneNumbers: this.state.sceneNumbers, keepNotes: this.state.keepNotes };
     this.render();
     // One build only: a pending timer would start a second one and drop this call's result.
     if (this.timer !== null) { window.clearTimeout(this.timer); this.timer = null; }
@@ -529,12 +597,22 @@ export class ExportModal extends Modal {
     const plan = this.plan();
     const summary = [t(`export.format.${this.state.format}`), presetLabel(this.state.preset)];
     if (plan) summary.push(plural("export.last.chapters", plan.chosen.length));
+    const pdf = this.built?.screenplay?.pdf;
+    if (pdf) summary.push(plural("export.last.pages", pdf.pages));
     head.createSpan({ cls: "escrita-export-crumb escrita-export-psummary", text: summary.join(" · ") });
 
     const scroll = contentEl.createDiv({ cls: "escrita-export-scroll", attr: { role: "document", "aria-label": t("export.preview.label") } });
     const built = this.built;
     if (!built) scroll.createDiv({ cls: "escrita-export-muted", text: t("export.reading") });
-    else {
+    else if (built.screenplay) {
+      const path = built.paths[0];
+      drawScriptPages(scroll, built.screenplay, {
+        titlePage: t("export.preview.titlePage"),
+        page: (n) => t("export.preview.page", { n: fmt(n) }),
+        tip: (line) => t("export.preview.tip", { where: built.labels[0] ?? "", line: fmt(line + 1) }),
+        open: (line) => { if (path) { this.close(); this.o.host.jump(path, line); } },
+      });
+    } else {
       const epub = this.state.format === "epub";
       const layout = epubLayout(presetById(this.state.preset), this.o.epubSceneBreak);
       // the last preview's cover URL goes with its image (the preview is drawn anew)

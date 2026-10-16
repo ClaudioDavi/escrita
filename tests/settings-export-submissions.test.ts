@@ -20,15 +20,16 @@ beforeEach(() => resetSettingLog());
 const plugin = (over: Partial<EscritaSettings> = {}) => ({ settings: { ...DEFAULT_SETTINGS, ...over } as EscritaSettings });
 
 describe("export settings items", () => {
-  it("are one block without a heading, with the rows in today's order", () => {
+  it("are the manuscript rows in today's order, then the Screenplays group (1.1)", () => {
     const { ui } = fakeUi();
     const blocks = exportSettingsItems(ui, plugin() as never);
-    expect(blocks.map((b) => b.heading)).toEqual([undefined]);
+    expect(blocks.map((b) => b.heading)).toEqual([undefined, t("export.settings.screenplay.heading")]);
     renderBlocks(blocks);
     expect(settingLog.map((r) => r.name)).toEqual([
-      "compile", "dedication", "epigraph", "authorProperty", "authorName", "authorSurname", "contact", "heading.format", "cover", "epubBreak", "collection",
-    ].map((k) => t(`export.settings.${k}`)));
-    expect(settingLog.some((r) => r.heading)).toBe(false);
+      ...["compile", "dedication", "epigraph", "authorProperty", "authorName", "authorSurname", "contact", "heading.format", "cover", "epubBreak", "collection"].map((k) => `export.settings.${k}`),
+      "export.settings.screenplay.heading",
+      ...["sceneHeadings", "transitions", "page", "sceneNumbers", "more", "continued", "credit", "source", "draftDate"].map((k) => `export.settings.screenplay.${k}`),
+    ].map((k) => t(k)));
   });
 
   it("a property commits and saves once; blank falls back to the install's default", () => {
@@ -52,6 +53,41 @@ describe("export settings items", () => {
       commit(rowNamed(groups, t(`export.settings.${name}`))!.setting.components[0], "");
       expect(p.settings[key]).toBe("");
     }
+  });
+});
+
+describe("the Screenplays group (1.1, board 44 b)", () => {
+  const row = (groups: ReturnType<typeof renderBlocks>["groups"], name: string) => rowNamed(groups, t(`export.settings.screenplay.${name}`))!.setting;
+
+  it("draws the nine rows, all named for the settings search, with the descriptions", () => {
+    const { ui } = fakeUi();
+    const { groups } = renderBlocks(exportSettingsItems(ui, plugin() as never));
+    for (const k of ["sceneHeadings", "transitions", "page", "sceneNumbers", "more", "continued", "credit", "source", "draftDate"]) {
+      expect(row(groups, k).row.desc).toBe(t(`export.settings.screenplay.${k}.desc`));
+    }
+  });
+
+  it("the page is a dropdown and the scene numbers a toggle, both saved at once", async () => {
+    const p = plugin();
+    const { ui, save } = fakeUi();
+    const { groups } = renderBlocks(exportSettingsItems(ui, p as never));
+    await row(groups, "page").components[0].fire("a4");
+    expect(p.settings.screenplayPage).toBe("a4");
+    await row(groups, "sceneNumbers").components[0].fire(true);
+    expect(p.settings.screenplaySceneNumbers).toBe(true);
+    expect(save).toHaveBeenCalledTimes(2);
+  });
+
+  it("a cleared word falls back to the install's own, in its language", () => {
+    const p = plugin({ ...defaultsFor("pt-BR"), defaultsLanguage: "pt-BR", screenplayMore: "(x)", screenplayTransitions: "x:" });
+    const { ui } = fakeUi("pt-BR");
+    const { groups } = renderBlocks(exportSettingsItems(ui, p as never));
+    commit(row(groups, "more").components[0], "");
+    commit(row(groups, "transitions").components[0], " ");
+    commit(row(groups, "credit").components[0], " Escrito por ");
+    expect(p.settings.screenplayMore).toBe("(MAIS)");
+    expect(p.settings.screenplayTransitions).toBe("TO:, PARA:");
+    expect(p.settings.screenplayCredit).toBe("Escrito por");
   });
 });
 
