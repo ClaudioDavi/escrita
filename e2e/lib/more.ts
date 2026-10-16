@@ -19,13 +19,17 @@ export async function settingsPage(app: App, tabId = "escrita"): Promise<Page> {
   await app.openSettings(tabId);
   let found: Page | undefined;
   await app.waitFor("the settings window", async () => {
-    for (const p of app.page.context().pages()) {
-      if (p === app.page) continue;
+    // on a phone the settings are a modal of the main window; on desktop a window of their own
+    for (const p of [...app.page.context().pages().filter((x) => x !== app.page), app.page]) {
       if ((await p.locator(".vertical-tab-content").count().catch(() => 0)) > 0) { found = p; return true; }
     }
     return false;
   });
-  await found!.setViewportSize({ width: 1100, height: 800 }).catch(() => { /* a window that cannot be resized keeps its size */ });
+  const phone = await app.page.evaluate(() => document.body.classList.contains("is-mobile"));
+  if (phone) await settle(1200); // the phone's settings slide from the list to the tab
+  if (found !== app.page) {
+    await found!.setViewportSize(phone ? { width: 390, height: 844 } : { width: 1100, height: 800 }).catch(() => { /* a window that cannot be resized keeps its size */ });
+  }
   return found!;
 }
 
@@ -99,4 +103,27 @@ export function overlappingPairs(scope: Locator, selector = "*"): Promise<string
     }
     return out;
   }, selector);
+}
+
+/**
+ * The innermost elements under `scopeSelector` that stick out of its right edge or the window's
+ * (an element whose children stick out too is left out, so the list names the cause, not the chain).
+ */
+export function stickingOut(page: Page, scopeSelector = "body"): Promise<string[]> {
+  return page.evaluate((sel) => {
+    const scope = document.querySelector(sel) as HTMLElement | null;
+    if (!scope) return [`no ${sel}`];
+    const edge = Math.min(scope.getBoundingClientRect().right, window.innerWidth);
+    const out = (el: Element) => {
+      const r = (el as HTMLElement).getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && !el.closest("[aria-hidden=true], .is-measuring") && r.right > edge + 1 && getComputedStyle(el).position !== "fixed";
+    };
+    const found: string[] = [];
+    for (const el of scope.querySelectorAll("*")) {
+      if (!out(el) || [...el.children].some(out)) continue;
+      const r = (el as HTMLElement).getBoundingClientRect();
+      found.push(`${el.tagName.toLowerCase()}.${String((el as HTMLElement).className).split(" ").join(".")} "${(el.textContent ?? "").slice(0, 30)}" right=${Math.round(r.right)} edge=${Math.round(edge)}`);
+    }
+    return found.slice(0, 12);
+  }, scopeSelector);
 }
