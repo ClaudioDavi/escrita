@@ -2,14 +2,15 @@ import { listsPath } from "./lens/settings";
 import { cleanWeekdays, mergeDefaults } from "./core/merge";
 import { migrateSettings } from "./core/migrate";
 import { presetSwitches } from "./core/feature-presets";
-import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, normalizeStages, type StageMapping } from "./core/stages";
+import { DEFAULT_STATUS_PROPERTY, normalizeStages, type StageMapping } from "./core/stages";
 import { FEATURE_SPECS, cleanFeatures, type FeatureId } from "./core/features";
 import { switchesOf } from "./core/feature-registry";
-import { defaultUniverseSettings, normalizeUniverse, type UniverseSettings } from "./universe/settings";
-import { DEFAULT_SNAPSHOTS_FOLDER, snapshotsRoot } from "./core/classify";
+import { normalizeUniverse, type UniverseSettings } from "./universe/settings";
+import { snapshotsRoot } from "./core/classify";
 import { isDefaultsLanguage, languageOf, overlayDefaults, type DefaultsLanguage } from "./core/defaults";
 import { cleanFolder } from "./core/paths";
-import { DEFAULT_FORM_PROPERTY, FORM_DEFAULTS, FORM_KINDS, type FormSettings } from "./core/form";
+import { FORM_KINDS, type FormSettings } from "./core/form";
+import { SETTING_FEATURES, schemaDefaults } from "./core/settings-schema";
 
 export type ParagraphStyle = "single" | "blank";
 export type Scope = "books" | "all";
@@ -214,120 +215,8 @@ export interface EscritaSettings extends UniverseSettings, FormSettings {
   defaultsLanguage: DefaultsLanguage;
 }
 
-export const DEFAULT_SETTINGS: EscritaSettings = {
-  chaptersFolder: "Chapters",
-  chapterTemplate: "",
-  templatesFolder: "",
-  storiesFolder: "",
-  storyTemplate: "",
-  booksFolder: "",
-  bookNoteTemplate: "",
-  numberPadding: 2,
-  unnumberedTitles: "Prologue, Preface, Foreword, Introduction, Interlude, Epilogue, Afterword",
-  statusProperty: "status",
-  stages: DEFAULT_STAGES,
-  otherStatusColors: "",
-  draftNewNotes: true,
-  homeNote: "",
-  openHomeOnStartup: false,
-  openInWritingMode: false,
-  summaryProperty: "summary",
-
-  dailyGoal: 1000,
-  dayEndsAt: 0,
-  trackFolders: "",
-  excludeFolders: "Templates",
-  ignoreJumpsOver: 1500,
-  showStatusBar: true,
-  explorerCounts: true,
-  explorerFolderTotals: false,
-  explorerShowTarget: false,
-  sprintMinutes: 25,
-  sprintTarget: 500,
-  targetProperty: "target",
-  limitProperty: "limit",
-  unitProperty: "unit",
-  deadlineProperty: "deadline",
-  goalProperty: "goal",
-  povProperty: "pov",
-  chapterTargetProperty: "chapterTarget",
-  features: {},
-  weekdaysOff: [],
-  datesOff: "",
-
-  dateProperty: "date",
-  recommendedProperties: "description",
-  exportFolder: "Escrita/Exports",
-  compileProperty: "compile",
-  dedicationProperty: "dedication",
-  epigraphProperty: "epigraph",
-  authorProperty: "author",
-  authorName: "",
-  authorSurname: "",
-  contactLines: "",
-  chapterHeadingFormat: "",
-  coverProperty: "cover",
-  epubSceneBreak: "* * *",
-  collectionProperty: "contents",
-  screenplaySceneHeadings: "INT, EXT, EST, INT./EXT, INT/EXT, I/E",
-  screenplayTransitions: "TO:",
-  screenplayPage: "letter",
-  screenplaySceneNumbers: false,
-  screenplayMore: "(MORE)",
-  screenplayContinued: "(CONT'D)",
-  screenplayCredit: "Written by",
-  screenplaySourceProperty: "source",
-  screenplayDraftDateProperty: "draftDate",
-  submissionsFolder: "Escrita/Submissions",
-  submissionResults: "pending, accepted, rejected, withdrawn",
-  submissionWorkProperty: "work",
-  submissionMarketProperty: "market",
-  submissionSentProperty: "sent",
-  submissionResultProperty: "result",
-  submissionRespondedProperty: "responded",
-
-  snapshotsFolder: DEFAULT_SNAPSHOTS_FOLDER,
-  snapshotBeforeFirstEdit: false,
-  snapshotsKeepAuto: 20,
-
-  ghostBeats: true,
-
-  placeholderMarker: "XXX",
-  showExplorerDots: true,
-
-  threadKeyword: "thread",
-
-  darlingsNote: "Darlings.md",
-  globalDarlingsNote: "Darlings.md",
-
-  enterFlow: false,
-  paragraphStyle: "blank",
-  smartTypography: true,
-  typographyScope: "books",
-  quoteStyle: "curly",
-  dialogueDash: true,
-  spellcheckOnDemand: false,
-
-  lensLanguage: "auto",
-  lensListsNote: "",
-  lensEchoWindow: 40,
-  lensLongSentence: 45,
-  lensRulesOff: [],
-  lensRulesOn: [],
-  notNames: "",
-  lensSkipQuotes: true,
-  lensShowDialogue: true,
-  lensShowReadability: true,
-
-  defaultsLanguage: "en",
-
-  // the form rule's settings (1.1.1: they moved from the universe's block to core/form)
-  formProperty: DEFAULT_FORM_PROPERTY,
-  formValues: { ...FORM_DEFAULTS },
-  formFolders: "",
-
-  ...defaultUniverseSettings(),
-};
+/** Every English default, from the settings table (core/settings-schema.ts). */
+export const DEFAULT_SETTINGS: EscritaSettings = schemaDefaults();
 
 /**
  * DEFAULT_SETTINGS with one language's default set laid over it (core/defaults.ts): what
@@ -423,61 +312,14 @@ function clampInt(v: unknown, min: number, max: number, fallback: number): numbe
   return typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(min, Math.round(v))) : fallback;
 }
 
-/** Frontmatter property names a piece or book is read from; normalizeSettings trims them and restores empty ones. */
+/** Frontmatter property names a piece or book is read from; normalizeSettings trims them and restores empty ones (step 4 of the settings table replaces this list). */
 const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadlineProperty", "goalProperty", "povProperty", "chapterTargetProperty",
   "compileProperty", "dedicationProperty", "epigraphProperty", "coverProperty", "collectionProperty",
   "submissionWorkProperty", "submissionMarketProperty", "submissionSentProperty", "submissionResultProperty", "submissionRespondedProperty",
   "screenplaySourceProperty", "screenplayDraftDateProperty"] as const;
 
-/**
- * Which features read each setting (0.7 plan Q13). A row draws while any of them is on;
- * "always" rows are shared core (the classifier, the stages, the property names several
- * features read). A section whose rows are all hidden is not drawn. The switches
- * themselves (`features`, `explorerCounts`, `spellcheckOnDemand`, `universeMode`) and
- * the universe section's own rows (universe/settings-ui.ts) are not listed here.
- */
-export const SETTING_FEATURES: Readonly<Record<string, readonly FeatureId[] | "always">> = {
-  chaptersFolder: "always", chapterTemplate: "always", numberPadding: "always", unnumberedTitles: ["export", "outline"],
-  statusProperty: "always", summaryProperty: "always", stages: "always", otherStatusColors: "always", draftNewNotes: "always",
-  lensLanguage: "always",
-  targetProperty: "always", limitProperty: "always", unitProperty: "always", deadlineProperty: "always",
-  goalProperty: "always", povProperty: "always", chapterTargetProperty: "always",
-  trackFolders: "always", excludeFolders: "always",
-  formProperty: "always", formValues: "always", formFolders: "always",
-  templatesFolder: ["templates", "universe"],
-  storiesFolder: "always", storyTemplate: "always", booksFolder: ["outline"], bookNoteTemplate: ["outline"],
-  homeNote: ["desk"], openHomeOnStartup: ["desk"], openInWritingMode: ["desk"],
-  // shared core (it picks the fallback of every word-bearing setting); no row in 1.0
-  defaultsLanguage: "always",
-  dailyGoal: ["goals"], dayEndsAt: ["goals", "darlings", "snapshots", "publish"],
-  ignoreJumpsOver: ["goals"], sprintMinutes: ["goals"], sprintTarget: ["goals"], showStatusBar: ["goals"],
-  weekdaysOff: ["goals"], datesOff: ["goals"],
-  explorerFolderTotals: ["explorerCounts"], explorerShowTarget: ["explorerCounts"],
-  dateProperty: ["publish"], recommendedProperties: ["publish"],
-  // 0.8: the folders are read by the classifier; the rest belong to the export and submissions modules
-  // (their rows are drawn by those modules' sections, tasks 3.1 and 3.2)
-  exportFolder: "always", submissionsFolder: "always",
-  compileProperty: ["export"], dedicationProperty: ["export"], epigraphProperty: ["export"], authorProperty: ["export"],
-  authorName: ["export"], authorSurname: ["export"], contactLines: ["export"], chapterHeadingFormat: ["export"],
-  coverProperty: ["export"], epubSceneBreak: ["export"], collectionProperty: ["export"],
-  screenplaySceneHeadings: ["export"], screenplayTransitions: ["export"], screenplayPage: ["export"], screenplaySceneNumbers: ["export"],
-  screenplayMore: ["export"], screenplayContinued: ["export"], screenplayCredit: ["export"],
-  screenplaySourceProperty: ["export"], screenplayDraftDateProperty: ["export"],
-  submissionResults: ["submissions"],
-  submissionWorkProperty: ["submissions"], submissionMarketProperty: ["submissions"], submissionSentProperty: ["submissions"],
-  submissionResultProperty: ["submissions"], submissionRespondedProperty: ["submissions"],
-  snapshotsFolder: ["snapshots"], snapshotBeforeFirstEdit: ["snapshots"], snapshotsKeepAuto: ["snapshots"],
-  ghostBeats: ["outline"],
-  placeholderMarker: ["placeholders", "publish"], showExplorerDots: ["placeholders"],
-  threadKeyword: ["threads"],
-  darlingsNote: ["darlings"], globalDarlingsNote: ["darlings"],
-  enterFlow: ["typing"], smartTypography: ["typing"], typographyScope: ["typing"], dialogueDash: ["typing"],
-  paragraphStyle: ["typing", "dialogueFocus", "moveBlocks", "lens"],
-  quoteStyle: ["typing", "dialogueFocus", "lens"],
-  lensListsNote: ["lens"], lensEchoWindow: ["lens"], lensLongSentence: ["lens"], lensRulesOff: ["lens"],
-  lensRulesOn: ["lens"], notNames: ["lens"],
-  lensSkipQuotes: ["lens"], lensShowDialogue: ["lens"], lensShowReadability: ["lens"],
-};
+// Which features read each setting lives in the settings table (readBy); re-exported for the tab.
+export { SETTING_FEATURES };
 
 /** Does a row of this setting draw, with these features on? */
 export function rowShown(key: string, want: ReadonlySet<FeatureId>): boolean {

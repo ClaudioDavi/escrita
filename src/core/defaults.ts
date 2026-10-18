@@ -20,8 +20,7 @@
 // and `normalizeSettings` restores a blank field from the same set.
 
 import type { EscritaSettings } from "../settings";
-import { DEFAULT_STAGES, STAGES, type StageMapping } from "./stages";
-import { ENTRY_KINDS, type EntryKind, type EntryTypeSetting } from "./entry-kinds";
+import { SETTINGS_SCHEMA, cloneValue, type KeysWith } from "./settings-schema";
 import { DEFAULTS_LANGUAGES, isDefaultsLanguage, languageOf, type DefaultsLanguage } from "./language";
 
 export { DEFAULTS_LANGUAGES, isDefaultsLanguage, languageOf, type DefaultsLanguage };
@@ -59,84 +58,18 @@ export type WordKey = typeof WORD_KEYS[number];
 export const INSTALL_KEYS = ["snapshotsFolder", "excludeFolders"] as const;
 export type InstallKey = typeof INSTALL_KEYS[number];
 
+// WORD_KEYS stays an explicit tuple (its order is the setup's, pinned by the fixtures in
+// tests/fixtures/setup); the table says which keys are word-bearing, and these two lines fail the
+// build when the tuples and the table disagree, in either direction.
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+export type TupleMatchesTable = [Assert<Same<WordKey, KeysWith<"word">>>, Assert<Same<InstallKey, KeysWith<"install">>>];
+type Assert<T extends true> = T;
+
 /** Every key a set holds: the word-bearing keys and the install-only ones. */
 export const SET_KEYS: readonly (WordKey | InstallKey)[] = [...WORD_KEYS, ...INSTALL_KEYS];
 
 /** One language's set: every word-bearing and install-only key, complete (nested records too). */
 export type LanguageDefaults = Pick<EscritaSettings, WordKey | InstallKey>;
-
-/** The stage colours are the same in every set (DEFAULT_STAGES); only the words change. */
-function stages(words: Record<keyof StageMapping, string>): StageMapping {
-  const out = {} as StageMapping;
-  for (const k of STAGES) out[k] = { words: words[k], color: DEFAULT_STAGES[k].color };
-  return out;
-}
-
-function entries(t: Record<EntryKind, [value: string, folder: string, label: string]>): Record<EntryKind, EntryTypeSetting> {
-  const out = {} as Record<EntryKind, EntryTypeSetting>;
-  for (const k of ENTRY_KINDS) out[k] = { value: t[k][0], folder: t[k][1], template: "", label: t[k][2] };
-  return out;
-}
-
-const EN: LanguageDefaults = {
-  stages: stages({ idea: "idea", draft: "draft", revision: "revision", ready: "ready", published: "published" }),
-  chaptersFolder: "Chapters",
-  unnumberedTitles: "Prologue, Preface, Foreword, Introduction, Interlude, Epilogue, Afterword",
-  submissionResults: "pending, accepted, rejected, withdrawn",
-  exportFolder: "Escrita/Exports",
-  submissionsFolder: "Escrita/Submissions",
-  darlingsNote: "Darlings.md",
-  globalDarlingsNote: "Darlings.md",
-  universeNote: "Universe.md",
-  entryTypes: entries({
-    character: ["character", "Characters", "Character"],
-    place: ["place", "Places", "Place"],
-    object: ["object", "Objects", "Object"],
-    group: ["group", "Groups", "Group"],
-    event: ["event", "Events", "Event"],
-  }),
-  formValues: { shortStory: "short story", essay: "essay", novella: "novella", novel: "novel", poem: "poem", fragment: "fragment", screenplay: "screenplay" },
-  threadKeyword: "thread",
-  threadClosedWord: "closed",
-  screenplayTransitions: "TO:",
-  screenplayMore: "(MORE)",
-  screenplayContinued: "(CONT'D)",
-  screenplayCredit: "Written by",
-  snapshotsFolder: "Escrita/Snapshots",
-  excludeFolders: "Templates",
-};
-
-/** Brazilian Portuguese (never European: "versão", "envios", "rascunho"). */
-const PT_BR: LanguageDefaults = {
-  stages: stages({ idea: "ideia", draft: "rascunho", revision: "revisão", ready: "pronto", published: "publicado" }),
-  chaptersFolder: "Capítulos",
-  // SF 10 names "Nota do autor"; the rest mirror the English list
-  unnumberedTitles: "Prólogo, Prefácio, Apresentação, Introdução, Nota do autor, Interlúdio, Epílogo, Posfácio",
-  // the first word is "pending" (submissions/logic): pendente
-  submissionResults: "pendente, aceito, recusado, retirado",
-  exportFolder: "Escrita/Exportações",
-  submissionsFolder: "Escrita/Envios",
-  darlingsNote: "Darlings.md",
-  globalDarlingsNote: "Darlings.md",
-  universeNote: "Universo.md",
-  entryTypes: entries({
-    character: ["personagem", "Personagens", "Personagem"],
-    place: ["lugar", "Lugares", "Lugar"],
-    object: ["objeto", "Objetos", "Objeto"],
-    group: ["grupo", "Grupos", "Grupo"],
-    event: ["evento", "Eventos", "Evento"],
-  }),
-  formValues: { shortStory: "conto", essay: "ensaio", novella: "novela", novel: "romance", poem: "poema", fragment: "fragmento", screenplay: "roteiro" },
-  threadKeyword: "thread",
-  threadClosedWord: "fechada",
-  // Brazilian scripts: CORTA PARA:, FUSÃO PARA: (SP 1); the English TO: stays for pasted scripts
-  screenplayTransitions: "TO:, PARA:",
-  screenplayMore: "(MAIS)",
-  screenplayContinued: "(CONT.)",
-  screenplayCredit: "Roteiro de",
-  snapshotsFolder: "Escrita/Versões",
-  excludeFolders: "Modelos",
-};
 
 function deepFreeze<T>(v: T): T {
   if (v && typeof v === "object" && !Object.isFrozen(v)) {
@@ -146,8 +79,18 @@ function deepFreeze<T>(v: T): T {
   return v;
 }
 
+/** One language's set, read off the settings table (core/settings-schema.ts): the English default or the pt-BR value of each key. */
+function setOf(lang: DefaultsLanguage): LanguageDefaults {
+  const out: Record<string, unknown> = {};
+  for (const k of SET_KEYS) {
+    const row = SETTINGS_SCHEMA[k] as { default: unknown; ptBR: unknown };
+    out[k] = cloneValue(lang === "en" ? row.default : row.ptBR);
+  }
+  return out as unknown as LanguageDefaults;
+}
+
 /** The sets, frozen: read them, never hand them to live settings (use `overlayDefaults`). */
-export const LANGUAGE_DEFAULTS: Readonly<Record<DefaultsLanguage, Readonly<LanguageDefaults>>> = deepFreeze({ en: EN, "pt-BR": PT_BR });
+export const LANGUAGE_DEFAULTS: Readonly<Record<DefaultsLanguage, Readonly<LanguageDefaults>>> = deepFreeze({ en: setOf("en"), "pt-BR": setOf("pt-BR") });
 
 /**
  * `base` with one language's set laid over it: a complete, fresh settings object that
