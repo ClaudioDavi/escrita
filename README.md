@@ -103,13 +103,13 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 A code release. Nothing new to use; the plugin looks and works the same.
 
-- **Review bot warnings cleared**: the end-to-end test harness moved under `tests/`, so the review bot no longer reads it as plugin code. Underlines (the lens marks, the name underline and the dotted lines in the interface) are drawn as backgrounds, and the export preview's paragraph indent is a spacer. They look the same.
+- **Review bot warnings cleared**: the end-to-end test harness moved under `tests/`, so the review bot no longer reads it as plugin code. Underlines (the lens marks, the name underline and the dotted lines in the interface) are drawn as backgrounds, and the export preview's paragraph indent is a spacer. They look the same, except that the line through a closed thread now has the muted text color.
 - **One settings table**: each setting is now one row in one table (its default, how a saved value is cleaned, which features read it and, for words, the Portuguese value). The defaults, the two default sets, the list of which features show which setting rows and the loading code all come from it. The core no longer imports the universe or the lens.
 - **A broken `data.json` heals better**: valid data loads exactly as before. Four fixes apply only to a hand-edited or damaged file:
-  - A blank **Summary**, **Author** or **Publication date** property comes back as `summary`, `author` or `date`.
+  - A blank **Summary**, **Author** or **Publication date** property comes back as `summary`, `author` or `date`, and these three are trimmed like the other property names.
   - An unknown quote style, paragraph style or typography scope comes back as `curly`, `blank` or `books`. Before, an unknown quote style made dialogue focus and the lens fail.
   - A blank chapters folder, darlings note or global darlings note comes back from your language's defaults, and a blank placeholder marker comes back as `XXX`. These four are also trimmed.
-  - The export, submissions and templates folders are cleaned like the short stories and books folders: `/ Exports` becomes `Exports`.
+  - The export, submissions and templates folders are cleaned like the short stories and books folders: `/ Exports` becomes `Exports`. A template path that starts with `/ ` loses the space too.
 - Improvement: one settings table (candidate 53, the schema half of candidate 37).
 
 ### 1.1.0 (2026-10-16)

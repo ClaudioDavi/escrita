@@ -45,7 +45,7 @@ describe.each(DEFAULTS_LANGUAGES)("the settings table, set %s", (lang) => {
     });
 
     it("is idempotent", () => {
-      const samples = [d[key], "  /A b/ ", "", "x", 7, false, ["a"]];
+      const samples = [d[key], "  /A b/ ", "/ x /", "", "x", 7, false, ["a"]];
       for (const v of samples) {
         const once = norm(structuredClone(v));
         same(norm(structuredClone(once)), once);

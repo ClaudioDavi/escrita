@@ -66,7 +66,7 @@ const optionalFolder = kind<string>("optionalFolder", (v, f) => (typeof v === "s
 /** A vault folder that is never blank: classify's fuller rule (backslashes, repeated slashes). */
 const vaultFolder = kind<string>("vaultFolder", (v, f) => (typeof v === "string" ? cleanVaultFolder(v) : "") || f);
 /** A template note path: trimmed, no leading slash; not a string gives the fallback. */
-const templatePath = kind<string>("templatePath", (v, f) => (typeof v === "string" ? v.trim().replace(/^\/+/, "") : f));
+const templatePath = kind<string>("templatePath", (v, f) => (typeof v === "string" ? v.trim().replace(/^\/+/, "").trim() : f));
 const bool = kind<boolean>("bool", (v, f) => (typeof v === "boolean" ? v : f));
 const number = kind<number>("number", (v, f) => (typeof v === "number" && Number.isFinite(v) ? v : f));
 const strings = kind<string[]>("strings", (v, f) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [...f]));
