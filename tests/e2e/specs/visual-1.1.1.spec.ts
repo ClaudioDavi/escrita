@@ -92,9 +92,9 @@ test.beforeAll(async () => {
     lensLongSentence: 25,
     lensRulesOn: ["newName"],
     underlineNames: true,
-    setupOffered: true, // no first-run notice over the pictures
   });
   await ob.setFeature("threads", true);
+  await ob.dismissNotices(); // a first-run notice can show while the settings change
   rec = await Recorder.start(ob.page);
 });
 test.afterAll(async () => {
