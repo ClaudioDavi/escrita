@@ -178,13 +178,14 @@ An edit at the cursor of the editor that triggered it may write straight to that
 
 - **Checks before calling something done**: `npm run typecheck`, `npm test`,
   `npm run build` (and `npm run test:bundle` after a build). CI runs all four.
-- **The end-to-end harness** (1.1, `e2e/`, `docs/TESTING.md`): `npm run e2e` runs Playwright specs
+- **The end-to-end harness** (1.1, `tests/e2e/`, `docs/TESTING.md`): `npm run e2e` runs Playwright specs
   in a real Obsidian that it starts itself, with its own profile and a copy of a fixture vault, so
   the author's Obsidian and vaults are never touched. Local only, not in CI; run `npm run build`
   first. One Obsidian at a time (`workers: 1`); with several agents, run it under
   `flock <scratchpad>/heavy.lock`. It runs the checks of the by-hand test pages (TEST-0.9, TEST-1.0);
   what stays by eye (pictures against the boards, a PDF in a reader app, third-party themes,
   phones) is listed in TESTING.md and PLAN-1.1.
+  It lives under `tests/` so the Obsidian review bot, which skips that folder, does not lint it.
 - **Every release includes at least one improvement** from IMPROVEMENTS.md, named in
   ROADMAP.md under the version, preferably one the version's features lean on.
 - **When a version ships**: move its row to "Shipped" in ROADMAP.md, add the changelog
@@ -252,11 +253,11 @@ explorer's tracked set (IMPROVEMENTS 2, done in 0.4 for everything else, which f
 through `plugin.index.follow`; the snapshots store moved there in 0.7, and since 0.7
 those followers run even when their feature is off); the Reading-view "Appears in"
 section is closed (0.7's G0d, 1.1): Reading view shows the panel only, with no post-processor,
-and `e2e/specs/appears-in-reading.spec.ts` checks it; the phone checks
+and `tests/e2e/specs/appears-in-reading.spec.ts` checks it; the phone checks
 (name marks, the names bench) are waived, because the author has no phone sync; the Markdown
 parity questions with Reading view were checked in a real vault (0.8, G0c) and the
 segmenter follows them, pinned in `tests/markdown-consumers.test.ts`. 0.9 adds: "Read the book"
-(`outline/reader-view.ts`) has no DOM test, but since 1.1 it has e2e checks (`e2e/specs/read-book.spec.ts`)
+(`outline/reader-view.ts`) has no DOM test, but since 1.1 it has e2e checks (`tests/e2e/specs/read-book.spec.ts`)
 and measured timings on a 31-chapter book (G0d: first text in 8 to 18 ms, longest task 23 to 28 ms,
 accepted at 30 ms; PLAN-1.1, Wave 2). Its startup race (a `compile: false` chapter shown before
 the metadata cache is ready) is an IMPROVEMENTS candidate. Its decisions are pure, in `outline/reader-model.ts` and

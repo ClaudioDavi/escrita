@@ -1570,7 +1570,7 @@ hotkeys keep working.
   universe panels' ids, from which each module defines its own constant. Code that only
   places a panel (the setup's layout) reads them here and imports no module folder.
 
-## The end-to-end harness (`e2e/`, `playwright.config.ts`, 1.1)
+## The end-to-end harness (`tests/e2e/`, `playwright.config.ts`, 1.1)
 
 The checks that used to be by-hand steps in Obsidian are Playwright specs that drive a real
 Obsidian (PLAN-1.1 Q12 to Q14). It is **dev only**: nothing in `src/` or `main.js` knows it
@@ -1581,8 +1581,8 @@ replaces and how to add one: `docs/TESTING.md`.
 - **Run.** `npm run e2e` (`playwright test`) after `npm run build`; `workers: 1`, because the
   author's machine has limited resources: one Obsidian at a time, and under
   `flock <scratchpad>/heavy.lock` when other agents are working. The full run is 204 tests in
-  about 8 minutes. `npx tsc -p e2e` typechecks the harness.
-- **It launches its own Obsidian and never touches the writer's.** `e2e/lib/obsidian.ts` runs
+  about 8 minutes. `npx tsc -p tests/e2e` typechecks the harness.
+- **It launches its own Obsidian and never touches the writer's.** `tests/e2e/lib/obsidian.ts` runs
   `flatpak run md.obsidian.Obsidian` with its own `--user-data-dir`, a free
   `--remote-debugging-port` and `--ozone-platform=headless`, and attaches with
   `chromium.connectOverCDP`. The profile's `obsidian.json` lists one vault, a fresh copy of a
@@ -1591,13 +1591,13 @@ replaces and how to add one: `docs/TESTING.md`.
   `~/.var/app/md.obsidian.Obsidian/` config, vaults and running Obsidian are never touched, and
   `close()` kills only the instances that were new when it started. A real vault (G2c) is
   tested on a copy (`VaultSpec.copyFrom`), hashed before and after.
-- **Layout.** `e2e/lib/` (`obsidian.ts` launch, restart, close; `app.ts` the `App` helpers:
+- **Layout.** `tests/e2e/lib/` (`obsidian.ts` launch, restart, close; `app.ts` the `App` helpers:
   `command(id)`, `openFile`, `setSettings`, `readVaultFile`, `placement`, `emulateMobile`,
   `longTasks`…; `setup-modal.ts`, `more.ts`, `panels.ts`, `export-ui.ts`, `zip-read.ts`,
-  `measure.ts`), `e2e/fixtures/` (`emptyPt`, `emptyEn`, `writer`, `world()`, `long-book`,
-  `screenplays`), `e2e/specs/` (one file per old test page section, and `screenplay.spec.ts`
+  `measure.ts`), `tests/e2e/fixtures/` (`emptyPt`, `emptyEn`, `writer`, `world()`, `long-book`,
+  `screenplays`), `tests/e2e/specs/` (one file per old test page section, and `screenplay.spec.ts`
   for 1.1's own checks). Screenshots for the checks that need an eye go into the HTML report
-  (`e2e/report/`, git-ignored).
+  (`tests/e2e/report/`, git-ignored).
 - **Exceptions to the guidelines.** None needed in `src/`: the harness is outside the bundle, so
   its use of Node, the flatpak CLI and the DevTools protocol is not plugin code. The PDF
   writer needs none either: it is pure bytes, written through `plugin.notes.create` like DOCX.
@@ -2538,7 +2538,7 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   from a `StateField` in an editor slot; it is never written into the file, so it is not
   selectable, exported or counted. **Reading view shows the panel only**: there is no Markdown
   post-processor (0.7's G0d, closed as decided in 1.1 and checked by
-  `e2e/specs/appears-in-reading.spec.ts` across five toggles, a split and a 200-line entry).
+  `tests/e2e/specs/appears-in-reading.spec.ts` across five toggles, a split and a 200-line entry).
   Neither file writes to a note.
 - **Unlinked mentions and names without an entry** (0.9, U 2.5). The universe feeds both from
   the mentions and names indexes; their pure parts, rules and the write are in "Names matcher"

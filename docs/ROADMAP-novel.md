@@ -232,7 +232,7 @@ chapters (true Scrivenings) is XL and fragile; recommend Continuous Mode for tha
 - The position (chapter and line) is kept per book in `data.json` and follows renames; deleting a
   chapter sends it back to the top. The view doesn't redraw a chapter when its text changes, only
   on create, delete and rename. It has no DOM test, but since 1.1 the harness covers it
-  (`e2e/specs/read-book.spec.ts`), and gate G0d is measured on a 31-chapter, 90,951-word book:
+  (`tests/e2e/specs/read-book.spec.ts`), and gate G0d is measured on a 31-chapter, 90,951-word book:
   first text on screen in 8–18 ms, the longest task while scrolling 22.9–28.4 ms (the bar was 20
   ms; accepted at 30 ms; none reaches 50 ms). Known weak spot: a chapter with `compile: false`
   is read as included if the command runs before the metadata cache is ready (IMPROVEMENTS,

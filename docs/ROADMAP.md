@@ -61,7 +61,7 @@ submitting. Upkeep: none beyond marking a note as a screenplay.
 |---|---|---|---|
 | Screenplay notes and the Fountain parser: `screenplay` is the seventh form value, Fountain read in the note, character cues count in "Appears in", the form rows moved to a "Forms" group after Books and work with the universe off | SP 1 | M | Shipped |
 | Export: Fountain and PDF in industry format (Letter or A4), with a preview, warnings and the "Screenplays" settings group | SP 6 | L | Shipped |
-| End-to-end checks: a Playwright harness that drives Obsidian and runs the by-hand checks (`e2e/`, `npm run e2e`, local only, see [TESTING.md](TESTING.md)) | not a feature | M | Shipped (204 tests) |
+| End-to-end checks: a Playwright harness that drives Obsidian and runs the by-hand checks (`tests/e2e/`, `npm run e2e`, local only, see [TESTING.md](TESTING.md)) | not a feature | M | Shipped (204 tests) |
 
 **Improvement:** export writers share the title page, the modal splits (candidate 46),
 plus the five known issues and the test-only aliases from 33. In "Done" under 1.1 in
@@ -75,8 +75,8 @@ changes; setting up again in a finished vault says there is nothing to do.
 
 | Open item | Outcome |
 |---|---|
-| Gate G0d, 0.7: the Reading-view "Appears in" section across re-renders | Closed as decided: Reading view shows the panel only, no post-processor. `e2e/specs/appears-in-reading.spec.ts` checks it across 5 toggles, a split and a 200-line entry |
-| Gate G0d, 0.9: "Read the book" timings on a 30-chapter book | Measured (`e2e/specs/read-book.spec.ts`, 31 chapters, 90,951 words). First text on screen 8–18 ms (painted 29–60 ms); longest task while scrolling 22.9–28.4 ms, none of 50 ms, accepted at 30 ms (the 20 ms bar was missed by 3–8 ms); typing in a 3,000-word chapter 7.5–9.6 ms |
+| Gate G0d, 0.7: the Reading-view "Appears in" section across re-renders | Closed as decided: Reading view shows the panel only, no post-processor. `tests/e2e/specs/appears-in-reading.spec.ts` checks it across 5 toggles, a split and a 200-line entry |
+| Gate G0d, 0.9: "Read the book" timings on a 30-chapter book | Measured (`tests/e2e/specs/read-book.spec.ts`, 31 chapters, 90,951 words). First text on screen 8–18 ms (painted 29–60 ms); longest task while scrolling 22.9–28.4 ms, none of 50 ms, accepted at 30 ms (the 20 ms bar was missed by 3–8 ms); typing in a 3,000-word chapter 7.5–9.6 ms |
 | The by-hand checks of TEST-0.9 and TEST-1.0 | Run by the harness. What needs an eye stays in PLAN-1.1, "By-hand checks (G2)": the pictures, a PDF in a reader, writing mode with a third-party theme |
 | The reader's startup race (a `compile: false` chapter read as included) | Candidate 52 in IMPROVEMENTS.md (not in 1.1) |
 | Phone gates | Waived (no phone to test on, 2026-10-05) |

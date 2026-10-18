@@ -8,7 +8,7 @@ import { SetupModal } from "../lib/setup-modal";
 import { scrollsSideways, settingsPage, settle, smallTargets, stickingOut } from "../lib/more";
 import { emptyPt } from "../fixtures";
 import { WORLD_SETTINGS, world } from "../fixtures/h1";
-import { FEATURE_IDS } from "../../src/core/features";
+import { FEATURE_IDS } from "../../../src/core/features";
 
 const ALL_ON = Object.fromEntries(FEATURE_IDS.filter((id) => id !== "universe").map((id) => [id, true]));
 

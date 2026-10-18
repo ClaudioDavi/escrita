@@ -10,6 +10,6 @@
     "skipLibCheck": true,
     "isolatedModules": true
   },
-  "include": ["**/*.ts", "../playwright.config.ts"],
+  "include": ["**/*.ts", "../../playwright.config.ts"],
   "exclude": ["report"]
 }

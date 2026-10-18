@@ -4,8 +4,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { App } from "../lib/app";
 import { settingsPage, settle } from "../lib/more";
 import { writer } from "../fixtures";
-import { FEATURE_IDS } from "../../src/core/features";
-import { PRESETS } from "../../src/core/feature-presets";
+import { FEATURE_IDS } from "../../../src/core/features";
+import { PRESETS } from "../../../src/core/feature-presets";
 
 test.describe("Presets on the Features page", () => {
   test.describe.configure({ mode: "serial", timeout: 90_000 });

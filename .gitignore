@@ -9,5 +9,5 @@ data.json
 /styles.css
 
 # end-to-end run output (docs/TESTING.md)
-/e2e/report/
+/tests/e2e/report/
 /test-results/

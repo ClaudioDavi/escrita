@@ -23,7 +23,7 @@ export interface LaunchOptions {
   headed?: boolean;
 }
 
-const REPO = path.resolve(import.meta.dirname, "..", "..");
+const REPO = path.resolve(import.meta.dirname, "..", "..", "..");
 const VIEWPORT = { width: 1280, height: 800 };
 
 /** flatpak instance ids of any Obsidian that is running now. */

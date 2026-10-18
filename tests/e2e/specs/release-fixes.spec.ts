@@ -5,7 +5,7 @@ import { SetupModal } from "../lib/setup-modal";
 import { settingsPage, settle } from "../lib/more";
 import { emptyPt, writer } from "../fixtures";
 import { WORLD_SETTINGS, world } from "../fixtures/h1";
-import { parseEntries } from "../../src/darlings/format";
+import { parseEntries } from "../../../src/darlings/format";
 
 test.describe("Release-candidate fixes: settings fall back to the install's language (1)", () => {
   test.describe.configure({ mode: "serial", timeout: 90_000 });
