@@ -8,6 +8,10 @@ Escrita does not lay the script out in the editor yet. You write Fountain as pla
 note like any other, and the layout happens when you export. Planning and revising work as
 they do for a short story.
 
+![Exporting a screenplay, with captions in Portuguese: the script is plain Fountain in a note, the export window offers PDF or Fountain on US Letter or A4, the preview shows the title page and a speech breaking across pages with (MAIS) and (CONT.), and the PDF opens in Obsidian.](../../images/screenplay-export.gif)
+
+The same as a video: [screenplay-export.mp4](../../images/screenplay-export.mp4).
+
 Other pages: [Publishing](publishing.md), [Writing](writing.md),
 [Features and settings](features-and-settings.md) and [The world](the-world.md). Export has its
 own switch in Features › Publishing, and everything here needs it on.

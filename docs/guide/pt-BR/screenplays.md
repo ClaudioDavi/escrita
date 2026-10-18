@@ -8,6 +8,10 @@ O Escrita ainda não monta o roteiro no editor. Você escreve Fountain como text
 como outra qualquer, e o layout acontece na exportação. Planejar e revisar funcionam como num
 conto.
 
+![Exportando um roteiro: o roteiro é Fountain puro numa nota, a janela de exportação oferece PDF ou Fountain em US Letter ou A4, a prévia mostra a folha de rosto e uma fala que quebra entre páginas com (MAIS) e (CONT.), e o PDF abre no Obsidian.](../../images/screenplay-export.gif)
+
+O mesmo em vídeo: [screenplay-export.mp4](../../images/screenplay-export.mp4).
+
 Outras páginas: [Publicação](publishing.md), [Escrita](writing.md),
 [Recursos e configurações](features-and-settings.md) e [O mundo](the-world.md). A exportação tem
 o seu interruptor em Recursos › Publicação, e tudo aqui precisa dela ligada.

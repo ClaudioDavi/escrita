@@ -65,6 +65,10 @@ Each part is a switch on the Features page, so you can turn off what you don't u
 
 ![Publishing a chapter: "Publish next chapter" stops on a placeholder, the line is written and the chapter published, then the book is exported as an EPUB with a preview.](docs/images/publish-and-export.gif)
 
+![Exporting a screenplay, with captions in Portuguese: the script is plain Fountain in a note, the export window offers PDF or Fountain on US Letter or A4, the preview shows the title page and a speech breaking across pages with (MAIS) and (CONT.), and the PDF opens in Obsidian.](docs/images/screenplay-export.gif)
+
+The same as a video: [screenplay-export.mp4](docs/images/screenplay-export.mp4).
+
 **The world.** A shared universe of characters, places, objects, groups and events, with "Appears in", unlinked mentions, names in the editor and the revision lens, and open threads you plant in one story for a later one. Guide: [English](docs/guide/en/the-world.md) · [Português](docs/guide/pt-BR/the-world.md).
 
 ## Privacy
