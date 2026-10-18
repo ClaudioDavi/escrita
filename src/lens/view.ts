@@ -217,7 +217,8 @@ export class LensView extends ItemView {
       const sub = row.createDiv({ cls: "escrita-lens-substep" });
       const counter = sub.createSpan({ cls: "escrita-lens-counter", text: pos ? t("lens.step.counter", { n: pos.n, of: pos.of }) : "" });
       counter.setAttribute("aria-live", "polite");
-      const ig = sub.createEl("button", { cls: "escrita-lens-ignore", text: t("lens.step.ignore") });
+      const ig = sub.createEl("button", { cls: "escrita-lens-ignore" });
+      ig.createSpan({ cls: "escrita-lens-ignore-label", text: t("lens.step.ignore") });
       ig.setAttribute(FOCUS_KEY, `ignore-${rule}`);
       ig.disabled = pos === null;
       ig.addEventListener("click", () => this.hooks.ignore?.(rule));

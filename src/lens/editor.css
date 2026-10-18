@@ -1,4 +1,7 @@
-/* Revision lens marks (SF 5). Low alpha over any theme; no borders, so no layout shift. */
+/* Revision lens marks (SF 5). Low alpha over any theme; no borders, so no layout shift.
+   The lines are backgrounds along the bottom of the text, not text-decoration: the review
+   bot's CSS lint reports text-decoration styling as only partly supported (1.1.1).
+   Each mark sets its color (--escrita-lens-line) and weight; the pattern is its image. */
 .escrita-lens-echo,
 .escrita-lens-adverb,
 .escrita-lens-gerund,
@@ -6,23 +9,69 @@
 .escrita-lens-name,
 .escrita-lens-newName,
 .escrita-lens-related {
-	text-decoration-line: underline;
-	text-underline-offset: 5px;
-	text-decoration-thickness: 2px;
+	--escrita-lens-weight: 2px;
+	/* Room for the line under the text. Vertical padding on inline text moves nothing; the
+	   last image layer is "none" so a fill (the current match) stays on the text only. */
+	padding-bottom: 4px;
+	background-repeat: repeat-x;
+	background-position: left bottom;
+	background-clip: padding-box, content-box;
 }
-.escrita-lens-echo { text-decoration-style: dotted; text-decoration-color: rgba(var(--color-orange-rgb), 0.9); }
-.escrita-lens-related { text-decoration-style: dotted; text-decoration-color: rgba(var(--color-orange-rgb), 0.4); }
-.escrita-lens-adverb { text-decoration-style: dashed; text-decoration-thickness: 1.5px; text-decoration-color: rgba(var(--color-blue-rgb), 0.85); }
-.escrita-lens-gerund { text-decoration-style: dotted; text-decoration-color: rgba(var(--color-purple-rgb), 0.9); }
-.escrita-lens-crutch { text-decoration-style: dashed; text-decoration-thickness: 1.5px; text-decoration-color: rgba(var(--color-pink-rgb), 0.85); }
-.escrita-lens-name { text-decoration-style: double; text-decoration-thickness: 1px; text-underline-offset: 4px; text-decoration-color: rgba(var(--color-cyan-rgb), 0.85); }
-/* Names without an entry (0.9, board 30): wavy green, readable on both themes. */
-.escrita-lens-newName { text-decoration-style: wavy; text-decoration-thickness: 1.5px; text-decoration-color: rgba(var(--color-green-rgb), 0.9); }
-.theme-light .escrita-lens-newName { text-decoration-color: rgba(var(--color-green-rgb), 1); }
+/* dotted: round dots one weight wide, one weight apart */
+.escrita-lens-echo,
+.escrita-lens-related,
+.escrita-lens-gerund {
+	background-image: radial-gradient(circle closest-side, var(--escrita-lens-line) 80%, transparent 100%), none;
+	background-size: calc(var(--escrita-lens-weight) * 2) var(--escrita-lens-weight);
+}
+/* dashed */
+.escrita-lens-adverb,
+.escrita-lens-crutch {
+	--escrita-lens-weight: 1.5px;
+	background-image: linear-gradient(90deg, var(--escrita-lens-line) 0 60%, transparent 60%), none;
+	background-size: 6px var(--escrita-lens-weight);
+}
+.escrita-lens-echo { --escrita-lens-line: rgba(var(--color-orange-rgb), 0.9); }
+.escrita-lens-related { --escrita-lens-line: rgba(var(--color-orange-rgb), 0.4); }
+.escrita-lens-adverb { --escrita-lens-line: rgba(var(--color-blue-rgb), 0.85); }
+.escrita-lens-gerund { --escrita-lens-line: rgba(var(--color-purple-rgb), 0.9); }
+.escrita-lens-crutch { --escrita-lens-line: rgba(var(--color-pink-rgb), 0.85); }
+/* double: two hairlines */
+.escrita-lens-name {
+	--escrita-lens-line: rgba(var(--color-cyan-rgb), 0.85);
+	--escrita-lens-weight: 1px;
+	background-image: linear-gradient(var(--escrita-lens-line) 0 1px, transparent 1px 2px, var(--escrita-lens-line) 2px 3px), none;
+	background-size: 100% 3px;
+}
+/* Names without an entry (0.9, board 30): wavy green, readable on both themes. The wave is
+   half rings of radius 2px, a quarter of the 8px period: arches on the midline, then cups
+   shifted half a period, so each end meets the next. */
+.escrita-lens-newName {
+	--escrita-lens-line: rgba(var(--color-green-rgb), 0.9);
+	--escrita-lens-weight: 1.5px;
+	padding-bottom: 6px;
+	background-image:
+		radial-gradient(circle at 50% 100%, transparent 1.3px, var(--escrita-lens-line) 1.4px 2.6px, transparent 2.7px),
+		radial-gradient(circle at 50% 0, transparent 1.3px, var(--escrita-lens-line) 1.4px 2.6px, transparent 2.7px),
+		none;
+	background-size: 8px 2.7px, 8px 2.7px, auto;
+	background-repeat: repeat-x;
+	background-position: 0 calc(100% - 2.7px), 4px 100%, 0 0;
+	background-clip: padding-box, padding-box, content-box;
+}
+.theme-light .escrita-lens-newName { --escrita-lens-line: rgba(var(--color-green-rgb), 1); }
 .escrita-lens-long { background-color: rgba(var(--color-yellow-rgb), 0.075); border-radius: 2px; }
 .theme-light .escrita-lens-long { background-color: rgba(var(--color-yellow-rgb), 0.1); }
 /* The current match: a stronger fill and a solid line, no border or outline on desktop, so nothing moves. */
-.escrita-lens-current { background-color: rgba(var(--color-purple-rgb), 0.2); border-radius: 2px; text-decoration-style: solid; }
+.escrita-lens-current { background-color: rgba(var(--color-purple-rgb), 0.2); border-radius: 2px; }
+.escrita-lens-current:not(.escrita-lens-long) {
+	padding-bottom: 4px;
+	background-image: linear-gradient(var(--escrita-lens-line), var(--escrita-lens-line)), none;
+	background-size: 100% var(--escrita-lens-weight), auto;
+	background-repeat: no-repeat;
+	background-position: left bottom, 0 0;
+	background-clip: padding-box, content-box;
+}
 .theme-light .escrita-lens-current { background-color: rgba(var(--color-purple-rgb), 0.16); }
 /* On a phone the selection handles hide the fill, so the current match also gets a hairline outline (no layout effect). */
 body.is-mobile .escrita-lens-current { background-color: rgba(var(--color-purple-rgb), 0.22); outline: 1px solid rgba(var(--color-purple-rgb), 0.55); }

@@ -262,7 +262,6 @@
 .escrita-universe-thread.is-closed .escrita-universe-thread-text {
   color: var(--text-muted);
   text-decoration: line-through;
-  text-decoration-color: var(--text-faint);
 }
 .escrita-universe-thread-meta {
   font-size: var(--font-ui-smaller);

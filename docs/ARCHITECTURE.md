@@ -174,12 +174,16 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
     check resolves `moment(...)` as `any`, which raises `no-unsafe-*` warnings at every call
     (review of 2026-10-12). The wrapper casts `moment` once to the small typed slice Escrita
     uses. Don't call `moment(...)` directly anywhere else.
-  - **CSS lint "partially supported" warnings are false positives.** The bot reports
-    `text-decoration` (the lens marks, name underlines, dotted links), `box-decoration-break`
-    (placeholders) and `text-indent` (export preview) as only partly supported by Obsidian
-    1.7.4. The gaps are features Escrita doesn't use: `text-decoration-skip`, the
-    `each-line`/`hanging` indents, and box-decoration-break on block elements. The bot checks
-    against 1.7.4 whatever `minAppVersion` says, so raising it won't clear them. Leave them.
+  - **No `text-decoration` styling and no `text-indent` (1.1.1).** The bot's CSS lint reports
+    `text-decoration-line`, `-style`, `-color`, `-thickness` and a shorthand with a style or
+    color (`underline dotted`) as only partly supported, and `text-indent` too. Escrita draws
+    those lines as backgrounds instead: a gradient along the bottom of an inline span, with
+    `padding-bottom` for room (vertical padding on inline text moves nothing). The lens marks
+    (`lens/editor.css`) keep a fill on the text alone with a last `none` image layer and
+    `background-clip: …, content-box`. A dotted line on a button goes on an inner label span.
+    The export preview's first-line indent is an empty inline-block `::before`. A plain
+    `text-decoration: underline` or `line-through` is fine. To check before a release, run
+    `doiuse` with the browser `Chrome 138` over `src/**/*.css`; it reports what the bot reports.
   - **Writes into a note's text go through `plugin.notes`** (the editor when the note is
     open in source or Live Preview, else `vault.process`), never straight to
     `vault.process`. **The editor-writes rule (0.8):** an edit at the cursor of the editor

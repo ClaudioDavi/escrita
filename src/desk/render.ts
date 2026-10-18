@@ -239,7 +239,7 @@ export class DeskBlock extends MarkdownRenderChild {
         dot.setAttribute("aria-hidden", "true");
         dot.setCssProps({ "--escrita-dot": color });
       }
-      b.createSpan({ text: plural(`desk.count.${c.key}`, c.n) });
+      b.createSpan({ cls: "escrita-desk-count-label", text: plural(`desk.count.${c.key}`, c.n) });
       b.setAttribute(KEY, `count:${c.key}`);
       b.setAttribute("aria-expanded", open ? "true" : "false");
       this.actions.set(`count:${c.key}`, () => {

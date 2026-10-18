@@ -99,7 +99,9 @@ export class PublishModal extends Modal {
     const row = li.createDiv({ cls: "escrita-publish-row" });
     const icon = row.createSpan({ cls: "escrita-publish-icon", attr: { "aria-label": t(`publish.level.${check.level}`) } });
     setIcon(icon, ICONS[check.level]);
-    const text = row.createSpan({ cls: "escrita-publish-text", text: checkText(check) });
+    const text = row.createSpan({ cls: "escrita-publish-text" });
+    // the text sits in its own inline span so the dotted line follows it when it wraps
+    text.createSpan({ cls: "escrita-publish-label", text: checkText(check) });
     if (check.line !== undefined && check.items.length === 0) this.jumpable(text, check.line);
 
     if (check.level === "passed" || check.items.length === 0) return;

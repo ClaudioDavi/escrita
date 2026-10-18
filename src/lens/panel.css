@@ -109,7 +109,12 @@ body.is-phone .escrita-lens-row { min-height: 44px; padding-inline-start: 14px; 
 .escrita-lens-ignore {
   min-height: var(--escrita-lens-target); padding: 0 8px; background: transparent; border: 0; box-shadow: none;
   color: var(--text-muted); font-size: inherit; cursor: pointer;
-  text-decoration: underline dotted var(--text-faint); text-underline-offset: 3px;
+}
+/* a dotted line under the label, drawn as a background, not text-decoration (1.1.1) */
+.escrita-lens-ignore-label {
+  padding-bottom: 3px;
+  background-image: linear-gradient(90deg, var(--text-faint) 0 1px, transparent 1px);
+  background-size: 3px 1px; background-repeat: repeat-x; background-position: left bottom;
 }
 .escrita-lens-ignore:disabled { opacity: 0.4; cursor: default; }
 
