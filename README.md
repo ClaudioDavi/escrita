@@ -99,7 +99,7 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
-### 1.1.1
+### 1.1.1 (2026-10-18)
 
 A code release. Nothing new to use; the plugin looks and works the same.
 

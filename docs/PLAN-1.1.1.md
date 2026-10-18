@@ -249,3 +249,10 @@ nothing; `git diff b1d87d8 -- tests/fixtures` is empty. `settings.ts` went from 
 - `Kind` has no list of enum values, so the test checks an unknown value, not every member
   (the plan's risk note: `satisfies` does not catch a missing member of an `enumOf` list).
 - The int kind for `snapshotsKeepAuto` uses `Infinity` as its maximum.
+
+### Release checks (2026-10-18)
+
+- Judge pass (Opus): PASS WITH FIXES. `DEFAULT_SETTINGS`, both default sets, `SETTING_FEATURES`, `WORD_KEYS` order and a fresh load in both languages are deep-equal to `main`; probed with 47 values per key, only the 13 drift keys differ, and only on values the tab cannot write. Fixed after it: `templatePath` is idempotent (`"/ x"`), the changelog wording, the e2e paths in TEST-0.9 and TEST-1.0.
+- Typecheck, lint (zero warnings), vitest (232 files, 4,874 passed, 2 skipped), build, `test:bundle`: green. `doiuse` with `Chrome 138` over the built `styles.css`: nothing.
+- End to end: 204 of 204 in 7.9 minutes.
+- By eye, for the author: the lens marks (dotted, dashed, double, wavy, the current match), the name underline, the dotted lines on the desk counts, the lens Ignore button and clickable publish checks, and the export preview indent, in light and dark themes in the test vault.
