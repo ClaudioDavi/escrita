@@ -1,13 +1,9 @@
-// Pure lens settings helpers: no obsidian imports. settings.ts (normalizeSettings) reads this.
+// Pure lens settings helpers: no obsidian imports. the settings table reads `listsPath` from core/paths.
 
 import { foldName } from "../core/names";
 
-/** The setting as a vault path: trimmed, no leading or trailing "/", "//" collapsed, ".md" added. "" stays "". */
-export function listsPath(setting: string): string {
-  const s = setting.trim().replace(/\/{2,}/g, "/").replace(/^\/+|\/+$/g, "").trim();
-  if (!s) return "";
-  return /\.md$/i.test(s) ? s : `${s}.md`;
-}
+// the lens note path rule lives in core/paths since 1.1.1; re-exported for the lens's callers
+export { listsPath } from "../core/paths";
 
 /** The "Not names" setting as a list: one word or run per line, trimmed, blanks dropped, each once. */
 export function parseNotNames(setting: string): string[] {

@@ -3,7 +3,7 @@
 // defaults, normalization; no Obsidian code).
 
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
 
 const SRC = join(__dirname, "..", "src");
@@ -34,3 +34,23 @@ for (const file of ["settings.ts", "settings-tab.ts"]) {
     });
   });
 }
+
+// IMPROVEMENTS 53 (1.1.1): shared core imports no module folder. `ui/` is allowed for types only.
+describe("core imports", () => {
+  const files = readdirSync(join(SRC, "core"), { recursive: true, encoding: "utf8" }).filter((f) => f.endsWith(".ts"));
+
+  it("reaches no module folder", () => {
+    const bad: string[] = [];
+    for (const f of files) {
+      const text = readFileSync(join(SRC, "core", f), "utf8");
+      for (const m of text.matchAll(/(?:import|export)\s(type\s)?[^;]*?from\s*["']((?:\.\.\/)+)([^"']+)["']/g)) {
+        const dir = m[3].split("/")[0];
+        const typeOnly = m[1] !== undefined;
+        if (dir === "core" || dir === "main" || dir === "i18n" || dir === "settings" || dir === "strings" || dir === "data") continue;
+        if (dir === "ui" && typeOnly) continue;
+        bad.push(`${f}: ${m[2]}${m[3]}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+});

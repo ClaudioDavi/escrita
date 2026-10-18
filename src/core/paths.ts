@@ -5,7 +5,7 @@
 // - the vault root is "" (a parent, a clean folder);
 // - ".md" is matched without case (`withMd`, `noMd`, `noteName`);
 // - `cleanFolder` trims spaces and the slashes at the edges, nothing else: a "\" stays a
-//   "\" (classify's folder settings keep their own fuller rule, on purpose);
+//   "\" (classify's folder settings keep their own fuller rule, `cleanVaultFolder`, on purpose);
 // - `joinPath` is the export's join: it also turns "\" into "/" and collapses "//";
 // - `isUnder` with an empty folder answers `emptyMatches` (default false).
 
@@ -38,6 +38,28 @@ export function noMd(path: string): string {
 /** A folder as typed in a setting or a field: spaces and edge slashes trimmed; "" is the vault root. */
 export function cleanFolder(folder: string): string {
   return folder.trim().replace(/^\/+|\/+$/g, "").trim();
+}
+
+/**
+ * A folder setting as a vault path, the fuller rule of classify's folder settings: trimmed,
+ * backslashes and repeated slashes turned into single slashes, edge slashes stripped.
+ */
+export function cleanVaultFolder(v: string): string {
+  return v.trim().replace(/\\/g, "/").replace(/\/{2,}/g, "/").replace(/^\/+|\/+$/g, "").trim();
+}
+
+/** The lens's word lists setting as a vault path: trimmed, no leading or trailing "/", "//" collapsed, ".md" added. "" stays "". */
+export function listsPath(setting: string): string {
+  const s = setting.trim().replace(/\/{2,}/g, "/").replace(/^\/+|\/+$/g, "").trim();
+  if (!s) return "";
+  return withMd(s);
+}
+
+/** A note path as typed: edge slashes stripped, `.md` added; blank gives the fallback. */
+export function normalizeNotePath(v: string, fallback: string): string {
+  const p = v.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "").trim();
+  if (p === "" || p.toLowerCase() === ".md") return fallback;
+  return withMd(p);
 }
 
 /** folder + name, without a doubled or leading slash; an empty folder is the vault root. */

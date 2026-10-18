@@ -4,23 +4,15 @@
 
 export type UniverseMode = "off" | "perBook" | "universe";
 
-export const ENTRY_KINDS = ["character", "place", "object", "group", "event"] as const;
-export type EntryKind = (typeof ENTRY_KINDS)[number];
+// the entry kinds moved to core in 1.1.1; re-exported for the universe's callers
+import { ENTRY_KINDS, type EntryKind, type EntryTypeSetting } from "../core/entry-kinds";
+export { ENTRY_KINDS, type EntryKind, type EntryTypeSetting };
 
 // the form rule moved to core in 1.1 (PLAN-1.1 Q1); re-exported for the universe's callers
 import { FORM_DEFAULTS, FORM_KINDS, type FormKind } from "../core/form";
+import { normalizeNotePath } from "../core/paths";
+export { normalizeNotePath };
 export { FORM_KINDS, type FormKind };
-
-/** One entry type: the value of the type property, where new entries go and an optional template note. */
-export interface EntryTypeSetting {
-  value: string;
-  /** folder for new entries: inside the universe folder (the one beside the universe note), or inside the book (per-book mode) */
-  folder: string;
-  /** vault path of the template note for new entries; empty = none */
-  template: string;
-  /** the name shown in menus and the panel ("Character"); the writer's own word */
-  label: string;
-}
 
 export interface UniverseSettings {
   universeMode: UniverseMode;
@@ -95,13 +87,6 @@ function cloneUniverse(u: UniverseSettings): UniverseSettings {
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
-
-/** A note path as typed: edge slashes stripped, `.md` added; blank gives the fallback. */
-export function normalizeNotePath(v: string, fallback: string): string {
-  const p = v.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "").trim();
-  if (p === "" || p.toLowerCase() === ".md") return fallback;
-  return /\.md$/i.test(p) ? p : `${p}.md`;
-}
 
 /**
  * Settings as saved (any shape: old data has none of these fields) → complete

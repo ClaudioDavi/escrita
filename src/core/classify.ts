@@ -5,9 +5,10 @@
 // folder through `ChapterFs`; core/books.ts adapts the real vault to it.
 
 import { folderList, folderListOf } from "./lists";
-import { parentOf } from "./paths";
+import { cleanVaultFolder, parentOf } from "./paths";
 import { effectivePiece, parseUnit, readChapterDefault, readPiece, type Piece, type PieceProperties, type PieceUnit } from "./measure";
-import { LANGUAGE_DEFAULTS, isDefaultsLanguage } from "./defaults";
+import { LANGUAGE_DEFAULTS } from "./defaults";
+import { isDefaultsLanguage } from "./language";
 import { DEFAULT_FORM_PROPERTY, FORM_DEFAULTS, formFor, type FormKind, type FormSettings } from "./form";
 import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, readStatus, stageOf, type Stage, type StageMapping } from "./stages";
 // one direction only: classify imports scope, scope never imports classify (no cycle at load)
@@ -245,7 +246,7 @@ function languageSet(defaultsLanguage: unknown): { exportFolder: string; submiss
 }
 
 function folderRoot(setting: unknown, fallback: string): string {
-  const s = str(setting).trim().replace(/\\/g, "/").replace(/\/{2,}/g, "/").replace(/^\/+|\/+$/g, "").trim();
+  const s = cleanVaultFolder(str(setting));
   return s === "" ? fallback : s;
 }
 
