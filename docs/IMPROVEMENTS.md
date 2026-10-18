@@ -21,6 +21,8 @@ The list comes from several reviews:
   known issues below. Its main finding: there is almost no copy-paste (5 blocks over 6 lines),
   but the same small idiom is written 5 to 60 times with drifting rules, because `src/ui/` and
   the core path helpers offer too little.
+- A fourth architecture review on 2026-10-18, after 1.1 (three reviewers: export and screenplays,
+  the shared core, the universe and its neighbours): candidates 53–62.
 
 Re-run the review (`/improve-codebase-architecture`) when this list runs low or after a
 big feature, and add what it finds here.
@@ -462,6 +464,167 @@ interface lives. Test through the interface.
   module's context), keeping the reading position. A spec (`tests/e2e/`) starts the command before the
   cache is ready and checks that the chapter leaves the list.
 - **Cost.** One more redraw at startup; the position is kept by the measured anchor from 1.1.
+
+### 53. One settings table (extends 37)
+
+**Scheduled for 1.1.1.**
+
+**Strength:** strong
+
+- **Problem.** One setting is spelled in up to eight hand-kept lists across `settings.ts`,
+  `core/defaults.ts` and `universe/settings.ts`: the `EscritaSettings` interface, `DEFAULT_SETTINGS`,
+  `WORD_KEYS` plus the English and pt-BR sets, a hand line in `normalizeSettings`, `PROPERTY_KEYS`,
+  `SETTING_FEATURES` and the settings row. Tests only keep the lists in step
+  (`tests/settings-features.test.ts:54`; `tests/defaults.test.ts:31,36,91`).
+- **Drift.** Blank `summaryProperty`, `authorProperty` and `dateProperty` are not restored, while 19
+  other property keys are (`settings.ts:412-415`). `lensLanguage` and `screenplayPage` are checked
+  against their values; `paragraphStyle`, `quoteStyle` and `typographyScope` are not
+  (`core/merge.ts:16` checks only the type). About 24 keys never pass `normalizeSettings`.
+- **Form keys.** They still live in `universe/settings.ts:39-43,78-80,135`, though 1.1 moved form
+  to core (`tests/settings-features.test.ts:50` exempts them). `core/defaults.ts:24` imports
+  `ENTRY_KINDS` from the universe.
+- **Change.** One declarative row per key: default, language-set word, kind, owning features.
+  Defaults, language sets, the normalizer, `PROPERTY_KEYS` and `SETTING_FEATURES` are derived.
+- **Evidence.** Commit `f9421c4` (1.1 screenplay settings) touched `settings.ts` in four places and
+  `defaults.ts` in three.
+- **Touches.** `settings.ts`, `core/defaults.ts`, `core/merge.ts`, `universe/settings.ts`.
+
+### 54. The script export builds once
+
+**Strength:** strong
+
+- **Problem.** `withScreenplay` (`export/screenplay.ts:143-146`) builds the page preset and renders
+  the PDF for the page count and warnings. `write()` builds the preset again (`export/index.ts:437-439`)
+  and `pdfWriter` renders again (`writers/pdf.ts:24` → `core/screenplay-pdf.ts:93` → `paginate`).
+  The preview paginates a third time (`export/script-preview.ts:82`).
+- **Risk.** The page count saved in `last.pages` (`index.ts:523,538`) and the bytes on disk come
+  from two renders built from inputs read at different times.
+- **Duplicate rule.** "A title page exists when the title isn't blank" is written twice
+  (`script-preview.ts:79,83`; `screenplay-pdf.ts:122`).
+- **Change.** The screenplay build returns the parsed script, the preset, the pages, the PDF bytes
+  and the warnings. The writers and the preview use that result.
+- **Touches.** `export/screenplay.ts`, `export/index.ts`, `export/writers/pdf.ts`,
+  `export/script-preview.ts`, `core/screenplay-pdf.ts`.
+
+### 55. Script or prose, decided once (extends 25 along another axis)
+
+**Strength:** worth exploring · after 54
+
+- **Problem.** `isScript` is derived from `formats[0]` (`export/index.ts:145`) and checked again at
+  `:192`, `:204`, `:279`, `:337` and `:432`, with `"pdf"` literals at `:344`, `:522` and `:538`.
+  `modal.ts` checks `o.script` at `:240`, `:471` and `:546`, and spells `"pdf"` or `"fountain"` at
+  `:132`, `:238`, `:264`, `:493`, `:502`, `:516`, `:546`, `:559` and `:602`.
+- **Muddled state.** `ExportState.preset` means a template id or, for a screenplay, the page
+  (`logic.ts:191`). `planFor` calls `presetById("letter")` and silently gets `PRESETS[0]`
+  (`index.ts:231`). The "export again" state for scripts is written twice with different rules
+  (`index.ts:342-345` against `modal.ts:559-560`).
+- **Change.** An export kind value, decided when the target resolves. Prose carries template and
+  cover; script carries page, scene numbers and notes.
+- **Touches.** `export/index.ts`, `export/modal.ts`, `export/logic.ts`.
+
+### 56. "Export again" as one module
+
+**Strength:** worth exploring
+
+- **Problem.** The rules are split across `lastOf` (`export/index.ts:163-170`), `repeatable` (`:173`),
+  `exportAgain` (`:354-375`), `remember` (`:508-534`) and the modal's again button
+  (`modal.ts:557-569`). The palette path checks `needsConfirm || no body parts || !repeatable`
+  (`index.ts:370`). The button checks `!needsConfirm && canRepeat` (`modal.ts:568`) and has no
+  body-parts check.
+- **Also.** "A chapter exported alone keeps the book's selection" is written in `remember` and
+  undone in `lastOf`.
+- **Change.** One module that answers four questions: what to offer, what state to restore,
+  whether to write at once, and what to record.
+- **Touches.** `export/index.ts`, `export/modal.ts`, `export/logic.ts`.
+
+### 57. The works of a scope
+
+**Strength:** strong · a natural improvement for the universe phase 2 version
+
+- **Problem.** Four rules decide what a work is in a universe. `isWork` (`universe/index.ts:153-159`)
+  counts a book without a status. `worksIn` (`index.ts:418-428`) needs a stage. `isWorkLike`
+  (`universe/view.ts:368-374`) ignores the stage. `workResolver` (`universe/view-threads.ts:17-22`)
+  does no check and titles with `book.note.basename`.
+- **Effect.** A book with no status counts in "Appears in" and in the names-index counts
+  (`names-index.ts:115`) but is missing from the Works tab and from the choices at `create.ts:348`.
+  It also sorts last (`mention-ctx.ts:94`: `MAX_SAFE_INTEGER`). The order comes from the Works tab's
+  display grouping (`works-list.ts:24-38`).
+- **Not tested.** `tests/universe-mention-ctx.test.ts:52` fakes `isWork` from `worksIn`, so the
+  drift never shows.
+- **Change.** One module per scope: its works, `workOf(note)` and their order. It is the seam for
+  phase 2's story order, continuity and canon (`ROADMAP-universe.md:215`).
+- **Touches.** `universe/index.ts`, `universe/view.ts`, `universe/view-threads.ts`,
+  `universe/works-list.ts`, `universe/mention-ctx.ts`, `universe/create.ts`.
+
+### 58. Typed property readers in core (extends 27 to every value kind)
+
+**Strength:** strong for universe phase 2
+
+- **Problem.** The same readers are written many times. `kindOf` (`universe/entries.ts:36-43`) and
+  `formOf` (`core/form.ts:34-41`) are one algorithm. `readStatus` (`core/stages.ts:80-86`) rejects a
+  list. `aliasesOf` and `phrasesOf` (`entries.ts:46-57,72-81`) have identical bodies. `boolOf`
+  (`entries.ts:60-69`) repeats `includeChapter`'s rule (`core/book-source.ts:67-72`). `filled`
+  (`core/new-note-status.ts:36-41`) equals `hasDate` (`core/measure.ts:191-196`), and `migrate.ts`
+  has a third (`hasValue`, `:99,:291`).
+- **Key case.** Entries and the universe read keys with exact case (`entries.ts:151-157`,
+  `classify.ts:490`), while export ignores case through `propertyValue`.
+- **Dates.** They live in `core/measure.ts:154-210`. `readDeadline` turns `YYYY-MM` into the month's
+  last day, which is wrong for story order.
+- **Change.** One module of readers: a word from a set, a list, a flag, presence, a date and a
+  partial date. The key-case change is a behaviour change; decide it on purpose.
+- **Touches.** `core/form.ts`, `core/stages.ts`, `core/measure.ts`, `core/book-source.ts`,
+  `core/new-note-status.ts`, `core/migrate.ts`, `universe/entries.ts`.
+
+### 59. Snapshot-guarded writes
+
+**Strength:** worth exploring · absorbs the `words` slice of 48
+
+- **Problem.** The "save, then replace" sequence (`snapshots/index.ts:479-511`), the busy guard and
+  the first-edit-of-the-day snapshot (`:378-397`, which relies on the read starting before any
+  `await`) live in the 552-line `FeatureModule`, beside Notices and dialogs. No test reaches
+  `restoreAll`, `revertBlock`, `beforePublish` or `firstEdit`.
+- **Change.** One module over the store and the note text port, returning outcomes: identical,
+  changed, snapshot failed, applied. The `FeatureModule` keeps the dialogs and Notices.
+  `tests/darlings-write.test.ts` shows the pattern.
+- **Touches.** `snapshots/index.ts`, `snapshots/store.ts`, a new pure file and its tests.
+
+### 60. Each module declares its part of data.json (extends 41)
+
+**Strength:** worth exploring
+
+- **Problem.** `data.ts:1-5` imports types from lens, universe and outline. `main.ts:247-259` loads
+  11 parts by hand, and history and publish are unchecked. FakePlugin's copy
+  (`tests/support/fake-plugin.ts:106-108`) lacks `exportChoices`, `setupOffered` and settings
+  behind a cast. Modules make 43 `plugin.data` accesses and 17 `requestSave` calls. Nothing tests
+  `loadAll` (`main.ts:243`).
+- **Change.** A module declares its key, its cleaner and its empty value next to its slots. The
+  registry loads them whether the feature is on or off.
+- **Touches.** `data.ts`, `main.ts`, `core/feature-registry.ts`, each module's slots, `tests/support/fake-plugin.ts`.
+
+### 61. One list of string tables, and a check that every t() key resolves
+
+**Strength:** worth exploring · small
+
+- **Problem.** The 21 tables are listed twice, in `main.ts:116-124` and `tests/strings.test.ts:3-46`.
+  A table missing from `main.ts` fails silently, because `t()` falls back to the key
+  (`i18n.ts:34`). That shipped to a release candidate once (commit `1e2aa3b`).
+- **Change.** Modules carry their tables. One list feeds the registration and the parity test.
+  A test checks every literal `t("…")` key in `src/`.
+- **Touches.** `main.ts`, `i18n.ts`, `tests/strings.test.ts`, each module's `strings.ts`.
+
+### 62. Modules depend on a typed core interface, not EscritaPlugin (pairs with 42 and 48)
+
+**Strength:** worth exploring · one module at a time
+
+- **Problem.** 60 files import `EscritaPlugin`, six of them in core. Modules reach `plugin.app` 201
+  times, `plugin.settings` 199 and `plugin.books` 77. FakePlugin fills members with casts
+  (`fake-plugin.ts:117-120`) and 26 test files cast to `EscritaPlugin`. The construction order and
+  the `saveSettings` order (`main.ts:127-136,270-275`) are documented in comments and untested.
+- **Reach outside ports.** `publish/index.ts:202` → `plugin.snapshots`, `outline/index.ts:83` →
+  `plugin.placeholders`, `new-work/index.ts:166` → `plugin.outline`, `settings-tab.ts:495` →
+  `plugin.setup`.
+- **Change.** One core interface handed through `ModuleContext`, with `main.ts` as its only adapter.
+- **Touches.** `main.ts`, `core/module-context.ts`, every module, `tests/support/fake-plugin.ts`.
 
 ## Measured and set aside
 
