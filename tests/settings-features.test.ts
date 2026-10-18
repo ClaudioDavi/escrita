@@ -4,7 +4,7 @@ import { registerStrings } from "../src/i18n";
 import { coreStrings } from "../src/strings";
 import { DEFAULT_SETTINGS, SETTING_FEATURES, rowShown, setFeature } from "../src/settings";
 import { switchesOf } from "../src/core/feature-registry";
-import { defaultUniverseSettings } from "../src/universe/settings";
+import { SETTINGS_SCHEMA, SETTING_KEYS, UNIVERSE_KEYS } from "../src/core/settings-schema";
 
 beforeAll(() => registerStrings(coreStrings));
 
@@ -46,12 +46,14 @@ describe("the Features page text", () => {
 });
 
 describe("settings rows and features (Q13)", () => {
-  // The switches and the universe section's own rows are not rows of this table.
-  const notRows = new Set(["features", "explorerCounts", "spellcheckOnDemand", ...Object.keys(defaultUniverseSettings())]);
-  const rowKeys = Object.keys(DEFAULT_SETTINGS).filter((k) => !notRows.has(k));
+  // The switches and the universe section's own rows are not rows of this table (they come from the table's readBy).
+  const switches = SETTING_KEYS.filter((k) => (SETTINGS_SCHEMA[k].readBy as unknown) === "switch");
 
   it("every settings row maps to a feature or to always", () => {
-    expect(Object.keys(SETTING_FEATURES).sort()).toEqual([...rowKeys].sort());
+    const missing = SETTING_KEYS.filter((k) => !(k in SETTING_FEATURES));
+    expect([...missing].sort()).toEqual([...switches, ...UNIVERSE_KEYS].sort());
+    expect(Object.keys(SETTING_FEATURES).filter((k) => !(SETTING_KEYS as readonly string[]).includes(k))).toEqual([]);
+    expect(switches.sort()).toEqual(["explorerCounts", "features", "spellcheckOnDemand"]);
     for (const [key, f] of Object.entries(SETTING_FEATURES)) {
       if (f === "always") continue;
       expect(f.length, key).toBeGreaterThan(0);

@@ -427,9 +427,10 @@ field on the classifier, the way `scope` moved in 0.9. Pure, no Obsidian imports
   are skipped). `formValuesText` and `parseFormValues` convert the comma-separated settings
   field; a text saved before 1.1 with six words keeps the screenplay word.
 - **Settings keys are unchanged** (`formProperty`, `formValues`, `formFolders`), so `data.json`
-  needs no migration. `UniverseSettings` still declares and normalizes them (an old six-word
-  `formValues` gains `screenplay` on its own) and `universe/settings.ts` re-exports `FORM_KINDS`
-  and `FormKind` for its callers; the rule itself is not there any more.
+  needs no migration. Since 1.1.1 they are declared by `FormSettings` in `core/form.ts`
+  (`EscritaSettings` extends it, beside `UniverseSettings`) and have their rows in the settings
+  table, marked `always`; an old six-word `formValues` gains `screenplay` on its own.
+  `universe/settings.ts` only re-exports `FORM_KINDS` and `FormKind` for its callers.
 - **In the classifier.** `ClassifySettings` has the three keys, optional so hand-built test
   settings stay valid (missing means the English defaults), and `classifyKey` includes them, so
   a change to a form word or a folder line rebuilds every index that keys on classify.
@@ -1319,7 +1320,7 @@ module internals (`tests/settings-imports.test.ts`: only shared core, top-level 
   rows below the field while the writer tabs through them.
 - **Shared rows live in core.** A row several features read (the property names, the folders,
   the placeholder marker, the editor's paragraph and quote style) is drawn once by the core, and
-  `SETTING_FEATURES` in `settings.ts` says which features keep it shown.
+  `SETTING_FEATURES` (derived from the settings table's `readBy`, re-exported by `settings.ts`) says which features keep it shown.
 - **Core parts.** The Features page (language, the presets block as a `customRow` that
   redraws only itself while asking, one group per feature group, the switches as `addSwitch`
   inside rows, the explorer's rows right after its switch), the stages (one row per stage; the
@@ -1458,11 +1459,33 @@ SF 10); the second, in 1.0.4, is new-work (see "Start a new work" below). It has
   `data.ts`): saved booleans win; absent, it is true for an install from before 1.0 (saved
   settings exist) and false for a fresh install. Not a setting.
 
+## The settings table (`core/settings-schema.ts`, 1.1.1)
+
+One row per setting, in `SETTINGS_SCHEMA` (IMPROVEMENTS 53). A row holds the English
+`default`, a `kind` (how a loaded value is cleaned: `word`, `property`, `trimmed`, `text`,
+`folder`, `bool`, `number`, `int`, `enum`, `custom`…), `readBy` (the features that read it, or
+`"always"`, `"switch"`, `"universe"`) and, for the word-bearing keys, `lang` and the pt-BR value.
+`EscritaSettings` stays the interface and the table is checked against it with `satisfies`, so a
+missing row, an extra row or a default of the wrong type fails the build. Derived from it:
+`DEFAULT_SETTINGS` (`schemaDefaults()`), the two default sets, `SETTING_FEATURES`, `UNIVERSE_KEYS`
+and `normalizeSettings` (`normalizeKeys`, each key cleaned by its kind with the install's set as
+the fallback). The universe's `defaultUniverseSettings` and `normalizeUniverse` are thin
+wrappers over the same rows. A new setting is one row, plus its field in the interface.
+
+The file imports only leaf core files (and `EscritaSettings` as a type); never `./classify` or
+`./defaults`, which import it. Shared helpers it needs moved to core with it: `core/entry-kinds.ts`,
+`core/language.ts`, and `listsPath`, `normalizeNotePath` and `cleanVaultFolder` in `core/paths.ts`.
+`tests/settings-imports.test.ts` fails if a core file imports a module folder, and
+`tests/settings-schema.test.ts` loads every row in both sets. Normalizers must be idempotent
+(`normalizeSettings` runs twice on a fresh install).
+
 ## Default sets (`core/defaults.ts`, 1.0)
 
 The word-bearing settings (stage words, folders, unnumbered titles, submission results,
 the universe's words: `WORD_KEYS`) have one default set per language, `en` and `pt-BR`
-(`LANGUAGE_DEFAULTS`). Property names are never in a set: they stay English. Every other key
+(`LANGUAGE_DEFAULTS`, read off the settings table: the rows with a `lang`). `WORD_KEYS` stays an
+explicit tuple because its order is the setup's; a compile-time check fails when it and the table
+disagree. Property names are never in a set: they stay English. Every other key
 comes from `DEFAULT_SETTINGS`, which stays English and equals the `en` set.
 `defaultsFor(lang)` (in `settings.ts`, over the pure `overlayDefaults`) is `DEFAULT_SETTINGS`
 with the set laid over it, a fresh object each call. The setting `defaultsLanguage` names
@@ -2502,8 +2525,10 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   classify gives no scope by kind (a missing path, such as the universe note before it exists,
   and the plugin's own folders) does it call `scopeFor` itself, with `books.scopeLookup(placement)`,
   the classifier's lookup, which `keptOut` reads too.
-- **Settings** (`settings.ts`, pure). `UniverseSettings` extends the plugin settings;
-  `normalizeUniverse` fills any missing or wrong-typed value with the English default.
+- **Settings** (`settings.ts`, pure). `UniverseSettings` extends the plugin settings (`EscritaSettings`
+  extends it and `FormSettings`); the rows are in the settings table (`core/settings-schema.ts`,
+  `readBy: "universe"`), and `defaultUniverseSettings` and `normalizeUniverse` are wrappers over
+  them: any missing or wrong-typed value takes the English default.
   Five fixed entry types (`ENTRY_KINDS`), each `{ value, folder, template, label }`;
   the seven forms (`FORM_KINDS`, declared in core since 1.1: see "Form"); `threadClosedWord`; `universeNote` (path, `.md` added);
   `defaultUniverseFolders`. The author's own words live in `data.json`. The section in

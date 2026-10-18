@@ -1,6 +1,8 @@
 // The default sets in the writer's language (1.0, SF 10; PLAN-1.0 Q1, Q2). Pure data and
 // functions, no Obsidian imports: settings.ts builds `defaultsFor` on top of this file, and
-// the setup reads `SETUP_NAMES`.
+// the setup reads `SETUP_NAMES`. Since 1.1.1 the sets are read off the settings table
+// (core/settings-schema.ts): a key is in the sets when its row has a `lang`, and the pt-BR words
+// are written there, beside the English defaults.
 //
 // What a set holds: the word-bearing settings only, the words Escrita writes into notes or
 // reads as folder and note names (stage words, folders, unnumbered titles, submission

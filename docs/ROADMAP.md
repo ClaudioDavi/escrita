@@ -47,6 +47,7 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 | 1.0.3 | Settings search: Escrita's rows appear in Obsidian's settings search, through the declarative settings tab (PLAN-1.0.3) · Minimum Obsidian 1.13.0 · Fixes from the community review: no `display()`, no deprecated `setWarning`, a `moment` wrapper · Improvements: settings rows with fallbacks from the install's defaults (candidate 36) and the settings tab on the declarative settings API (candidate 51) |
 | 1.0.4 | Start a new work: New work…, New short story, New book, the home block footer and the New works settings (SF 14, PLAN-1.0.4) · Deadlines by month · Improvement: path helpers in core (candidate 33) |
 | 1.1.0 | Screenwriting, phase 1: screenplay notes in Fountain, `screenplay` as the seventh form, character cues in "Appears in", the Forms group after Books (SP 1) · Fountain and PDF export, US Letter or A4, with a preview and the Screenplays settings (SP 6) · The end-to-end harness (204 tests) · Fixes: the Progress chart after a met goal, the entry tab hiding the chapter, the reader's jump on an edit, setting up again in a finished vault · Improvement: export writers share the title page, the modal splits (candidate 46) |
+| 1.1.1 | Code only, no new feature (PLAN-1.1.1): the review bot's warnings cleared (the e2e harness under `tests/`, underlines as backgrounds, the export preview indent as a spacer) · four fixes for a broken `data.json` · Improvement: one settings table (candidate 53, the schema half of 37) |
 
 ## 1.1, screenwriting (phase 1): shipped
 

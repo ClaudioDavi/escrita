@@ -205,4 +205,47 @@ Each step leaves `npm run typecheck`, `npx vitest run --maxWorkers=4`, `npm run 
 
 ## Results
 
-(filled in when the work is done)
+Done on the `1.1.1` branch, one commit per step (typecheck, build, `test:bundle` and `lint` with zero
+warnings green at each). Test files and counts are from the full run at the end of the step.
+
+1. **Pure helpers into core** (`42ec254`). `core/entry-kinds.ts`, `core/language.ts`; `core/paths.ts`
+   gained `listsPath`, `normalizeNotePath`, `cleanVaultFolder` (`folderRoot` calls it); the universe
+   and lens settings files re-export them; `core/defaults.ts` re-exports the language helpers.
+   `tests/settings-imports.test.ts` has the new rule (no `src/core` file imports a module folder;
+   `ui/` type imports allowed). 231 files, 3,772 tests.
+2. **Form keys into core** (`f91f887`). `EscritaSettings extends UniverseSettings, FormSettings`; the
+   universe settings lost the three form keys; `settings.ts` defaults and cleans them (until the
+   table). Form assertions moved from `tests/scope.test.ts` to `tests/classify-form.test.ts`; the
+   exemption in `tests/settings-features.test.ts` is gone. 231 files, 3,774 tests.
+3. **The table** (`6732831`). `core/settings-schema.ts` (`SETTINGS_SCHEMA`, `satisfies`), `schemaDefaults`,
+   `SETTING_KEYS`, `UNIVERSE_KEYS`, `SETTING_FEATURES`; `EN`, `PT_BR` and the hand `DEFAULT_SETTINGS`
+   are gone; `WORD_KEYS` and `INSTALL_KEYS` stay tuples, checked both ways against the table at compile
+   time (`TupleMatchesTable` in `core/defaults.ts`). No test changed. 3,774 tests.
+4. **`normalizeSettings` from the table** (`a3b1a5f`). `normalizeKeys`; `PROPERTY_KEYS` and `clampInt`
+   gone; `settings.ts` no longer imports `listsPath`, `cleanFolder`, `snapshotsRoot` or
+   `normalizeUniverse`. `defaultUniverseSettings` and `normalizeUniverse` became wrappers over the rows
+   (plan section 2; done here, not in step 3, because they need `normalizeKeys`). No test changed.
+   3,774 tests.
+5. **Drift fixes, test first** (`a1f3eab`). `tests/settings-schema.test.ts` (1,102 tests: every row in
+   both sets, the nested values, idempotence) failed on exactly the 13 drift keys (26 failures for
+   the kind names, 20 for the behaviours), then the 13 rows took their kinds. The fixtures are
+   unchanged. 232 files, 4,876 tests.
+6. **Parity tests and docs.** Deleted `tests/defaults.test.ts` key-set equality and "English set is
+   DEFAULT_SETTINGS"; `tests/settings-features.test.ts` now checks that the keys missing from
+   `SETTING_FEATURES` are the switch keys plus `UNIVERSE_KEYS`. ARCHITECTURE.md (Forms paragraph, a
+   settings table section, the default sets paragraph, the universe settings line), IMPROVEMENTS (53
+   in "Done", note in 37), ROADMAP (1.1.1 row), README changelog (1.1.1, version not bumped),
+   CONTEXT.md and the header of `core/defaults.ts`. 232 files, 4,874 tests, 2 skipped.
+
+`grep -rn "PROPERTY_KEYS\|PT_BR\b\|\bEN:" src` and `grep -rn '"\.\./\(universe\|lens\)' src/core` print
+nothing; `git diff b1d87d8 -- tests/fixtures` is empty. `settings.ts` went from 488 to 285 lines.
+
+**Deviations from the plan**
+
+- The 13 drift keys carry `legacy` kinds in steps 3 and 4 (declared with the table in step 3, wired in
+  step 4) and take their final kinds in step 5; the `legacy` kind name is gone after step 5.
+- The plan says the `property` kind's type forbids `lang`. The row type does not tie the two, so
+  `tests/settings-schema.test.ts` asserts it instead.
+- `Kind` has no list of enum values, so the test checks an unknown value, not every member
+  (the plan's risk note: `satisfies` does not catch a missing member of an `enumOf` list).
+- The int kind for `snapshotsKeepAuto` uses `Infinity` as its maximum.

@@ -28,15 +28,6 @@ describe("isDefaultsLanguage", () => {
 });
 
 describe("the default sets", () => {
-  it("list exactly the word-bearing and install-only keys, in both languages", () => {
-    for (const lang of DEFAULTS_LANGUAGES) expect(Object.keys(LANGUAGE_DEFAULTS[lang]).sort(), lang).toEqual([...WORD_KEYS, ...INSTALL_KEYS].sort());
-    for (const k of INSTALL_KEYS) expect(WORD_KEYS as readonly string[], k).not.toContain(k);
-  });
-
-  it("the English set is DEFAULT_SETTINGS on every key", () => {
-    for (const k of SET_KEYS) expect(LANGUAGE_DEFAULTS.en[k], k).toEqual(DEFAULT_SETTINGS[k]);
-  });
-
   it("pt-BR keeps snapshots in Escrita/Versões and excludes Modelos (Wave 2 seams); English is unchanged", () => {
     expect(LANGUAGE_DEFAULTS["pt-BR"].snapshotsFolder).toBe("Escrita/Versões");
     expect(LANGUAGE_DEFAULTS["pt-BR"].excludeFolders).toBe("Modelos");

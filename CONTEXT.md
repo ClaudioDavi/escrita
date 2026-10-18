@@ -67,7 +67,9 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   path-keyed data must follow renames through a data follower even while it is off.
   ARCHITECTURE.md, "Modules and feature switches". Each module returns its own settings
   blocks (`settingsItems` in its `settings-ui.ts`, drawn by the declarative tab `src/settings-tab.ts` with the row helpers in `src/ui/settings-rows.ts`); the order of all sections is one
-  list in `core/settings-order.ts`, and `settings.ts` imports no module internals.
+  list in `core/settings-order.ts`, and `settings.ts` imports no module internals. Every setting is one
+  row of the table in `core/settings-schema.ts` (1.1.1): default, kind, the features that read it, the
+  pt-BR word; add a setting there plus its field in `EscritaSettings`.
 - **Shared services on `plugin`** (use them; never re-derive):
   - `books.classify(x)`: what a file is (chapter, book note, note…), its book,
     `tracked`, `piece`, `snapshot`, `stage`, `submission`, `export`, `scope` (0.9: which
@@ -243,6 +245,11 @@ and what upkeep it asks of the writer.
   Also the form rule in core, the end-to-end harness, the 1.0 fixes found by it, and improvement
   46 (the export writers share the title page; the modal splits). Plan and results in
   `docs/PLAN-1.1.md`.
+- **1.1.1 (shipped), code only**: the review bot's warnings cleared (the e2e harness moved to `tests/e2e/`,
+  no `text-decoration` or `text-indent` in the CSS) and improvement 53, one settings table:
+  `core/settings-schema.ts` has one row per setting, and the defaults, the language sets, `SETTING_FEATURES`
+  and `normalizeSettings` come from it. A new setting is one row plus its field in the interface; core imports
+  no module folder. Plan and results in `docs/PLAN-1.1.1.md`.
 - **Next**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
 
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and

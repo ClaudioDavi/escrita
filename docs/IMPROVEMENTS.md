@@ -239,6 +239,8 @@ interface lives. Test through the interface.
   `ui/stages-settings.ts`. Move the module keys into each module's `strings.ts` (the names can
   stay). Keep `tests/settings-imports.test.ts` green. `SECTION_ORDER.also` should derive from
   the rows the core draws, not restate `SETTING_FEATURES`.
+- **Status.** The schema half shipped in 1.1.1 as candidate 53 (one settings table). The module
+  strings and the `also` derivation are still open.
 
 ### 38. Editor glue and "reveal on touch" in `src/ui/`
 
@@ -465,30 +467,6 @@ interface lives. Test through the interface.
   cache is ready and checks that the chapter leaves the list.
 - **Cost.** One more redraw at startup; the position is kept by the measured anchor from 1.1.
 
-### 53. One settings table (extends 37)
-
-**Scheduled for 1.1.1.**
-
-**Strength:** strong
-
-- **Problem.** One setting is spelled in up to eight hand-kept lists across `settings.ts`,
-  `core/defaults.ts` and `universe/settings.ts`: the `EscritaSettings` interface, `DEFAULT_SETTINGS`,
-  `WORD_KEYS` plus the English and pt-BR sets, a hand line in `normalizeSettings`, `PROPERTY_KEYS`,
-  `SETTING_FEATURES` and the settings row. Tests only keep the lists in step
-  (`tests/settings-features.test.ts:54`; `tests/defaults.test.ts:31,36,91`).
-- **Drift.** Blank `summaryProperty`, `authorProperty` and `dateProperty` are not restored, while 19
-  other property keys are (`settings.ts:412-415`). `lensLanguage` and `screenplayPage` are checked
-  against their values; `paragraphStyle`, `quoteStyle` and `typographyScope` are not
-  (`core/merge.ts:16` checks only the type). About 24 keys never pass `normalizeSettings`.
-- **Form keys.** They still live in `universe/settings.ts:39-43,78-80,135`, though 1.1 moved form
-  to core (`tests/settings-features.test.ts:50` exempts them). `core/defaults.ts:24` imports
-  `ENTRY_KINDS` from the universe.
-- **Change.** One declarative row per key: default, language-set word, kind, owning features.
-  Defaults, language sets, the normalizer, `PROPERTY_KEYS` and `SETTING_FEATURES` are derived.
-- **Evidence.** Commit `f9421c4` (1.1 screenplay settings) touched `settings.ts` in four places and
-  `defaults.ts` in three.
-- **Touches.** `settings.ts`, `core/defaults.ts`, `core/merge.ts`, `universe/settings.ts`.
-
 ### 54. The script export builds once
 
 **Strength:** strong
@@ -670,6 +648,7 @@ confirmed:
 
 | Version | Improvement |
 |---|---|
+| 1.1.1 | One settings table (candidate 53, the schema half of 37): `core/settings-schema.ts` has one row per setting (English default, kind, the features that read it, the pt-BR value of word-bearing keys), checked against `EscritaSettings` with `satisfies`. `DEFAULT_SETTINGS`, the English and pt-BR default sets, `SETTING_FEATURES`, `UNIVERSE_KEYS` and `normalizeSettings` are derived from it; `EN`, `PT_BR` and `PROPERTY_KEYS` are gone, and `WORD_KEYS` stays a tuple checked against the table at compile time. The form keys moved from the universe's settings to `core/form.ts`, and `ENTRY_KINDS`, the language helpers and the path rules (`listsPath`, `normalizeNotePath`, `cleanVaultFolder`) moved to core, so no core file imports a module folder (`tests/settings-imports.test.ts`). Valid data loads as before (`tests/settings-g3.test.ts` and the setup fixtures are unchanged); four drift fixes for a broken `data.json` are listed in the README changelog. `tests/settings-schema.test.ts` loads every row in both sets. Still open in 37: the module strings and the derived `also` |
 | 1.1 | Export writers share the title page; the modal splits (candidate 46): `core/export-pipeline.ts` has `titlePageOf(doc, preset)`, `bylineOf` and `minHeadingOf`, and `EpubCover` lives there; the title page type is `ManuscriptTitle` (the screenplay's `TitlePage` is in `core/fountain.ts`); `writers/xml.ts` holds `xmlEscape` (`epub.ts` no longer imports `docx.ts`); `logic.ts` has `headingFormat`, `ExportState` and `stateOfLast`; the dialogs are in `export/dialogs.ts` and `modal.ts` went from 714 to 576 lines before the screenplay options. Every property read goes through `propertyValue`. No export expectation changed (`tests/export-title-page.test.ts`) |
 | 1.1 | The five known issues from the review of 2026-10-08. 1: the beat click lands on the beat, not at the restored cursor; closed, not a bug (three regression specs in `tests/e2e/specs/beat-click.spec.ts`: cursor near the top, the leaf's history restoring an old cursor, a background tab). 2: "Appears in" reads chapter numbers with `core/book.ts` (`chapterNumber`, `chapterTitle`). 3: export reads the cover property through `propertyValue`, ignoring case like `Compile:`. 4: `templatesFolder` and `globalDarlingsNote` follow renames (data followers in `TemplatesFeature` and `DarlingsModule`, also while off). 5: `submissionsOffNotice` passes the language. Test-only aliases gone: `export/logic.ts` `inFolder`, `universe/migrate-plan.ts` `basename` and `dirname`, and `placeholders/logic.ts` `parentPath` (the tests and `placeholders/view.ts` use `core/paths.ts`) |
 | 1.0.4 | Path helpers in core (candidate 33): `core/paths.ts` (`parentOf`, `baseName`, `noteName`, `withMd`, `cleanFolder`, `joinPath`, `isUnder` with `emptyMatches`), edge cases pinned in `tests/paths.test.ts` first. Adopted in the new-work module and in place of the six `parentOf` copies (`core/classify.ts`, `placeholders/logic.ts`, `snapshots/store.ts`, `snapshots/fs.ts`, `universe/migrate-plan.ts`, `export/logic.ts`), `core/scope.ts`'s `withMd`, `noMd` and `inFolder`, and export's path join (renamed `joinPath`, no longer named like core's containment test). `outline/rows.ts` strips `.md` in any letter case. `cleanFolder` keeps today's rule; the `\` rule of `classify.ts` `folderRoot` stays there on purpose |
