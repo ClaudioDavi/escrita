@@ -1,0 +1,91 @@
+// An optional screen recording of a spec. The harness attaches to Obsidian over CDP, so
+// Playwright's recordVideo does not work; this uses the DevTools screencast instead
+// (Page.startScreencast), keeps every frame with its timestamp and encodes an mp4 with ffmpeg.
+// Active only when the RECORD environment variable names a folder; otherwise `Recorder.start`
+// returns null and the spec runs as usual, without pauses.
+import type { CDPSession, Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+
+/** The folder from RECORD, or null when recording is off. */
+export const recordDir = (): string | null => process.env.RECORD || null;
+
+export class Recorder {
+  private frames: { file: string; at: number }[] = [];
+  private pending: Promise<unknown>[] = [];
+  private session: CDPSession | null = null;
+  private framesDir: string;
+
+  private constructor(private readonly page: Page, readonly dir: string) {
+    this.framesDir = path.join(dir, "frames");
+  }
+
+  /** Starts recording when RECORD is set (and clears the folder's old frames); null otherwise. */
+  static async start(page: Page): Promise<Recorder | null> {
+    const dir = recordDir();
+    if (!dir) return null;
+    const r = new Recorder(page, dir);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.rmSync(r.framesDir, { recursive: true, force: true });
+    fs.mkdirSync(r.framesDir, { recursive: true });
+    r.session = await page.context().newCDPSession(page);
+    const session = r.session;
+    session.on("Page.screencastFrame", (ev: { data: string; sessionId: number; metadata: { timestamp?: number } }) => {
+      const at = ev.metadata.timestamp ?? Date.now() / 1000;
+      const file = path.join(r.framesDir, `${String(r.frames.length).padStart(6, "0")}.jpg`);
+      r.frames.push({ file, at });
+      r.pending.push(fs.promises.writeFile(file, Buffer.from(ev.data, "base64")));
+      void session.send("Page.screencastFrameAck", { sessionId: ev.sessionId }).catch(() => { /* page closing */ });
+    });
+    await session.send("Page.startScreencast", { format: "jpeg", quality: 85, maxWidth: 1280, everyNthFrame: 1 });
+    return r;
+  }
+
+  /** Stops the screencast and waits for the frames to be on disk. */
+  async stop(): Promise<void> {
+    try { await this.session?.send("Page.stopScreencast"); } catch { /* already gone */ }
+    await Promise.all(this.pending);
+  }
+
+  /** Encodes the frames, by their timestamps, into <dir>/<name>.mp4 and returns its path. */
+  encode(name: string): string {
+    const out = path.join(this.dir, `${name}.mp4`);
+    if (this.frames.length === 0) throw new Error("no frames were recorded");
+    const list = path.join(this.framesDir, "list.txt");
+    const lines: string[] = [];
+    this.frames.forEach((f, i) => {
+      const next = this.frames[i + 1];
+      const seconds = next ? Math.max(next.at - f.at, 0.001) : 1;
+      lines.push(`file '${f.file}'`, `duration ${seconds.toFixed(4)}`);
+    });
+    // the concat demuxer ignores the last duration unless the last file is repeated
+    lines.push(`file '${this.frames[this.frames.length - 1].file}'`);
+    fs.writeFileSync(list, lines.join("\n") + "\n");
+    // libx264 when this ffmpeg has it; some builds only ship OpenH264 (which wants a bitrate)
+    const encoders = execFileSync("ffmpeg", ["-hide_banner", "-encoders"], { encoding: "utf8" });
+    const codec = encoders.includes("libx264") ? ["-c:v", "libx264"] : ["-c:v", "libopenh264", "-b:v", "4M"];
+    execFileSync("ffmpeg", [
+      "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", list,
+      "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", "-r", "30", ...codec, "-pix_fmt", "yuv420p", out,
+    ], { stdio: "inherit" });
+    return out;
+  }
+}
+
+/** Shows a caption over the window (a fixed element on the body); a new call replaces it. */
+export async function caption(page: Page, text: string): Promise<void> {
+  await page.evaluate((s) => {
+    document.getElementById("escrita-e2e-caption")?.remove();
+    const el = document.createElement("div");
+    el.id = "escrita-e2e-caption";
+    el.textContent = s;
+    el.style.cssText = "position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:2147483647;" +
+      "background:rgba(0,0,0,0.82);color:#fff;font:600 16px sans-serif;padding:8px 16px;border-radius:8px;pointer-events:none;";
+    document.body.appendChild(el);
+  }, text);
+}
+
+export function removeCaption(page: Page): Promise<void> {
+  return page.evaluate(() => document.getElementById("escrita-e2e-caption")?.remove());
+}

@@ -43,6 +43,7 @@ Playwright counts it as passed while the bug is still there. When the bug is fix
 | `tests/e2e/specs/scope.spec.ts`, `switches.spec.ts` | TEST-0.9.md, scope and the feature switches |
 | `tests/e2e/specs/appears-in-reading.spec.ts` | 0.7's G0d, closed as decided: Reading view shows the panel only |
 | `tests/e2e/specs/screenplay.spec.ts` | PLAN-1.1's own checks: a screenplay's export (PDF, Fountain, page, warnings, preview, settings) |
+| `tests/e2e/specs/visual-1.1.1.spec.ts` | PLAN-1.1.1, part 1: the lines drawn as backgrounds and spacers (lens marks, name underline, desk, Ignore, publish check, export indent, closed thread), dark and light. `RECORD=<folder>` also writes `visual-1.1.1.mp4` (CDP screencast, `lib/record.ts`) and one PNG per step; without it there are no pauses and no files |
 
 Helpers beyond `app.ts`: `tests/e2e/lib/more.ts` (the settings page, overlap, small targets, sideways
 scroll), `panels.ts` (side panels, the universe tab, the settings window), `export-ui.ts`,
