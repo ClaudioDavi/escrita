@@ -16,7 +16,7 @@ import type { EscritaSettings } from "../settings";
 import { DEFAULT_STAGES, STAGES, normalizeStages, type StageMapping } from "./stages";
 import { cleanFeatures, type FeatureId } from "./features";
 import { cleanWeekdays } from "./merge";
-import { cleanVaultFolder, listsPath, normalizeNotePath } from "./paths";
+import { cleanFolder, cleanVaultFolder, listsPath, normalizeNotePath } from "./paths";
 import { DEFAULT_FORM_PROPERTY, FORM_DEFAULTS, FORM_KINDS } from "./form";
 import { ENTRY_KINDS, type EntryKind, type EntryTypeSetting } from "./entry-kinds";
 import { DEFAULTS_LANGUAGES } from "./language";
@@ -26,7 +26,7 @@ export type ReadBy = readonly FeatureId[] | "always" | "switch" | "universe";
 
 export type KindName =
   | "word" | "property" | "trimmed" | "text" | "folder" | "optionalFolder" | "vaultFolder" | "templatePath"
-  | "enum" | "bool" | "number" | "int" | "strings" | "custom" | "legacy";
+  | "enum" | "bool" | "number" | "int" | "strings" | "custom";
 
 /** How a loaded value is cleaned: `fallback` is the install's set value for the key. Must be idempotent. */
 export interface Kind<V> {
@@ -59,8 +59,10 @@ const property = kind<string>("property", trimmedOr);
 const trimmed = kind<string>("trimmed", (v, f) => (typeof v === "string" ? v.trim() : f));
 /** Text kept as typed; not a string gives the fallback. */
 const text = kind<string>("text", (v, f) => (typeof v === "string" ? v : f));
+/** A folder that is never blank. */
+const folder = kind<string>("folder", (v, f) => (typeof v === "string" ? cleanFolder(v) : "") || f);
 /** A folder, blank kept (blank means "no folder"). */
-const optionalFolder = kind<string>("optionalFolder", (v, f) => (typeof v === "string" ? cleanFolderEdge(v) : f));
+const optionalFolder = kind<string>("optionalFolder", (v, f) => (typeof v === "string" ? cleanFolder(v) : f));
 /** A vault folder that is never blank: classify's fuller rule (backslashes, repeated slashes). */
 const vaultFolder = kind<string>("vaultFolder", (v, f) => (typeof v === "string" ? cleanVaultFolder(v) : "") || f);
 /** A template note path: trimmed, no leading slash; not a string gives the fallback. */
@@ -74,13 +76,6 @@ const enumOf = <T extends string>(values: readonly T[]): Kind<T> =>
 const int = (min: number, max: number): Kind<number> =>
   kind<number>("int", (v, f) => (typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(min, Math.round(v))) : f));
 const custom = <V>(normalize: (v: unknown, f: V) => V): Kind<V> => kind<V>("custom", normalize);
-/** Today's load-time rule of a key that drifts from the plain kinds (PLAN-1.1.1, section 3); the drift fixes replace these. */
-const legacy = <V>(normalize: (v: unknown, f: V) => V = (v) => v as V): Kind<V> => kind<V>("legacy", normalize);
-
-function cleanFolderEdge(v: string): string {
-  return v.trim().replace(/^\/+|\/+$/g, "").trim();
-}
-
 const entryTypes = custom<Record<EntryKind, EntryTypeSetting>>((v, f) => {
   const src = isRecord(v) ? v : {};
   const out = {} as Record<EntryKind, EntryTypeSetting>;
@@ -126,9 +121,9 @@ const UNIVERSE = "universe" as const;
 
 export const SETTINGS_SCHEMA = {
   // Books
-  chaptersFolder: { default: "Chapters", kind: legacy<string>(), readBy: ALWAYS, lang: "word", ptBR: "Capítulos" },
+  chaptersFolder: { default: "Chapters", kind: word, readBy: ALWAYS, lang: "word", ptBR: "Capítulos" },
   chapterTemplate: { default: "", kind: text, readBy: ALWAYS },
-  templatesFolder: { default: "", kind: legacy<string>((v) => (typeof v === "string" ? cleanFolderEdge(v) : "")), readBy: ["templates", "universe"] },
+  templatesFolder: { default: "", kind: optionalFolder, readBy: ["templates", "universe"] },
   storiesFolder: { default: "", kind: optionalFolder, readBy: ALWAYS },
   storyTemplate: { default: "", kind: templatePath, readBy: ALWAYS },
   booksFolder: { default: "", kind: optionalFolder, readBy: ["outline"] },
@@ -150,7 +145,7 @@ export const SETTINGS_SCHEMA = {
   homeNote: { default: "", kind: trimmed, readBy: ["desk"] },
   openHomeOnStartup: { default: false, kind: bool, readBy: ["desk"] },
   openInWritingMode: { default: false, kind: bool, readBy: ["desk"] },
-  summaryProperty: { default: "summary", kind: legacy<string>(), readBy: ALWAYS },
+  summaryProperty: { default: "summary", kind: property, readBy: ALWAYS },
 
   // Goals
   dailyGoal: { default: 1000, kind: number, readBy: ["goals"] },
@@ -176,18 +171,18 @@ export const SETTINGS_SCHEMA = {
   datesOff: { default: "", kind: text, readBy: ["goals"] },
 
   // Publishing
-  dateProperty: { default: "date", kind: legacy<string>(), readBy: ["publish"] },
+  dateProperty: { default: "date", kind: property, readBy: ["publish"] },
   recommendedProperties: { default: "description", kind: text, readBy: ["publish"] },
 
   // Export
   exportFolder: {
-    default: "Escrita/Exports", kind: legacy<string>((v, f) => (typeof v === "string" ? cleanFolderEdge(v) : "") || f), readBy: ALWAYS,
+    default: "Escrita/Exports", kind: folder, readBy: ALWAYS,
     lang: "word", ptBR: "Escrita/Exportações",
   },
   compileProperty: { default: "compile", kind: property, readBy: ["export"] },
   dedicationProperty: { default: "dedication", kind: property, readBy: ["export"] },
   epigraphProperty: { default: "epigraph", kind: property, readBy: ["export"] },
-  authorProperty: { default: "author", kind: legacy<string>(), readBy: ["export"] },
+  authorProperty: { default: "author", kind: property, readBy: ["export"] },
   authorName: { default: "", kind: trimmed, readBy: ["export"] },
   authorSurname: { default: "", kind: trimmed, readBy: ["export"] },
   contactLines: { default: "", kind: trimmed, readBy: ["export"] },
@@ -214,7 +209,7 @@ export const SETTINGS_SCHEMA = {
 
   // Submissions
   submissionsFolder: {
-    default: "Escrita/Submissions", kind: legacy<string>((v, f) => (typeof v === "string" ? cleanFolderEdge(v) : "") || f), readBy: ALWAYS,
+    default: "Escrita/Submissions", kind: folder, readBy: ALWAYS,
     lang: "word", ptBR: "Escrita/Envios",
   },
   submissionResults: {
@@ -237,22 +232,22 @@ export const SETTINGS_SCHEMA = {
   ghostBeats: { default: true, kind: bool, readBy: ["outline"] },
 
   // Placeholders
-  placeholderMarker: { default: "XXX", kind: legacy<string>(), readBy: ["placeholders", "publish"] },
+  placeholderMarker: { default: "XXX", kind: word, readBy: ["placeholders", "publish"] },
   showExplorerDots: { default: true, kind: bool, readBy: ["placeholders"] },
 
   // Threads
   threadKeyword: { default: "thread", kind: word, readBy: ["threads"], lang: "word", ptBR: "thread" },
 
   // Darlings: the pt-BR interface calls them "darlings" too
-  darlingsNote: { default: "Darlings.md", kind: legacy<string>(), readBy: ["darlings"], lang: "word", ptBR: "Darlings.md" },
-  globalDarlingsNote: { default: "Darlings.md", kind: legacy<string>(), readBy: ["darlings"], lang: "word", ptBR: "Darlings.md" },
+  darlingsNote: { default: "Darlings.md", kind: word, readBy: ["darlings"], lang: "word", ptBR: "Darlings.md" },
+  globalDarlingsNote: { default: "Darlings.md", kind: word, readBy: ["darlings"], lang: "word", ptBR: "Darlings.md" },
 
   // Editor
   enterFlow: { default: false, kind: bool, readBy: ["typing"] },
-  paragraphStyle: { default: "blank", kind: legacy<EscritaSettings["paragraphStyle"]>(), readBy: ["typing", "dialogueFocus", "moveBlocks", "lens"] },
+  paragraphStyle: { default: "blank", kind: enumOf<EscritaSettings["paragraphStyle"]>(["single", "blank"]), readBy: ["typing", "dialogueFocus", "moveBlocks", "lens"] },
   smartTypography: { default: true, kind: bool, readBy: ["typing"] },
-  typographyScope: { default: "books", kind: legacy<EscritaSettings["typographyScope"]>(), readBy: ["typing"] },
-  quoteStyle: { default: "curly", kind: legacy<EscritaSettings["quoteStyle"]>(), readBy: ["typing", "dialogueFocus", "lens"] },
+  typographyScope: { default: "books", kind: enumOf<EscritaSettings["typographyScope"]>(["books", "all"]), readBy: ["typing"] },
+  quoteStyle: { default: "curly", kind: enumOf<EscritaSettings["quoteStyle"]>(["curly", "guillemets", "german", "off"]), readBy: ["typing", "dialogueFocus", "lens"] },
   dialogueDash: { default: true, kind: bool, readBy: ["typing"] },
   spellcheckOnDemand: { default: false, kind: bool, readBy: SWITCH },
 
