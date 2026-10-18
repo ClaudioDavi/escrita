@@ -11,6 +11,8 @@ export { ENTRY_KINDS, type EntryKind, type EntryTypeSetting };
 // the form rule moved to core in 1.1 (PLAN-1.1 Q1) and its settings in 1.1.1; re-exported for the universe's callers
 import { FORM_KINDS, type FormKind } from "../core/form";
 import { normalizeNotePath } from "../core/paths";
+import { UNIVERSE_KEYS, normalizeKeys, schemaDefaults } from "../core/settings-schema";
+import type { EscritaSettings } from "../settings";
 export { normalizeNotePath };
 export { FORM_KINDS, type FormKind };
 
@@ -39,77 +41,26 @@ export interface UniverseSettings {
   underlineNames: boolean;
 }
 
-const ENTRY_DEFAULTS: Record<EntryKind, { folder: string; label: string }> = {
-  character: { folder: "Characters", label: "Character" },
-  place: { folder: "Places", label: "Place" },
-  object: { folder: "Objects", label: "Object" },
-  group: { folder: "Groups", label: "Group" },
-  event: { folder: "Events", label: "Event" },
-};
-
 /** Fresh copies each call, so live settings never share objects with the defaults. */
 export function defaultUniverseSettings(): UniverseSettings {
-  const entryTypes = {} as Record<EntryKind, EntryTypeSetting>;
-  for (const k of ENTRY_KINDS) {
-    entryTypes[k] = { value: k, folder: ENTRY_DEFAULTS[k].folder, template: "", label: ENTRY_DEFAULTS[k].label };
-  }
-  return {
-    universeMode: "off",
-    universeNote: "Universe.md",
-    defaultUniverseFolders: "",
-    threadClosedWord: "closed",
-    universeProperty: "universe",
-    typeProperty: "type",
-    entryTypes,
-    caseSensitiveProperty: "caseSensitive",
-    ignoreProperty: "ignore",
-    firstNameProperty: "firstName",
-    nameTitles: "",
-    underlineNames: false,
-  };
+  return pickUniverse(schemaDefaults());
 }
 
-/** A copy sharing no object with `u` (the install's default set, 1.0). */
-function cloneUniverse(u: UniverseSettings): UniverseSettings {
-  const d = defaultUniverseSettings();
-  const entryTypes = {} as Record<EntryKind, EntryTypeSetting>;
-  for (const k of ENTRY_KINDS) entryTypes[k] = { ...u.entryTypes[k] };
-  return { ...d, ...u, entryTypes };
+function pickUniverse(s: Partial<EscritaSettings>): UniverseSettings {
+  const out: Record<string, unknown> = {};
+  for (const k of UNIVERSE_KEYS) out[k] = (s as Record<string, unknown>)[k];
+  return out as unknown as UniverseSettings;
 }
-
-const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 
 /**
  * Settings as saved (any shape: old data has none of these fields) → complete
- * universe settings. A missing or wrong-typed value takes its default; a blank
- * name or folder does too. Unknown mode → off.
+ * universe settings, each key cleaned by its row of the settings table. A missing or
+ * wrong-typed value takes its default (or `base`'s, the install's set); a blank name or
+ * folder does too. Unknown mode → off.
  */
 export function normalizeUniverse(raw: unknown, base?: UniverseSettings): UniverseSettings {
-  const src = isRecord(raw) ? raw : {};
-  const d = base ? cloneUniverse(base) : defaultUniverseSettings();
-  const str = (v: unknown, fallback: string): string => (typeof v === "string" && v.trim() !== "" ? v.trim() : fallback);
-  const entryTypes = isRecord(src.entryTypes) ? src.entryTypes : {};
-  for (const k of ENTRY_KINDS) {
-    const e = isRecord(entryTypes[k]) ? entryTypes[k] : {};
-    d.entryTypes[k] = {
-      value: str(e.value, d.entryTypes[k].value),
-      folder: str(e.folder, d.entryTypes[k].folder),
-      template: typeof e.template === "string" ? e.template.trim() : "",
-      label: str(e.label, d.entryTypes[k].label),
-    };
-  }
-  return {
-    universeMode: src.universeMode === "perBook" || src.universeMode === "universe" ? src.universeMode : "off",
-    universeNote: normalizeNotePath(str(src.universeNote, d.universeNote), d.universeNote),
-    defaultUniverseFolders: typeof src.defaultUniverseFolders === "string" ? src.defaultUniverseFolders : "",
-    threadClosedWord: str(src.threadClosedWord, d.threadClosedWord),
-    universeProperty: str(src.universeProperty, d.universeProperty),
-    typeProperty: str(src.typeProperty, d.typeProperty),
-    entryTypes: d.entryTypes,
-    caseSensitiveProperty: str(src.caseSensitiveProperty, d.caseSensitiveProperty),
-    ignoreProperty: str(src.ignoreProperty, d.ignoreProperty),
-    firstNameProperty: str(src.firstNameProperty, d.firstNameProperty),
-    nameTitles: typeof src.nameTitles === "string" ? src.nameTitles : "",
-    underlineNames: src.underlineNames === true,
-  };
+  const src = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  const out = pickUniverse(src);
+  normalizeKeys(out, base ?? defaultUniverseSettings(), UNIVERSE_KEYS);
+  return out;
 }

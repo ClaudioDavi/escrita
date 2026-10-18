@@ -1,16 +1,13 @@
-import { listsPath } from "./lens/settings";
-import { cleanWeekdays, mergeDefaults } from "./core/merge";
+import { mergeDefaults } from "./core/merge";
 import { migrateSettings } from "./core/migrate";
 import { presetSwitches } from "./core/feature-presets";
-import { DEFAULT_STATUS_PROPERTY, normalizeStages, type StageMapping } from "./core/stages";
-import { FEATURE_SPECS, cleanFeatures, type FeatureId } from "./core/features";
+import { type StageMapping } from "./core/stages";
+import { FEATURE_SPECS, type FeatureId } from "./core/features";
 import { switchesOf } from "./core/feature-registry";
-import { normalizeUniverse, type UniverseSettings } from "./universe/settings";
-import { snapshotsRoot } from "./core/classify";
+import { type UniverseSettings } from "./universe/settings";
 import { isDefaultsLanguage, languageOf, overlayDefaults, type DefaultsLanguage } from "./core/defaults";
-import { cleanFolder } from "./core/paths";
-import { FORM_KINDS, type FormSettings } from "./core/form";
-import { SETTING_FEATURES, schemaDefaults } from "./core/settings-schema";
+import { type FormSettings } from "./core/form";
+import { SETTING_FEATURES, SETTING_KEYS, normalizeKeys, schemaDefaults } from "./core/settings-schema";
 
 export type ParagraphStyle = "single" | "blank";
 export type Scope = "books" | "all";
@@ -229,62 +226,15 @@ export function defaultsFor(lang: DefaultsLanguage): EscritaSettings {
   return overlayDefaults(DEFAULT_SETTINGS, lang);
 }
 
-/** Settings as saved, with defaults filled in and list fields cleaned (used by loadAll). */
+/**
+ * Settings as saved, with defaults filled in and list fields cleaned (used by loadAll). Every
+ * key is cleaned by its row of the settings table (core/settings-schema.ts); a blank or wrong
+ * value comes back from the install's set.
+ */
 export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   // 1.0 (Q1): an unknown language is the English set. Blank fields below come back from the install's set.
   s.defaultsLanguage = isDefaultsLanguage(s.defaultsLanguage) ? s.defaultsLanguage : "en";
-  const d = defaultsFor(s.defaultsLanguage);
-  s.weekdaysOff = cleanWeekdays(s.weekdaysOff);
-  // Always a fresh copy: never share the frozen defaults with the live settings.
-  s.stages = normalizeStages(s.stages, d.stages);
-  s.statusProperty = (typeof s.statusProperty === "string" ? s.statusProperty.trim() : "") || DEFAULT_STATUS_PROPERTY;
-  s.homeNote = typeof s.homeNote === "string" ? s.homeNote.trim() : DEFAULT_SETTINGS.homeNote;
-  if (typeof s.otherStatusColors !== "string") s.otherStatusColors = DEFAULT_SETTINGS.otherStatusColors;
-  if (typeof s.draftNewNotes !== "boolean") s.draftNewNotes = DEFAULT_SETTINGS.draftNewNotes;
-  for (const k of PROPERTY_KEYS) s[k] = (typeof s[k] === "string" ? s[k].trim() : "") || DEFAULT_SETTINGS[k];
-  s.snapshotsFolder = snapshotsRoot(s.snapshotsFolder, s.defaultsLanguage);
-  // 0.8 folders: trimmed here; task 1.6 routes them through classify's exportRoot / submissionsRoot
-  for (const k of ["exportFolder", "submissionsFolder"] as const) {
-    s[k] = (typeof s[k] === "string" ? s[k].trim().replace(/^\/+|\/+$/g, "") : "") || d[k];
-  }
-  s.submissionResults = (typeof s.submissionResults === "string" ? s.submissionResults.trim() : "") || d.submissionResults;
-  for (const k of ["authorName", "authorSurname", "contactLines", "chapterHeadingFormat"] as const) {
-    s[k] = typeof s[k] === "string" ? s[k].trim() : "";
-  }
-  s.unnumberedTitles = typeof s.unnumberedTitles === "string" ? s.unnumberedTitles.trim() : d.unnumberedTitles;
-  s.snapshotsKeepAuto = Number.isFinite(s.snapshotsKeepAuto) ? Math.max(1, Math.round(s.snapshotsKeepAuto)) : DEFAULT_SETTINGS.snapshotsKeepAuto;
-  s.lensLanguage = s.lensLanguage === "pt-BR" || s.lensLanguage === "en" ? s.lensLanguage : "auto";
-  s.lensListsNote = typeof s.lensListsNote === "string" ? listsPath(s.lensListsNote) : DEFAULT_SETTINGS.lensListsNote;
-  s.lensEchoWindow = clampInt(s.lensEchoWindow, 10, 200, DEFAULT_SETTINGS.lensEchoWindow);
-  s.lensLongSentence = clampInt(s.lensLongSentence, 15, 200, DEFAULT_SETTINGS.lensLongSentence);
-  s.lensRulesOff = Array.isArray(s.lensRulesOff) ? s.lensRulesOff.filter((x): x is string => typeof x === "string") : [];
-  s.lensRulesOn = Array.isArray(s.lensRulesOn) ? s.lensRulesOn.filter((x): x is string => typeof x === "string") : [];
-  s.notNames = typeof s.notNames === "string" ? s.notNames : "";
-  // 1.1 screenplays: a blank word comes back from the install's set; the page is letter unless saved as a4
-  for (const k of ["screenplaySceneHeadings", "screenplayTransitions", "screenplayMore", "screenplayContinued", "screenplayCredit"] as const) {
-    s[k] = (typeof s[k] === "string" ? s[k].trim() : "") || d[k];
-  }
-  s.screenplayPage = s.screenplayPage === "a4" ? "a4" : "letter";
-  s.screenplaySceneNumbers = s.screenplaySceneNumbers === true;
-  // a blank scene break would vanish in the book: the default instead
-  s.epubSceneBreak = (typeof s.epubSceneBreak === "string" ? s.epubSceneBreak.trim() : "") || DEFAULT_SETTINGS.epubSceneBreak;
-  s.templatesFolder = typeof s.templatesFolder === "string" ? s.templatesFolder.trim().replace(/^\/+|\/+$/g, "") : "";
-  for (const k of ["storiesFolder", "booksFolder"] as const) s[k] = typeof s[k] === "string" ? cleanFolder(s[k]) : "";
-  for (const k of ["storyTemplate", "bookNoteTemplate"] as const) s[k] = typeof s[k] === "string" ? s[k].trim().replace(/^\/+/, "") : "";
-  s.threadKeyword = (typeof s.threadKeyword === "string" ? s.threadKeyword.trim() : "") || d.threadKeyword;
-  s.features = cleanFeatures(s.features);
-  Object.assign(s, normalizeUniverse(s, d));
-  // the form keys: a blank property or word comes back from the install's set
-  s.formProperty = (typeof s.formProperty === "string" ? s.formProperty.trim() : "") || d.formProperty;
-  const forms: Record<string, unknown> = s.formValues && typeof s.formValues === "object" && !Array.isArray(s.formValues) ? s.formValues : {};
-  s.formValues = { ...d.formValues };
-  for (const k of FORM_KINDS) {
-    const v = forms[k];
-    if (typeof v === "string" && v.trim() !== "") s.formValues[k] = v.trim();
-  }
-  if (typeof s.formFolders !== "string") s.formFolders = "";
-  // the mode is on only when saved as true
-  s.openInWritingMode = s.openInWritingMode === true;
+  normalizeKeys(s, defaultsFor(s.defaultsLanguage), SETTING_KEYS);
   return s;
 }
 
@@ -307,16 +257,6 @@ export function loadSettings(saved: unknown, obsidianLocale: string): { settings
   Object.assign(settings, presetSwitches("writer", switchesOf(settings)));
   return { settings: normalizeSettings(settings), fresh };
 }
-
-function clampInt(v: unknown, min: number, max: number, fallback: number): number {
-  return typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(min, Math.round(v))) : fallback;
-}
-
-/** Frontmatter property names a piece or book is read from; normalizeSettings trims them and restores empty ones (step 4 of the settings table replaces this list). */
-const PROPERTY_KEYS = ["targetProperty", "limitProperty", "unitProperty", "deadlineProperty", "goalProperty", "povProperty", "chapterTargetProperty",
-  "compileProperty", "dedicationProperty", "epigraphProperty", "coverProperty", "collectionProperty",
-  "submissionWorkProperty", "submissionMarketProperty", "submissionSentProperty", "submissionResultProperty", "submissionRespondedProperty",
-  "screenplaySourceProperty", "screenplayDraftDateProperty"] as const;
 
 // Which features read each setting lives in the settings table (readBy); re-exported for the tab.
 export { SETTING_FEATURES };

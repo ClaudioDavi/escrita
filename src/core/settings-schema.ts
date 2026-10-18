@@ -360,3 +360,13 @@ export function schemaDefaults(): EscritaSettings {
   for (const k of SETTING_KEYS) out[k] = cloneValue(rowOf(k).default);
   return out as unknown as EscritaSettings;
 }
+
+/**
+ * Cleans `keys` of `target` in place, each by its row's kind, with `base[k]` (copied) as the
+ * fallback. Keys not in `keys` and keys the table does not know are left alone.
+ */
+export function normalizeKeys(target: Partial<EscritaSettings>, base: Partial<EscritaSettings>, keys: readonly SettingKey[]): void {
+  const t = target as Record<string, unknown>;
+  const b = base as Record<string, unknown>;
+  for (const k of keys) t[k] = rowOf(k).kind.normalize(t[k], cloneValue(b[k]));
+}
