@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { keptOut, linkText, scopeFor, universeNotePath, type ScopeLookup, type ScopeSettings } from "../src/core/scope";
-import { ENTRY_KINDS, FORM_KINDS, defaultUniverseSettings, normalizeUniverse } from "../src/universe/settings";
+import { ENTRY_KINDS, defaultUniverseSettings, normalizeUniverse } from "../src/universe/settings";
 
 interface World {
   /** note path → universe property value */
@@ -142,13 +142,10 @@ describe("universe settings", () => {
     expect(d.universeMode).toBe("off");
     expect(d.universeNote).toBe("Universe.md");
     expect(d.typeProperty).toBe("type");
-    expect(d.formProperty).toBe("form");
     expect(Object.keys(d.entryTypes)).toEqual([...ENTRY_KINDS]);
     expect(d.entryTypes.character).toEqual({ value: "character", folder: "Characters", template: "", label: "Character" });
     expect(d.threadClosedWord).toBe("closed");
     expect(d.entryTypes.place.label).toBe("Place");
-    expect(Object.keys(d.formValues)).toEqual([...FORM_KINDS]);
-    expect(d.formValues.shortStory).toBe("short story");
   });
   it("defaults are fresh objects", () => {
     const a = defaultUniverseSettings();
@@ -163,7 +160,6 @@ describe("universe settings", () => {
     const n = normalizeUniverse({
       universeMode: "universe", universeNote: " Universo.md ", threadClosedWord: " fechado ", typeProperty: 5,
       entryTypes: { character: { value: "personagem", folder: "Personagens" }, place: "x" },
-      formValues: { shortStory: "conto" },
       defaultUniverseFolders: "Contos\nTextos",
     });
     expect(n.universeMode).toBe("universe");
@@ -172,7 +168,6 @@ describe("universe settings", () => {
     expect(n.typeProperty).toBe("type");
     expect(n.entryTypes.character).toEqual({ value: "personagem", folder: "Personagens", template: "", label: "Character" });
     expect(n.entryTypes.place.folder).toBe("Places");
-    expect(n.formValues).toMatchObject({ shortStory: "conto", novel: "novel" });
     expect(n.defaultUniverseFolders).toBe("Contos\nTextos");
   });
   it("an unknown mode is off", () => {

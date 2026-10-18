@@ -9,12 +9,13 @@ import { defaultUniverseSettings, normalizeUniverse, type UniverseSettings } fro
 import { DEFAULT_SNAPSHOTS_FOLDER, snapshotsRoot } from "./core/classify";
 import { isDefaultsLanguage, languageOf, overlayDefaults, type DefaultsLanguage } from "./core/defaults";
 import { cleanFolder } from "./core/paths";
+import { DEFAULT_FORM_PROPERTY, FORM_DEFAULTS, FORM_KINDS, type FormSettings } from "./core/form";
 
 export type ParagraphStyle = "single" | "blank";
 export type Scope = "books" | "all";
 export type QuoteStyle = "curly" | "guillemets" | "german" | "off";
 
-export interface EscritaSettings extends UniverseSettings {
+export interface EscritaSettings extends UniverseSettings, FormSettings {
   // Books
   chaptersFolder: string;
   chapterTemplate: string;
@@ -320,6 +321,11 @@ export const DEFAULT_SETTINGS: EscritaSettings = {
 
   defaultsLanguage: "en",
 
+  // the form rule's settings (1.1.1: they moved from the universe's block to core/form)
+  formProperty: DEFAULT_FORM_PROPERTY,
+  formValues: { ...FORM_DEFAULTS },
+  formFolders: "",
+
   ...defaultUniverseSettings(),
 };
 
@@ -379,6 +385,15 @@ export function normalizeSettings(s: EscritaSettings): EscritaSettings {
   s.threadKeyword = (typeof s.threadKeyword === "string" ? s.threadKeyword.trim() : "") || d.threadKeyword;
   s.features = cleanFeatures(s.features);
   Object.assign(s, normalizeUniverse(s, d));
+  // the form keys: a blank property or word comes back from the install's set
+  s.formProperty = (typeof s.formProperty === "string" ? s.formProperty.trim() : "") || d.formProperty;
+  const forms: Record<string, unknown> = s.formValues && typeof s.formValues === "object" && !Array.isArray(s.formValues) ? s.formValues : {};
+  s.formValues = { ...d.formValues };
+  for (const k of FORM_KINDS) {
+    const v = forms[k];
+    if (typeof v === "string" && v.trim() !== "") s.formValues[k] = v.trim();
+  }
+  if (typeof s.formFolders !== "string") s.formFolders = "";
   // the mode is on only when saved as true
   s.openInWritingMode = s.openInWritingMode === true;
   return s;

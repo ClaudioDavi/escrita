@@ -8,8 +8,8 @@ export type UniverseMode = "off" | "perBook" | "universe";
 import { ENTRY_KINDS, type EntryKind, type EntryTypeSetting } from "../core/entry-kinds";
 export { ENTRY_KINDS, type EntryKind, type EntryTypeSetting };
 
-// the form rule moved to core in 1.1 (PLAN-1.1 Q1); re-exported for the universe's callers
-import { FORM_DEFAULTS, FORM_KINDS, type FormKind } from "../core/form";
+// the form rule moved to core in 1.1 (PLAN-1.1 Q1) and its settings in 1.1.1; re-exported for the universe's callers
+import { FORM_KINDS, type FormKind } from "../core/form";
 import { normalizeNotePath } from "../core/paths";
 export { normalizeNotePath };
 export { FORM_KINDS, type FormKind };
@@ -27,12 +27,6 @@ export interface UniverseSettings {
   /** property holding an entry's type */
   typeProperty: string;
   entryTypes: Record<EntryKind, EntryTypeSetting>;
-  /** property holding a work's form */
-  formProperty: string;
-  /** the words used for each form */
-  formValues: Record<FormKind, string>;
-  /** newline-separated `Folder: form word` lines: the form of works in a folder without the property */
-  formFolders: string;
   /** per-entry property: `true` makes the name match only with its own capitalization */
   caseSensitiveProperty: string;
   /** per-entry property: phrases where the name must not match ("rosa dos ventos") */
@@ -67,9 +61,6 @@ export function defaultUniverseSettings(): UniverseSettings {
     universeProperty: "universe",
     typeProperty: "type",
     entryTypes,
-    formProperty: "form",
-    formValues: { ...FORM_DEFAULTS },
-    formFolders: "",
     caseSensitiveProperty: "caseSensitive",
     ignoreProperty: "ignore",
     firstNameProperty: "firstName",
@@ -83,7 +74,7 @@ function cloneUniverse(u: UniverseSettings): UniverseSettings {
   const d = defaultUniverseSettings();
   const entryTypes = {} as Record<EntryKind, EntryTypeSetting>;
   for (const k of ENTRY_KINDS) entryTypes[k] = { ...u.entryTypes[k] };
-  return { ...d, ...u, entryTypes, formValues: { ...u.formValues } };
+  return { ...d, ...u, entryTypes };
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
@@ -98,7 +89,6 @@ export function normalizeUniverse(raw: unknown, base?: UniverseSettings): Univer
   const d = base ? cloneUniverse(base) : defaultUniverseSettings();
   const str = (v: unknown, fallback: string): string => (typeof v === "string" && v.trim() !== "" ? v.trim() : fallback);
   const entryTypes = isRecord(src.entryTypes) ? src.entryTypes : {};
-  const forms = isRecord(src.formValues) ? src.formValues : {};
   for (const k of ENTRY_KINDS) {
     const e = isRecord(entryTypes[k]) ? entryTypes[k] : {};
     d.entryTypes[k] = {
@@ -108,7 +98,6 @@ export function normalizeUniverse(raw: unknown, base?: UniverseSettings): Univer
       label: str(e.label, d.entryTypes[k].label),
     };
   }
-  for (const k of FORM_KINDS) d.formValues[k] = str(forms[k], d.formValues[k]);
   return {
     universeMode: src.universeMode === "perBook" || src.universeMode === "universe" ? src.universeMode : "off",
     universeNote: normalizeNotePath(str(src.universeNote, d.universeNote), d.universeNote),
@@ -117,9 +106,6 @@ export function normalizeUniverse(raw: unknown, base?: UniverseSettings): Univer
     universeProperty: str(src.universeProperty, d.universeProperty),
     typeProperty: str(src.typeProperty, d.typeProperty),
     entryTypes: d.entryTypes,
-    formProperty: str(src.formProperty, d.formProperty),
-    formValues: d.formValues,
-    formFolders: typeof src.formFolders === "string" ? src.formFolders : "",
     caseSensitiveProperty: str(src.caseSensitiveProperty, d.caseSensitiveProperty),
     ignoreProperty: str(src.ignoreProperty, d.ignoreProperty),
     firstNameProperty: str(src.firstNameProperty, d.firstNameProperty),

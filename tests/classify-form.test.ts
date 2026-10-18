@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { classify, classifyKey, type ClassifySettings, type Named, type VaultTree } from "../src/core/classify";
-import { FORM_DEFAULTS } from "../src/core/form";
+import { FORM_DEFAULTS, FORM_KINDS } from "../src/core/form";
+import { DEFAULT_SETTINGS, normalizeSettings } from "../src/settings";
 
 // PLAN-1.1 Q1: the form is a field on the classifier result, read with the universe off.
 
@@ -62,5 +63,26 @@ describe("classify: form (1.1)", () => {
     expect(classifyKey(pt)).not.toBe(classifyKey({ ...pt, formFolders: "" }));
     expect(classifyKey(pt)).not.toBe(classifyKey({ ...pt, formValues: { ...pt.formValues!, screenplay: "script" } }));
     expect(classifyKey(pt)).not.toBe(classifyKey({ ...pt, formProperty: "form" }));
+  });
+});
+
+// 1.1.1: the form keys moved from the universe's settings to core/form; they load as before
+describe("form settings", () => {
+  it("defaults: the form property and the English words", () => {
+    expect(DEFAULT_SETTINGS.formProperty).toBe("form");
+    expect(Object.keys(DEFAULT_SETTINGS.formValues)).toEqual([...FORM_KINDS]);
+    expect(DEFAULT_SETTINGS.formValues.shortStory).toBe("short story");
+    expect(DEFAULT_SETTINGS.formFolders).toBe("");
+  });
+  it("keeps the writer's words, fills the rest and repairs wrong types", () => {
+    const s = normalizeSettings({
+      ...DEFAULT_SETTINGS,
+      formProperty: " forma ",
+      formValues: { shortStory: "conto", novel: " " } as typeof DEFAULT_SETTINGS.formValues,
+      formFolders: 5 as unknown as string,
+    });
+    expect(s.formProperty).toBe("forma");
+    expect(s.formValues).toMatchObject({ shortStory: "conto", novel: "novel" });
+    expect(s.formFolders).toBe("");
   });
 });
