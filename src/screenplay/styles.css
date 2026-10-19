@@ -85,6 +85,11 @@ body .escrita-screenplay .cm-line.HyperMD-quote {
   background: none;
 }
 
+/* the bar itself is the line's ::before (a 2px border), found by the e2e check */
+body .escrita-screenplay .cm-line.HyperMD-quote::before {
+  border-left: 0 !important;
+}
+
 body .escrita-screenplay .cm-line.HyperMD-quote,
 body .escrita-screenplay .cm-line.HyperMD-quote * {
   color: var(--text-normal) !important;

@@ -226,6 +226,12 @@ describe("layout", () => {
     expect(view.dom.querySelector(".escrita-sp-ghost")?.textContent).toBe("Character");
   });
 
+  it("Tab in a new, empty script gives its one line the column too (an empty note has no visible range)", () => {
+    const { view, keys } = open("");
+    keys.run(view, "Tab");
+    expect(view.dom.querySelector(".cm-line")!.className).toContain("escrita-sp-character");
+  });
+
   it("is plain in Source mode and in a note that is not a screenplay", () => {
     const keys = new ScreenplayKeys(host);
     const off = new ScreenplayLayout({ isScreenplay: () => false, opts: () => opts, font: () => "theme", modes: (s) => keys.modesOf(s) });

@@ -94,7 +94,12 @@ export class ScreenplaySuggest extends EditorSuggest<ScreenplayItem> {
   selectSuggestion(item: ScreenplayItem): void {
     const context = this.context;
     if (!context) return;
-    context.editor.replaceRange(item.text, context.start, context.end);
+    // up to the cursor as it is now: keys typed since the list was drawn are part of what is replaced
+    const cursor = context.editor.getCursor();
+    const end = cursor.line === context.start.line && cursor.ch >= context.start.ch ? cursor : context.end;
+    context.editor.replaceRange(item.text, context.start, end);
+    // the cursor goes after the name, ready for what comes next (" - ", Enter)
+    context.editor.setCursor({ line: context.start.line, ch: context.start.ch + item.text.length });
   }
 
   /** The feature went off: close an open popup and answer nothing from now on. */

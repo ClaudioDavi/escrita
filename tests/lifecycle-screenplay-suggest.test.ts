@@ -60,4 +60,21 @@ describe("screenplay suggest", () => {
     expect(off.at(11, 1)).toBeNull();
     expect(setup("Mara waits.").at(0, 5)).toBeNull();
   });
+
+  it("picking replaces up to the cursor as it is now, and leaves the cursor after the name", () => {
+    const { suggest } = setup("INT. KIT");
+    const calls: unknown[] = [];
+    // the list was drawn at "K" (end at ch 6); two more letters were typed since
+    const editor = {
+      getCursor: () => ({ line: 0, ch: 8 }),
+      replaceRange: (...a: unknown[]) => calls.push(["replace", ...a]),
+      setCursor: (...a: unknown[]) => calls.push(["cursor", ...a]),
+    };
+    (suggest as unknown as { context: unknown }).context = { editor, start: { line: 0, ch: 5 }, end: { line: 0, ch: 6 } };
+    suggest.selectSuggestion({ kind: "location", text: "KITCHEN", note: "" });
+    expect(calls).toEqual([
+      ["replace", "KITCHEN", { line: 0, ch: 5 }, { line: 0, ch: 8 }],
+      ["cursor", { line: 0, ch: 12 }],
+    ]);
+  });
 });

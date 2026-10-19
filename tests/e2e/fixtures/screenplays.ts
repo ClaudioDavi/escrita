@@ -47,3 +47,97 @@ export function screenplays(): VaultSpec {
     },
   };
 }
+
+// ---- the screenplay editor (PLAN-1.2, Wave 2 F) ----
+
+export const ELEMENTS = "Roteiros/Elementos.md";
+export const CAST = "Roteiros/Elenco.md";
+export const HUGE = "Roteiros/Longo.md";
+export const CONTO = "Contos/Conto.md";
+
+/** One of each element, then a line with `_underline_` and `*italic*`; the cursor is put on the first line by the spec. */
+const ELEMENTS_TEXT = [
+  "Title: Elementos",
+  "",
+  "INT. COZINHA - DIA",
+  "",
+  "Mara abre a janela e _respira_ fundo, com *medo*.",
+  "",
+  "MARA",
+  "(baixo)",
+  "Tem alguém aí?",
+  "",
+  "> CORTA PARA:",
+  "",
+  "# Primeiro ato",
+  "",
+  "= a sinopse da cena",
+  "",
+  "> FIM <",
+  "",
+  "---",
+  "",
+  "Última linha.",
+  "",
+].join("\n");
+
+/** MARIA speaks three times and MARCOS twice; two locations; a time already in use. */
+export const CAST_TEXT = [
+  "INT. COZINHA - DIA",
+  "",
+  "Duas pessoas à mesa.",
+  "",
+  "MARIA",
+  "Quem chegou?",
+  "",
+  "MARCOS",
+  "Ninguém.",
+  "",
+  "MARIA",
+  "Então fecha a porta.",
+  "",
+  "EXT. PRAIA - NOITE",
+  "",
+  "A maré sobe.",
+  "",
+  "MARCOS",
+  "Está frio.",
+  "",
+  "MARIA",
+  "Está.",
+  "",
+  "",
+].join("\n");
+
+/** About 120 pages (58 lines a page): scenes of speeches, so every element kind is in it. */
+export function longScript(pages = 120): string {
+  const names = ["MARA", "TOMÉ", "INÊS", "JOÃO"];
+  const lines: string[] = ["Title: O roteiro longo", ""];
+  let scene = 0;
+  while (lines.length < pages * 58) {
+    scene++;
+    lines.push(`${scene % 2 ? "INT." : "EXT."} LUGAR ${scene} - ${scene % 3 ? "DIA" : "NOITE"}`, "");
+    lines.push(`A luz muda devagar no lugar ${scene}. Alguém atravessa o quadro sem pressa e deixa a porta aberta atrás de si.`, "");
+    for (let k = 0; k < 6; k++) {
+      lines.push(names[(scene + k) % names.length]);
+      if (k % 2) lines.push("(baixo)");
+      lines.push(`Esta é a fala ${k + 1} da cena ${scene}, comprida o bastante para passar de uma linha na coluna do diálogo.`, "");
+    }
+    lines.push("> CORTA PARA:", "");
+  }
+  return lines.join("\n");
+}
+
+/** The vault for the screenplay editor checks: scripts in Roteiros/ (the form by folder), a prose conto in Contos/. */
+export function screenplayEditorVault(): VaultSpec {
+  return {
+    language: "pt-BR",
+    data: { setupOffered: true },
+    files: {
+      [ELEMENTS]: ELEMENTS_TEXT,
+      [CAST]: CAST_TEXT,
+      [HUGE]: longScript(),
+      [CONTO]: "---\nstatus: rascunho\n---\n\nA ponte caiu antes do almoço. *Ela* viu, _e calou_.\n\n> uma citação\n\n# Um título\n",
+    },
+  };
+}

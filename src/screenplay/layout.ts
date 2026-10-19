@@ -89,7 +89,9 @@ export class ScreenplayLayout {
         for (const m of host.modes(view.state)) if (m.pos <= doc.length) held.set(doc.lineAt(m.pos).number, m.mode);
         const builder = new RangeSetBuilder<Decoration>();
         let done = 0; // last line number added: visible ranges may share a line
-        for (const r of view.visibleRanges) {
+        // an empty note has no visible range, and its one line can be held in a mode (Tab in a new script)
+        const ranges = doc.length === 0 ? [{ from: 0, to: 0 }] : view.visibleRanges;
+        for (const r of ranges) {
           const first = Math.max(doc.lineAt(r.from).number, done + 1);
           const last = doc.lineAt(r.to).number;
           for (let n = first; n <= last; n++) {
