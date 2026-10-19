@@ -5,7 +5,7 @@
 // folder through `ChapterFs`; core/books.ts adapts the real vault to it.
 
 import { folderList, folderListOf } from "./lists";
-import { cleanVaultFolder, parentOf } from "./paths";
+import { cleanVaultFolder, listsPath, parentOf } from "./paths";
 import { effectivePiece, parseUnit, readChapterDefault, readPiece, type Piece, type PieceProperties, type PieceUnit } from "./measure";
 import { LANGUAGE_DEFAULTS } from "./defaults";
 import { isDefaultsLanguage } from "./language";
@@ -89,6 +89,15 @@ export interface ClassifySettings extends PieceProperties {
   defaultUniverseFolders?: string;
   /** the property on a work, chapter or entry that links its universe note */
   universeProperty?: string;
+  /**
+   * Escrita's own notes (1.2.1): the per-book darlings note's name, the global darlings note's
+   * path and the lens's word lists note's path. Optional so the many hand-built test settings stay
+   * valid: a missing key means no such own note; a blank one means the default ("Darlings.md";
+   * the two default word lists names at the vault root).
+   */
+  darlingsNote?: string;
+  globalDarlingsNote?: string;
+  lensListsNote?: string;
   /** the install's default set (1.0): a blank export or submissions folder falls back to its words; missing is "en" */
   defaultsLanguage?: string;
   /**
@@ -225,6 +234,44 @@ export interface Placement<F extends Named, D extends Named> {
    * screenplay draft that is not tracked is still a screenplay. A field, never a new kind.
    */
   form: FormKind | null;
+  /**
+   * Escrita's own note (1.2.1): "darlings" for a book's darlings note or the global one, "lists"
+   * for the lens's word lists note; null for everything else. Such a note holds text Escrita
+   * keeps for the writer, not writing: it is never tracked (goals don't count it), never a work
+   * (no stage) and never gets the draft status. Like `snapshot`, the rule applies whether the
+   * feature is on or off. The kind stays what the place says (a "note", or a "book-file" in a
+   * book). A field, never a new kind.
+   */
+  own: OwnNote | null;
+}
+
+/** Which of Escrita's own notes a path is (see `Placement.own`). */
+export type OwnNote = "darlings" | "lists";
+
+const DEFAULT_LISTS_NOTES = ["Word lists.md", "Listas de palavras.md"];
+
+/** A note setting as a vault path: trimmed, backslashes and repeated slashes turned into single ones, ".md" added; "" stays "". */
+function notePathOf(setting: unknown): string {
+  return typeof setting === "string" ? listsPath(cleanVaultFolder(setting)) : "";
+}
+
+/**
+ * Whether `path` is one of Escrita's own notes. The darlings note is the book folder's
+ * `darlingsNote` (a file of that book) or the global `globalDarlingsNote`; the word lists
+ * note is `lensListsNote`, or, when that is blank, either default name at the vault root.
+ * Paths compare as the vault spells them, ignoring case (a case-insensitive disk is one file).
+ */
+export function ownNoteOf(path: string, bookFolder: string | null, settings: ClassifySettings): OwnNote | null {
+  const same = (a: string, b: string) => a !== "" && a.toLowerCase() === b.toLowerCase();
+  if (typeof settings.globalDarlingsNote === "string" && same(path, notePathOf(settings.globalDarlingsNote) || "Darlings.md")) return "darlings";
+  if (bookFolder !== null && typeof settings.darlingsNote === "string") {
+    if (same(path, `${bookFolder}/${notePathOf(settings.darlingsNote) || "Darlings.md"}`)) return "darlings";
+  }
+  if (typeof settings.lensListsNote === "string") {
+    const lists = notePathOf(settings.lensListsNote);
+    if (lists ? same(path, lists) : DEFAULT_LISTS_NOTES.some((n) => same(path, n))) return "lists";
+  }
+  return null;
 }
 
 /**
@@ -287,6 +334,7 @@ export function classifyKey(s: ClassifySettings): string {
     str(s.statusProperty), s.stages ?? null,
     str(s.targetProperty), str(s.limitProperty), str(s.unitProperty), str(s.deadlineProperty), str(s.chapterTargetProperty),
     str(s.formProperty), s.formValues ?? null, str(s.formFolders),
+    str(s.darlingsNote), str(s.globalDarlingsNote), str(s.lensListsNote),
   ]);
 }
 
@@ -517,7 +565,7 @@ function formOfFile(path: string, fm: Record<string, unknown> | undefined, setti
  * scope itself, once its frontmatter read is shared with classify's (`own`).
  */
 function withScope<F extends Named, D extends Named>(
-  p: Omit<Placement<F, D>, "scope" | "form"> & { form?: FormKind | null }, tree: VaultTree<F, D>, settings: ClassifySettings,
+  p: Omit<Placement<F, D>, "scope" | "form" | "own"> & { form?: FormKind | null; own?: OwnNote | null }, tree: VaultTree<F, D>, settings: ClassifySettings,
   own?: { fm: Record<string, unknown> | undefined },
 ): Placement<F, D> {
   let scope: Scope = NO_SCOPE;
@@ -528,7 +576,7 @@ function withScope<F extends Named, D extends Named>(
       // a failing lookup reads as no scope
     }
   }
-  return { ...p, form: p.form ?? null, scope };
+  return { ...p, form: p.form ?? null, own: p.own ?? null, scope };
 }
 
 /**
@@ -539,7 +587,7 @@ function withScope<F extends Named, D extends Named>(
 export function classify<F extends Named, D extends Named>(
   tree: VaultTree<F, D>, settings: ClassifySettings, path: string | null,
 ): Placement<F, D> {
-  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, pieceSource: null, snapshot: false, stage: null, submission: false, export: false, scope: NO_SCOPE, form: null };
+  const none: Placement<F, D> = { path: path ?? "", kind: "none", markdown: false, book: null, tracked: false, piece: null, pieceSource: null, snapshot: false, stage: null, submission: false, export: false, scope: NO_SCOPE, form: null, own: null };
   if (typeof path !== "string" || path === "") return none;
   if (path === "/") return { ...none, kind: "folder" };
   try {
@@ -562,7 +610,9 @@ export function classify<F extends Named, D extends Named>(
     }
     if (file) {
       const markdown = path.endsWith(".md");
-      const tracked = markdown && isTracked(path, settings);
+      const ancestor = ancestorBook(tree, path, ch);
+      const ownNote = markdown ? ownNoteOf(path, ancestor?.folder.path ?? null, settings) : null;
+      const tracked = markdown && ownNote === null && isTracked(path, settings);
       const fm = markdown ? frontmatterOf(tree, file) : undefined;
       const piece = markdown ? pieceOf(fm, settings) : null;
       const pieceSource = piece?.target !== undefined ? "own" as const : null;
@@ -570,15 +620,15 @@ export function classify<F extends Named, D extends Named>(
       const own = markdown ? bookAt(tree, path.slice(0, -3), ch) : null;
       const read = markdown ? { fm } : undefined;
       const form = markdown ? formOfFile(path, fm, settings) : null;
-      if (own) return withScope({ path, kind: "book-note", markdown, book: own, tracked, piece, pieceSource, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false, form }, tree, settings, read);
-      const book = ancestorBook(tree, path, ch);
+      if (own) return withScope({ path, kind: "book-note", markdown, book: own, tracked, piece, pieceSource, snapshot: false, stage: stageFor(fm, tracked, settings), submission: false, export: false, form, own: ownNote }, tree, settings, read);
+      const book = ancestor;
       if (book) {
         // compare against the handle's path, never the settings string
         const kind: Kind = markdown && parentOf(path) === book.chaptersFolder.path ? "chapter" : "book-file";
         const eff = kind === "chapter" ? chapterPieceOf(tree, book, fm, piece, settings) : { piece, source: pieceSource };
-        return withScope({ path, kind, markdown, book, tracked, piece: eff.piece, pieceSource: eff.source, snapshot: false, stage: null, submission: false, export: false, form }, tree, settings, read);
+        return withScope({ path, kind, markdown, book, tracked, piece: eff.piece, pieceSource: eff.source, snapshot: false, stage: null, submission: false, export: false, form, own: ownNote }, tree, settings, read);
       }
-      return withScope({ path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, pieceSource, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false, form }, tree, settings, read);
+      return withScope({ path, kind: markdown ? "note" : "file", markdown, book: null, tracked, piece, pieceSource, snapshot: false, stage: markdown ? stageFor(fm, tracked, settings) : null, submission: false, export: false, form, own: ownNote }, tree, settings, read);
     }
     if (tree.folder(path)) {
       const own = bookAt(tree, path, ch);

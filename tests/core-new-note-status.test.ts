@@ -33,6 +33,12 @@ describe("needsDraftStatus", () => {
     expect(needsDraftStatus(place(), { status: ["revisão"] }, o)).toBe(false);
   });
 
+  it("skips Escrita's own notes (darlings, word lists)", () => {
+    expect(needsDraftStatus(place({ own: "darlings", path: "Darlings.md" }), {}, o)).toBe(false);
+    expect(needsDraftStatus(place({ own: "lists" }), {}, o)).toBe(false);
+    expect(needsDraftStatus(place({ own: null }), {}, o)).toBe(true);
+  });
+
   it("skips untracked notes, snapshots, non-markdown files and book files", () => {
     expect(needsDraftStatus(place({ tracked: false }), {}, o)).toBe(false);
     expect(needsDraftStatus(place({ snapshot: true }), {}, o)).toBe(false);

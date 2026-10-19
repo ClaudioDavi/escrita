@@ -511,8 +511,6 @@ test("tour", async () => {
   const closeLeaves = (type: string) => page.evaluate((ty) => app.workspace.getLeavesOfType(ty).forEach((l: any) => l.detach()), type);
 
   await ob.setTheme("light");
-  // Smart typography is for books by default; the tour types it into a short story, so the writer's setting says "all notes"
-  await ob.setSettings({ typographyScope: "all" });
   // Obsidian's own spellcheck underlines the prose in red in the video; off while recording only
   if (RECORDING) await page.evaluate(() => (app.vault as unknown as { setConfig(k: string, v: unknown): void }).setConfig("spellcheck", false));
   await ob.dismissNotices();
@@ -594,9 +592,6 @@ test("tour", async () => {
     await clearNotices();
     await ob.waitFor("the works block", async () => (await page.locator(".escrita-desk-row").count()) >= 2, 15_000);
     expect(Object.values(await ob.setting<Record<string, boolean>>("features")).every((v) => v === true)).toBe(true);
-    // The setup leaves "track the whole vault" on an empty vault, so Darlings.md would count as a work;
-    // the writer's usual choice is the two folders the setup made (Settings, Goals, tracked folders)
-    await ob.setSettings({ trackFolders: `${await ob.setting("storiesFolder")}\n${await ob.setting("booksFolder")}` });
     await say(W.c.home, 2200);
 
     // ============================================================ 3. a short story and its beat
