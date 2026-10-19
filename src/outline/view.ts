@@ -1108,9 +1108,13 @@ export class OutlineView extends ItemView {
       if (!value) { el.setText(row.title); el.dataset.original = row.title; return; }
       await this.run(() => this.plugin.chapterOps.retitle(row.file, value));
     } else if (line.field === "summary") {
-      await this.run(() => this.app.fileManager.processFrontMatter(row.file, (fm: Record<string, unknown>) => {
-        fm[this.plugin.settings.summaryProperty] = value;
-      }));
+      await this.run(async () => {
+        // the chapter may be open with unsaved text: on disk first, or the write replaces it
+        await this.plugin.notes.flush(row.file);
+        await this.app.fileManager.processFrontMatter(row.file, (fm: Record<string, unknown>) => {
+          fm[this.plugin.settings.summaryProperty] = value;
+        });
+      });
     } else if (line.field === "beat" && line.beat !== undefined) {
       const i = line.beat, expected = row.beats[i]?.text;
       let saved = false;

@@ -4,7 +4,8 @@
 import { describe, expect, it } from "vitest";
 import { parseFountain, type FountainOptions } from "../src/core/fountain";
 import { segment } from "../src/core/markdown";
-import { candidates, triggerAt, type SuggestContext, type SuggestTrigger } from "../src/core/screenplay-suggest";
+import { compileTerms } from "../src/core/names";
+import { candidates, cueNames, triggerAt, type SuggestContext, type SuggestTrigger } from "../src/core/screenplay-suggest";
 
 const PT: FountainOptions = { sceneHeadings: ["INT", "EXT", "INT./EXT", "I/E"], transitions: ["TO:", "PARA:"] };
 const script = (text: string) => parseFountain(text, segment(text), PT);
@@ -120,5 +121,16 @@ describe("candidates", () => {
     const s = script("");
     expect(candidates(trig("cue", ""), s, [], [])).toEqual([]);
     expect(candidates(trig("location", ""), s, [], [])).toEqual([]);
+  });
+});
+
+describe("cueNames", () => {
+  it("offers characters by their own name, never places, objects, aliases or first names", () => {
+    const base = { aliases: [], firstName: true, caseSensitive: false, ignore: [] };
+    const table = compileTerms([
+      { id: "p/Maria Souza.md", name: "Maria Souza", person: true, ...base, aliases: ["Mariazinha"] },
+      { id: "p/Casa Velha.md", name: "Casa Velha", person: false, ...base },
+    ], { lang: "pt", extraTitles: [] });
+    expect(cueNames(table)).toEqual(["Maria Souza"]);
   });
 });

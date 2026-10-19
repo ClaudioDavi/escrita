@@ -5,6 +5,12 @@
 // scene heading prefix such as "INT. "), and a time of day (after " - " on a scene heading).
 
 import type { LineKind, Script } from "./fountain";
+import type { TermTable } from "./names";
+
+/** The universe names a cue can offer: the characters' own names, not their aliases or first names, nor places and objects. */
+export function cueNames(table: TermTable): string[] {
+  return table.terms.filter((x) => x.origin === "name" && x.person === true).map((x) => x.text);
+}
 
 export type SuggestKind = "cue" | "location" | "time";
 

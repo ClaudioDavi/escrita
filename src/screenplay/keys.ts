@@ -9,6 +9,7 @@
 // line gets Fountain's forced mark if it needs one (`forcedMarkFor`), in a transaction of its own.
 
 import { StateEffect, StateField, Prec, type EditorState, type Extension, type Text } from "@codemirror/state";
+import { invertedEffects, isolateHistory } from "@codemirror/commands";
 import { Decoration, EditorView, ViewPlugin, WidgetType, keymap, type ViewUpdate } from "@codemirror/view";
 import { fountainDocLines } from "../core/fountain-doc";
 import { segmentDoc } from "../core/markdown";
@@ -70,6 +71,23 @@ export class ScreenplayKeys {
     });
     this.modes = modes;
 
+    // undo gives a line back the mode a step took from it: Tab after a cue opens "()" and the cue
+    // line, now read as a cue by the parser, lets go of its mode; undoing the step removes the "()"
+    // and the cue (not a cue yet, nothing follows it) must be held in its mode again
+    const giveBack = invertedEffects.of((tr) => {
+      // only a step that changes the text: a mode ended by the cursor leaving is not an undo step of its own
+      if (!tr.docChanged) return [];
+      const before = tr.startState.field(modes, false) ?? [];
+      if (before.length === 0) return [];
+      const after = tr.state.field(modes, false) ?? [];
+      const back: StateEffect<unknown>[] = [];
+      for (const e of before) {
+        const to = tr.changes.mapPos(e.pos, -1);
+        if (!after.some((x) => x.pos === to && x.mode === e.mode)) back.push(setMode.of({ pos: e.pos, mode: e.mode }));
+      }
+      return back;
+    });
+
     // the element's name, faint, on an empty line in a mode
     const ghosts = EditorView.decorations.compute([modes, "doc"], (state) => {
       const entries = state.field(modes);
@@ -116,6 +134,7 @@ export class ScreenplayKeys {
 
     this.extension = [
       modes,
+      giveBack,
       ghosts,
       leaving,
       Prec.highest(keymap.of([
@@ -206,8 +225,9 @@ export class ScreenplayKeys {
       selection: { anchor: lineFrom + edit.cursor },
       effects: setMode.of({ pos: lineFrom + landing, mode: edit.mode }),
       scrollIntoView: true,
-      // not "input.type": the history would join it to the typing next to it, and a key is one undo step
+      // a key is one undo step: not "input.type", and isolated, so the history never joins it to the typing before or after it
       userEvent: "input",
+      annotations: isolateHistory.of("full"),
     });
     return true;
   }

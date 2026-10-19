@@ -13,7 +13,7 @@ import type { TermTable } from "../src/core/names";
 registerStrings(screenplayStrings);
 const opts = fountainOptions(DEFAULT_SETTINGS);
 const file = { path: "Roteiros/Curta.md" } as never;
-const table = { terms: [{ id: "Mundo/Nina.md", text: "Nina", origin: "name" }, { id: "Mundo/Nina.md", text: "Nin", origin: "alias" }], lang: null, signature: "" } as unknown as TermTable;
+const table = { terms: [{ id: "Mundo/Nina.md", text: "Nina", origin: "name", person: true }, { id: "Mundo/Ninho.md", text: "Ninho", origin: "name", person: false }, { id: "Mundo/Nina.md", text: "Nin", origin: "alias" }], lang: null, signature: "" } as unknown as TermTable;
 
 let view: EditorView | null = null;
 afterEach(() => { view?.destroy(); view = null; });
