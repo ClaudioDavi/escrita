@@ -489,8 +489,8 @@ Vem ligada por padrão (**Tipografia inteligente**). Enquanto você digita:
 
 Aperte Backspace logo depois de uma troca para recuperar o que você digitou. Uma barra invertida
 mantém o próximo caractere como foi digitado. Nada muda em propriedades, código ou matemática.
-**Onde a tipografia inteligente vale** é **Só nos capítulos de livros** (o padrão) ou **Em todas
-as notas**.
+**Onde a tipografia inteligente vale** é **Em todas as notas** (o padrão) ou **Só nos capítulos de
+livros**. Uma instalação anterior à 1.2.1 mantém a escolha que tinha.
 
 As configurações ficam na seção Editor: **Enter, Enter, Enter**, **Parágrafos são separados por**,
 **Tipografia inteligente**, **Onde a tipografia inteligente vale**, **Aspas** e **Travessão de

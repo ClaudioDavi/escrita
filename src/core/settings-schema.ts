@@ -255,7 +255,7 @@ export const SETTINGS_SCHEMA = {
   enterFlow: { default: false, kind: bool, readBy: ["typing"] },
   paragraphStyle: { default: "blank", kind: enumOf<EscritaSettings["paragraphStyle"]>(["single", "blank"]), readBy: ["typing", "dialogueFocus", "moveBlocks", "lens"] },
   smartTypography: { default: true, kind: bool, readBy: ["typing"] },
-  typographyScope: { default: "books", kind: enumOf<EscritaSettings["typographyScope"]>(["books", "all"]), readBy: ["typing"] },
+  typographyScope: { default: "all", kind: enumOf<EscritaSettings["typographyScope"]>(["books", "all"]), readBy: ["typing"] },
   quoteStyle: { default: "curly", kind: enumOf<EscritaSettings["quoteStyle"]>(["curly", "guillemets", "german", "off"]), readBy: ["typing", "dialogueFocus", "lens"] },
   dialogueDash: { default: true, kind: bool, readBy: ["typing"] },
   spellcheckOnDemand: { default: false, kind: bool, readBy: SWITCH },

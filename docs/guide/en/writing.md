@@ -477,7 +477,8 @@ On by default (**Smart typography**). As you type:
 
 Press Backspace right after a replacement to get back what you typed. A backslash keeps the next
 character as typed. Nothing changes in properties, code or math. **Where smart typography
-applies** is **Only in book chapters** (the default) or **In every note**.
+applies** is **In every note** (the default) or **Only in book chapters**. An install from before 1.2.1
+keeps the choice it had.
 
 Settings are in the Editor section: **Enter, Enter, Enter**, **Paragraphs are separated by**,
 **Smart typography**, **Where smart typography applies**, **Quotes** and **Dialogue dash**.
