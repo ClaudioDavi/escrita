@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { segment } from "../src/core/markdown";
 import { sentences } from "../src/core/sentences";
 import { tokens } from "../src/core/tokens";
+import { sentenceLayout } from "../src/lens/rules-words";
 import { measures, passExtras, sceneBounds } from "../src/lens/measures";
 import type { LensLang, LensPass, ReadOptions } from "../src/lens/types";
 
@@ -14,7 +15,8 @@ function build(text: string, o: Partial<O> = {}) {
   const mask = md.masked();
   const toks = tokens(mask);
   const sents = sentences(mask, md, opts.lang === "en" ? "en" : opts.lang ? "pt" : null);
-  const pass: LensPass = { mask, tokens: toks, sentences: sents, ...passExtras(md, toks, opts) };
+  const lay = sentenceLayout(toks, sents, mask);
+  const pass: LensPass = { mask, tokens: toks, sentences: sents, ...passExtras(md, toks, opts), sentenceWords: lay.words, sentencePara: lay.para };
   return { md, pass, opts };
 }
 const share = (text: string, o: Partial<O> = {}) => {

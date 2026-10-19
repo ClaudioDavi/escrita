@@ -112,6 +112,12 @@ export function lensSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): Settin
           get: () => s.lensShowReadability,
           set: (v) => { s.lensShowReadability = v; },
         }),
+        toggleRow(ui, {
+          name: t("settings.lens.showRhythm"),
+          desc: t("settings.lens.showRhythm.desc"),
+          get: () => s.lensShowRhythm,
+          set: (v) => { s.lensShowRhythm = v; },
+        }),
       ],
     },
   ];

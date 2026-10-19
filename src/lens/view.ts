@@ -10,7 +10,8 @@ import { EMPTY_TABLE } from "../core/names";
 import { enabledRules, newNameGroups, ruleRows } from "./panel-model";
 import { formatRate, noteName, positionOf, sharePercent } from "./panel-format";
 import { MIN_SENTENCES, MIN_WORDS } from "./readability";
-import type { LensLang, Measures, RuleId } from "./types";
+import { RUN_MIN, rhythmAt } from "./rhythm";
+import type { LensLang, LensPass, Measures, RuleId } from "./types";
 import { VIEW_TYPES } from "../core/view-types";
 
 export const LENS_VIEW = VIEW_TYPES.lens;
@@ -24,6 +25,8 @@ export interface LensViewHooks {
   ignore?: (rule: RuleId) => void;
   /** Opens Escrita's settings tab (the no-language state). */
   openSettings?: () => void;
+  /** Selects a sentence of the open note (a click on a rhythm bar); never changes text. */
+  selectSentence?: (from: number, to: number) => void;
 }
 
 export class LensView extends ItemView {
@@ -104,6 +107,7 @@ export class LensView extends ItemView {
       b.addEventListener("click", () => this.hooks.openSettings?.());
     }
     this.measures(el, m, st.selection !== null, st.lang);
+    this.rhythm(el, path, r.pass, st.selection !== null);
 
     const s = this.plugin.settings;
     const rows = ruleRows(r, enabledRules(s.lensRulesOff, s.lensRulesOn), this.plugin.lens.lists(), st.lang, this.plugin.names.hasProvider())
@@ -175,6 +179,54 @@ export class LensView extends ItemView {
         val.setText("—");
         sec.createSpan({ cls: "escrita-lens-muted", text: t("lens.measure.short", { words: MIN_WORDS, sentences: MIN_SENTENCES }) });
       }
+    }
+  }
+
+  /**
+   * The rhythm (board 47): one bar per sentence of the paragraph at the cursor, or of the
+   * selected sentences. The bar is a 32px button around a thinner drawn bar; a click selects
+   * that sentence in the editor.
+   */
+  private rhythm(el: HTMLElement, path: string, pass: LensPass, selecting: boolean): void {
+    const s = this.plugin.settings;
+    if (!s.lensShowRhythm) return;
+    const sec = el.createDiv({ cls: "escrita-lens-section escrita-lens-rhythm" });
+    sec.createDiv({ cls: "escrita-lens-rhythm-title", text: t("lens.rhythm.heading") });
+    const cur = this.cursorRange(path);
+    // the editor can be ahead of the last pass (typing): the offsets would be wrong until it arrives
+    const view = this.app.workspace.getMostRecentLeaf()?.view;
+    const fresh = view instanceof MarkdownView && view.editor.getValue().length === pass.mask.length;
+    // a selection counts only when the panel is in selection mode; a stepped or clicked sentence stays a paragraph
+    const range = cur && fresh ? (selecting ? cur : { from: cur.from, to: cur.from }) : null;
+    const model = range ? rhythmAt(pass, range, s.lensLongSentence) : null;
+    if (!model) {
+      sec.createSpan({ cls: "escrita-lens-muted", text: t("lens.rhythm.empty") });
+      return;
+    }
+    sec.createDiv({
+      cls: "escrita-lens-muted escrita-lens-rhythm-scope",
+      text: t(model.scope === "selection" ? "lens.rhythm.selection" : "lens.rhythm.paragraph"),
+    });
+    const max = Math.max(s.lensLongSentence, ...model.bars.map((b) => b.words));
+    const chart = sec.createDiv({ cls: "escrita-lens-rhythm-bars" });
+    chart.setCssProps({ "--escrita-rhythm-limit": `${(s.lensLongSentence / max) * 100}%` });
+    model.bars.forEach((b, i) => {
+      const label = t("lens.rhythm.bar", { words: b.words });
+      const row = chart.createEl("button", {
+        cls: "escrita-lens-rhythm-row" + (b.run ? " is-run" : "") + (b.long ? " is-long" : ""),
+      });
+      row.setAttribute("aria-label", label);
+      row.setAttribute("title", label);
+      row.setAttribute(FOCUS_KEY, `rhythm-${i}`);
+      const track = row.createSpan({ cls: "escrita-lens-rhythm-track" });
+      track.createSpan({ cls: "escrita-lens-rhythm-bar" }).setCssProps({ "--escrita-rhythm-width": `${(b.words / max) * 100}%` });
+      row.createSpan({ cls: "escrita-lens-rhythm-num", text: fmt(b.words) });
+      row.addEventListener("click", () => this.hooks.selectSentence?.(b.from, b.to));
+    });
+    if (model.runLength >= RUN_MIN) {
+      sec.createDiv({ cls: "escrita-lens-muted escrita-lens-rhythm-note", text: t("lens.rhythm.run", { count: model.runLength }) });
+    } else if (model.hasLong) {
+      sec.createDiv({ cls: "escrita-lens-muted escrita-lens-rhythm-note", text: t("lens.rhythm.long", { words: s.lensLongSentence }) });
     }
   }
 

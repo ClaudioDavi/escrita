@@ -183,3 +183,36 @@ body.is-mobile .setting-item.escrita-lens-stack button { min-height: 40px; paddi
 .escrita-lens-name-actions { display: flex; align-items: center; gap: 4px; }
 .escrita-lens-name-actions .escrita-lens-btn,
 .escrita-lens-name-actions .escrita-lens-name-dismiss { min-height: var(--escrita-lens-target); }
+
+/* Rhythm (1.2, board 47): one bar per sentence of the paragraph at the cursor. */
+.escrita-lens-rhythm-title { font-weight: var(--font-semibold); }
+.escrita-lens-rhythm-scope, .escrita-lens-rhythm-note { font-size: var(--font-ui-smaller); }
+.escrita-lens-rhythm-bars {
+  position: relative; display: flex; flex-direction: column; margin: 6px 0 4px;
+  --escrita-rhythm-limit: 100%;
+  --escrita-rhythm-bar: var(--text-faint);
+  --escrita-rhythm-long: rgba(var(--color-yellow-rgb), 0.9);
+}
+/* each row is a >=32px hit area around a 14px drawn bar */
+.escrita-lens .escrita-lens-rhythm-row {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  min-height: var(--escrita-lens-target); padding: 0; margin: 0; height: auto;
+  background: transparent; border: 0; box-shadow: none; border-radius: var(--radius-s); cursor: pointer;
+  color: var(--text-muted); font-size: var(--font-ui-smaller); text-align: start;
+}
+.escrita-lens .escrita-lens-rhythm-row:hover { background: var(--background-modifier-hover); }
+/* the track is the bars' full width; the dashed line at the long-sentence limit crosses every row's track */
+.escrita-lens-rhythm-track { position: relative; flex: 1 1 auto; align-self: stretch; display: flex; align-items: center; }
+.escrita-lens-rhythm-track::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: var(--escrita-rhythm-limit);
+  border-inline-start: 1px dashed var(--text-muted); pointer-events: none;
+}
+.escrita-lens-rhythm-num { flex: 0 0 auto; min-width: 2ch; text-align: end; }
+.escrita-lens-rhythm-bar {
+  display: block; flex: 0 0 auto; width: var(--escrita-rhythm-width, 0%); min-width: 2px; height: 14px;
+  border-radius: 2px; background: var(--escrita-rhythm-bar);
+}
+.escrita-lens-rhythm-row.is-run .escrita-lens-rhythm-bar { background: var(--escrita-lens-c-echo); }
+.escrita-lens-rhythm-row.is-long .escrita-lens-rhythm-bar { background: var(--escrita-rhythm-long); }
+.escrita-lens-rhythm-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.escrita-lens-rhythm-row { align-self: stretch; }

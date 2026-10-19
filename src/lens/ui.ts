@@ -41,6 +41,8 @@ export class LensUi {
   private lastRule: RuleId = "echo";
   private stepped: { path: string; from: number; to: number } | null = null;
   private selection: { path: string; from: number; to: number } | null = null;
+  /** where the cursor was at the last change, so a move inside the note redraws the rhythm */
+  private cursor: { path: string; at: number } | null = null;
   private selectionTimer: number | null = null;
 
   /** `owner` is the module's Component: events and callbacks registered on it end with the module. */
@@ -61,6 +63,7 @@ export class LensUi {
       v.hooks = {
         ignore: (rule) => this.ignoreCurrent(rule),
         openSettings: () => this.openSettings(),
+        selectSentence: (from, to) => this.selectRange(from, to),
       };
       return v;
     });
@@ -159,8 +162,12 @@ export class LensUi {
     this.selection = r ? { path, ...r } : null;
     const same = before === null ? this.selection === null
       : this.selection !== null && before.path === path && before.from === this.selection.from && before.to === this.selection.to;
+    // the rhythm follows the cursor, so a plain move is a change too (only while the section is on)
+    const at = ranges[0]?.from ?? 0;
+    const moved = this.plugin.settings.lensShowRhythm && !(this.cursor && this.cursor.path === path && this.cursor.at === at);
+    this.cursor = { path, at };
     // nothing the panel shows changed, unless a stepped row's counter follows the cursor
-    if (same && !(this.stepped && this.stepped.path === path)) return;
+    if (same && !moved && !(this.stepped && this.stepped.path === path)) return;
     if (this.selectionTimer !== null) window.clearTimeout(this.selectionTimer);
     this.selectionTimer = window.setTimeout(() => {
       this.selectionTimer = null;
@@ -244,6 +251,22 @@ export class LensUi {
     this.marks.setCurrent(path, match);
     if (fromPanel && Platform.isPhone) this.plugin.app.workspace.rightSplit.collapse();
     return { index: hit.index, of: hit.of };
+  }
+
+  /**
+   * Selects a sentence the rhythm section pointed at. Like a step, it does not flip the panel
+   * into selection mode (the paragraph stays drawn). Text is never changed.
+   */
+  private selectRange(from: number, to: number): void {
+    const v = this.activeView();
+    const path = v?.file?.path;
+    if (!v || !path || !this.host.session.isOn(path)) return;
+    const ed = v.editor;
+    const a = ed.offsetToPos(from);
+    const b = ed.offsetToPos(to);
+    this.stepped = { path, from, to };
+    ed.transaction({ selection: { from: a, to: b } });
+    ed.scrollIntoView({ from: a, to: b }, true);
   }
 
   private stepCommand(dir: 1 | -1): void {

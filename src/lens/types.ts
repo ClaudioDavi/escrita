@@ -89,6 +89,8 @@ export interface LensPass {
   sentences: readonly Sentence[];
   speech: readonly { from: number; to: number }[];   // dialogue ranges, sorted
   syllables: Uint16Array;                             // per token, parallel to tokens
+  sentenceWords: Uint16Array;                         // per sentence: its word count, parallel to sentences
+  sentencePara: Int32Array;                           // per sentence: its paragraph number (0, 1, ...)
 }
 export interface LensResult {
   version: number;               // the session's per-path version it was computed for (2.5)
