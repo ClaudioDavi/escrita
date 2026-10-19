@@ -9,7 +9,7 @@ import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate
 import { fountainDocLines } from "../core/fountain-doc";
 import type { FountainOptions, LineKind } from "../core/fountain";
 import { underlineRanges } from "../core/fountain-marks";
-import { EditorSet, isLivePreview } from "../ui/editor-glue";
+import { EditorSet, fileOfState, isLivePreview } from "../ui/editor-glue";
 
 /** Dispatched to every editor to re-read whether the note is a screenplay, the font and the options. */
 const refreshEffect = StateEffect.define<null>();
@@ -41,11 +41,14 @@ const UNDERLINES: ReadonlySet<LineKind> = new Set<LineKind>(["action", "dialogue
 
 export class ScreenplayLayout {
   private views = new EditorSet();
+  private readonly plugin: ViewPlugin<{ on: boolean }>;
+  private readonly on: (s: EditorState) => boolean;
   readonly extension: Extension;
 
   constructor(host: LayoutHost) {
     const views = this.views;
     const on = (s: EditorState) => isLivePreview(s) && host.isScreenplay(s);
+    this.on = on;
 
     class LayoutPlugin {
       on: boolean;
@@ -109,7 +112,7 @@ export class ScreenplayLayout {
       }
     }
 
-    this.extension = ViewPlugin.fromClass(LayoutPlugin, {
+    this.plugin = ViewPlugin.fromClass(LayoutPlugin, {
       decorations: (v) => v.decorations,
       // line decorations can't reach block widgets (the rule between scenes, the properties box), so the editor carries the class
       provide: (p) => EditorView.editorAttributes.of((view) => {
@@ -117,12 +120,24 @@ export class ScreenplayLayout {
         return plugin?.on ? { class: plugin.attrs } : null;
       }),
     });
+    this.extension = this.plugin;
   }
 
-  /** Make every editor re-read the note's form, the font and the options (settings and metadata changes). */
-  refresh(): void {
-    this.views.broadcast({ effects: refreshEffect.of(null) }, (e) => {
-      console.error("Escrita: couldn't refresh the screenplay layout", e);
-    });
+  /**
+   * Make every editor re-read the note's form, the font and the options (a settings change). With
+   * `path` (a metadata change), only the editors of that note whose layout no longer matches its
+   * form: a transaction sent to the editor being typed in, on every save, could break an IME's
+   * composition.
+   */
+  refresh(path?: string): void {
+    for (const view of this.views) {
+      if (path !== undefined) {
+        if (fileOfState(view.state)?.path !== path) continue;
+        if (view.plugin(this.plugin)?.on === this.on(view.state)) continue;
+      }
+      this.views.send(view, { effects: refreshEffect.of(null) }, (e) => {
+        console.error("Escrita: couldn't refresh the screenplay layout", e);
+      });
+    }
   }
 }

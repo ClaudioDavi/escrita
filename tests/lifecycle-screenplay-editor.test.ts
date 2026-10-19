@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { editorLivePreviewField } from "obsidian";
+import { editorInfoField, editorLivePreviewField } from "obsidian";
 import { fountainOptions } from "../src/core/fountain";
 import { DEFAULT_SETTINGS } from "../src/settings";
 import { ScreenplayKeys } from "../src/screenplay/keys";
@@ -242,6 +242,31 @@ describe("layout", () => {
     const on = new ScreenplayLayout({ ...host, font: () => "theme", modes: (s) => keys.modesOf(s) });
     view = new EditorView({ parent: document.body, state: EditorState.create({ doc: "MARA\nHi.", extensions: [on.extension] }) });
     expect(view.dom.classList.contains("escrita-screenplay")).toBe(false);
+  });
+
+  it("a metadata refresh reaches only the note whose form changed, and only when the layout no longer matches", () => {
+    const keys = new ScreenplayKeys(host);
+    let form = "screenplay";
+    const layout = new ScreenplayLayout({ isScreenplay: () => form === "screenplay", opts: () => opts, font: () => "theme", modes: (s) => keys.modesOf(s) });
+    const make = (path: string) => new EditorView({
+      parent: document.body,
+      state: EditorState.create({ doc: "MARA\nHi.", extensions: [editorInfoField.init(() => ({ file: { path } }) as never), editorLivePreviewField, layout.extension] }),
+    });
+    view = make("S.md");
+    const other = make("Other.md");
+    const sent: string[] = [];
+    for (const [v, name] of [[view, "S.md"], [other, "Other.md"]] as const) {
+      const dispatch = v.dispatch.bind(v);
+      v.dispatch = ((...a: Parameters<EditorView["dispatch"]>) => { sent.push(name); dispatch(...a); }) as EditorView["dispatch"];
+    }
+    // a save that changes nothing about the form: no transaction, so nothing can break an IME's composition
+    layout.refresh("S.md");
+    expect(sent).toEqual([]);
+    form = "story";
+    layout.refresh("S.md");
+    expect(sent).toEqual(["S.md"]);
+    expect(view.dom.classList.contains("escrita-screenplay")).toBe(false);
+    other.destroy();
   });
 
   it("the theme font leaves the courier class off", () => {

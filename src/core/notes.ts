@@ -12,6 +12,10 @@
 //       so ask for a fresh port after any await. A view in
 //       reading mode is flushed (view.save()) before the vault reads or
 //       writes, so its pending text is never lost or overwritten.
+//   plugin.notes.flush(file)       → Promise<void>
+//       Saves every view of the file, so its unsaved text is on disk before a
+//       write that reads the disk (processFrontMatter). Without it, a status
+//       written while the writer types replaced what the editor had not saved.
 //   plugin.notes.editorView(file)  → MarkdownView | null
 //       The first view editing the file (source or Live Preview), if any.
 //   plugin.notes.ensureFolder(path) → Promise<void>
@@ -90,15 +94,18 @@ export class NoteService {
     return this.views(file).find((v) => v.getMode() === "source") ?? null;
   }
 
+  /** Saves every view of the file (any mode), so a write that reads the disk sees its unsaved text. */
+  async flush(file: TFile): Promise<void> {
+    for (const v of this.views(file)) await v.save();
+  }
+
   text(file: TFile): NoteText {
     const view = this.editorView(file);
     // bound to this note: the view (and its editor) may move on to another note, or to reading mode
     if (view) return editorText(view.editor, undefined, () => view.file?.path === file.path && view.getMode() === "source");
     const { vault } = this.app;
     // Reading-mode views may still hold text not yet on disk: save it first.
-    const flush = async () => {
-      for (const v of this.views(file)) await v.save();
-    };
+    const flush = () => this.flush(file);
     return vaultText({
       read: async () => { await flush(); return vault.read(file); },
       process: async (fn) => { await flush(); return vault.process(file, fn); },

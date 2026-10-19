@@ -2,8 +2,8 @@
    .escrita-screenplay and each line .escrita-sp-<kind> (layout.ts). The text stays as typed;
    these rules only draw it as on the page: the industry columns in ch (core/screenplay-presets
    has the same ones for the PDF). Obsidian's own Markdown styling is undone under the editor class
-   (S0, PLAN-1.2): headings, quotes and the rule between scenes. No text-decoration, no
-   text-indent: a border and padding do their work. */
+   (S0, PLAN-1.2): headings, quotes and the rule between scenes. Underlines and indents are
+   drawn with a border and padding (the review bot's rules). */
 
 .escrita-screenplay-courier .cm-content,
 .escrita-screenplay-courier .cm-line {

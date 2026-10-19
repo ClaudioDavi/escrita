@@ -82,7 +82,7 @@ export class ScreenplayModule extends FeatureModule {
     }
 
     // a note's form is a property: when it changes the layout turns on or off for that editor
-    this.registerEvent(p.app.metadataCache.on("changed", () => this.layout.refresh()));
+    this.registerEvent(p.app.metadataCache.on("changed", (file) => this.layout.refresh(file.path)));
   }
 
   onunload(): void {
