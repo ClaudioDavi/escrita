@@ -10,6 +10,7 @@ import type EscritaPlugin from "../main";
 import { FeatureModule } from "../core/module-context";
 import type { EditorSlot, SettingsUi } from "../core/module-context";
 import type { SettingsBlock } from "../ui/settings-rows";
+import { fileOfState } from "../ui/editor-glue";
 import { typingSettingsItems } from "./settings-ui";
 import { t } from "../i18n";
 import type { Follower } from "../core/vault-index";
@@ -45,10 +46,6 @@ const lastReplacement = StateField.define<LastReplacement | null>({
   },
 });
 
-function fileOf(state: EditorState): TFile | null {
-  const info = state.field(editorInfoField, false);
-  return info?.file ?? null;
-}
 
 export class TypingFeature extends FeatureModule {
   readonly id = "typing" as const;
@@ -98,7 +95,7 @@ export class TypingFeature extends FeatureModule {
     const { state } = view;
     const sel = state.selection;
     if (sel.ranges.length !== 1 || !sel.main.empty) return false;
-    const file = fileOf(state);
+    const file = fileOfState(state);
     if (!file) return false;
     // Chapters get breaks and new chapters; other tracked writing (a conto,
     // an essay) gets scene breaks only.
@@ -176,7 +173,7 @@ export class TypingFeature extends FeatureModule {
 
   /** Drop the scene break (and blank lines) ending the chapter, if it's still there. */
   private async removeTrailingBreak(view: EditorView, file: TFile): Promise<void> {
-    if (fileOf(view.state)?.path === file.path) {
+    if (fileOfState(view.state)?.path === file.path) {
       const doc = view.state.doc;
       const keep = trailingBreakKeep(segmentDoc(doc));
       if (keep === null) return;
@@ -192,7 +189,7 @@ export class TypingFeature extends FeatureModule {
   private typographyApplies(state: EditorState): boolean {
     const s = this.plugin.settings;
     // the scope is the editor's policy; what the file is comes from the classifier
-    const p = this.plugin.books.classify(fileOf(state));
+    const p = this.plugin.books.classify(fileOfState(state));
     return p.markdown && (s.typographyScope === "all" || p.kind === "chapter");
   }
 
@@ -249,7 +246,7 @@ export class DialogueFocusFeature extends FeatureModule {
   constructor(private plugin: EscritaPlugin) {
     super();
     this.dialogue = new DialogueFocus(
-      (s) => fileOf(s)?.path ?? null,
+      (s) => fileOfState(s)?.path ?? null,
       (p) => this.dialogueOn.has(p),
       () => ({ quoteStyle: this.plugin.settings.quoteStyle, paragraphStyle: this.plugin.settings.paragraphStyle }),
     );

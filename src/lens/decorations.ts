@@ -6,13 +6,14 @@
 // rather than kept until a new result happens to be adopted (IMPROVEMENTS, 0.5.1).
 
 import {
-  StateEffect, StateField, type EditorState, type Extension, type Range, type TransactionSpec,
+  StateEffect, StateField, type EditorState, type Extension, type Range,
 } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 import type { LensSession } from "./session";
 import { mapMatches, markSpecs, sameMatch } from "./marks-model";
 import { visible } from "./analyze";
 import type { LensResult, Match } from "./types";
+import { EditorSet } from "../ui/editor-glue";
 
 const refreshEffect = StateEffect.define<null>();
 const currentEffect = StateEffect.define<Match | null>();
@@ -37,7 +38,7 @@ function deco(cls: string): Decoration {
 export type SelectionCallback = (path: string, ranges: { from: number; to: number }[]) => void;
 
 export class LensMarks {
-  private views = new Set<EditorView>();
+  private views = new EditorSet();
   private selectionCbs = new Set<SelectionCallback>();
   readonly extension: Extension;
   private field: StateField<LensField>;
@@ -150,9 +151,9 @@ export class LensMarks {
 
   /** Marks one match as current in every editor on the note; `reveal` scrolls it into view. */
   setCurrent(path: string, m: Match | null, reveal = false): void {
-    for (const view of [...this.views]) {
+    for (const view of this.views) {
       if (this.pathOf(view.state) !== path) continue;
-      this.send(view, () => ({
+      this.views.send(view, () => ({
         effects: [currentEffect.of(m),
           ...(reveal && m ? [EditorView.scrollIntoView(m.from, { y: "center" })] : [])],
       }));
@@ -167,23 +168,6 @@ export class LensMarks {
 
   /** Makes every editor re-read the shown result (a result arrived, a dismissal changed, the lens toggled). */
   refresh(): void {
-    for (const view of [...this.views]) this.send(view, () => ({ effects: refreshEffect.of(null) }));
-  }
-
-  /**
-   * Dispatches to one editor. A dispatch can fail while that editor is in the middle of
-   * an update; it is tried once more after the update instead of dropping the editor,
-   * which would leave its marks on an old result (only typing in it would update them).
-   * Editors leave the set when they are destroyed.
-   */
-  private send(view: EditorView, spec: () => TransactionSpec): void {
-    try {
-      view.dispatch(spec());
-    } catch {
-      queueMicrotask(() => {
-        if (!this.views.has(view)) return;
-        try { view.dispatch(spec()); } catch { this.views.delete(view); }
-      });
-    }
+    this.views.broadcast({ effects: refreshEffect.of(null) });
   }
 }

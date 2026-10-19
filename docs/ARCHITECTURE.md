@@ -19,7 +19,13 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   `dimPlan`; from the editor) with `typography.ts` (the quote tables `dialogue.ts` reads;
   from the editor), and `piece-bar.ts` (`pieceBar`, `paceInUnit`; was `goals/piece.ts`).
   Helpers that open a modal or a leaf are in `src/ui/`: `confirm.ts` (`confirmAction`; was
-  `outline/modals.ts`) and `open-work.ts` (`openWork`; was `desk/open.ts`). `src/ui/` may
+  `outline/modals.ts`) and `open-work.ts` (`openWork`; was `desk/open.ts`). The editor
+  plugins share two files there (1.2, IMPROVEMENTS 38). `editor-glue.ts` has `EditorSet` (the
+  open editors of a plugin; `broadcast` and `send` retry a failed dispatch once in a microtask
+  through `core/dispatch-retry.ts` and drop the editor only on a second failure; they never
+  throw), `fileOfState`, `isLivePreview` and `cmOf`. `reveal-on-touch.ts` has
+  `revealOnTouch({ scan, raw, rendered, key? })`, the plugin for a marker drawn as a widget in
+  Live Preview and shown as typed under the cursor (placeholders, ghost beats). `src/ui/` may
   import `obsidian` and `core/*`, never a module folder. So the module dependency list holds
   only runtime calls (ports, `features.isOn`), not imports. `export` does not import
   `publish/checks`: the shared readiness checks are `core/readiness.ts`. `ui/confirm.ts`
@@ -140,11 +146,12 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   - **Restoring a snapshot's properties is a raw text replace** of the frontmatter block
     (through the note text port, anchored and checked), not `processFrontMatter`: a
     restore must give back the old text byte for byte, comments and key order included.
-  - **The lens reaches CodeMirror's view through a cast** (`src/lens/ui.ts`, `cmOf` and
-    the editor-menu handler): `(editor as unknown as { cm?: EditorView }).cm`. Obsidian
-    does not type `Editor.cm`, and stepping and "Ignore here" need the view's state to
-    read the mapped match list. Read-only use, and only in editing mode; a missing `cm`
-    gives `null` and the feature does nothing.
+  - **The editor reaches CodeMirror's view through one cast** (`cmOf` in
+    `src/ui/editor-glue.ts`): `(editor as unknown as { cm?: EditorView }).cm`. Obsidian
+    does not type `Editor.cm`, and the lens's stepping and "Ignore here" need the view's
+    state to read the mapped match list. Read-only use, and only in editing mode; a missing
+    `cm` gives `null` and the feature does nothing. Every module that needs the view calls
+    `cmOf`; none writes the cast itself.
   - **The lens opens Escrita's settings tab through `app.setting`** (`LensUi.openSettings`
     in `src/lens/ui.ts`), for the "Open settings" button of the no-language state:
     `setting.open()` then `setting.openTabById(manifest.id)`, behind a cast and a

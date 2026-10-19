@@ -13,9 +13,10 @@
 // shows nothing for now and the panel's Entries tab has the list (Q34). When G0d passes, add
 // the post-processor here and declare `postProcessor: true` in the universe module's slots.
 
-import { Platform, editorInfoField } from "obsidian";
+import { Platform } from "obsidian";
 import { StateEffect, StateField, type EditorState, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet } from "@codemirror/view";
+import { fileOfState } from "../ui/editor-glue";
 import { sameAppearsIn } from "./appears-in-model";
 import { appearsInOpen, renderAppearsInSection, type AppearsInLabels, type MentionRange } from "./appears-in";
 import type { AppearsIn } from "./mentions";
@@ -74,7 +75,7 @@ class SectionWidget extends WidgetType {
 }
 
 function build(state: EditorState, deps: AppearsInWidgetDeps): DecorationSet {
-  const path = state.field(editorInfoField, false)?.file?.path;
+  const path = fileOfState(state)?.path;
   if (!path) return Decoration.none;
   const answer = deps.appearsIn(path);
   if (answer === null) return Decoration.none;

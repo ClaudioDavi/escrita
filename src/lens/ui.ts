@@ -3,14 +3,14 @@
 // index.ts so the module's pure parts stay testable without an Obsidian runtime.
 
 import {
-  MarkdownView, Notice, Platform, TFile, editorInfoField, normalizePath,
+  MarkdownView, Notice, Platform, TFile, normalizePath,
   type Component, type Editor, type MarkdownFileInfo, type Menu, type WorkspaceLeaf,
 } from "obsidian";
-import type { EditorState } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import type EscritaPlugin from "../main";
 import { t } from "../i18n";
 import type { ModuleContext } from "../core/module-context";
+import { cmOf, fileOfState } from "../ui/editor-glue";
 import { foldName } from "../core/names";
 import { minimalChange } from "../core/note-text";
 import { LensMarks } from "./decorations";
@@ -30,14 +30,9 @@ export interface LensHost {
   dismiss(path: string, text: string, m: Match): void;
 }
 
-function fileOf(state: EditorState): TFile | null {
-  return state.field(editorInfoField, false)?.file ?? null;
-}
-
-/** CodeMirror's view behind an Obsidian editor; Obsidian does not type it. Only in editing mode. */
-function cmOf(view: MarkdownView): EditorView | null {
-  if (view.getMode() !== "source") return null;
-  return (view.editor as unknown as { cm?: EditorView }).cm ?? null;
+/** CodeMirror's view behind a note tab. Only in editing mode. */
+function cmOfView(view: MarkdownView): EditorView | null {
+  return view.getMode() === "source" ? cmOf(view.editor) : null;
 }
 
 export class LensUi {
@@ -51,7 +46,7 @@ export class LensUi {
   /** `owner` is the module's Component: events and callbacks registered on it end with the module. */
   constructor(private plugin: EscritaPlugin, private host: LensHost, private ctx: ModuleContext, private owner: Component) {
     this.marks = new LensMarks(
-      (s) => { const f = fileOf(s); return f && f.extension === "md" ? f.path : null; },
+      (s) => { const f = fileOfState(s); return f && f.extension === "md" ? f.path : null; },
       host.session,
       (path) => host.shown(path),
     );
@@ -91,7 +86,7 @@ export class LensUi {
         icon,
         checkCallback: (checking) => {
           const v = ws.getActiveViewOfType(MarkdownView);
-          if (!v?.file || !this.host.session.isOn(v.file.path) || cmOf(v) === null) return false;
+          if (!v?.file || !this.host.session.isOn(v.file.path) || cmOfView(v) === null) return false;
           if (!checking) this.stepCommand(dir);
           return true;
         },
@@ -131,7 +126,7 @@ export class LensUi {
     if (!sel || sel.path !== path) return null;
     const v = this.activeView();
     if (!v || v.file?.path !== path) return null;
-    const len = cmOf(v)?.state.doc.length ?? v.editor.getValue().length;
+    const len = cmOfView(v)?.state.doc.length ?? v.editor.getValue().length;
     if (len !== r.pass.mask.length) return null;
     return { from: sel.from, to: sel.to };
   }
@@ -228,7 +223,7 @@ export class LensUi {
     const v = this.activeView();
     const path = v?.file?.path;
     if (!v || !path || !this.host.session.isOn(path)) return null;
-    const cm = cmOf(v);
+    const cm = cmOfView(v);
     if (!cm) {
       if (fromPanel && v.getMode() === "preview") new Notice(t("lens.notice.reading"));
       return null;
@@ -272,7 +267,7 @@ export class LensUi {
   private ignoreCurrent(rule: RuleId): void {
     const v = this.activeView();
     const path = v?.file?.path;
-    const cm = v ? cmOf(v) : null;
+    const cm = v ? cmOfView(v) : null;
     if (!v || !path) return;
     if (!cm) {
       if (v.getMode() === "preview") new Notice(t("lens.notice.reading"));
@@ -286,7 +281,7 @@ export class LensUi {
   private editorMenu(menu: Menu, editor: Editor, info: MarkdownView | MarkdownFileInfo): void {
     const path = info.file?.path;
     if (!path || info.file?.extension !== "md" || !this.host.session.isOn(path)) return;
-    const cm = (editor as unknown as { cm?: EditorView }).cm;
+    const cm = cmOf(editor);
     if (!cm) return;
     const head = cm.state.selection.main.head;
     const m = this.marks.matchAt(cm.state, head);

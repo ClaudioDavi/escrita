@@ -1,7 +1,7 @@
 // Dispatching to a CodeMirror editor can throw while that editor is in the middle of an
 // update. Try again once after the update (a microtask); give up on the editor only when
 // the retry fails too. Never throws, so a caller inside an emitter can't break its other
-// listeners. (The lens does the same inline, lens/decorations.ts.)
+// listeners. `EditorSet` (ui/editor-glue.ts) is the one caller: every editor plugin's broadcast.
 
 export interface Dispatcher<S> { dispatch(spec: S): void }
 
