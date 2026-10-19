@@ -1,7 +1,7 @@
 {
   "id": "escrita",
   "name": "Escrita",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "minAppVersion": "1.13.0",
   "description": "Write and revise fiction: an outline with scene beats, goals, a revision lens, a shared world, and manuscript export to DOCX and EPUB.",
   "author": "Claudio Davi",
