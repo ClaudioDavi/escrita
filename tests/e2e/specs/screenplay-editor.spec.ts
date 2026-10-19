@@ -139,6 +139,53 @@ test("1. Live Preview: the editor carries escrita-screenplay and each element li
   await snap(ob, "1. the laid-out script (board 45 a)", ob.page.locator(".workspace-leaf.mod-active"));
 });
 
+test("1b. typing across Obsidian's autosave never drops the layout, not even for one frame", async () => {
+  // the form comes from the property here (not the folder), so a metadata re-parse after a save can touch it
+  const file = `Outros/Salvo ${++fresh}.md`;
+  await ob.page.evaluate(async ([p, s]) => {
+    if (!app.vault.getFolderByPath("Outros")) await app.vault.createFolder("Outros");
+    await app.vault.create(p, s);
+  }, [file, "---\nform: roteiro\n---\n\nINT. SALA - DIA\n\nUma sala vazia.\n"] as const);
+  await open(file);
+  await ob.waitFor("the screenplay form", () => ob.page.evaluate((p) => app.plugins.plugins.escrita.books.classify(app.vault.getFileByPath(p)).form === "screenplay", file));
+  await focusAt();
+  await expect(live()).toHaveClass(/escrita-screenplay/);
+  // count every moment the editor lacks the class or the lines lack theirs (a mutation callback sees each state)
+  await ob.page.evaluate(() => {
+    const w = window as any;
+    const ed = document.querySelector(".workspace-leaf.mod-active .cm-editor") as HTMLElement;
+    w.__drops = 0;
+    w.__why = [];
+    // every class value the editor had, in order: one without the class is a dropped frame
+    w.__obs = new MutationObserver((records) => {
+      for (const r of records) if (r.target === ed && r.attributeName === "class" && !(r.oldValue ?? "").includes("escrita-screenplay")) w.__drops++;
+    });
+    w.__obs.observe(ed, { attributes: true, attributeFilter: ["class"], attributeOldValue: true });
+    // and what the form read says, so a flip can be traced to its cause
+    const books = (window as any).app.plugins.plugins.escrita.books;
+    const classify = books.classify.bind(books);
+    books.classify = (f: any) => {
+      const r = classify(f);
+      if (f?.path === (window as any).app.workspace.getActiveFile()?.path && r.form !== "screenplay") w.__why.push(`classify(${f.path}).form=${r.form}`);
+      return r;
+    };
+    w.__restore = () => { books.classify = classify; };
+  });
+  for (let burst = 0; burst < 4; burst++) {
+    await kb().type(`Mara anda ${burst} devagar pela sala. `, { delay: 30 });
+    await kb().press("Enter");
+    await kb().press("Enter");
+    await sleep(2500); // Obsidian saves about 2 s after the typing stops
+  }
+  const { drops, why } = await ob.page.evaluate(() => {
+    const w = window as any;
+    w.__obs.disconnect();
+    w.__restore();
+    return { drops: w.__drops as number, why: w.__why as string[] };
+  });
+  expect({ drops, why }).toEqual({ drops: 0, why: [] });
+});
+
 test("2. the columns in ch, the bold heading, and the font", async () => {
   await open(ELEMENTS);
   await focusAt(0, 0);

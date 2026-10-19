@@ -4,7 +4,7 @@
 // and the universe already know (suggest.ts). It acts only in screenplay notes and changes no text
 // without a key press; Source mode and every other note stay as they are.
 
-import { MarkdownView } from "obsidian";
+import { MarkdownView, type TFile } from "obsidian";
 import type { EditorState } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import type EscritaPlugin from "../main";
@@ -27,6 +27,12 @@ export class ScreenplayModule extends FeatureModule {
   private layout: ScreenplayLayout;
   private keys: ScreenplayKeys;
   private suggest: ScreenplaySuggest | null = null;
+  /**
+   * Is the note a screenplay, per path. Read from the classifier once, then changed only when the note's
+   * metadata really changes: the layout asks on every editor update, and the cache can be briefly without
+   * the frontmatter while Obsidian re-parses a note it just saved, which dropped the layout for a frame.
+   */
+  private forms = new Map<string, boolean>();
 
   constructor(private plugin: EscritaPlugin) {
     super();
@@ -34,7 +40,7 @@ export class ScreenplayModule extends FeatureModule {
     this.opts = fountainOptions(plugin.settings);
     const isScreenplay = (state: EditorState) => {
       const file = fileOfState(state);
-      return file !== null && plugin.books.classify(file).form === "screenplay";
+      return file !== null && this.isScreenplayFile(file);
     };
     // one options object until the words change, so the per-version cache of the parse holds
     const opts = () => this.opts;
@@ -50,11 +56,12 @@ export class ScreenplayModule extends FeatureModule {
   onload(): void {
     const p = this.plugin;
     this.readOptions();
+    this.forms.clear();
     this.ctx.editor([this.layout.extension, this.keys.extension]);
 
     if (!this.suggest) {
       this.suggest = new ScreenplaySuggest(p.app, {
-        isScreenplay: (file) => p.books.classify(file).form === "screenplay",
+        isScreenplay: (file) => this.isScreenplayFile(file),
         opts: () => this.opts,
         times: () => this.timesOf(),
         names: (path) => p.names.tableFor(path),
@@ -72,7 +79,7 @@ export class ScreenplayModule extends FeatureModule {
         id,
         name: t(name),
         editorCheckCallback: (checking, editor, view) => {
-          if (!(view instanceof MarkdownView) || !view.file || p.books.classify(view.file).form !== "screenplay") return false;
+          if (!(view instanceof MarkdownView) || !view.file || !this.isScreenplayFile(view.file)) return false;
           const cm = cmOf(editor);
           if (!cm) return false;
           if (!checking) this.step(cm, key);
@@ -82,19 +89,47 @@ export class ScreenplayModule extends FeatureModule {
     }
 
     // a note's form is a property: when it changes the layout turns on or off for that editor
-    this.registerEvent(p.app.metadataCache.on("changed", (file) => this.layout.refresh(file.path)));
+    this.registerEvent(p.app.metadataCache.on("changed", (file, data, cache) => {
+      // a reading without frontmatter, from a note whose text starts with one, is a re-parse in flight: keep the answer
+      const parsing = !cache?.frontmatter && /^---\r?\n/.test(data ?? "");
+      if (!parsing) this.forms.set(file.path, this.readForm(file));
+      this.layout.refresh(file.path);
+    }));
+    // the form follows a path: a renamed note may land in (or leave) a form folder, so it is read again
+    this.registerEvent(p.app.vault.on("rename", (file, oldPath) => {
+      this.forms.delete(oldPath);
+      this.forms.delete(file.path);
+      this.layout.refresh(file.path);
+    }));
+    this.registerEvent(p.app.vault.on("delete", (file) => { this.forms.delete(file.path); }));
   }
 
   onunload(): void {
     this.suggest?.disable();
+    this.forms.clear();
   }
 
   settingsChanged(): void {
     this.readOptions();
+    this.forms.clear(); // the form property, its values and its folders are settings
     this.layout.refresh();
   }
 
   settingsItems(ui: SettingsUi): SettingsBlock[] { return screenplaySettingsItems(ui, this.plugin); }
+
+  private readForm(file: TFile): boolean {
+    return this.plugin.books.classify(file).form === "screenplay";
+  }
+
+  /** Is this note a screenplay? (the answer kept per path; tests) */
+  isScreenplayFile(file: TFile): boolean {
+    let v = this.forms.get(file.path);
+    if (v === undefined) {
+      v = this.readForm(file);
+      this.forms.set(file.path, v);
+    }
+    return v;
+  }
 
   private step(cm: EditorView, key: ScriptKey): void {
     this.keys.run(cm, key);
