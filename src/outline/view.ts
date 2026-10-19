@@ -10,7 +10,7 @@ import { guardedEdit } from "../core/note-text";
 import { statusColor } from "../core/stages";
 import { fmt, plural, t, unitAmount } from "../i18n";
 import { noteProgress, readChapterDefault, type Piece, type Progress } from "../core/measure";
-import { appendBeat, insertBeat, insertFirstBeat, isBlankBody, moveBeatOut, removeBeat, setBeatText, undoFreshBeat, type FreshInsert } from "./beats-edit";
+import { appendBeat, insertBeat, insertFirstBeat, isBlankBody, moveBeatOut, removeBeat, setBeatText, undoFreshBeat, writeUnderBeat, type FreshInsert } from "./beats-edit";
 import {
   beatLetter, chapterAsBeatText, decideKey, decideNoteKey, dropIndex, moveItem, resolveTarget,
   type ActiveFile, type Field, type KeyAction, type OutlineTarget,
@@ -351,7 +351,13 @@ export class OutlineView extends ItemView {
 
   /** Reload and re-render. Without `force`, only counts are patched while a field has focus. */
   async refresh(force = false): Promise<void> {
-    if (force) this.forceNext = true;
+    if (force) {
+      this.forceNext = true;
+      // A forced refresh follows our own write. A note open in an editor holds that write in its
+      // buffer for up to two seconds, and the rows below read the vault: save first, or the panel
+      // redraws the old text and the new beat's field the focus is waiting for is not there.
+      for (const row of this.rows) await this.plugin.notes.flush(row.file);
+    }
     const token = ++this.token;
     const target = this.resolve();
     if (target.mode === "note") {
@@ -519,6 +525,7 @@ export class OutlineView extends ItemView {
       hint(["Enter"], t("outline.hint.enter"));
       hint(["Tab"], t("outline.hint.tab"));
       hint(["Shift", "Tab"], t("outline.hint.shiftTab"));
+      hint(["Tab"], t("outline.hint.tabBeat"));
       hint(["⌫"], t("outline.hint.backspace"));
       foot.createDiv({ cls: "escrita-outline-hint", text: t("outline.hint.drag") });
     }
@@ -550,7 +557,7 @@ export class OutlineView extends ItemView {
     if (Platform.isMobile) {
       foot.createDiv({ cls: "escrita-outline-hint", text: t("outline.note.touchHint") });
     } else {
-      for (const [keys, text] of [[["Enter"], t("outline.hint.enter")], [["⌫"], t("outline.hint.backspace")]] as const) {
+      for (const [keys, text] of [[["Enter"], t("outline.hint.enter")], [["Tab"], t("outline.hint.tabBeat")], [["⌫"], t("outline.hint.backspace")]] as const) {
         const h = foot.createDiv({ cls: "escrita-outline-hint" });
         for (const k of keys) h.createEl("kbd", { text: k });
         h.createSpan({ text });
@@ -1255,7 +1262,7 @@ export class OutlineView extends ItemView {
     const book = this.book;
     const note = this.note;
     // A single note only has beats: chapter actions need a book.
-    if (!book && !(note && (action.type === "newBeat" || action.type === "removeBeat"))) return;
+    if (!book && !(note && (action.type === "newBeat" || action.type === "removeBeat" || action.type === "writeBeat"))) return;
     const row = line.row;
     const untitled = t("common.untitled");
 
@@ -1312,6 +1319,21 @@ export class OutlineView extends ItemView {
         const made = action.before ? i : i + 1, insert = tr.insert();
         this.fresh = insert ? { path: row.file.path, beat: made, insert } : null;
         this.pendingFocus = { kind: "beat", file: row.file, beat: made, caret: "start" };
+        break;
+      }
+      case "writeBeat": {
+        if (!row || line.beat === undefined) return;
+        await this.commit(el);
+        const i = line.beat;
+        let at = -1;
+        const ok = await this.run(() => this.editBeats(row.file, i, undefined, (text) => {
+          const w = writeUnderBeat(text, i);
+          if (!w) throw new Error(this.changedMessage());
+          at = w.line;
+          return w.text;
+        }));
+        if (!ok || at < 0) return;
+        await this.run(() => this.revealInEditor(row.file, at));
         break;
       }
       case "removeBeat": {
@@ -1536,6 +1558,19 @@ export class OutlineView extends ItemView {
         })();
       }));
     return menu;
+  }
+
+  /** Show the note in an editor that already has it (else the usual leaf) with the cursor on `line`. */
+  private async revealInEditor(file: TFile, line: number): Promise<void> {
+    const open = this.app.workspace.getLeavesOfType("markdown").find((l) => l.view instanceof MarkdownView && l.view.file?.path === file.path && l.view.getMode() === "source");
+    if (!open) { await this.openFile(file, line); return; }
+    this.app.workspace.setActiveLeaf(open, { focus: true });
+    const view = open.view;
+    if (!(view instanceof MarkdownView)) return;
+    const pos = { line, ch: 0 };
+    view.editor.setCursor(pos);
+    view.editor.scrollIntoView({ from: pos, to: pos }, true);
+    view.editor.focus();
   }
 
   private async openFile(file: TFile, line?: number, newTab = false): Promise<void> {

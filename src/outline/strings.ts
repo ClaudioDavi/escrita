@@ -59,6 +59,7 @@ export const outlineStrings: Strings = {
     "outline.hint.enter": "new line",
     "outline.hint.tab": "makes it a beat",
     "outline.hint.shiftTab": "makes it a chapter",
+    "outline.hint.tabBeat": "on a beat writes under it",
     "outline.hint.backspace": "on an empty line deletes it",
     "outline.hint.drag": "drag the numbers to reorder; files renumber",
 
@@ -200,6 +201,7 @@ export const outlineStrings: Strings = {
     "outline.hint.enter": "nova linha",
     "outline.hint.tab": "vira beat",
     "outline.hint.shiftTab": "vira capítulo",
+    "outline.hint.tabBeat": "num beat escreve embaixo dele",
     "outline.hint.backspace": "numa linha vazia apaga",
     "outline.hint.drag": "arraste os números para reordenar; os arquivos são renumerados",
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { insertFirstBeat, insertBeat, setBeatText, removeBeat } from "../src/outline/beats-edit";
+import { insertFirstBeat, insertBeat, setBeatText, removeBeat, writeUnderBeat } from "../src/outline/beats-edit";
 import {
   resolveTarget, decideNoteKey, decideKey, type TargetInput, type OutlineTarget, type KeyInput,
 } from "../src/outline/model";
@@ -149,11 +149,11 @@ describe("decideNoteKey", () => {
     expect(decideNoteKey(k({ key: "ArrowDown" }))).toEqual({ type: "focus", dir: 1 });
   });
 
-  it("Tab and Shift+Tab do nothing (no chapters), even on a written beat", () => {
+  it("Tab on a beat writes under it; Shift+Tab does nothing (no chapters), even on a written beat", () => {
     expect(decideKey(k({ key: "Tab", shift: true }))).toEqual({ type: "beatToChapter" });
     expect(decideNoteKey(k({ key: "Tab", shift: true }))).toEqual({ type: "swallow" });
     expect(decideNoteKey(k({ key: "Tab", shift: true, beatWritten: true }))).toEqual({ type: "swallow" });
-    expect(decideNoteKey(k({ key: "Tab" }))).toEqual({ type: "swallow" });
+    expect(decideNoteKey(k({ key: "Tab" }))).toEqual({ type: "writeBeat" });
   });
 
   it("treats every field as a beat and leaves IME and modifiers alone", () => {
@@ -190,5 +190,34 @@ describe("beats edits next to code and comments (0.5, 2.6)", () => {
     expect(out.split("\n").every((l, i, a) => i === a.length - 1 || l.endsWith("\r"))).toBe(true);
     expect(parseBeats(out).map((b) => b.text)).toEqual(["a", "b"]);
     expect(removeBeat(out, 1)).toBe(t);
+  });
+});
+
+describe("writeUnderBeat (Tab on a beat)", () => {
+  it("goes to the first prose line of a written beat, text unchanged", () => {
+    const text = "%% beat: a %%\n\nProse here.\nMore.\n\n%% beat: b %%\n";
+    expect(writeUnderBeat(text, 0)).toEqual({ text, line: 2 });
+  });
+  it("goes to the blank line after an unwritten beat, text unchanged", () => {
+    const text = "---\nstatus: x\n---\n\n%% beat: a %%\n\n---\n\n%% beat: b %%\n";
+    expect(writeUnderBeat(text, 0)).toEqual({ text, line: 5 });
+  });
+  it("on the last line with a final line break, uses the empty line the editor has", () => {
+    const text = "Intro.\n\n%% beat: a %%\n";
+    expect(writeUnderBeat(text, 0)).toEqual({ text, line: 3 });
+  });
+  it("on the last line without a final line break, adds one empty line", () => {
+    expect(writeUnderBeat("%% beat: a %%", 0)).toEqual({ text: "%% beat: a %%\n", line: 1 });
+    expect(writeUnderBeat("a\r\n%% beat: a %%", 0)).toEqual({ text: "a\r\n%% beat: a %%\r\n", line: 2 });
+  });
+  it("adds an empty line when the next line is a beat or a scene break, and nothing else changes", () => {
+    const text = "%% beat: a %%\n%% beat: b %%\n\nProse.\n";
+    expect(writeUnderBeat(text, 0)).toEqual({ text: "%% beat: a %%\n\n%% beat: b %%\n\nProse.\n", line: 1 });
+    const brk = "%% beat: a %%\n---\n\n%% beat: b %%\n";
+    expect(writeUnderBeat(brk, 0)).toEqual({ text: "%% beat: a %%\n\n---\n\n%% beat: b %%\n", line: 1 });
+  });
+  it("null when the beat is gone", () => {
+    expect(writeUnderBeat("Prose.\n", 0)).toBeNull();
+    expect(writeUnderBeat("%% beat: a %%\n", 1)).toBeNull();
   });
 });

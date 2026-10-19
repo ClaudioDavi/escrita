@@ -59,6 +59,7 @@ export type KeyAction =
   | { type: "newAsBeat" }
   | { type: "chapterToBeat" }
   | { type: "beatToChapter" }
+  | { type: "writeBeat" }
   | { type: "removeBeat" }
   | { type: "trashChapter" }
   | { type: "focus"; dir: -1 | 1 }
@@ -83,6 +84,7 @@ export function decideKey(k: KeyInput): KeyAction {
         if (k.field !== "beat") return { type: "swallow" };
         return k.beatWritten ? { type: "blocked", reason: "written" } : { type: "beatToChapter" };
       }
+      if (k.field === "beat") return { type: "writeBeat" };
       if (k.field === "title") {
         if (k.chapterIndex <= 0) return { type: "blocked", reason: "firstChapter" };
         if (k.words > 0 || !k.bodyBlank) return { type: "blocked", reason: "notEmpty" };
@@ -436,6 +438,7 @@ export function decideNoteKey(k: KeyInput): KeyAction {
     case "swallow":
     case "newBeat":
     case "removeBeat":
+    case "writeBeat":
     case "focus":
       return a;
     default:

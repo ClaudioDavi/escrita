@@ -257,7 +257,8 @@ describe("decideKey", () => {
     expect(k({ key: "Tab", chapterIndex: 0 })).toEqual({ type: "blocked", reason: "firstChapter" });
     expect(k({ key: "Tab", words: 3 })).toEqual({ type: "blocked", reason: "notEmpty" });
     expect(k({ key: "Tab", bodyBlank: false })).toEqual({ type: "blocked", reason: "notEmpty" });
-    expect(k({ key: "Tab", field: "beat" })).toEqual({ type: "swallow" });
+    expect(k({ key: "Tab", field: "beat" })).toEqual({ type: "writeBeat" });
+    expect(k({ key: "Tab", field: "beat", beatWritten: true })).toEqual({ type: "writeBeat" });
     expect(k({ key: "Tab", field: "summary" })).toEqual({ type: "swallow" });
   });
   it("Tab on the new line makes a beat of the last chapter", () => {

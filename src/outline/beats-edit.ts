@@ -240,6 +240,31 @@ export function insertFirstBeat(text: string, beatText: string): string {
   return join(doc, [...before, ...gap, beat, "", ...lines.slice(k)]);
 }
 
+/**
+ * Where to write under beat `i`: the 0-based line the cursor goes to, and the text to put there
+ * first. A beat with prose gets its first prose line and the text unchanged. A beat with none gets
+ * the blank line right after it; only when there is none (the next line is a scene break, another
+ * beat or the beat ends the text) is one empty line added. Nothing else is touched. Null when
+ * the beat is gone.
+ */
+export function writeUnderBeat(text: string, i: number): { text: string; line: number } | null {
+  const b = parseBeats(text)[i];
+  if (!b) return null;
+  const doc = split(text);
+  const { lines } = doc;
+  let k = b.line + 1;
+  if (b.written) {
+    while (k < lines.length && blank(lines[k])) k++;
+    return { text, line: k };
+  }
+  if (k < lines.length) {
+    if (blank(lines[k])) return { text, line: k };
+    return { text: join(doc, [...lines.slice(0, k), "", ...lines.slice(k)]), line: k };
+  }
+  // The beat is the last line: with a final line break the editor already has an empty line after it.
+  return { text: doc.trailingEol ? text : text + doc.eol, line: k };
+}
+
 /** An empty beat the outline just inserted: the chapter's text right before and right after. */
 export interface FreshInsert { before: string; after: string }
 
