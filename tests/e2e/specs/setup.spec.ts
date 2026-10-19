@@ -99,7 +99,7 @@ test.describe("G2a: the setup in an empty vault, in Portuguese", () => {
 
     const settings = group("Configurações").rows;
     const values = settings.map((r) => `${r.label} ${r.value}`).join("\n");
-    expect(values).toContain("Recursos Tudo (19 de 19)");
+    expect(values).toContain("Recursos Tudo (20 de 20)");
     expect(values).toContain("Mundo compartilhado Universo");
     expect(settings.filter((r) => r.mark === null).length).toBeGreaterThanOrEqual(2); // the language group and the universe each have a tick
     expect(group("Nota inicial").rows.map((r) => r.label).join("\n")).toContain("Início.md");

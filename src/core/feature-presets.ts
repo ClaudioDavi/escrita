@@ -11,7 +11,7 @@
 // setup, the "Shared world" row shown with Everything; on the settings page, the
 // Universe section). So no list below holds "universe", `presetSwitches` keeps
 // `universeMode` as it is, `presetChanges` never lists it and `matchingPreset` ignores
-// it. Everything is "19 of 19" on the boards because the universe is counted there as
+// it. Everything is "20 of 20" in the setup (1.2) because the universe is counted there as
 // available, not as switched.
 //
 import { FEATURE_IDS, FEATURE_SPECS, OFF_WHEN_MISSING, switchedOn, type FeatureId, type FeatureSwitches } from "./features";
@@ -31,7 +31,7 @@ const WRITER: readonly FeatureId[] = [
  * and export are essentials). Every id not in a list is switched off by that preset,
  * "universe" aside (never in a list, never touched). Each list is closed under `requires`
  * (stageSnapshot needs snapshots, which every preset holds). Essentials 9, Writer 16,
- * Everything 19 here (20 with the universe, as the boards count). The screenplay editor
+ * Everything 19 here (20 with the universe, as the setup counts). The screenplay editor
  * (1.2) is in Everything only (PLAN-1.2 Q2). A fresh install with no
  * setup run starts on Writer (Q7); an existing install keeps its switches (Q6).
  */

@@ -211,7 +211,7 @@ export class LensView extends ItemView {
     const chart = sec.createDiv({ cls: "escrita-lens-rhythm-bars" });
     chart.setCssProps({ "--escrita-rhythm-limit": `${(s.lensLongSentence / max) * 100}%` });
     model.bars.forEach((b, i) => {
-      const label = t("lens.rhythm.bar", { words: b.words });
+      const label = plural("lens.rhythm.bar", b.words);
       const row = chart.createEl("button", {
         cls: "escrita-lens-rhythm-row" + (b.run ? " is-run" : "") + (b.long ? " is-long" : ""),
       });

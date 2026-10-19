@@ -3,6 +3,7 @@ import type EscritaPlugin from "../main";
 import { locale, plural, t } from "../i18n";
 import { DEFAULTS_LANGUAGES, languageOf, type DefaultsLanguage } from "../core/defaults";
 import { PRESET_IDS, type PresetId } from "../core/feature-presets";
+import { FEATURE_IDS } from "../core/features";
 import type { UniverseMode } from "../universe/settings";
 import { performSetup } from "./apply";
 import {
@@ -114,7 +115,7 @@ export class SetupModal extends Modal {
 
     const presets = field(t("setup.preset.q")).createDiv({ cls: "escrita-setup-cards" });
     for (const p of PRESET_IDS) {
-      const card = this.card(presets, t(`setup.preset.${p}`), t(`setup.preset.${p}.text`, { n: presetCount(p) }), c.preset === p, `preset-${p}`);
+      const card = this.card(presets, t(`setup.preset.${p}`), t(`setup.preset.${p}.text`, { n: presetCount(p), total: FEATURE_IDS.length }), c.preset === p, `preset-${p}`);
       card.addEventListener("click", () => { c.preset = p; this.render(`preset-${p}`); });
     }
     el.createDiv({ text: t("setup.preset.hint"), cls: "escrita-setup-hint" });
@@ -246,7 +247,7 @@ export class SetupModal extends Modal {
 
   private valueOf(item: SetupItem): string {
     if (item.kind === "features") {
-      return t("setup.preset.count", { preset: t(`setup.preset.${this.choices.preset}`), n: presetCount(this.choices.preset) });
+      return t("setup.preset.count", { preset: t(`setup.preset.${this.choices.preset}`), n: presetCount(this.choices.preset), total: FEATURE_IDS.length });
     }
     if (item.kind !== "setting") return "";
     if (item.target === "defaultsLanguage") return t(`setup.language.${String(item.value)}`);

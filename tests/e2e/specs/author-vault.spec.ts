@@ -65,7 +65,10 @@ test.describe("G2c: the setup in a copy of the author's vault", () => {
     await settle(3000);
     expect((await app.notices()).filter((n) => n.includes("Escrita está pronto"))).toEqual([]);
     const features = await app.setting<Record<string, boolean>>("features");
-    expect(features).toEqual(dataBefore.settings.features);
+    // 1.2 (PLAN-1.2 Q2): a switch new in this version is written on load; every switch the author had stays
+    const added = Object.keys(features).filter((k) => !(k in dataBefore.settings.features));
+    expect(added.every((k) => k === "screenplay")).toBe(true);
+    expect(Object.fromEntries(Object.entries(features).filter(([k]) => !added.includes(k)))).toEqual(dataBefore.settings.features);
     const s = await settingsPage(app);
     const label = await s.locator(".escrita-presets-state").innerText();
     expect(["Personalizado", "Essencial", "Escritor", "Tudo"]).toContain(label);

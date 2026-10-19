@@ -46,7 +46,6 @@ const lastReplacement = StateField.define<LastReplacement | null>({
   },
 });
 
-
 export class TypingFeature extends FeatureModule {
   readonly id = "typing" as const;
   readonly slots = { editors: 1 };

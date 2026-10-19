@@ -7,6 +7,7 @@ import type { ChapterRef } from "../core/book-source";
 import { chapterHeadings } from "../core/export-pipeline";
 import { storyChapters, type Collection } from "../core/collection";
 import { dropKeys, isUnder, movedPath, renameKeys } from "../core/path-keys";
+import { noteName } from "../core/paths";
 import { presetForLanguage } from "../core/presets";
 import type { ReadPosition } from "../data";
 
@@ -71,7 +72,7 @@ export function readerSource(path: string, facts: ReaderFacts): ReaderSource {
       sections: readerChapters(facts.book.chapters, facts.headingFormat, facts.unnumbered),
     };
   }
-  const title = (path.split("/").pop() ?? path).replace(/\.md$/, "");
+  const title = noteName(path);
   if (facts.collection) {
     return {
       kind: "collection", title,
