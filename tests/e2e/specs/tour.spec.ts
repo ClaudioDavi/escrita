@@ -871,6 +871,8 @@ test("tour", async () => {
 
     zoomOut();
     await say(W.c.step, 400);
+    // the Echoes row lit (no zoom), so the clicks and the word they jump to in the text are both in view
+    if (RECORDING || SHOTS) await spotlightOn(page, rule("echo"));
     const next = rule("echo").locator(".escrita-lens-step").nth(1);
     const counter = rule("echo").locator(".escrita-lens-counter");
     await next.click();
@@ -881,6 +883,7 @@ test("tour", async () => {
     await next.click();
     await expect(counter).not.toHaveText(first);
     await pace(1600);
+    if (RECORDING || SHOTS) await spotlightOff(page);
 
     await say(W.c.rhythm, 400);
     await focusAt(revLine, 12); // the cursor in the paragraph of same-length sentences
