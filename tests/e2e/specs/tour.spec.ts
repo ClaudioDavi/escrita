@@ -9,6 +9,7 @@
 //   RECORD=<folder> TOUR_LANG=pt-BR npx playwright test tour   # <folder>/tour-pt-BR.mp4
 //   TOUR_SHOTS=<folder> TOUR_LANG=en npx playwright test tour           # one PNG per caption, no recording
 //   TOUR_THEME=<a vault's .obsidian folder> ...   # that vault's community theme, CSS snippets and fonts (read only)
+//   RECORD_HD=1 RECORD=<folder> ...               # 1920 x 1080; captions, zooms and pointer drawn by tests/e2e/video/render.py
 //
 // Without RECORD there are no pauses and no caption is waited on (a run is about 45 s). Either way the test logs the
 // time the recording would take, step by step ("planned"): the pauses it would hold plus the typing
@@ -21,7 +22,7 @@ import { App } from "../lib/app";
 import { emptyEn, emptyPt } from "../fixtures";
 import { settingsPage } from "../lib/more";
 import { editorText, sleep } from "../lib/panels";
-import { caption, recordDir, Recorder, removeCaption, spotlightOff, spotlightOn } from "../lib/record";
+import { caption, hdViewport, recordDir, recordHd, Recorder, removeCaption, spotlightOff, spotlightOn } from "../lib/record";
 import { SetupModal } from "../lib/setup-modal";
 
 type Lang = "en" | "pt-BR";
@@ -338,6 +339,8 @@ if (requested !== "en" && requested !== "pt-BR") throw new Error(`TOUR_LANG must
 const LANG: Lang = requested;
 const W = TEXTS[LANG];
 const RECORDING = recordDir() !== null;
+/** captions, zooms and the pointer go to the recorder's log, for the renderer, instead of the window */
+const HD = recordHd();
 /** TOUR_SHOTS=<folder>: one PNG of the window per caption, to review the tour without recording it */
 const SHOTS = process.env.TOUR_SHOTS || null;
 let shots = 0;
@@ -386,6 +389,7 @@ test("tour", async () => {
   let stepStart = 0;
   let stepName = "";
   const section = (name: string) => {
+    if (HD) { rec?.mark({ type: "unzoom" }); rec?.mark({ type: "section", name }); }
     if (stepName) perStep.push({ name: stepName, ms: planned - stepStart });
     stepName = name;
     stepStart = planned;
@@ -415,7 +419,8 @@ test("tour", async () => {
     const shown = planned - captionAt;
     if (shown < MIN_CAPTION_MS) await pace(MIN_CAPTION_MS - shown);
     await flushShot();
-    await caption(opts.on ?? page, words, opts);
+    if (HD) rec?.mark({ type: "caption", text: words, where: opts.where ?? "bottom", size: opts.size ?? 24 });
+    else await caption(opts.on ?? page, words, opts);
     captionAt = planned;
     lastOn = opts.on ?? page;
     await pace(hold);
@@ -432,8 +437,28 @@ test("tour", async () => {
   /** A spotlight around `target`, held `ms` in the planned time (drawn only when recording or taking shots). */
   const spotOn = async (target: ReturnType<typeof page.locator>, label?: string) => {
     if (RECORDING || SHOTS) await spotlightOn(page, target, label);
+    await zoomTo(target, { pad: 140 });
   };
-  const spotOff = async () => { if (RECORDING || SHOTS) await spotlightOff(page); };
+  const spotOff = async () => {
+    if (RECORDING || SHOTS) await spotlightOff(page);
+    zoomOut();
+  };
+  /** HD only: the renderer zooms the video onto what `target` matches (all of it, padded by `pad` CSS px). */
+  const zoomTo = async (target: ReturnType<typeof page.locator>, opts: { pad?: number; scale?: number } = {}) => {
+    if (!HD || !rec) return;
+    const boxes = (await target.evaluateAll((els) => els.map((el) => {
+      const r = el.getBoundingClientRect();
+      return { l: r.left, t: r.top, r: r.right, b: r.bottom };
+    }))).filter((b) => b.r > b.l && b.b > b.t);
+    if (boxes.length === 0) return;
+    const pad = opts.pad ?? 60;
+    const l = Math.min(...boxes.map((b) => b.l)) - pad, t = Math.min(...boxes.map((b) => b.t)) - pad;
+    const r = Math.max(...boxes.map((b) => b.r)) + pad, b = Math.max(...boxes.map((b) => b.b)) + pad;
+    rec.mark({ type: "zoom", x: l, y: t, w: r - l, h: b - t, scale: opts.scale });
+  };
+  const zoomOut = () => { if (HD) rec?.mark({ type: "unzoom" }); };
+  /** HD only: a gentle zoom on the middle of the active editor, where centerCursor keeps the line being written. */
+  const zoomEditor = (scale = 1.3) => zoomTo(page.locator(".workspace-leaf.mod-active .cm-scroller"), { pad: 0, scale });
   const spot = async (target: ReturnType<typeof page.locator>, ms: number, label?: string) => {
     await spotOn(target, label);
     await shotNow();
@@ -524,6 +549,7 @@ test("tour", async () => {
     await pace(500);
   };
   const clearNotices = () => ob.dismissNotices();
+  const unsay = async () => { if (HD) rec?.mark({ type: "uncaption" }); else await removeCaption(page); };
   /** The first number in the daily counter of the status bar. */
   const today = async () => {
     const text = await page.locator(".escrita-status-today").first().innerText();
@@ -532,6 +558,7 @@ test("tour", async () => {
   const closeLeaves = (type: string) => page.evaluate((ty) => app.workspace.getLeavesOfType(ty).forEach((l: any) => l.detach()), type);
 
   await ob.setTheme("light");
+  if (HD) await hdViewport(page);
   // Obsidian's own spellcheck underlines the prose in red in the video; off while recording only
   if (RECORDING) await page.evaluate(() => (app.vault as unknown as { setConfig(k: string, v: unknown): void }).setConfig("spellcheck", false));
   await ob.dismissNotices();
@@ -548,6 +575,7 @@ test("tour", async () => {
 
   try {
     rec = await Recorder.start(page);
+    if (HD) await rec?.trackPointer(page);
 
     // ============================================================ 1. the title
     section("1 title");
@@ -642,6 +670,7 @@ test("tour", async () => {
     const beats = page.locator(".escrita-outline-beat");
     await expect(beats).toHaveCount(1);
     await expect(beats.first()).not.toHaveClass(/is-written/);
+    await zoomTo(page.locator(".escrita-outline-beat"), { pad: 110, scale: 1.7 });
     await pace(1500);
 
     await say(W.c.beatEdit, 400);
@@ -650,6 +679,7 @@ test("tour", async () => {
     await kb().press("Control+a");
     await typeKeys(W.story.beat1);
     await pace(500);
+    zoomOut();
     await focusAt();
     await page.mouse.move(660, 650); // off the outline, so no tooltip hangs over the video
     await expect.poll(async () => (await editorText(ob)).includes(`%% beat: ${W.story.beat1} %%`)).toBe(true);
@@ -658,6 +688,7 @@ test("tour", async () => {
     // ============================================================ 4. prose under the beat
     section("4 write");
     await say(W.c.write, 500);
+    await zoomEditor();
     await typeKeys(W.story.p1);
     await key("Enter", 200);
     await key("Enter", 300);
@@ -677,6 +708,7 @@ test("tour", async () => {
     await pace(1500);
 
     await say(W.c.moreBeats, 400);
+    await zoomTo(page.locator(".escrita-outline-beat"), { pad: 150, scale: 1.6 });
     await beatField.click();
     await kb().press("End");
     await key("Enter", 300);
@@ -687,6 +719,8 @@ test("tour", async () => {
     await expect(beats).toHaveCount(3);
     await beats.nth(2).locator(".escrita-outline-beat-text").click();
     await typeKeys(W.story.beat3);
+    await pace(600);
+    zoomOut();
     await focusAt(0, 0); // leaves the field: it is saved on blur
     await page.mouse.move(660, 650);
     await expect.poll(async () => {
@@ -777,6 +811,7 @@ test("tour", async () => {
     await page.evaluate(() => app.workspace.rightSplit.expand());
     const phItem = page.locator(".escrita-ph-item").filter({ hasText: LANG === "en" ? "check the tide tables" : "conferir a tábua das marés" });
     await expect(phItem).toBeVisible();
+    await zoomTo(page.locator(".escrita-ph-item"), { pad: 90 });
     await pace(1800);
 
     // ============================================================ 7. dialogue focus
@@ -829,8 +864,10 @@ test("tour", async () => {
       expect(n, `${id} matches`).toBeGreaterThan(0);
     }
     await rule("echo").hover();
+    await zoomTo(page.locator(".escrita-lens-row"), { pad: 60 });
     await pace(1800);
 
+    zoomOut();
     await say(W.c.step, 400);
     const next = rule("echo").locator(".escrita-lens-step").nth(1);
     const counter = rule("echo").locator(".escrita-lens-counter");
@@ -858,9 +895,11 @@ test("tour", async () => {
     await expect(page.locator(".escrita-lens-rhythm-row.is-run").first()).toBeVisible();
     await expect(page.locator(".escrita-lens-rhythm-row.is-long")).toHaveCount(1);
     await expect(page.locator(".escrita-lens-rhythm-note").first()).toBeVisible();
+    await zoomTo(page.locator(".escrita-lens-rhythm"), { pad: 50 });
     await pace(2500);
 
     await say(W.c.rhythmClick, 400);
+    zoomOut();
     const loved = sentences[W.revision.loved];
     await bars.nth(W.revision.loved).click();
     await ob.waitFor("the sentence to be selected", async () => (await page.evaluate(`${ED}?.getSelection()`)) === loved);
@@ -884,6 +923,7 @@ test("tour", async () => {
     await page.evaluate(() => app.workspace.rightSplit.expand());
     const card = page.locator(".escrita-darling").filter({ hasText: loved });
     await expect(card).toBeVisible();
+    await zoomTo(card, { pad: 110 });
     await expect(card.locator(".escrita-darling-source")).toContainText(W.story.title);
     expect(await ob.waitForFile(await ob.setting<string>("globalDarlingsNote"))).toContain(loved);
     await pace(2400);
@@ -1054,6 +1094,7 @@ test("tour", async () => {
     await key("Enter", 300);
     await ob.waitFor("the second chapter", () => ob.listVaultFolder(chaptersDir).length === 2, 10_000);
     await expect(page.locator(".escrita-outline-chapter:not(.escrita-outline-note)")).toHaveCount(2);
+    await zoomTo(page.locator(".escrita-outline-chapter"), { pad: 120, scale: 1.6 });
     const ch2 = `${chaptersDir}/${ob.listVaultFolder(chaptersDir).find((f) => `${chaptersDir}/${f}` !== ch1)!}`;
     await page.evaluate(async ([p, s]) => {
       await app.vault.process(app.vault.getFileByPath(p)!, (d: string) => d.replace(/\n*$/, "\n") + s + "\n");
@@ -1061,6 +1102,7 @@ test("tour", async () => {
     await pace(2000);
     await shotNow();
 
+    zoomOut();
     await say(W.c.readBook, 300);
     await openNote(ch1);
     expect(await ob.command("read-book")).toBe(true);
@@ -1115,6 +1157,7 @@ test("tour", async () => {
     await focusAt();
     await pace(1200);
 
+    await zoomEditor(1.35);
     await say(W.c.spHead, 600);
     await key("Tab", 600);
     await key("Tab", 600);
@@ -1159,6 +1202,7 @@ test("tour", async () => {
     const scene = typed.slice(typed.indexOf(W.script.seed.trimEnd()) + W.script.seed.trimEnd().length);
     expect(scene).toContain(`${W.script.typedLocation.toUpperCase()}${W.script.locationPick} - ${W.script.timePick}\n\n`);
     expect(scene).toContain(`${W.script.action}\n\nELIAS\n(${W.script.paren})\n${W.script.speechA}\n\nMARA\n${W.script.speechB}\n\n${W.script.transitionOut}`);
+    zoomOut();
     await focusAt(0, 0);
     await say(W.c.spPage, 300);
     await expect(page.locator(".workspace-leaf.mod-active .cm-line.escrita-sp-character").nth(2)).toBeVisible();
@@ -1209,8 +1253,10 @@ test("tour", async () => {
     // ============================================================ 18. the Features page
     section("18 features");
     const settings = await settingsPage(ob);
-    await settings.setViewportSize({ width: 1280, height: 800 }).catch(() => { /* keeps its size */ });
+    if (HD) await hdViewport(settings);
+    else await settings.setViewportSize({ width: 1280, height: 800 }).catch(() => { /* keeps its size */ });
     await rec?.follow(settings);
+    if (HD) await rec?.trackPointer(settings);
     await say(W.c.features, 300, { on: settings });
     const presets = settings.locator(".escrita-presets");
     await presets.waitFor();
@@ -1228,12 +1274,12 @@ test("tour", async () => {
 
     // ============================================================ 19. the outro
     section("19 outro");
-    await removeCaption(page);
+    await unsay();
     await say(W.c.outro1, 2600, { where: "center", size: 34 });
     await say(W.c.outro2, 1600, { where: "center", size: 44 });
     await pace(1200);
     await flushShot();
-    await removeCaption(page);
+    await unsay();
     section("end");
   } finally {
     if (rec) {

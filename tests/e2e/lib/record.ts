@@ -11,8 +11,31 @@ import path from "node:path";
 /** The folder from RECORD, or null when recording is off. */
 export const recordDir = (): string | null => process.env.RECORD || null;
 
+/**
+ * RECORD_HD=1: a 1920 x 1080 recording (a 1280 x 720 layout at 1.5 device pixels per CSS pixel) whose
+ * captions, zooms and pointer are drawn afterwards by tests/e2e/video/render.py from the event log
+ * written next to the frames, instead of in the window.
+ */
+export const recordHd = (): boolean => recordDir() !== null && process.env.RECORD_HD === "1";
+
+/** In HD mode, gives `page` the 1280 x 720 layout drawn at 1920 x 1080. */
+export async function hdViewport(page: Page): Promise<void> {
+  const s = await page.context().newCDPSession(page);
+  await s.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1.5, mobile: false });
+}
+
+/** One entry of the event log: what the renderer draws, at a wall-clock time in seconds. */
+export type RecordEvent =
+  | { type: "caption"; text: string; where: "bottom" | "top" | "center"; size: number }
+  | { type: "uncaption" }
+  | { type: "zoom"; x: number; y: number; w: number; h: number; scale?: number }
+  | { type: "unzoom" }
+  | { type: "move" | "down"; x: number; y: number }
+  | { type: "section"; name: string };
+
 export class Recorder {
   private frames: { file: string; at: number }[] = [];
+  private events: (RecordEvent & { t: number })[] = [];
   private pending: Promise<unknown>[] = [];
   private session: CDPSession | null = null;
   private framesDir: string;
@@ -45,7 +68,10 @@ export class Recorder {
       this.pending.push(fs.promises.writeFile(file, Buffer.from(ev.data, "base64")));
       void session.send("Page.screencastFrameAck", { sessionId: ev.sessionId }).catch(() => { /* page closing */ });
     });
-    await session.send("Page.startScreencast", { format: "jpeg", quality: 85, maxWidth: 1280, everyNthFrame: 1 });
+    const hd = recordHd();
+    await session.send("Page.startScreencast", {
+      format: "jpeg", quality: hd ? 92 : 85, maxWidth: hd ? 1920 : 1280, maxHeight: hd ? 1080 : 800, everyNthFrame: 1,
+    });
   }
 
   /**
@@ -55,6 +81,29 @@ export class Recorder {
   async follow(page: Page): Promise<void> {
     try { await this.session?.send("Page.stopScreencast"); } catch { /* already gone */ }
     await this.attach(page);
+  }
+
+  /** Logs an event for the renderer, stamped now (CSS pixels of the 1280 x 720 layout for places). */
+  mark(ev: RecordEvent, t = Date.now() / 1000): void {
+    this.events.push({ ...ev, t });
+  }
+
+  /** Logs the pointer of `page` (moves and presses) through its console, for the renderer to draw. */
+  async trackPointer(page: Page): Promise<void> {
+    page.on("console", (msg) => {
+      const text = msg.text();
+      if (!text.startsWith("ESCRITA-E2E-PTR ")) return;
+      const [k, x, y, t] = text.slice(16).split(" ").map(Number);
+      this.mark({ type: k === 1 ? "down" : "move", x, y }, t / 1000);
+    });
+    await page.evaluate(() => {
+      const w = window as unknown as { __escritaPtr?: boolean };
+      if (w.__escritaPtr) return;
+      w.__escritaPtr = true;
+      const log = (k: number, e: MouseEvent) => console.debug(`ESCRITA-E2E-PTR ${k} ${e.clientX} ${e.clientY} ${Date.now()}`);
+      document.addEventListener("mousemove", (e) => log(0, e), true);
+      document.addEventListener("mousedown", (e) => log(1, e), true);
+    });
   }
 
   /** Stops the screencast and waits for the frames to be on disk. */
@@ -67,6 +116,8 @@ export class Recorder {
   encode(name: string): string {
     const out = path.join(this.dir, `${name}.mp4`);
     if (this.frames.length === 0) throw new Error("no frames were recorded");
+    // the log the HD renderer reads: every frame with its time, and the events
+    fs.writeFileSync(path.join(this.dir, `${name}.json`), JSON.stringify({ frames: this.frames, events: this.events }));
     const list = path.join(this.framesDir, "list.txt");
     const lines: string[] = [];
     this.frames.forEach((f, i) => {
