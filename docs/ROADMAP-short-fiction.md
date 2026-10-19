@@ -56,6 +56,7 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 0.9.0 | Collections of contos, exported as one file (13) | M | Shipped |
 | 1.0 | Set up a writing vault and presets (10) | S | Shipped |
 | 1.0.4 | Start a new work: "New short story" and "New book" (14) | S–M | Shipped |
+| 1.2 | Read a note (15) · Sentence rhythm in the lens panel (16) | S + S | Planned |
 
 Sections keep their original numbers so references from the other roadmaps stay valid.
 
@@ -958,6 +959,49 @@ prose, and never touches an existing file; "New book" does the same for a book w
 first chapter; a template note set in settings replaces each built-in one; English and pt-BR.
 
 ---
+
+## 15. Read a note (v1.2, planned)
+
+**Why.** Reading a draft in another typeface, away from the editor, shows what the eye skips
+while writing: a typo, a repeated word, a paragraph that drags. "Read the book" (novel roadmap,
+8) does this for a book only; the command doesn't show outside one. A conto or an essay is
+revised the same way.
+
+**Stage and upkeep.** Serves revision. No upkeep: nothing to set, the view is the one that
+exists.
+
+**What it does.**
+
+- A command "Read this note" (pt-BR "Ler esta nota") on any note that is not in a book, not a
+  screenplay and not Escrita's own file (snapshot, export, submission). It opens the reader with
+  the note as its only section, with no chapter heading; markers are hidden by the same
+  manuscript model as the export.
+- On a **collection** (13), the same command reads its contos in order, each headed by its
+  title, as the collection exports.
+- Everything else is the reader as it is: read-only, a click on a paragraph opens the note at
+  that line, the position is kept per note and follows renames.
+- Mockup: a board on the design canvas (the reader's top bar for a note and for a collection).
+
+## 16. Sentence rhythm (v1.2, planned)
+
+**Why.** Prose goes flat when sentence after sentence has the same length. The lens's long
+sentences rule (5) finds one sentence that is too long; nothing shows the pattern. Seeing the
+lengths as bars, the way some English style tools do (none offline, none in Portuguese), shows
+a monotone run at a glance.
+
+**Stage and upkeep.** Serves revision. No upkeep: a section of the lens panel, on with the
+lens.
+
+**What it does.**
+
+- A "Rhythm" section in the lens panel, after Readability: one bar per sentence of the
+  paragraph at the cursor (or of the selection, when there is one), its length in words,
+  with the long sentences threshold drawn as a line.
+- Three or more sentences in a row of nearly the same length are marked as a run. The rule is
+  fixed and pinned in tests, not a setting.
+- A click on a bar selects that sentence in the editor; it never changes the text (rule 2).
+- Like Dialogue and Readability, it can be hidden in the lens settings.
+- Mockup: a board on the design canvas (the section in light and dark, a run, a long sentence).
 
 ## Settings summary (new)
 

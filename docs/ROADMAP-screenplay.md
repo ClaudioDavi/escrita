@@ -42,7 +42,7 @@ outlined and exported.
 | Phase | Contents | Effort |
 |---|---|---|
 | 1 | Screenplay notes and the Fountain parser (SP 1) · Export: Fountain and PDF (SP 6) | M + L. **Shipped in 1.1.0** |
-| 2 | Writing in screenplay format (SP 2) · Pages, not words (SP 4) · Scene outline (SP 3) | M + S + S |
+| 2 | Writing in screenplay format (SP 2) · Pages, not words (SP 4) · Scene outline (SP 3) | M + S + S. **SP 2 planned for 1.2** |
 | 3 | Revision for scripts (SP 5) · FDX export and Fountain import (SP 6) · Feature-length scripts as a book (SP 7) | M + M + M |
 
 Export comes in phase 1 on purpose: a writer can draft in plain Fountain today, with no
@@ -100,6 +100,12 @@ help from the editor, but can't hand in the script without a correct PDF.
   1.2), so a character can move from a conto to a short film.
 
 ## 2. Writing in screenplay format
+
+**Planned for 1.2 (PLAN-1.2), 2026-10-19,** with three changes to the text below: Reading view
+keeps today's plain rendering (its layout comes later, if a writer asks); dialogue focus and the
+revision lens reading Fountain move to section 5, with the other lens rules for scripts; and the
+editor help is its own feature switch, `screenplay`, so a writer can turn it off without
+turning off typing.
 
 - **Live Preview layout.** A CodeMirror decoration lays out each element as on the
   page: scene headings bold, character cues and dialogue indented to their columns,

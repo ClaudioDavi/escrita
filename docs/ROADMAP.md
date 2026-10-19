@@ -86,11 +86,33 @@ changes; setting up again in a finished vault says there is nothing to do.
 end moves whole to the next page (kept), and indents follow the Fountain spec (ignored outside
 action; an indented `CUT TO:` is a transition).
 
+## 1.2, writing a script and reading a story: planned
+
+**Planned** on 2026-10-19 with the author. Plan: [PLAN-1.2.md](PLAN-1.2.md).
+
+Three features that help while drafting and revising, chosen over universe phase 2 because the
+author's next months are short forms (contos, essays, short films). Upkeep for the writer: none.
+
+| Feature | Ref | Effort | Stage | Status |
+|---|---|---|---|---|
+| The screenplay editor: Live Preview lays out each Fountain element as on the page, Tab and Enter as in screenwriting programs, suggestions for characters, places and times of day. A new switch, `screenplay` (the 20th) | SP 2 | M | Draft | Planned |
+| Read a note: "Read the book" for a single conto or essay, and for a collection's contos in order | SF 15 | S | Revision | Planned |
+| Sentence rhythm: a strip of bars in the lens panel, one per sentence of the paragraph at the cursor, with runs of same-length sentences marked | SF 16 | S | Revision | Planned |
+
+**Improvements:** editor glue and "reveal on touch" in `src/ui/` (candidate 38; the screenplay
+layout is the fifth decoration plugin and is built on it) and "Read the book" rebuilds when the
+metadata cache is ready (candidate 52; the reader for a note touches the same code).
+
+**Not in 1.2:** Reading view layout for screenplays, Fountain in dialogue focus and the lens
+(moved to SP 5), pages as a unit (SP 4) and the scene outline (SP 3).
+
 ## Next: universe phase 2
 
 Timeline, dates, facts over time, continuity and canon (U 2.1–2.4), moved out of 0.9 on
-2026-10-06. Not planned in detail yet: the version, its improvement and a `PLAN-<version>.md`
-come when it is planned. The draft design is in `research_notes/0.9-dates-draft/` (local).
+2026-10-06, and after 1.2 since 2026-10-19. Not planned in detail yet: the version, its
+improvement and a `PLAN-<version>.md` come when it is planned. Natural improvements: 57 (the
+works of a scope) and 58 (typed property readers). The draft design is in
+`research_notes/0.9-dates-draft/` (local).
 
 ## 0.5 to 1.0
 
@@ -178,6 +200,6 @@ and the README links to every guide.
 | Companion-plugin guide (unscheduled) | N 6 | S | Dropped from 0.8 on 2026-10-05; written only if a need shows up (for example, a StoryLine clash reported by a writer) |
 | Longform importer | N 5 | S–M | Not wanted for 1.0 |
 | Screenwriting, phase 1: screenplay notes, Fountain parser, Fountain and PDF export | SP 1, SP 6 | M + L | Shipped in 1.1.0 (see "1.1" above). Export first: a script can be drafted in plain Fountain, but can't be handed in without a correct PDF. Builds on the 0.8 export pipeline and the `form` property (0.6) |
-| Screenwriting, phase 2: screenplay layout and Tab/Enter in the editor, pages as a unit, scene outline | SP 2–4 | M + S + S | |
+| Screenwriting, phase 2: screenplay layout and Tab/Enter in the editor, pages as a unit, scene outline | SP 2–4 | M + S + S | SP 2 planned for 1.2 (without Reading view); SP 3 and SP 4 after |
 | Screenwriting, phase 3: script report, FDX export, Fountain import, feature-length scripts as a book | SP 5–7 | M + M + M | |
 | Universe phase 2: story timeline, `when` and eras, narrative mode, shift dates, facts over time, continuity checks, canon | U 2.1–2.4 | L | After screenwriting. Planned for 0.9 and moved on 2026-10-06 as bloat at this stage; the draft design is in `research_notes/0.9-dates-draft/` (local) |

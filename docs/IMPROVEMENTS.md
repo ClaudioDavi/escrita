@@ -244,6 +244,8 @@ interface lives. Test through the interface.
 
 ### 38. Editor glue and "reveal on touch" in `src/ui/`
 
+**Scheduled for 1.2** (PLAN-1.2): the screenplay layout is built on it.
+
 **Strength:** strong · **Pairs with:** 0.5.1's lens retry
 
 - **Problem.**
@@ -454,6 +456,8 @@ interface lives. Test through the interface.
 - `VaultTree` fakes in 7 files. Add `tests/support/fake-tree.ts`.
 
 ### 52. "Read the book" rebuilds when the metadata cache is ready
+
+**Scheduled for 1.2** (PLAN-1.2), with "Read a note" (SF 15).
 
 **Strength:** small · **Found:** in 1.1, Wave 2 (PLAN-1.1)
 
