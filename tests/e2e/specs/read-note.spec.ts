@@ -248,3 +248,28 @@ test("12. a resolved with nothing changed draws nothing again; a changed list re
   expect(await pos()).toEqual(before);
   await expect(ob.page.locator(".escrita-reader-body.is-pending")).not.toHaveCount(3);
 });
+
+// G2 review (boards 46): the reader for a conto, for a collection, and the outline header, in both themes.
+for (const theme of ["light", "dark"] as const) {
+  test(`13. screenshots for G2, ${theme}`, async () => {
+    await ob.setTheme(theme);
+    await closeReaders();
+    await readNote(CHUVA);
+    await ob.page.evaluate(() => { (document.querySelector(".escrita-reader") as HTMLElement).scrollTop = 0; });
+    await sleep(300);
+    await snap(ob, `the conto in the reader, ${theme}`, ob.page.locator(".escrita-reader"));
+    await closeReaders();
+    await readNote(COLL);
+    await ob.page.evaluate(() => { (document.querySelector(".escrita-reader") as HTMLElement).scrollTop = 0; });
+    await sleep(300);
+    await snap(ob, `the collection in the reader, ${theme}`, ob.page.locator(".escrita-reader"));
+    await closeReaders();
+    await ob.openFile(CHUVA);
+    await ob.command("open-outline");
+    const header = ob.page.locator(".escrita-outline-header").first();
+    await expect(header).toContainText("Chuva", { timeout: 10_000 });
+    await expect(ob.page.locator(".escrita-outline-read-note")).toBeVisible();
+    await snap(ob, `the single-note outline header with the reader button, ${theme}`, header);
+    await snap(ob, `the outline panel, ${theme}`, header.locator("xpath=ancestor::*[contains(@class,'workspace-leaf-content')][1]"));
+  });
+}
