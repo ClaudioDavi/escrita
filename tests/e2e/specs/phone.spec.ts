@@ -46,7 +46,7 @@ test.describe("G4 (1 to 3): the setup and the layout on an emulated phone", () =
     await app.command("setup");
     await expect(setup.root).toBeVisible();
     const cards = await setup.root.locator(".escrita-setup-card").evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width) }; }));
-    const presets = cards.slice(0, 3);
+    const presets = cards.slice(0, 4);
     expect(new Set(presets.map((c) => c.x)).size, `preset cards stacked: ${JSON.stringify(presets)}`).toBe(1);
     expect(presets[1].y).toBeGreaterThan(presets[0].y);
     expect(await smallTargets(setup.root, "button, .escrita-setup-ck, select")).toEqual([]);
@@ -100,7 +100,7 @@ test.describe("G4 (1 to 3): the setup and the layout on an emulated phone", () =
   test("4. the Features page: the preset buttons are 44 px tall and wrap inside the window", async () => {
     const s = await settingsPage(app);
     const btns = s.locator(".escrita-preset-btn");
-    await expect(btns).toHaveCount(3);
+    await expect(btns).toHaveCount(4);
     for (const b of await btns.all()) {
       await b.scrollIntoViewIfNeeded();
       const r = (await b.boundingBox())!;

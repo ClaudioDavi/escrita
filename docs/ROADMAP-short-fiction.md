@@ -569,6 +569,10 @@ plan; where the build differs, the deviations are:
   check and submissions); Everything is 18 here, 19 counting the universe. No preset
   touches the universe: its switch is the universe mode, a separate answer ("Shared world",
   asked with Everything), because it moves folders.
+- **Screenwriter preset (1.2, the author's request 2026-10-19):** a fourth preset of 11 features
+  for screenplays (goals, outline, placeholders, screenplay, lens, snapshots, darlings, stage
+  snapshot, desk, export, submissions); typing, dialogue focus, moving blocks, templates, explorer
+  counts, spellcheck, publish and threads are off in it.
 - **Writing mode** is new and not in the spec: a layout choice ("focus") next to the writing
   desk. Only the note, a quiet exit button and, with goals on, a small counter. It is part of
   the desk (no switch of its own), has two commands (enter, exit), a setting to open in it,

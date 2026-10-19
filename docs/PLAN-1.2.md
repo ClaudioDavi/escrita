@@ -4,7 +4,7 @@ The plan for the screenplay editor (SP 2), "Read a note" (SF 15), sentence rhyth
 panel (SF 16), and two improvements: editor glue and "reveal on touch" in `src/ui/` (candidate
 38) and "Read the book" rebuilding when the metadata cache is ready (candidate 52). Written
 2026-10-19 on `main` at `627b23d` (1.1.1). **Approved 2026-10-19 (G0):** every question as
-recommended, except Q2 (the screenplay switch is on in Everything only). The boards wait for
+recommended, except Q2 (the screenplay switch is on in Everything only; Screenwriter added after Wave 3). The boards wait for
 G1. The waves run on branch `1.2`.
 
 **Goal:** a writer types a short film in a screenplay note and sees it laid out as on the page,
@@ -424,6 +424,23 @@ status, the screenplay form word, one beat, an empty last line). `createStory` b
 `tests/settings-new-works.test.ts` and `tests/lifecycle-new-work.test.ts`; the e2e spec
 `new-work.spec.ts` has a new check 10. Guide pages in both languages and the README changelog
 were updated.
+
+### After Wave 3: the Screenwriter preset (2026-10-19)
+
+The author asked for a fourth preset just for screenwriting. `PRESET_IDS` is now `essentials`,
+`writer`, `screenwriter`, `everything` (setup cards in a 2x2 grid, board 35; four buttons on the
+Features page, board 38). Q2 changes: the screenplay switch is on in Screenwriter and
+Everything. `settleNewSwitches` is unchanged: an upgrading install gets the switch on only if
+it matched Everything.
+
+Screenwriter, 11: goals, outline, placeholders, screenplay, lens, snapshots, darlings,
+stageSnapshot, desk, export, submissions. Closed under `requires` (stageSnapshot needs
+snapshots). Off, and why: typing (Enter flow is off in a script, and smart typography turns the
+`--` scripts keep into em dashes), dialogueFocus, moveBlocks and templates (prose),
+explorerCounts (words, not pages), spellcheck, publish and threads. The universe is untouched.
+Tests: sizes and matching in `tests/feature-presets.test.ts` and `tests/contracts-1.0.test.ts`, the
+fixture `tests/fixtures/setup/empty-ptbr-screenwriter.json`, and check 6b of
+`tests/e2e/specs/features-presets.spec.ts`.
 
 ## Risks
 

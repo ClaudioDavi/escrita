@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { PLAIN_DEFAULTS, itemsToRun, planSetup, settingsAfter, type SetupChoices, type SetupItem, type SetupVault } from "../src/setup/plan";
-import { reasonFor } from "../src/setup/model";
+import { presetCount, reasonFor } from "../src/setup/model";
 import { UNIVERSE_NOTE_TEXT } from "../src/core/scope";
 import { DEFAULT_SETTINGS, defaultsFor, type EscritaSettings } from "../src/settings";
 import type { DefaultsLanguage } from "../src/core/defaults";
@@ -198,5 +198,12 @@ describe("planSetup: rules", () => {
 
   it("its copy of the plain defaults matches DEFAULT_SETTINGS", () => {
     for (const [k, v] of Object.entries(PLAIN_DEFAULTS)) expect(DEFAULT_SETTINGS[k as keyof typeof DEFAULT_SETTINGS], k).toEqual(v);
+  });
+});
+
+describe("the setup's preset counts (1.2)", () => {
+  it("Screenwriter is 11, Everything counts the universe as available", () => {
+    expect(presetCount("screenwriter")).toBe(11);
+    expect(presetCount("everything")).toBe(20);
   });
 });

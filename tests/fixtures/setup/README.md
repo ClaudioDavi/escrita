@@ -16,6 +16,7 @@ Cases:
 |---|---|
 | `empty-en.json` | Empty vault, fresh English install already on Writer. Folders (tick `folders`), both examples, home note; `trackFolders` empty stays empty (kept); features kept (already Writer); desk layout. |
 | `empty-ptbr.json` | The same in Portuguese (Contos, Exemplo ·, Início.md), stories only, Essentials (features row changes), writing mode (`openInWritingMode` written under the layout tick). |
+| `empty-ptbr-screenwriter.json` | `empty-ptbr` with the Screenwriter preset (1.2): the features row turns the screenplay editor on and typing off. |
 | `en-install-picks-ptbr.json` | An English install, empty vault, four leaves open; the writer picks Portuguese, Everything and Shared world. Every word-bearing setting changes (darlings notes are equal in both sets, so no item), `universeMode` is written, the layout row is unticked. |
 | `author-like.json` | Board 36 a: the scrubbed 0.9 settings, existing folders and home note, works present. The writer's own words are kept; examples, the language group, the features row and the layout are unticked; `trackFolders` gains `Livros` and keeps the rest. |
 | `second-run.json` | Board 36 b: the vault and settings after `empty-en` ran. Everything is kept; the layout row is unticked (leaves open), so `itemsToRun` is empty ("Nothing to do"). |

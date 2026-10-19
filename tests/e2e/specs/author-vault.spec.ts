@@ -71,7 +71,7 @@ test.describe("G2c: the setup in a copy of the author's vault", () => {
     expect(Object.fromEntries(Object.entries(features).filter(([k]) => !added.includes(k)))).toEqual(dataBefore.settings.features);
     const s = await settingsPage(app);
     const label = await s.locator(".escrita-presets-state").innerText();
-    expect(["Personalizado", "Essencial", "Escritor", "Tudo"]).toContain(label);
+    expect(["Personalizado", "Essencial", "Escritor", "Roteirista", "Tudo"]).toContain(label);
     test.info().annotations.push({ type: "Features page label", description: label });
     await app.screenshot("1. the Features page", s.locator(".escrita-presets"));
     await app.closeModals();

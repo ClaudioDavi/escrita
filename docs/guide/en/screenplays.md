@@ -152,8 +152,9 @@ The same as a video: [screenplay-editor.mp4](../../images/screenplay-editor.mp4)
 
 The screenplay editor works in a note whose form is `screenplay`, and only there. In any other
 note nothing changes. It has its own switch, **Screenplay editor**, in Features › Writing. The
-switch is on in the **Everything** starting point and off in the others, so turn it on by hand
-if you want it. See [Features and settings](features-and-settings.md#the-screenplay-editor).
+switch is on in the **Screenwriter** and **Everything** starting points and off in the others;
+**Screenwriter** turns on what a screenplay needs, including the editor. On another one, turn it
+on by hand. See [Features and settings](features-and-settings.md#the-screenplay-editor).
 
 ### The layout
 

@@ -28,15 +28,15 @@ test.describe("Demo findings: the setup (1, 7, 8, 9, 10)", () => {
     await app?.close();
   });
 
-  test("10. step 1: the text of Essencial, Escritor and Tudo starts at the top of each card", async () => {
+  test("10. step 1: the text of Essencial, Escritor, Roteirista and Tudo starts at the top of each card", async () => {
     await app.command("setup");
     const tops = await setup.root.locator(".escrita-setup-card").evaluateAll((cards) => cards.map((c) => {
       const box = c.getBoundingClientRect();
       const first = [...c.querySelectorAll("*")].find((e) => (e.textContent ?? "").trim() !== "" && e.children.length === 0) as HTMLElement;
       return { name: (c.querySelector("b") as HTMLElement | null)?.innerText ?? "", offset: first.getBoundingClientRect().top - box.top, height: box.height };
     }));
-    const presets = tops.filter((c) => ["Essencial", "Escritor", "Tudo"].includes(c.name));
-    expect(presets.map((c) => c.name)).toEqual(["Essencial", "Escritor", "Tudo"]);
+    const presets = tops.filter((c) => ["Essencial", "Escritor", "Roteirista", "Tudo"].includes(c.name));
+    expect(presets.map((c) => c.name)).toEqual(["Essencial", "Escritor", "Roteirista", "Tudo"]);
     for (const c of presets) expect(c.offset, `${c.name}: title ${c.offset}px below the card's top edge`).toBeLessThanOrEqual(24);
     expect(Math.max(...presets.map((c) => c.offset)) - Math.min(...presets.map((c) => c.offset))).toBeLessThanOrEqual(1);
     await app.screenshot("10. the preset cards", setup.root);

@@ -49,7 +49,7 @@ still reads Everything. A new install starts on the Writer starting point (below
 ## Starting points
 
 You don't have to set twenty switches one by one. Above them, **Starting point**
-(Ponto de partida) has three buttons: **Essentials**, **Writer** and **Everything**. Each one
+(Ponto de partida) has four buttons: **Essentials**, **Writer**, **Screenwriter** and **Everything**. Each one
 is a list of features. A preset is only a starting point, never a mode: Escrita doesn't
 remember which button you pressed, and after it you can change any switch.
 
@@ -57,7 +57,10 @@ remember which button you pressed, and after it you can change any switch.
 |---|---|
 | Essentials (9) | Goals and sprints · Outline and ghost beats · Placeholders · Enter flow and smart typography · Revision lens · Darlings · Snapshots · Export · Works block and where you left off |
 | Writer (16) | Everything in Essentials, plus Dialogue focus · Move a paragraph or scene · Insert from a template · Word counts in the explorer · Snapshot at each stage · Publish check · Submissions |
+| Screenwriter (11) | Only what a screenplay needs: Goals and sprints · Outline and ghost beats · Placeholders · Screenplay editor · Revision lens · Snapshots · Darlings · Snapshot at each stage · Works block and where you left off · Export · Submissions |
 | Everything (19) | Every switch except the universe, which adds Spellcheck on demand, Threads and Screenplay editor to Writer |
+
+Screenwriter is not Writer plus something: it leaves out the prose features that get in the way of a script. **Enter flow and smart typography** is off because Enter has its own flow in a screenplay and smart typography would turn the `--` that scripts keep into em dashes. **Dialogue focus**, **Move a paragraph or scene** and **Insert from a template** are for prose. **Word counts in the explorer** count words, and a script is counted in pages. **Spellcheck on demand**, the **Publish check** and **Threads** are for prose and the universe. The universe is untouched, as with every preset.
 
 A preset turns off every switch that isn't in its list. Pressing one doesn't change anything
 yet. It opens a confirm step, **Apply "Writer"?**, with two lines: **Turns off** and **Turns
@@ -67,7 +70,7 @@ Writer. Nothing changes." and there is nothing to confirm. The note under the li
 you that the data of what turns off stays saved (see "What data stays" below).
 
 **The label.** Beside the title, a small tag names the starting point your switches match
-right now: Essentials, Writer or Everything. If they match none of them, because you changed
+right now: Essentials, Writer, Screenwriter or Everything. If they match none of them, because you changed
 one switch or came from an older version, the tag says **Custom** (Personalizado). Custom is
 not a problem and nothing changes by itself. It only says the set is yours. The tag is worked
 out each time the page draws, from the switches.
@@ -85,7 +88,7 @@ has Escrita settings keeps every switch as it was: nothing is turned off by upda
 install with every switch on reads **Everything**, and gets the Screenplay editor on with it. One on its old defaults reads **Custom**,
 because spellcheck on demand is off by default.
 
-**The setup link.** Below the three buttons, a quiet link, **Set up a writing vault**
+**The setup link.** Below the four buttons, a quiet link, **Set up a writing vault**
 (Preparar o cofre para escrever), runs the setup, which can also choose a starting point,
 create folders and example notes, and set the layout. It shows only while you have no home
 note. Once you have one, use the command of the same name. The setup is explained in
@@ -256,7 +259,7 @@ Export rows that already exist. All of it is in [Screenplays](screenplays.md#set
 ## Settings added in 1.2
 
 **Screenplay editor** is a new switch in the Writing group, and with it a new section after
-Editor. It shows while the switch is on. The switch is on in **Everything** only.
+Editor. It shows while the switch is on. The switch is on in **Screenwriter** and **Everything** only.
 
 | Setting | Feature | What it does |
 |---|---|---|

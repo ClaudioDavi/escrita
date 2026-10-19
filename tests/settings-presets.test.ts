@@ -16,7 +16,7 @@ import { openTab } from "./support/definitions";
 beforeAll(() => registerStrings(coreStrings));
 beforeEach(() => resetSettingLog());
 
-function page(opts: { home?: boolean; preset?: "essentials" | "writer" | "everything" } = {}) {
+function page(opts: { home?: boolean; preset?: "essentials" | "writer" | "screenwriter" | "everything" } = {}) {
   const settings = { ...DEFAULT_SETTINGS, features: {} as Partial<Record<FeatureId, boolean>>, stages: structuredClone(DEFAULT_SETTINGS.stages), universeMode: "perBook" as const };
   if (opts.preset) Object.assign(settings, presetSwitches(opts.preset, switchesOf(settings)));
   const saves = vi.fn(async () => {});
@@ -86,7 +86,7 @@ describe("presets on the Features page", () => {
   });
 
   it.each(["en", "pt-BR"] as const)("has every string in %s", (lang) => {
-    for (const k of ["label", "group", "essentials", "writer", "everything", "custom", "confirm", "confirmGroup", "off", "on", "nothing", "kept", "universe", "cancel", "apply", "already"]) {
+    for (const k of ["label", "group", "essentials", "writer", "screenwriter", "everything", "custom", "confirm", "confirmGroup", "off", "on", "nothing", "kept", "universe", "cancel", "apply", "already"]) {
       expect(coreStrings[lang][`settings.features.preset.${k}`], k).toBeTruthy();
     }
     expect(coreStrings[lang]["settings.features.setupLink"]).toBeTruthy();

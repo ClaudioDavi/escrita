@@ -61,6 +61,11 @@
   display: flex;
   gap: var(--size-4-2);
 }
+/* The four preset cards: a 2x2 grid (board 35); one column on a phone, below. */
+.escrita-setup-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .escrita-setup-card {
   flex: 1 1 0;
   min-width: 0;
@@ -227,6 +232,9 @@
 @media (max-width: 600px) {
   .escrita-setup-cards {
     flex-direction: column;
+  }
+  .escrita-setup-cards-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
   .escrita-setup-card {
     min-height: 32px;

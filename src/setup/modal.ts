@@ -113,7 +113,7 @@ export class SetupModal extends Modal {
     select.dataset.focus = "language";
     lang.createDiv({ text: t("setup.language.hint"), cls: "escrita-setup-hint" });
 
-    const presets = field(t("setup.preset.q")).createDiv({ cls: "escrita-setup-cards" });
+    const presets = field(t("setup.preset.q")).createDiv({ cls: "escrita-setup-cards escrita-setup-cards-grid" });
     for (const p of PRESET_IDS) {
       const card = this.card(presets, t(`setup.preset.${p}`), t(`setup.preset.${p}.text`, { n: presetCount(p), total: FEATURE_IDS.length }), c.preset === p, `preset-${p}`);
       card.addEventListener("click", () => { c.preset = p; this.render(`preset-${p}`); });

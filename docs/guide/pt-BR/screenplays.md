@@ -154,8 +154,8 @@ O mesmo em vídeo: [screenplay-editor.mp4](../../images/screenplay-editor.mp4).
 
 O editor de roteiro funciona numa nota cuja forma é `screenplay` (`roteiro`), e só nela. Em
 qualquer outra nota nada muda. Ele tem o seu próprio interruptor, **Editor de roteiro**, em
-Recursos › Escrita. O interruptor vem ligado no ponto de partida **Tudo** e desligado nos outros,
-então ligue à mão se quiser. Veja
+Recursos › Escrita. O interruptor vem ligado nos pontos de partida **Roteirista** e **Tudo** e desligado nos
+outros; o **Roteirista** liga o que um roteiro precisa, o editor inclusive. Nos outros, ligue à mão. Veja
 [Recursos e configurações](features-and-settings.md#o-editor-de-roteiro).
 
 ### O layout

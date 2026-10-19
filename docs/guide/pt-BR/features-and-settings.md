@@ -24,7 +24,7 @@ some até você ligar o recurso de novo.
 
 Abra Configurações › Escrita. A seção **Recursos** fica no topo. Ela tem:
 
-- **Ponto de partida**: três botões de predefinição e uma etiqueta. Veja "Pontos de partida"
+- **Ponto de partida**: quatro botões de predefinição e uma etiqueta. Veja "Pontos de partida"
   abaixo.
 - **Idioma da escrita**. Automático segue o idioma do Obsidian: qualquer português dá pt-BR e
   qualquer inglês dá inglês. Outro idioma dá nenhum. A lente de revisão e o reconhecimento de
@@ -55,7 +55,7 @@ ponto de partida Escritor (abaixo).
 ## Pontos de partida
 
 Você não precisa acertar vinte interruptores um a um. Acima deles, **Ponto de partida**
-tem três botões: **Essencial**, **Escritor** e **Tudo**. Cada um é uma lista de recursos. Uma
+tem quatro botões: **Essencial**, **Escritor**, **Roteirista** e **Tudo**. Cada um é uma lista de recursos. Uma
 predefinição é só um ponto de partida, nunca um modo: o Escrita não guarda qual botão você
 apertou, e depois dela você pode mudar qualquer interruptor.
 
@@ -63,7 +63,10 @@ apertou, e depois dela você pode mudar qualquer interruptor.
 |---|---|
 | Essencial (9) | Metas e sprints · Esboço e beats fantasmas · Marcadores · Enter e tipografia · Lente de revisão · Darlings · Versões · Exportar · Bloco de obras e onde você parou |
 | Escritor (16) | Tudo do Essencial, mais Foco no diálogo · Mover parágrafo ou cena · Inserir de um modelo · Contagens no explorador · Versão a cada estágio · Checagem de publicação · Envios |
+| Roteirista (11) | Só o que serve a um roteiro: Metas e sprints · Esboço e beats fantasmas · Marcadores · Editor de roteiro · Lente de revisão · Versões · Darlings · Versão a cada estágio · Bloco de obras e onde você parou · Exportar · Envios |
 | Tudo (19) | Todos os interruptores menos o universo: acrescenta ao Escritor a Ortografia sob demanda, as Threads e o Editor de roteiro |
+
+O Roteirista não é o Escritor mais alguma coisa: deixa de fora o que atrapalha num roteiro. O **Enter e tipografia** fica desligado porque o Enter tem fluxo próprio num roteiro e a tipografia inteligente trocaria o `--` que os roteiros mantêm por travessões. O **Foco no diálogo**, **Mover parágrafo ou cena** e **Inserir de um modelo** são da prosa. As **Contagens no explorador** contam palavras, e um roteiro se conta em páginas. A **Ortografia sob demanda**, a **Checagem de publicação** e as **Threads** são da prosa e do universo. O universo não muda, como em toda predefinição.
 
 Uma predefinição desliga todo interruptor que não está na lista dela. Apertar um botão ainda
 não muda nada. Abre uma etapa de confirmação, **Aplicar "Escritor"?**, com duas linhas:
@@ -73,7 +76,7 @@ diz: Já está em "Escritor". Nada muda. E não há o que confirmar. A nota abai
 lembra que os dados de quem desliga ficam guardados (veja "Que dados ficam", abaixo).
 
 **A etiqueta.** Ao lado do título, uma etiqueta pequena diz com qual ponto de partida os seus
-interruptores combinam agora: Essencial, Escritor ou Tudo. Se não combinam com nenhum, porque
+interruptores combinam agora: Essencial, Escritor, Roteirista ou Tudo. Se não combinam com nenhum, porque
 você mudou um interruptor ou veio de uma versão antiga, a etiqueta diz **Personalizado**.
 Personalizado não é problema e nada muda sozinho. Só diz que o conjunto é seu. A etiqueta é
 calculada toda vez que a página é desenhada, a partir dos interruptores.
@@ -92,7 +95,7 @@ nada. Uma instalação 0.9 com todos os interruptores ligados aparece como **Tud
 padrões antigos aparece como **Personalizado**, porque a ortografia sob demanda vem desligada
 por padrão.
 
-**O link da preparação.** Abaixo dos três botões, um link discreto, **Preparar o cofre para
+**O link da preparação.** Abaixo dos quatro botões, um link discreto, **Preparar o cofre para
 escrever**, abre a preparação, que também pode escolher um ponto de partida, criar pastas e
 notas de exemplo e definir o layout. Ele só aparece enquanto você não tem nota inicial. Depois
 que tiver uma, use o comando de mesmo nome. A preparação é explicada em
@@ -271,7 +274,7 @@ em [Roteiros](screenplays.md#configurações).
 
 O **Editor de roteiro** é um interruptor novo no grupo Escrita, e com ele vem uma seção nova
 depois do Editor. Ela aparece enquanto o interruptor está ligado. O interruptor vem ligado só em
-**Tudo**.
+**Roteirista** e **Tudo**.
 
 | Configuração | Recurso | O que faz |
 |---|---|---|

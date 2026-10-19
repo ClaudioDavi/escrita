@@ -1615,13 +1615,18 @@ setup never lists or moves them, because they name where things already are.
 
 ## Feature presets (`core/feature-presets.ts`, 1.0)
 
-Three starting points for the Features page and the setup: `PRESET_IDS` (`essentials`,
-`writer`, `everything`) and `PRESETS`, the list of features each switches on. Pure; not to be
+Four starting points (three in 1.0, `screenwriter` added in 1.2) for the Features page and the setup: `PRESET_IDS` (`essentials`,
+`writer`, `screenwriter`, `everything`) and `PRESETS`, the list of features each switches on. Pure; not to be
 confused with `core/presets.ts`, the manuscript presets of the export. Essentials is 9
 features, Writer 16, Everything 19 (20 with the universe, which no preset touches: its switch
 is `universeMode`, the writer's separate answer, because it moves folders). Each list is
 closed under `requires`. Since 1.2 Everything is 19 (20 with the universe) because the
-screenplay editor is in Everything only (PLAN-1.2 Q2); Essentials and Writer are unchanged.
+screenplay editor is in Screenwriter and Everything only (PLAN-1.2 Q2); Essentials and Writer are
+unchanged. Screenwriter (1.2, 11 features) is the screenplay-only list: goals, outline, placeholders,
+screenplay, lens, snapshots, darlings, stageSnapshot, desk, export, submissions. It is not nested
+in Writer (it holds `screenplay`) but is inside Everything. Typing, dialogue focus, moving blocks,
+templates, explorer counts, spellcheck, publish and threads are off in it. The setup shows the
+four cards in a 2x2 grid (`escrita-setup-cards-grid`, one column on a phone).
 
 - `presetSwitches(id, current)` returns the switches after the preset, a new object. It
   writes an explicit boolean for every feature, so `data.json` says what the preset chose,

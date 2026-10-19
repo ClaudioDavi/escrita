@@ -11,10 +11,11 @@ import { CoreModule, startCoreModule } from "../src/core/module-context";
 import type EscritaPlugin from "../src/main";
 
 describe("PRESETS (board 38)", () => {
-  it("are Essentials 9, Writer 16, Everything 19 plus the universe", () => {
-    expect(PRESET_IDS).toEqual(["essentials", "writer", "everything"]);
+  it("are Essentials 9, Writer 16, Screenwriter 11, Everything 19 plus the universe", () => {
+    expect(PRESET_IDS).toEqual(["essentials", "writer", "screenwriter", "everything"]);
     expect(PRESETS.essentials.length).toBe(9);
     expect(PRESETS.writer.length).toBe(16);
+    expect(PRESETS.screenwriter.length).toBe(11);
     expect(PRESETS.everything.length).toBe(19);
     expect([...PRESETS.everything, PRESET_IGNORED].sort()).toEqual([...FEATURE_IDS].sort());
   });
@@ -22,6 +23,7 @@ describe("PRESETS (board 38)", () => {
   it("each holds the one before it, and never the universe", () => {
     for (const id of PRESETS.essentials) expect(PRESETS.writer).toContain(id);
     for (const id of PRESETS.writer) expect(PRESETS.everything).toContain(id);
+    for (const id of PRESETS.screenwriter) expect(PRESETS.everything).toContain(id);
     for (const p of PRESET_IDS) expect(PRESETS[p]).not.toContain("universe");
   });
 

@@ -97,8 +97,8 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
     index, or `follow` renames and deletes for path-keyed data. `works`: the live
     list of works, built on it.
 - **1.0 additions.** The setup is a core module (`src/setup/`, `CoreModule`), not a feature:
-  it has no switch and is always in the palette. `core/feature-presets.ts` holds the three
-  presets (never touching the universe); `core/defaults.ts` holds the default sets per
+  it has no switch and is always in the palette. `core/feature-presets.ts` holds the four
+  presets (three in 1.0; Screenwriter, the screenplay-only list of 11, in 1.2) (never touching the universe); `core/defaults.ts` holds the default sets per
   language (`defaultsLanguage`, `defaultsFor`); writing mode is part of the desk, read
   through `core/writing-mode.ts`, and the goal counter through `core/daily-progress.ts`.
   Shared modal and leaf helpers are in `src/ui/`, never importing a module folder. View ids
@@ -122,7 +122,7 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   count as mentions in "Appears in". Improvement 46: `titlePageOf`, `bylineOf` and `minHeadingOf`
   in `core/export-pipeline.ts`. Details: ARCHITECTURE.md, "Form" and "Screenplays".
 - **1.2 additions.** The screenplay editor is a module and a switch (`screenplay`, the 20th id, on in
-  the Everything preset only; a missing key reads as off, `OFF_WHEN_MISSING` in `core/features.ts`,
+  the Screenwriter and Everything presets only; a missing key reads as off, `OFF_WHEN_MISSING` in `core/features.ts`,
   settled on load by `settleNewSwitches`). `src/screenplay/` has `layout.ts` (line classes in Live
   Preview, built on `EditorSet`), `keys.ts` (Tab, Enter, caps, the mode of a line), `suggest.ts`
   (one `EditorSuggest`, registered with `ctx.suggest`) and `settings-ui.ts`. Pure core:

@@ -70,8 +70,8 @@ The window has two steps. Nothing is written until you press **Create** in the s
   Obsidian's language. It decides only the words Escrita writes into notes and uses as names:
   the status words, the folder and note names, the lists. The interface stays in Obsidian's
   language. The example notes and the home note are written in this language too.
-- **Starting point.** Three cards: **Essentials** (9 of 20 switches), **Writer** (16 of 20)
-  and **Everything** (all 20). It starts on **Writer**. A preset is a starting point, not a
+- **Starting point.** Four cards: **Essentials** (9 of 20 switches), **Writer** (16 of 20),
+  **Screenwriter** (11 of 20, only what a screenplay needs) and **Everything** (all 20). It starts on **Writer**. A preset is a starting point, not a
   mode: afterwards every switch is yours in Settings › Escrita › Features. What each one
   turns on is in [Features and settings](features-and-settings.md).
 - **Shared world.** **Off**, **Per book** or **Universe**, for characters and places. It shows

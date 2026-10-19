@@ -1,9 +1,9 @@
-// Feature presets (1.0, SF 10; PLAN-1.0 Q6, Q7, boards 36 and 38): three starting
+// Feature presets (1.0, SF 10; PLAN-1.0 Q6, Q7, boards 36 and 38): four starting
 // points for the Features page and the setup. Pure, no Obsidian imports. Not to be
 // confused with core/presets.ts, the manuscript presets of the export.
 //
 // A preset is a starting point, never a mode: nothing records which preset was picked.
-// The Features page's label ("Essentials", "Writer", "Everything" or "Custom") is
+// The Features page's label ("Essentials", "Writer", "Screenwriter", "Everything" or "Custom") is
 // `matchingPreset` of the live switches, computed each time it draws.
 //
 // The universe never changes through a preset (board 38): its "switch" is the universe
@@ -16,7 +16,7 @@
 //
 import { FEATURE_IDS, FEATURE_SPECS, OFF_WHEN_MISSING, switchedOn, type FeatureId, type FeatureSwitches } from "./features";
 
-export const PRESET_IDS = ["essentials", "writer", "everything"] as const;
+export const PRESET_IDS = ["essentials", "writer", "screenwriter", "everything"] as const;
 export type PresetId = typeof PRESET_IDS[number];
 
 const ESSENTIALS: readonly FeatureId[] = [
@@ -26,18 +26,27 @@ const WRITER: readonly FeatureId[] = [
   ...ESSENTIALS, "dialogueFocus", "moveBlocks", "templates", "explorerCounts", "stageSnapshot", "publish", "submissions",
 ];
 
+// The screenplay-only list (1.2, author's request 2026-10-19). Off: typing (Enter flow is
+// off in a script, and smart typography turns the "--" scripts keep into em dashes),
+// dialogueFocus, moveBlocks, templates, explorerCounts (words, not pages), spellcheck,
+// publish and threads.
+const SCREENWRITER: readonly FeatureId[] = [
+  "goals", "outline", "placeholders", "screenplay", "lens", "snapshots", "darlings", "stageSnapshot", "desk", "export", "submissions",
+];
+
 /**
  * What each preset switches on (board 38, rebalanced by the author on 2026-10-07: the lens
  * and export are essentials). Every id not in a list is switched off by that preset,
  * "universe" aside (never in a list, never touched). Each list is closed under `requires`
  * (stageSnapshot needs snapshots, which every preset holds). Essentials 9, Writer 16,
- * Everything 19 here (20 with the universe, as the setup counts). The screenplay editor
- * (1.2) is in Everything only (PLAN-1.2 Q2). A fresh install with no
+ * Screenwriter 11, Everything 19 here (20 with the universe, as the setup counts). The screenplay editor
+ * (1.2) is in Screenwriter and Everything (PLAN-1.2 Q2). A fresh install with no
  * setup run starts on Writer (Q7); an existing install keeps its switches (Q6).
  */
 export const PRESETS: Readonly<Record<PresetId, readonly FeatureId[]>> = Object.freeze({
   essentials: Object.freeze([...ESSENTIALS]),
   writer: Object.freeze([...WRITER]),
+  screenwriter: Object.freeze([...SCREENWRITER]),
   everything: Object.freeze(FEATURE_IDS.filter((id) => id !== "universe")),
 });
 

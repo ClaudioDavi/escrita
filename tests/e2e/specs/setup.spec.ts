@@ -49,7 +49,7 @@ test.describe("G2a: the setup in an empty vault, in Portuguese", () => {
     expect(await setup.pressed(setup.field("O que você escreve?"))).toEqual(["Os dois"]);
     await expect(setup.root.locator("select.escrita-setup-select")).toHaveValue("pt-BR");
     await expect(setup.field("Idioma dos padrões")).toContainText("Português (Brasil)");
-    for (const name of ["Essencial", "Escritor", "Tudo"]) await expect(setup.card(name)).toBeVisible();
+    for (const name of ["Essencial", "Escritor", "Roteirista", "Tudo"]) await expect(setup.card(name)).toBeVisible();
     expect(await setup.pressed(setup.field("Ponto de partida"))).toEqual(["Escritor"]);
     await expect(setup.root.locator(".escrita-setup-label", { hasText: "Mundo compartilhado" })).toHaveCount(0);
     await app.screenshot("3. step 1");

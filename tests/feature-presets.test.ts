@@ -13,6 +13,7 @@ describe("PRESETS", () => {
   it("has the sizes of board 38, without the universe", () => {
     expect(PRESETS.essentials).toHaveLength(9);
     expect(PRESETS.writer).toHaveLength(16);
+    expect(PRESETS.screenwriter).toHaveLength(11);
     expect(PRESETS.everything).toHaveLength(19);
     for (const id of PRESET_IDS) expect(PRESETS[id]).not.toContain("universe");
   });
@@ -24,6 +25,7 @@ describe("PRESETS", () => {
     }
     for (const f of PRESETS.essentials) expect(PRESETS.writer).toContain(f);
     for (const f of PRESETS.writer) expect(PRESETS.everything).toContain(f);
+    for (const f of PRESETS.screenwriter) expect(PRESETS.everything).toContain(f);
   });
 });
 
@@ -100,6 +102,25 @@ describe("presetChanges", () => {
     const s = presetSwitches("writer", allOn());
     s.features.snapshots = false;
     expect(presetChanges(s, "writer")).toEqual({ off: [], on: ["snapshots"] });
+  });
+});
+
+describe("the Screenwriter preset (1.2)", () => {
+  it("holds the screenplay editor and leaves the prose editing features off", () => {
+    expect(PRESETS.screenwriter).toContain("screenplay");
+    for (const f of ["typing", "dialogueFocus", "moveBlocks", "templates", "explorerCounts", "spellcheck", "publish", "threads"] as const) {
+      expect(PRESETS.screenwriter).not.toContain(f);
+    }
+  });
+  it("a screenwriter set matches 'screenwriter' only", () => {
+    expect(matchingPreset(presetSwitches("screenwriter", allOn()))).toBe("screenwriter");
+    expect(matchingPreset(presetSwitches("writer", allOn()))).toBe("writer");
+  });
+  it("Writer to Screenwriter turns the screenplay editor on and typing, moving blocks and more off", () => {
+    const c = presetChanges(presetSwitches("writer", allOn()), "screenwriter");
+    expect(c.on).toEqual(["screenplay"]);
+    expect(c.off).toEqual(expect.arrayContaining(["typing", "dialogueFocus", "moveBlocks", "templates", "explorerCounts", "publish"]));
+    expect(c.off).not.toContain("universe");
   });
 });
 

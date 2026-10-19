@@ -42,7 +42,7 @@ interface SetupCase {
 
 describe("fixtures: setup", () => {
   const files = readdirSync(dir("setup")).filter((f) => f.endsWith(".json"));
-  it("has the seven cases", () => expect(files.length).toBe(7));
+  it("has the eight cases", () => expect(files.length).toBe(8));
   for (const f of files) {
     it(`${f} parses into the contract types`, () => {
       const c = read<SetupCase>(`setup/${f}`);

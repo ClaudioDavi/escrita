@@ -40,10 +40,10 @@ test.describe("Presets on the Features page", () => {
     await app?.close();
   });
 
-  test("1. the Features page: Ponto de partida reads Tudo, three buttons, no setup link", async () => {
+  test("1. the Features page: Ponto de partida reads Tudo, four buttons, no setup link", async () => {
     await expect(settings.locator(".escrita-presets-title")).toHaveText("Ponto de partida");
     await expect(state()).toHaveText("Tudo");
-    expect(await settings.locator(".escrita-preset-btn").allInnerTexts()).toEqual(["Essencial", "Escritor", "Tudo"]);
+    expect(await settings.locator(".escrita-preset-btn").allInnerTexts()).toEqual(["Essencial", "Escritor", "Roteirista", "Tudo"]);
     await expect(settings.locator(".escrita-presets-setup")).toHaveCount(0);
     await settings.locator(".escrita-presets").scrollIntoViewIfNeeded();
     await app.screenshot("1. the Features page on Tudo", settings.locator("body"));
@@ -108,6 +108,17 @@ test.describe("Presets on the Features page", () => {
     await button("Tudo").click();
     await expect(confirm()).toContainText("O universo não é um interruptor");
     await confirm().getByRole("button", { name: "Cancelar" }).click();
+  });
+
+  test("6b. Roteirista, Aplicar: the screenplay editor is on, typing is off, the label reads Roteirista", async () => {
+    await button("Roteirista").click();
+    await confirm().getByRole("button", { name: "Aplicar" }).click();
+    await expect(state()).toHaveText("Roteirista");
+    await expect.poll(async () => (await switches()).screenplay).toBe(true);
+    expect((await switches()).typing).toBe(false);
+    expect(await app.setting("universeMode")).toBe("universe");
+    await expect.poll(onCount).toBe(PRESETS.screenwriter.length);
+    await app.screenshot("6b. on Roteirista", settings.locator(".escrita-presets"));
   });
 
   // The desk's follower keeps the setting in step with a rename in Obsidian, so "away from the
