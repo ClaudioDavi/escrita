@@ -3,11 +3,11 @@
 // touches the line. In Source mode, or with the cursor on it, the raw line
 // just gets a faint class.
 
-import { RangeSetBuilder, type Extension } from "@codemirror/state";
-import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
-import { editorLivePreviewField } from "obsidian";
+import type { Extension } from "@codemirror/state";
+import { Decoration, type EditorView, WidgetType } from "@codemirror/view";
 import { t } from "../i18n";
 import { segmentDoc } from "../core/markdown";
+import { revealOnTouch } from "../ui/reveal-on-touch";
 import { scanBeats, type GhostBeat } from "./model";
 
 class GhostBeatWidget extends WidgetType {
@@ -35,57 +35,24 @@ class GhostBeatWidget extends WidgetType {
 
 const rawLine = Decoration.line({ class: "escrita-beat-raw" });
 
-function isLivePreview(view: EditorView): boolean {
-  try {
-    return view.state.field(editorLivePreviewField, false) ?? false;
-  } catch {
-    return false;
+interface GhostItem extends GhostBeat { from: number; to: number }
+
+/** The beats with the span of their line; segmented once per document version, shared with the other editor features. */
+function scan(view: EditorView): GhostItem[] {
+  const { doc } = view.state;
+  const out: GhostItem[] = [];
+  for (const b of scanBeats(segmentDoc(doc))) {
+    if (b.line + 1 > doc.lines) continue;
+    const line = doc.line(b.line + 1);
+    out.push({ ...b, from: line.from, to: line.to });
   }
-}
-
-function scan(view: EditorView): GhostBeat[] {
-  // segmented once per document version, shared with the other editor features
-  return scanBeats(segmentDoc(view.state.doc));
-}
-
-class GhostBeatsPlugin {
-  decorations: DecorationSet;
-  private beats: GhostBeat[];
-  private live: boolean;
-
-  constructor(view: EditorView) {
-    this.beats = scan(view);
-    this.live = isLivePreview(view);
-    this.decorations = this.build(view);
-  }
-
-  update(u: ViewUpdate): void {
-    const live = isLivePreview(u.view);
-    if (u.docChanged) this.beats = scan(u.view);
-    if (u.docChanged || u.selectionSet || u.viewportChanged || live !== this.live) {
-      this.live = live;
-      this.decorations = this.build(u.view);
-    }
-  }
-
-  private build(view: EditorView): DecorationSet {
-    const builder = new RangeSetBuilder<Decoration>();
-    if (!this.beats.length) return builder.finish();
-    const { doc, selection } = view.state;
-    for (const b of this.beats) {
-      if (b.line + 1 > doc.lines) continue;
-      const line = doc.line(b.line + 1);
-      const touched = selection.ranges.some((r) => r.from <= line.to && r.to >= line.from);
-      if (this.live && !touched) {
-        builder.add(line.from, line.to, Decoration.replace({ widget: new GhostBeatWidget(b.letter, b.text) }));
-      } else {
-        builder.add(line.from, line.from, rawLine);
-      }
-    }
-    return builder.finish();
-  }
+  return out;
 }
 
 export function ghostBeats(): Extension {
-  return ViewPlugin.fromClass(GhostBeatsPlugin, { decorations: (v) => v.decorations });
+  return revealOnTouch<GhostItem>({
+    scan,
+    raw: (b) => [rawLine.range(b.from)],
+    rendered: (b) => [Decoration.replace({ widget: new GhostBeatWidget(b.letter, b.text) }).range(b.from, b.to)],
+  });
 }

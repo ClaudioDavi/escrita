@@ -4,14 +4,14 @@
 // edits touched. Marks are mapped through edits in between. Decorations only: it never
 // changes text (rule 2).
 
-import { dispatchWithRetry } from "../core/dispatch-retry";
 import { StateEffect, type EditorState, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
-import { Keymap, Platform, editorInfoField } from "obsidian";
+import { Keymap, Platform } from "obsidian";
 import { findNames } from "../core/names";
 import { segmentDoc } from "../core/markdown";
 import type { NamesProvider } from "../core/names-source";
 import { readerMask } from "../core/wordcount";
+import { EditorSet, fileOfState } from "../ui/editor-glue";
 import {
   entryAt, hasMarks, mapDirty, mapMarks, markAt, markableTable, marksOf, rematch, visibleMarks,
   type Range,
@@ -37,7 +37,7 @@ export const DEBOUNCE_MOBILE_MS = 800;
 
 const refreshEffect = StateEffect.define<{ full: boolean }>();
 
-const defaultPathOf = (s: EditorState): string | null => s.field(editorInfoField, false)?.file?.path ?? null;
+const defaultPathOf = (s: EditorState): string | null => fileOfState(s)?.path ?? null;
 
 const decos = new Map<string, Decoration>();
 function deco(spellcheck: boolean, underline: boolean): Decoration | null {
@@ -55,7 +55,7 @@ function deco(spellcheck: boolean, underline: boolean): Decoration | null {
 }
 
 export class NameMarks {
-  private views = new Set<EditorView>();
+  private views = new EditorSet();
   readonly extension: Extension;
   private off: () => void;
 
@@ -183,10 +183,9 @@ export class NameMarks {
 
   /** Redraws every editor; `full` also re-matches the whole note (names changed). */
   refresh(full = false): void {
-    // Called from the names provider's emitter: never throws into it; a failed dispatch is retried once.
-    for (const v of [...this.views]) {
-      dispatchWithRetry(v, () => ({ effects: refreshEffect.of({ full }) }), () => this.views.has(v), () => { /* the ViewPlugin's destroy() removes it; a typing pass redraws it meanwhile */ });
-    }
+    // Called from the names provider's emitter: never throws into it. An editor dropped after
+    // a second failure gets its marks from the next typing pass.
+    this.views.broadcast({ effects: refreshEffect.of({ full }) });
   }
 
   /** Stops listening for name changes. The per-editor timers go with each ViewPlugin's destroy, when the slot empties. */

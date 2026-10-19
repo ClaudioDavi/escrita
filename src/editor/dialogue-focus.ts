@@ -1,11 +1,11 @@
 // Dialogue focus — CodeMirror glue. Dims everything but speech (see dialogue.ts)
 // in the visible lines of notes where it's turned on. Zero work while off.
 
-import { dispatchWithRetry } from "../core/dispatch-retry";
 import { RangeSetBuilder, StateEffect, type EditorState, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 import { segmentDoc } from "../core/markdown";
 import { dimPlan, type DialogueOptions } from "../core/dialogue";
+import { EditorSet } from "../ui/editor-glue";
 
 /** Dispatched to every editor to re-read the on/off state and options. */
 const refreshEffect = StateEffect.define<null>();
@@ -16,7 +16,7 @@ const dimMark = Decoration.mark({ class: DIM });
 
 export class DialogueFocus {
   /** The editors running the plugin, so a toggle can reach them with a StateEffect. */
-  private views = new Set<EditorView>();
+  private views = new EditorSet();
   readonly extension: Extension;
 
   constructor(
@@ -101,12 +101,8 @@ export class DialogueFocus {
 
   /** Make every editor re-read the toggle state and options. */
   refresh(): void {
-    // A dispatch can fail mid-update: retried once, and only a second failure drops the editor.
-    for (const view of [...this.views]) {
-      dispatchWithRetry(view, () => ({ effects: refreshEffect.of(null) }), () => this.views.has(view), (e) => {
-        this.views.delete(view);
-        console.error("Escrita: couldn't refresh dialogue focus", e);
-      });
-    }
+    this.views.broadcast({ effects: refreshEffect.of(null) }, (e) => {
+      console.error("Escrita: couldn't refresh dialogue focus", e);
+    });
   }
 }
