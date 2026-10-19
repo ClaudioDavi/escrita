@@ -31,7 +31,7 @@ function offered(id: string): boolean {
 
 describe("new work lifecycle", () => {
   it("registers its three commands through the context, create-book among them", () => {
-    expect([...plugin.commands.keys()].sort()).toEqual([...COMMANDS, "escrita:open-outline", "escrita:open-outline-board", "escrita:read-book", "escrita:add-beat", "escrita:renumber-chapters"].sort());
+    expect([...plugin.commands.keys()].sort()).toEqual([...COMMANDS, "escrita:open-outline", "escrita:open-outline-board", "escrita:read-book", "escrita:read-note", "escrita:add-beat", "escrita:renumber-chapters"].sort());
   });
 
   it("offers create-book only while the outline is on, and never moves the other two", () => {

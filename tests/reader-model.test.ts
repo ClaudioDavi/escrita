@@ -8,6 +8,18 @@ const read = (p: string) => readFileSync(dir + p, "utf8");
 const O = { placeholderMarker: "XXX" };
 const chapter = (n: string) => read(`book/A Casa/Chapters/${n}.md`);
 
+describe("readerBlocks of a single conto (SF 15)", () => {
+  it("hides beats, comments and placeholders in a note outside a book, as the export does", () => {
+    const text = "---\ntype: conto\n---\n%% beat: ela chega %%\nA casa estava vazia.\n\n%% XXX: rever %%\n\n<!-- nota -->Depois, a chuva.\n";
+    const blocks = readerBlocks(text, O);
+    expect(blocks.map((b) => b.text)).toEqual(["A casa estava vazia.", "Depois, a chuva."]);
+    expect(text.split("\n")[blocks[0].line]).toBe("A casa estava vazia.");
+  });
+  it("gives no block for a note with only markers", () => {
+    expect(readerBlocks("---\ntitle: x\n---\n%% beat: algo %%\n", O)).toEqual([]);
+  });
+});
+
 describe("readerBlocks (N 8, Q14, Q20)", () => {
   it("hides markers and frontmatter, keeps scene breaks, with source lines", () => {
     const text = chapter("01 A chegada");

@@ -779,6 +779,23 @@ body.is-mobile .escrita-outline-chip {
   font-variant-numeric: tabular-nums;
 }
 
+/* "read only" beside a note's title (1.2, board 46) */
+.escrita-reader-chip {
+  padding: 0 var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  white-space: nowrap;
+}
+
+/* the single note's outline header: the reader button sits at the end of the title row */
+.escrita-outline-read-note {
+  margin-left: auto;
+  min-width: 32px;
+  min-height: 32px;
+}
+
 .escrita-reader-tool {
   min-width: 32px;
   min-height: 32px;

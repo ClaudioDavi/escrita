@@ -565,6 +565,13 @@ export class OutlineView extends ItemView {
     const header = el.createDiv({ cls: "escrita-outline-header" });
     const top = header.createDiv({ cls: "escrita-outline-top" });
     top.createDiv({ cls: "escrita-outline-heading", text: t("outline.viewTitle") });
+    // 1.2 (SF 15, board 46): the book's reader button, for this note
+    if (this.plugin.books.classify(note.row.file).form !== "screenplay") {   // the command is not offered there either
+      const read = top.createEl("button", { cls: "clickable-icon escrita-outline-read-note", attr: { "aria-label": t("outline.command.readNote") } });
+      setIcon(read, "book-open");
+      setTooltip(read, t("outline.command.readNote"));
+      read.addEventListener("click", () => { void this.plugin.outline.openReaderFor(note.row.file.path); });
+    }
     header.createDiv({ cls: "escrita-outline-book", text: note.row.title });
     this.statsEl = header.createDiv({ cls: "escrita-outline-stats" });
     this.progressEl = header.createDiv({ cls: "escrita-outline-progress" });

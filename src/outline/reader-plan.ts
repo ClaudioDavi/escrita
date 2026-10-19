@@ -5,6 +5,7 @@
 
 import type { ChapterRef } from "../core/book-source";
 import { chapterHeadings } from "../core/export-pipeline";
+import { storyChapters, type Collection } from "../core/collection";
 import { dropKeys, isUnder, movedPath, renameKeys } from "../core/path-keys";
 import { presetForLanguage } from "../core/presets";
 import type { ReadPosition } from "../data";
@@ -32,6 +33,69 @@ export function readerChapters(
   const kept = all.filter((c) => c.include);
   const heads = chapterHeadings(kept, format, unnumbered);
   return kept.map((c, i) => ({ path: c.path, heading: heads[i] }));
+}
+
+// ------------------------------------------------------------------ the source
+
+/** What the reader reads (1.2, SF 15; PLAN-1.2 Q13-Q15): a book, a collection of contos, or one note. */
+export type ReaderKind = "book" | "collection" | "note";
+
+export interface ReaderSource {
+  kind: ReaderKind;
+  /** the top bar's title: the book's, else the note's name */
+  title: string;
+  /** what is drawn, in order; a note is one section with no heading */
+  sections: ReaderChapter[];
+}
+
+/** What the view reads from the vault for `readerSource`; the decision itself stays here. */
+export interface ReaderFacts {
+  /** the book whose note is the source, with its chapters (left-out ones included) */
+  book: { title: string; chapters: readonly ChapterRef[] } | null;
+  /** the collection the source note describes (core/books.ts `collectionAt`) */
+  collection: Collection | null;
+  headingFormat: string;
+  unnumbered?: string | readonly string[];
+}
+
+/**
+ * The source of a reader view, from its path. A book wins (its note is the key), then a
+ * collection, as export decides (`sourceKindOf`); anything else is one note. A collection's
+ * contos are each headed by their title alone, as the collection export heads them
+ * (`storyChapters`: unnumbered), and a note has no heading: its title is in the bar.
+ */
+export function readerSource(path: string, facts: ReaderFacts): ReaderSource {
+  if (facts.book) {
+    return {
+      kind: "book", title: facts.book.title,
+      sections: readerChapters(facts.book.chapters, facts.headingFormat, facts.unnumbered),
+    };
+  }
+  const title = (path.split("/").pop() ?? path).replace(/\.md$/, "");
+  if (facts.collection) {
+    return {
+      kind: "collection", title,
+      sections: readerChapters(storyChapters(facts.collection), facts.headingFormat, facts.unnumbered),
+    };
+  }
+  return { kind: "note", title, sections: [{ path, heading: "" }] };
+}
+
+/** Whether two sources draw the same thing (title, kind, sections), so a rebuild can be skipped. */
+export function sameSource(a: ReaderSource, b: ReaderSource): boolean {
+  return a.kind === b.kind && a.title === b.title && a.sections.length === b.sections.length
+    && a.sections.every((s, i) => s.path === b.sections[i].path && s.heading === b.sections[i].heading);
+}
+
+/**
+ * The path a saved view state names: `{ source }`, or the 0.9 `{ book }` (Q15: the same
+ * thing, the book's note path). Null when it names none.
+ */
+export function readerStatePath(state: unknown): string | null {
+  const s = state as { source?: unknown; book?: unknown } | null;
+  if (typeof s?.source === "string" && s.source !== "") return s.source;
+  if (typeof s?.book === "string" && s.book !== "") return s.book;
+  return null;
 }
 
 // ------------------------------------------------------------------ position

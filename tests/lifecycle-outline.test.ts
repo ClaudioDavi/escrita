@@ -7,7 +7,7 @@ import { OUTLINE_VIEW } from "../src/outline/view";
 import { READER_VIEW } from "../src/outline/reader-view";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
 
-const COMMANDS = ["open-outline", "open-outline-board", "read-book", "add-beat", "renumber-chapters"].map((c) => `escrita:${c}`);
+const COMMANDS = ["open-outline", "open-outline-board", "read-book", "read-note", "add-beat", "renumber-chapters"].map((c) => `escrita:${c}`);
 
 let plugin: FakePlugin;
 let mod: OutlineModule;
