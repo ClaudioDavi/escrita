@@ -168,8 +168,18 @@ reads it in the reader, and sees the rhythm of a paragraph's sentences in the le
     Tab cycle;
   - the reader for a note and for a collection;
   - the lens's Rhythm section, with a run and a long sentence.
+
+  **Passed** 2026-10-19: boards 45, 46 and 47 approved as drawn. That includes four choices the
+  plan left open: Tab shows the element's name faintly on an empty line; a collection's top bar
+  shows its count of contos; the outline for a single note gets the reader button; a run is
+  drawn in orange.
 - **G2** (before release): the four checks, `npm run e2e` green, the screenshots reviewed by the
   author, and a short film typed by hand in the test vault (`~/Projects/escrita-test/`).
+- **V** (Wave 3, asked by the author 2026-10-19): a video of the screenplay editor at work,
+  recorded by the harness (`tests/e2e/lib/record.ts`) in a real Obsidian. It shows a short scene
+  typed with Tab and Enter, a suggestion picked, and the layout in Live Preview. It goes in the
+  screenplay guide pages, both languages, as a GIF in `docs/guide/images/`, which GitHub and a
+  vault both show.
 
 ## Waves
 
@@ -210,7 +220,8 @@ folder importing another.
 **Wave 3, release (Sonnet, then an Opus review):**
 
 - User guide, English and pt-BR:
-  - `screenplays.md`: writing in the editor, the keys, the two commands, the settings.
+  - `screenplays.md`: writing in the editor, the keys, the two commands, the settings, and the
+    video (gate V).
   - `writing.md`: "Read this note" beside "Read the book".
   - `revision.md`: the Rhythm section.
   - `features-and-settings.md`: the 20th switch and the presets.
