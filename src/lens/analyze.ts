@@ -11,7 +11,7 @@ import { stemLang } from "./lang";
 import { LEXICON } from "./lexicon";
 import { measures, passExtras } from "./measures";
 import { echoes, nameVariants } from "./rules-stem";
-import { adverbs, crutches, gerunds, inferredNames, longSentences } from "./rules-words";
+import { adverbs, crutches, gerunds, inferredNames, longSentences, sentenceLayout } from "./rules-words";
 import { newNames } from "./rules-names";
 import { ALL_RULES, LANG_RULES, OPT_IN_RULES, RULES, type LensPass, type LensResult, type Match, type Measures, type ReadOptions, type RuleId, type RuleOptions } from "./types";
 
@@ -34,7 +34,11 @@ export function analyze(md: Markdown, o: AnalyzeOptions, version = 0): LensResul
   const mask = readMask(md, o);
   const toks = tokens(mask);
   const sents = sentences(mask, md, o.lang ? stemLang(o.lang) : null);
-  const pass: LensPass = { mask, tokens: toks, sentences: sents, ...passExtras(md, toks, o) };
+  const lay = sentenceLayout(toks, sents, mask);
+  const pass: LensPass = {
+    mask, tokens: toks, sentences: sents, ...passExtras(md, toks, o),
+    sentenceWords: lay.words, sentencePara: lay.para,
+  };
 
   const on = (r: RuleId): boolean => o.rules.has(r) && (o.lang !== null || !LANG_RULES.has(r));
   const lex = o.lang ? LEXICON[o.lang] : null;
@@ -44,7 +48,7 @@ export function analyze(md: Markdown, o: AnalyzeOptions, version = 0): LensResul
   if (on("gerund") && lex) matches = matches.concat(gerunds(toks, sents, o, lex));
   if (on("crutch")) matches = matches.concat(crutches(toks, mask, o));
   if (on("name")) matches = matches.concat(nameVariants(toks, new Set<number>(), o));
-  if (on("long")) matches = matches.concat(longSentences(toks, sents, o));
+  if (on("long")) matches = matches.concat(longSentences(toks, sents, o, lay.words));
   if (on("newName")) matches = matches.concat(newNames(toks, sents, mask, o));
   matches.sort((a, b) => a.from - b.from || RULE_ORDER[a.rule] - RULE_ORDER[b.rule] || a.to - b.to);
 

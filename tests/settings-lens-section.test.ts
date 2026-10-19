@@ -23,7 +23,7 @@ describe("lens settings items", () => {
     renderBlocks(lensSettingsItems(fakeUi().ui, plugin() as never));
     expect(settingLog.filter((r) => r.heading).map((r) => r.name)).toEqual([t("settings.lens.rules"), t("settings.lens.measures")]);
     expect(settingLog.map((r) => r.name)).toContain(t("settings.lens.lists"));
-    expect(settingLog).toHaveLength(11 + RULES.length);   // 2 block headings, the description, lists, 2 numbers, skip quotes, rules, the names rule and its Not names list, 2 measures
+    expect(settingLog).toHaveLength(12 + RULES.length);   // 2 block headings, the description, lists, 2 numbers, skip quotes, rules, the names rule and its Not names list, 3 measures
   });
 
   it("a committed lists path is saved once, and an unchanged one is not", () => {

@@ -208,19 +208,43 @@ export function crutches(toks: readonly Token[], mask: string, o: RuleOptions): 
   return out.sort((a, b) => a.from - b.from || a.to - b.to);
 }
 
-/** More than `longSentence` words, dialogue included; one match per sentence (Q20). */
-export function longSentences(toks: readonly Token[], sents: readonly Sentence[], o: RuleOptions): Match[] {
-  const out: Match[] = [];
+/** Per sentence: how many tokens (words) it holds and which paragraph it is in. */
+export interface SentenceLayout { words: Uint16Array; para: Int32Array }
+
+const BLANK_LINE = /\n[ \t]*\n/;
+
+/**
+ * The words of each sentence and its paragraph number (a blank line between two sentences
+ * starts a new one), from one `layout` call. Filled once per pass (SF 16, PLAN-1.2 Q18).
+ */
+export function sentenceLayout(toks: readonly Token[], sents: readonly Sentence[], mask: string): SentenceLayout {
+  const words = new Uint16Array(sents.length);
   const lay = layout(toks, sents);
-  const counts = new Map<number, number[]>();
   for (let i = 0; i < toks.length; i++) {
     const s = lay.sent[i];
-    if (s < 0) continue;
-    const arr = counts.get(s);
-    if (arr) arr.push(i); else counts.set(s, [i]);
+    if (s >= 0 && words[s] < 0xffff) words[s]++;
   }
-  for (const [si, idx] of counts) {
-    if (idx.length <= o.longSentence) continue;
+  const para = new Int32Array(sents.length);
+  for (let i = 1; i < sents.length; i++) {
+    para[i] = para[i - 1] + (BLANK_LINE.test(mask.slice(sents[i - 1].to, sents[i].from)) ? 1 : 0);
+  }
+  return { words, para };
+}
+
+/** More than `longSentence` words, dialogue included; one match per sentence (Q20). */
+export function longSentences(
+  toks: readonly Token[],
+  sents: readonly Sentence[],
+  o: RuleOptions,
+  words: Uint16Array = sentenceLayout(toks, sents, "").words,
+): Match[] {
+  const out: Match[] = [];
+  const own: number[][] = [];
+  for (let si = 0; si < sents.length; si++) if (words[si] > o.longSentence) own[si] = [];
+  if (own.length === 0) return out;
+  const lay = layout(toks, sents);
+  for (let i = 0; i < toks.length; i++) own[lay.sent[i]]?.push(i);
+  own.forEach((idx, si) => {
     out.push({
       rule: "long",
       kind: "base",
@@ -228,6 +252,6 @@ export function longSentences(toks: readonly Token[], sents: readonly Sentence[]
       to: sents[si].to,
       text: idx.map((i) => toks[i].text).join(" "),
     });
-  }
+  });
   return out.sort((a, b) => a.from - b.from);
 }
