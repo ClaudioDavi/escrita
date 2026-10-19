@@ -20,7 +20,7 @@ import { App } from "../lib/app";
 import { emptyEn, emptyPt } from "../fixtures";
 import { settingsPage } from "../lib/more";
 import { editorText, sleep } from "../lib/panels";
-import { caption, recordDir, Recorder, removeCaption } from "../lib/record";
+import { caption, recordDir, Recorder, removeCaption, spotlightOff, spotlightOn } from "../lib/record";
 import { SetupModal } from "../lib/setup-modal";
 
 type Lang = "en" | "pt-BR";
@@ -34,13 +34,13 @@ interface Texts {
   ui: {
     both: string; screenwriter: string; everything: string; preview: string; create: string; desk: string;
     setupDone: string; revising: string; pending: string; exported: string; exportPreview: string;
-    docxTemplate: string; pdfPage: string; compare: string;
+    docxTemplate: string; pdfPage: string; compare: string; sprintLen: string; sprintRunning: RegExp;
   };
   /** the captions, in the order of the storyboard */
   c: Record<
     | "title" | "setupIntro" | "setupWrites" | "setupLang" | "setupStart" | "setupEverything" | "setupReview"
     | "setupCreate" | "home" | "newStory" | "beat" | "outline" | "beatEdit" | "write" | "ticked" | "moreBeats"
-    | "goal" | "sprint" | "sprintStop" | "placeholder" | "phPanel" | "dialogue" | "dialogueOff"
+    | "goal" | "progress" | "sprint" | "sprintType" | "sprintStop" | "placeholder" | "phPanel" | "dialogue" | "dialogueOff"
     | "lens" | "lensPanel" | "step" | "rhythm" | "rhythmClick" | "darling" | "darlingPanel"
     | "snap" | "snapChange" | "compare" | "stage" | "stageHome" | "read" | "export" | "exportPreview"
     | "exportWarn" | "exportDone" | "submit" | "submitHome" | "book" | "chapter2" | "readBook"
@@ -68,7 +68,7 @@ const TEXTS: Record<Lang, Texts> = {
     ui: {
       both: "Both", screenwriter: "Screenwriter", everything: "Everything", preview: "See what I'll create", create: "Create",
       desk: "Writing desk", setupDone: "Done. I created", revising: "Revising", pending: "1 pending", exported: "Exported",
-      exportPreview: "Preview", docxTemplate: "Shunn", pdfPage: "US Letter", compare: "Compare",
+      exportPreview: "Preview", docxTemplate: "Shunn", pdfPage: "US Letter", compare: "Compare", sprintLen: "15 min", sprintRunning: /\d+:\d+ left · [\d.,]+ \/ /,
     },
     c: {
       title: "Escrita: write and revise fiction in Obsidian",
@@ -88,7 +88,9 @@ const TEXTS: Record<Lang, Texts> = {
       ticked: "Prose under a beat ticks it off",
       moreBeats: "Add the next beats from the outline",
       goal: "The daily counter climbs as you write",
+      progress: "The Progress window: today's words, your streak, the last 30 days",
       sprint: "Need a push? Start a timed sprint",
+      sprintType: "The clock and the word count follow you as you write",
       sprintStop: "Stop it whenever you like",
       placeholder: "Unsure of a fact? Leave a marker and keep writing",
       phPanel: "The placeholders panel gathers them all",
@@ -197,7 +199,7 @@ const TEXTS: Record<Lang, Texts> = {
     ui: {
       both: "Os dois", screenwriter: "Roteirista", everything: "Tudo", preview: "Ver o que vou criar", create: "Criar",
       desk: "Mesa de escrita", setupDone: "Pronto. Criei", revising: "Revisando", pending: "1 pendente", exported: "Exportado",
-      exportPreview: "Prévia", docxTemplate: "pt-BR", pdfPage: "A4", compare: "Comparar",
+      exportPreview: "Prévia", docxTemplate: "pt-BR", pdfPage: "A4", compare: "Comparar", sprintLen: "15 min", sprintRunning: /faltam \d+:\d+ · [\d.,]+ \/ /,
     },
     c: {
       title: "Escrita: escreva e revise ficção no Obsidian",
@@ -217,7 +219,9 @@ const TEXTS: Record<Lang, Texts> = {
       ticked: "Texto sob um beat marca o beat como escrito",
       moreBeats: "Adicione os próximos beats pelo esboço",
       goal: "O contador do dia sobe enquanto você escreve",
+      progress: "A janela de progresso: palavras de hoje, sequência e os últimos 30 dias",
       sprint: "Precisa de ritmo? Comece um sprint",
+      sprintType: "O relógio e a contagem de palavras acompanham você",
       sprintStop: "Pare quando quiser",
       placeholder: "Sem certeza de um dado? Deixe um marcador e siga",
       phPanel: "O painel de marcadores reúne todos",
@@ -401,8 +405,20 @@ test("tour", async () => {
     typing += s.length * KEY_MS + 200;
     await kb().type(s, { delay: RECORDING ? KEY_MS : FAST_KEY_MS });
     await sleep(RECORDING ? 200 : 120);
+    await centerCursor();
   };
-  const key = async (k: string, after = 400) => { await kb().press(k); await pace(after); };
+  const key = async (k: string, after = 400) => { await kb().press(k); await centerCursor(); await pace(after); };
+  /** A spotlight around `target`, held `ms` in the planned time (drawn only when recording or taking shots). */
+  const spotOn = async (target: ReturnType<typeof page.locator>, label?: string) => {
+    if (RECORDING || SHOTS) await spotlightOn(page, target, label);
+  };
+  const spotOff = async () => { if (RECORDING || SHOTS) await spotlightOff(page); };
+  const spot = async (target: ReturnType<typeof page.locator>, ms: number, label?: string) => {
+    await spotOn(target, label);
+    await shotNow();
+    await pace(ms);
+    await spotOff();
+  };
 
   // ---- the editor, read and placed by script (the way the other specs do) ----
   const ED = `(() => {
@@ -410,6 +426,17 @@ test("tour", async () => {
     const view = app.workspace.getLeavesOfType("markdown").map((l) => l.view).find((v) => v.file?.path === path);
     return view?.editor;
   })()`;
+  /** The cursor line to the vertical middle of the editor, so what is typed is never at the bottom edge. */
+  const centerCursor = async () => {
+    await page.evaluate(`(() => {
+      if (!document.activeElement?.closest(".cm-editor")) return;
+      const ed = ${ED};
+      if (!ed) return;
+      const c = ed.getCursor();
+      ed.scrollIntoView({ from: c, to: c }, true);
+    })()`);
+    await sleep(60);
+  };
   const focusAt = async (line?: number, ch?: number) => {
     await page.evaluate(`((l, c) => {
       const ed = ${ED};
@@ -418,6 +445,7 @@ test("tour", async () => {
       ed.focus();
     })(${line ?? "undefined"}, ${ch ?? "undefined"})`);
     await sleep(80);
+    await centerCursor();
   };
   /** Adds text at the end of the open note without typing it (the long, seeded parts). */
   const insertAtEnd = async (s: string) => {
@@ -488,6 +516,15 @@ test("tour", async () => {
   // Obsidian's own spellcheck underlines the prose in red in the video; off while recording only
   if (RECORDING) await page.evaluate(() => (app.vault as unknown as { setConfig(k: string, v: unknown): void }).setConfig("spellcheck", false));
   await ob.dismissNotices();
+  // Room below the last line, so the line being written can sit in the middle of a short note (the view only, never the text)
+  if (RECORDING || SHOTS) {
+    await page.evaluate(() => {
+      const st = document.createElement("style");
+      st.id = "escrita-e2e-pad";
+      st.textContent = ".markdown-source-view.mod-cm6 .cm-content { padding-bottom: 45vh !important; }";
+      document.head.appendChild(st);
+    });
+  }
   let rec: Recorder | null = null;
 
   try {
@@ -523,7 +560,7 @@ test("tour", async () => {
     await setup.card(W.ui.screenwriter).scrollIntoViewIfNeeded();
     await expect(setup.root.locator(".escrita-setup-card")).toHaveCount(4);
     await setup.card(W.ui.screenwriter).hover();
-    await pace(2600);
+    await pace(2000);
 
     await say(W.c.setupEverything, 600);
     await setup.card(W.ui.everything).click();
@@ -657,20 +694,52 @@ test("tour", async () => {
     await key("Enter", 200);
     await typeKeys(W.story.p3);
     await expect.poll(today, { timeout: 10_000 }).toBeGreaterThan(before);
-    await pace(1000);
+    await spot(page.locator(".escrita-status-today").first(), 1200);
 
+    // the Progress window: today, the streak, the chart, and its sprint section
+    await say(W.c.progress, 400, { where: "top" });
+    expect(await ob.command("open-progress")).toBe(true);
+    const progress = page.locator(".modal.escrita-progress-modal");
+    await expect(progress).toBeVisible();
+    await pace(1800);
+    await shotNow();
     await say(W.c.sprint, 400, { where: "top" });
-    expect(await ob.command("start-sprint")).toBe(true);
-    await expect(page.locator(".escrita-status-sprint")).toBeVisible();
+    const sprintBox = progress.locator(".escrita-progress-sprint");
+    await sprintBox.scrollIntoViewIfNeeded();
+    const lenButton = sprintBox.getByRole("button", { name: W.ui.sprintLen, exact: true });
+    await lenButton.hover();
+    await pace(700);
+    await lenButton.click();
+    await expect(lenButton).toHaveAttribute("aria-pressed", "true");
+    await pace(600);
+    const startButton = sprintBox.locator("button.mod-cta");
+    await startButton.hover();
+    await pace(700);
+    await startButton.click();
+    const running = sprintBox.locator(".escrita-sprint-status");
+    await expect(running).toHaveText(W.ui.sprintRunning);
     await clearNotices();
-    await pace(1500);
+    await pace(2400); // the countdown is seen running in the window
+    await shotNow();
+    await expect(running).toHaveText(W.ui.sprintRunning);
+    await page.keyboard.press("Escape");
+    await expect(progress).toHaveCount(0);
+    await expect(page.locator(".escrita-status-sprint")).toBeVisible();
+    await pace(500);
+
+    await say(W.c.sprintType, 400, { where: "top" });
     await focusAt(await lineOf(W.story.p3Anchor));
     await key("End", 100);
+    await spotOn(page.locator(".escrita-status-sprint"));
     await typeKeys(LANG === "en" ? " The rail was wet." : " O corrimão estava molhado.");
-    await pace(1500);
+    await expect(page.locator(".escrita-status-sprint")).toContainText(/\b[1-9][\d.,]* \/ \d/, { timeout: 15_000 }); // the count ticks
+    await pace(900);
     await shotNow();
+    await spotOff();
     await say(W.c.sprintStop, 400, { where: "top" });
-    expect(await ob.command("stop-sprint")).toBe(true);
+    await spot(page.locator(".escrita-status-stop"), 600);
+    await page.locator(".escrita-status-stop").click();
+    await page.mouse.move(660, 650); // off the status bar, so no tooltip hangs over the video
     await expect(page.locator(".escrita-status-sprint")).toBeHidden();
     await clearNotices();
     await pace(800);
@@ -710,6 +779,9 @@ test("tour", async () => {
 
     // ============================================================ 8. the revision lens
     section("8 lens");
+    // the outline steps aside, so the lens panel has the whole height
+    await closeLeaves("escrita-outline");
+    await expect(page.locator(".escrita-outline-beat")).toHaveCount(0);
     await focusAt();
     await insertAtEnd("\n\n" + W.revision.sentences.join(" ") + "\n");
     const sentences = W.revision.sentences;
@@ -719,6 +791,16 @@ test("tour", async () => {
     expect(await ob.command("toggle-revision-lens")).toBe(true);
     await expect(page.locator(".escrita-lens-head")).toBeVisible();
     await page.evaluate(() => app.workspace.rightSplit.expand());
+    // every other panel of the right sidebar (Obsidian's own Outline, the placeholders…) steps aside: the lens gets the full height
+    await page.evaluate(() => {
+      const ws = app.workspace as any;
+      const others: any[] = [];
+      ws.iterateAllLeaves((l: any) => {
+        if (l.getRoot() === ws.rightSplit && l.view.getViewType() !== "escrita-lens") others.push(l);
+      });
+      others.forEach((l) => l.detach());
+    });
+    await expect(page.locator(".workspace-split.mod-right-split .workspace-leaf-content")).toHaveCount(1);
     const rule = (id: string) => page.locator(".escrita-lens-row").filter({ has: page.locator(`.escrita-lens-key-${id}`) });
     await expect(page.locator(".cm-content .escrita-lens-echo").first()).toBeVisible({ timeout: 15_000 });
     await expect(page.locator(".cm-content .escrita-lens-adverb").first()).toBeVisible();
@@ -750,7 +832,13 @@ test("tour", async () => {
     const bars = page.locator(".escrita-lens-rhythm-row");
     await expect(bars).toHaveCount(sentences.length, { timeout: 10_000 });
     await sleep(700); // the panel redraws after the cursor moves and drops its scroll
-    await bars.last().scrollIntoViewIfNeeded();
+    // the whole Rhythm section is on screen without scrolling the panel
+    const inWindow = await page.locator(".escrita-lens-rhythm").evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, height: window.innerHeight };
+    });
+    expect(inWindow.top).toBeGreaterThanOrEqual(0);
+    expect(inWindow.bottom).toBeLessThanOrEqual(inWindow.height);
     await expect(page.locator(".escrita-lens-rhythm-row.is-run").first()).toBeVisible();
     await expect(page.locator(".escrita-lens-rhythm-row.is-long")).toHaveCount(1);
     await expect(page.locator(".escrita-lens-rhythm-note").first()).toBeVisible();
@@ -841,7 +929,9 @@ test("tour", async () => {
     await expect(page.locator(".escrita-reader-chip")).toBeVisible();
     expect(await page.locator(".escrita-reader-chapter").first().innerText()).toContain(W.story.p1.slice(0, 20));
     await expect(page.locator(".escrita-reader [contenteditable='true']")).toHaveCount(0); // read-only
-    await pace(3600);
+    await pace(1000);
+    await spot(page.locator(".escrita-reader-chip"), 1400);
+    await pace(300);
     await shotNow();
     await closeLeaves("escrita-reader");
     await ob.waitFor("the story to be back", async () => (await ob.activeFile()) === storyPath);
@@ -899,7 +989,8 @@ test("tour", async () => {
     expect(await ob.command("open-home-note")).toBe(true);
     await ob.waitFor("the home note", async () => (await ob.activeFile()) === home);
     await expect(page.locator(".escrita-desk")).toContainText(W.ui.pending, { timeout: 15_000 });
-    await pace(2400);
+    await pace(800);
+    await spot(page.locator(".escrita-desk").getByText(W.ui.pending).first(), 1500);
     await shotNow();
 
     // ============================================================ 15. a book
@@ -919,6 +1010,12 @@ test("tour", async () => {
     const ch1First = `${chaptersDir}/${ob.listVaultFolder(chaptersDir)[0]}`;
     await ob.waitFor("the chapter to be active", async () => (await ob.activeFile()) === ch1First);
     await clearNotices();
+    // the outline was closed for the revision; it may open by itself with a new book, if not the command does
+    await page.waitForTimeout(600);
+    if ((await page.locator(".escrita-outline-chapter").count()) === 0) {
+      expect(await ob.command("open-outline")).toBe(true);
+      await page.evaluate(() => app.workspace.rightSplit.expand());
+    }
     await expect(page.locator(".escrita-outline-chapter:not(.escrita-outline-note)")).toHaveCount(1);
     const chapterTitle = page.locator(".escrita-outline-title").first();
     await chapterTitle.click();
@@ -977,6 +1074,27 @@ test("tour", async () => {
     await ob.waitFor("the script to be active", async () => (await ob.activeFile()) === scriptPath);
     await expect(page.locator(".workspace-leaf.mod-active .cm-editor.escrita-screenplay")).toHaveCount(1);
     await clearNotices();
+    // diagnostic only: watch for the layout vanishing (the editor losing its screenplay class), never fails the test
+    await page.evaluate(() => {
+      const w = window as any;
+      w.__spLost = [] as any[];
+      const t0 = performance.now();
+      const check = () => {
+        const ed = document.querySelector(".workspace-leaf.mod-active .cm-editor");
+        const scenes = ed ? ed.querySelectorAll(".cm-content .escrita-sp-scene").length : -1;
+        const lost = !ed || !ed.classList.contains("escrita-screenplay");
+        if ((lost || scenes === 0) && w.__spLost.length < 200) {
+          w.__spLost.push({
+            atMs: Math.round(performance.now() - t0), lostClass: lost, sceneLines: scenes,
+            livePreview: !!ed?.classList.contains("is-live-preview"), classes: ed ? ed.className : null,
+          });
+        }
+      };
+      const leaf = document.querySelector(".workspace-leaf.mod-active") ?? document.body;
+      w.__spObserver = new MutationObserver(check);
+      w.__spObserver.observe(leaf, { attributes: true, attributeFilter: ["class"], childList: true, subtree: true });
+      w.__spCheck = check;
+    });
     await insertAtEnd("\n" + W.script.seed); // the first scenes, already written
     await focusAt();
     await pace(1200);
@@ -1029,10 +1147,20 @@ test("tour", async () => {
     await say(W.c.spPage, 300);
     await expect(page.locator(".workspace-leaf.mod-active .cm-line.escrita-sp-character").nth(2)).toBeVisible();
     await expect(page.locator(".workspace-leaf.mod-active .cm-line.escrita-sp-dialogue").first()).toBeVisible();
-    await pace(1500);
+    await pace(800);
     await page.evaluate(`(() => { const ed = ${ED}; ed.scrollIntoView({ from: { line: ed.lastLine(), ch: 0 }, to: { line: ed.lastLine(), ch: 0 } }, true); })()`);
-    await pace(2200);
+    await pace(1500);
     await shotNow();
+    const lost = await page.evaluate(() => {
+      const w = window as any;
+      w.__spObserver?.disconnect();
+      return w.__spLost as { atMs: number; lostClass: boolean; sceneLines: number; livePreview: boolean; classes: string | null }[];
+    });
+    const lostClass = lost.filter((l) => l.lostClass);
+    const detail = `screenplay layout check: ${lostClass.length} moment(s) without the screenplay class, ${lost.length - lostClass.length} with no scene line in view` +
+      (lost.length ? "\n" + lost.slice(0, 20).map((l) => `  +${l.atMs} ms lostClass=${l.lostClass} sceneLines=${l.sceneLines} livePreview=${l.livePreview} class="${l.classes}"`).join("\n") : "");
+    console.log(`tour (${LANG}) ${detail}`);
+    test.info().annotations.push({ type: "screenplay-flicker", description: detail });
 
     // ============================================================ 17. the PDF
     section("17 pdf");
@@ -1076,7 +1204,7 @@ test("tour", async () => {
     await pace(2400);
     await say(W.c.featuresPause, 300, { on: settings });
     await settings.locator(".escrita-preset-btn", { hasText: new RegExp(`^${W.ui.screenwriter}$`) }).hover();
-    await pace(3600);
+    await pace(3000);
     await shotNow(settings);
     await ob.closeModals();
     await rec?.follow(page);

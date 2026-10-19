@@ -3,7 +3,7 @@
 // (Page.startScreencast), keeps every frame with its timestamp and encodes an mp4 with ffmpeg.
 // Active only when the RECORD environment variable names a folder; otherwise `Recorder.start`
 // returns null and the spec runs as usual, without pauses.
-import type { CDPSession, Page } from "@playwright/test";
+import type { CDPSession, Locator, Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -113,4 +113,50 @@ export async function caption(page: Page, text: string, opts: CaptionOptions = {
 
 export function removeCaption(page: Page): Promise<void> {
   return page.evaluate(() => document.getElementById("escrita-e2e-caption")?.remove());
+}
+
+const SPOT_ID = "escrita-e2e-spotlight";
+
+/**
+ * Draws a spotlight around an element until `spotlightOff`: an absolutely positioned box with a soft
+ * accent border and a light dim around it, on top of everything and with pointer-events none, so it
+ * never changes a click or an assertion. It follows the element if it moves or changes size.
+ */
+export async function spotlightOn(page: Page, target: Locator, label?: string): Promise<void> {
+  await target.first().evaluate((el, [id, text]) => {
+    document.getElementById(id)?.remove();
+    const box = document.createElement("div");
+    box.id = id;
+    box.style.cssText = "position:fixed;z-index:2147483646;pointer-events:none;border:3px solid rgba(255,170,0,0.95);" +
+      "border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,0.22),0 0 16px 4px rgba(255,170,0,0.55);";
+    if (text) {
+      const tag = document.createElement("div");
+      tag.textContent = text;
+      tag.style.cssText = "position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);white-space:nowrap;" +
+        "background:rgba(255,170,0,0.95);color:#000;font:700 13px sans-serif;padding:3px 10px;border-radius:6px;";
+      box.appendChild(tag);
+    }
+    document.body.appendChild(box);
+    const place = () => {
+      if (!box.isConnected) return;
+      const r = el.getBoundingClientRect();
+      box.style.left = `${r.left - 6}px`;
+      box.style.top = `${r.top - 4}px`;
+      box.style.width = `${r.width + 12}px`;
+      box.style.height = `${r.height + 8}px`;
+      requestAnimationFrame(place);
+    };
+    place();
+  }, [SPOT_ID, label ?? ""] as const);
+}
+
+export function spotlightOff(page: Page): Promise<void> {
+  return page.evaluate((id) => document.getElementById(id)?.remove(), SPOT_ID);
+}
+
+/** A spotlight around the element for `ms`, then removed. */
+export async function spotlight(page: Page, target: Locator, opts: { ms: number; label?: string }): Promise<void> {
+  await spotlightOn(page, target, opts.label);
+  await new Promise((r) => setTimeout(r, opts.ms));
+  await spotlightOff(page);
 }
