@@ -23,7 +23,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 W, H, FPS = 1920, 1080, 30
-CSS = 1.5  # device pixels per CSS pixel in the HD layout (1280 x 720)
+CSS = 1.40625  # device pixels per CSS pixel in the HD layout (1366 x 768); the log's "scale" wins
 ZOOM_S = 0.75  # seconds a zoom takes to ease in or out
 MAX_ZOOM = 1.8
 FONT = "/usr/share/fonts/open-sans/OpenSans-Semibold.ttf"
@@ -174,7 +174,7 @@ class Captions:
         key = (text, size)
         if key in self.cache:
             return self.cache[key]
-        px = int(size * CSS * 1.12)
+        px = int(size * 1.5 * 1.12)  # in output pixels, the same size whatever the layout
         font = ImageFont.truetype(FONT, px)
         maxw = int(W * 0.8)
         lines, line = [], ""
@@ -224,7 +224,9 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--offset", type=float, default=0.0)
     args = ap.parse_args()
+    global CSS
     log = json.loads(Path(args.log).read_text())
+    CSS = log.get("scale", CSS)
     frames = sorted(log["frames"], key=lambda f: f["at"])
     events = sorted(log["events"], key=lambda e: e["t"])
     t0 = frames[0]["at"]
