@@ -132,7 +132,9 @@ test.describe("Release-candidate fixes: darlings with the note open (3)", () => 
 
   test("3. the first cut creates the darlings note; open it in a tab beside the conto", async () => {
     await cut(PARAS[1]);
-    await app.waitFor("the darlings note", () => app.vaultFileExists(darlings), 8000);
+    // the note is created empty and then written: open it only once it holds the passage (the draft status
+    // used to rewrite it 1.5 s later and refresh an editor that had opened too early; darlings notes get none now)
+    await app.waitFor("the darlings note with the passage", () => app.vaultFileExists(darlings) && app.readVaultFile(darlings).includes(PARAS[1]), 8000);
     await app.page.evaluate(async ([path, conto]) => {
       const file = window.app.vault.getFileByPath(path)!;
       const leaf = window.app.workspace.getLeaf("split", "vertical");
