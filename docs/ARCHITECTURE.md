@@ -341,6 +341,15 @@ drives it with an in-memory tree. The result:
   or off, because classify knows no features. The universe indexes skip both folders
   (`isUniverseNote` in `universe/entries.ts`).
 
+- `own` (1.2.1): `"darlings"` for a book's darlings note (`darlingsNote`, in the book's
+  folder) or the global one (`globalDarlingsNote`), `"lists"` for the lens's word lists note
+  (`lensListsNote`, or either default name at the root while it is blank); null otherwise
+  (`ownNoteOf` in `core/classify.ts`; the three settings are optional in `ClassifySettings`
+  and part of `classifyKey`). Such a note is Escrita's own text, not writing: never tracked,
+  no stage, no draft status (`needsDraftStatus` skips `own`), so never a work. The kind stays
+  what the place says. Before 1.2.1 only a note in a book was out of the way (a `book-file`);
+  the global darlings note, a plain `note` in a vault that tracks every folder, became a work.
+
 The snapshots, submissions and export folder settings are read only through
 `snapshotsRoot(setting)`, `submissionsRoot` and `exportRoot` (trimmed, slashes cleaned,
 empty → the default). They are checked before saving through one validation, see

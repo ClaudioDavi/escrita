@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (1.2.0 at the time of writing). The author's
+Current version: see `manifest.json` (1.2.1 at the time of writing). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down
@@ -72,7 +72,8 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   pt-BR word; add a setting there plus its field in `EscritaSettings`.
 - **Shared services on `plugin`** (use them; never re-derive):
   - `books.classify(x)`: what a file is (chapter, book note, note…), its book,
-    `tracked`, `piece`, `snapshot`, `stage`, `submission`, `export`, `scope` (0.9: which
+    `tracked`, `piece`, `snapshot`, `stage`, `submission`, `export`, `own` (1.2.1: the darlings
+    notes and the word lists note, never works), `scope` (0.9: which
     universe or book it lives in, from `core/scope.ts`; set whenever the universe mode is on,
     even with the feature off), `form` (1.1: short story, essay… or screenplay, from
     `core/form.ts`; set for any Markdown file, with the universe off too). Backed by

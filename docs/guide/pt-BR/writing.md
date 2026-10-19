@@ -121,6 +121,9 @@ do Obsidian, então os links continuam funcionando.
 - **Enter** acrescenta um capítulo, ou um beat quando você está num beat.
 - **Tab** transforma um capítulo vazio num beat do capítulo anterior. Um capítulo com texto ou
   beats nunca vira beat.
+- **Tab** num beat abre a nota no editor com o cursor embaixo desse beat: na primeira linha de
+  texto dele ou, se ele ainda não tem texto, na linha vazia logo depois (criada só se não houver
+  nenhuma). Nada mais muda.
 - **Shift+Tab** transforma um beat ainda não escrito num capítulo novo. Um beat que já tem texto
   fica como está.
 - **Backspace** numa linha vazia a remove. Um capítulo que tem texto ou beats só é excluído pelo

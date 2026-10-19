@@ -119,6 +119,9 @@ rename, so links keep working.
 - **Enter** adds a chapter, or a beat when you are in a beat.
 - **Tab** turns an empty chapter into a beat of the chapter before it. A chapter with text or
   beats is never turned into a beat.
+- **Tab** in a beat opens the note in its editor with the cursor under that beat: on its first line
+  of prose, or, if the beat has none yet, on the empty line right after it (added only when there
+  is none). Nothing else changes.
 - **Shift+Tab** turns an unwritten beat into a new chapter. A beat that already has prose stays.
 - **Backspace** on an empty line removes it. A chapter that has text or beats is deleted only
   from its menu, after a question, and goes to the trash.
