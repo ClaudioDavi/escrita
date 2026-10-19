@@ -66,9 +66,34 @@ uma (aparece "Seleção"):
   palavras**, para comparar um conto curto e um capítulo longo. Cada linha tem botões de anterior
   e próximo que selecionam a ocorrência ("3 / 12").
 
+- **Ritmo**: veja abaixo.
+
 A contagem de sílabas é aproximada de propósito. A lente pula títulos, blocos de matemática e,
 por padrão, citações com `>`, então a contagem de palavras dela pode diferir um pouco da barra
 de status.
+
+### Ritmo
+
+A seção **Ritmo** mostra as frases de um parágrafo, para você ver como ele soa antes de ler em
+voz alta. Vale para o parágrafo onde está o cursor, ou para as frases que a sua seleção toca
+(aparece "Seleção"). Não é uma contagem da nota inteira.
+
+- **Uma barra por frase.** O comprimento da barra é o tamanho da frase em palavras, e o número
+  fica ao lado. As frases aparecem na ordem em que foram escritas.
+- **Uma sequência aparece em laranja.** Uma sequência são três ou mais frases seguidas cujos
+  tamanhos ficam a até três palavras uma da outra (a maior e a menor diferem em no máximo 3).
+  Elas formam uma batida regular, que pode embalar o leitor. A seção diz "4 frases de tamanho
+  parecido". Isso é fixo, não é uma configuração.
+- **A linha da frase longa.** Uma linha atravessa as barras e marca a configuração **Frase
+  longa** (45 palavras por padrão). Uma barra que passa dela fica marcada, e a seção diz "Frase
+  longa: mais de 45 palavras".
+- **Um clique seleciona a frase** na nota.
+- **Um parágrafo é o texto entre linhas em branco.** Um item de lista ou uma citação sem linha
+  em branco dentro conta como um parágrafo só.
+- **Com o cursor fora de um parágrafo**, numa linha em branco, a seção pede para
+  pôr o cursor num parágrafo.
+
+Desligue com **Mostrar o ritmo**, nas configurações abaixo.
 
 ### Passe pelas ocorrências
 
@@ -133,6 +158,7 @@ Em Configurações › Escrita › **Revisão · a lente**:
 | **Nomes sem entrada** e **Não são nomes** | A regra opcional e a lista de palavras que ela nunca marca. Veja [O mundo](the-world.md#nomes-sem-entrada). |
 | **Mostrar a parte de diálogo** | Mostra a medida de diálogo no painel. |
 | **Mostrar a legibilidade** | Mostra a medida de legibilidade. |
+| **Mostrar o ritmo** | Mostra a seção Ritmo. Ligada por padrão. |
 
 Os campos numéricos salvam quando você sai do campo. Um valor fora do intervalo volta ao
 anterior.

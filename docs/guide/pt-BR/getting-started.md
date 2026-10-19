@@ -70,8 +70,8 @@ A janela tem dois passos. Nada é gravado até você apertar **Criar** no segund
   Decide só as palavras que o Escrita grava nas notas e usa como nomes: os status, os nomes de
   pastas e notas, as listas. A interface continua no idioma do Obsidian. As notas de exemplo e a
   nota inicial também são escritas nesse idioma.
-- **Ponto de partida.** Três cartões: **Essencial** (9 de 19 interruptores), **Escritor** (16 de
-  19) e **Tudo** (os 19). Começa em **Escritor**. Uma predefinição é um ponto de partida, não um
+- **Ponto de partida.** Três cartões: **Essencial** (9 de 20 interruptores), **Escritor** (16 de
+  20) e **Tudo** (os 20). Começa em **Escritor**. Uma predefinição é um ponto de partida, não um
   modo: depois, cada interruptor é seu, em Configurações › Escrita › Recursos. O que cada uma liga
   está em [Recursos e configurações](features-and-settings.md).
 - **Mundo compartilhado.** **Desligado**, **Por livro** ou **Universo**, para personagens e

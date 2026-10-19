@@ -292,6 +292,30 @@ com todos os capítulos em ordem, um depois do outro.
 
 Ligue ou desligue junto com o esboço (Recursos › Esboço e beats fantasmas).
 
+## Ler esta nota
+
+Um conto ou um ensaio se lê do mesmo jeito. Abra a nota e rode **Ler esta nota**. Abre-se uma
+aba com a nota como o leitor vai vê-la, sem o editor.
+
+- **Onde o comando é oferecido.** Numa nota Markdown que não está num livro e que não é um
+  roteiro, uma versão, uma exportação nem um envio. Um capítulo ou a nota de um livro tem **Ler o
+  livro** no lugar. Se o comando não aparece, a nota é uma dessas, ou o Esboço e beats fantasmas
+  está desligado.
+- **O botão do esboço.** O esboço de uma nota avulsa tem um pequeno ícone de livro, **Ler esta
+  nota**, ao lado do título. Ele não aparece para um roteiro.
+- **Uma coletânea.** Numa nota de coletânea (a que tem uma lista `contents`) o mesmo comando lê os
+  contos em ordem, cada um sob o seu título, como a exportação da coletânea imprime. A barra do
+  topo mostra quantos contos há.
+- **Parece a exportação, e é só leitura.** Comentários, beats e marcadores ficam escondidos.
+  Clique num parágrafo e a nota abre numa aba nova, naquela linha.
+- **Lembra onde você parou**, como a leitura do livro, e acompanha um renomear ou mover.
+- **Acompanha a edição.** Se os metadados ainda não estão prontos quando a aba abre, ou você
+  renomeia um conto de uma coletânea, a aba se redesenha sozinha e fica no seu lugar.
+- **Notas vazias** dizem "Esta nota ainda não tem texto para ler.". Uma coletânea vazia diz "Esta
+  coletânea ainda não lista notas para ler.".
+
+Pertence ao mesmo interruptor de **Ler o livro** (Recursos › Esboço e beats fantasmas).
+
 ## Defina uma meta e acompanhe o progresso
 
 *Recursos › Metas e sprints.*

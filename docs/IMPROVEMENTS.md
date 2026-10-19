@@ -242,29 +242,6 @@ interface lives. Test through the interface.
 - **Status.** The schema half shipped in 1.1.1 as candidate 53 (one settings table). The module
   strings and the `also` derivation are still open.
 
-### 38. Editor glue and "reveal on touch" in `src/ui/`
-
-**Scheduled for 1.2** (PLAN-1.2): the screenplay layout is built on it.
-
-**Strength:** strong · **Pairs with:** 0.5.1's lens retry
-
-- **Problem.**
-  - A set of open editors, a refresh `StateEffect` and a broadcast loop are written four times
-    (`lens/decorations.ts`, `editor/dialogue-focus.ts`, `universe/name-marks.ts`,
-    `universe/appears-in-widget.ts`), and they treat a failed dispatch three ways. The lens
-    retries once in a microtask (its comment at `decorations.ts:173` says why); dialogue focus
-    drops the editor for good, which is the failure that comment warns about; the name marks
-    catch nothing, so a throw goes back into the names provider's emitter.
-  - "The file of an editor state" is written four times, the Live Preview check twice, the
-    `editor.cm` cast twice in `lens/ui.ts`.
-  - `placeholders/decoration.ts:46-101` and `outline/ghost.ts:36-90` are the same plugin: scan
-    with `segmentDoc`, rebuild on text, selection, viewport or mode, show raw text when the
-    selection touches an item and a widget when it doesn't.
-- **Change.** `src/ui/editor-glue.ts`: `EditorSet` (add, delete, `broadcast(spec)` with the
-  lens's retry), `fileOfState`, `isLivePreview`, `cmOf` (the `cm` exception in one place).
-  `src/ui/reveal-on-touch.ts`: `revealOnTouch({ scan, raw, rendered })`.
-- **Wins.** One failure policy; about 80 lines gone; the next marker kind is one call.
-
 ### 39. Line predicates in `core/markers.ts`
 
 **Strength:** medium · **Cost:** behaviour changes at the edges
@@ -396,6 +373,10 @@ interface lives. Test through the interface.
   draw. The rule-label choice for `gerund.en` is written five times.
 - **Lists note.** `lens/lists.ts:39` and `lens/lists-edit.ts:75` detect frontmatter and `%%`
   by hand, against the `segment()` convention; a `## Names` inside a code fence opens a section.
+- **First slice done in 1.2.0** (for SF 16, the rhythm): `LensPass` holds `sentenceWords` and
+  `sentencePara`, filled once in `analyze` from one `layout` call, and `longSentences` reads
+  them (results unchanged). `layout` still runs for the other rules, `inferredNames` still
+  runs twice, and the list sets, `EMPTY_MD`, `measuresFor` and `ruleKey` are as described.
 - **Change.** Build `layout`, `inferredNames` and the list sets once in `analyze` and pass them
   in; keep the three normalizations as they are (merging them changes behaviour).
   `isCapitalized` and `sentenceStarts` next to `core/sentences.ts`. `rangeMeasures` replaces
@@ -454,22 +435,6 @@ interface lives. Test through the interface.
 - About 9 `TFile`-from-path builders fill different fields. Add `tfile(path, mtime?)` to
   `tests/support/obsidian.ts`.
 - `VaultTree` fakes in 7 files. Add `tests/support/fake-tree.ts`.
-
-### 52. "Read the book" rebuilds when the metadata cache is ready
-
-**Scheduled for 1.2** (PLAN-1.2), with "Read a note" (SF 15).
-
-**Strength:** small · **Found:** in 1.1, Wave 2 (PLAN-1.1)
-
-- **Problem.** The reader decides which chapters to include from each chapter's `compile`
-  property (`outline/reader-view.ts`). Run "Read the book" before Obsidian's metadata cache has
-  indexed the chapters (right after startup) and a chapter with `compile: false` is read as
-  included. The view redraws only on create, delete and rename (`reader-view.ts:92-94`), so the
-  wrong chapter stays until one of those happens.
-- **Change.** Also rebuild on the metadata cache's `resolved` event (registered through the
-  module's context), keeping the reading position. A spec (`tests/e2e/`) starts the command before the
-  cache is ready and checks that the chapter leaves the list.
-- **Cost.** One more redraw at startup; the position is kept by the measured anchor from 1.1.
 
 ### 54. The script export builds once
 
@@ -648,10 +613,31 @@ confirmed:
   then passed alone, 9 of 9. Not reproduced, no cause found. If it comes back, look at the order
   of the note's creation, the split and the editor's first load.
 
+Found in 1.2 (Wave 2 and its judge), not fixed:
+
+- **Other `processFrontMatter` callers can lose unsaved text.** 1.2 fixed `draftIfNew` with
+  `NoteService.flush(file)`, which saves the file's views before the write. The publish module,
+  the outline's `commit` and the progress modal's setting rows still call `processFrontMatter`
+  with no flush, so a status or target written while the writer's editor holds unsaved typing
+  can replace it. Fix: one `plugin.notes.frontmatter(file, fn)` that flushes first, and move
+  the three callers onto it.
+- **An undone Tab-opened parenthetical forgets the cue's mode.** Tab after a cue opens `()`; undo
+  removes the parenthetical but the cue line has already let go of its mode, so the next Tab
+  starts again from an empty cycle. (`src/screenplay/keys.ts`, the mode field.)
+- **Cue suggestions include the universe's places and objects.** `plugin.names.tableFor(path)`
+  gives every entry's name, and the screenplay suggest does not filter by entry type, so a place
+  or an object is offered on a cue line. Fix: a `kind` filter on the names port, or a
+  `characters(path)` reader.
+- **`outline.reader.noBook` is unused.** The string was kept for a book that left the vault; the
+  reader now says `noNote` for any source. Delete the key in both languages and in the strings
+  parity test's list, if it names it.
+
 ## Done
 
 | Version | Improvement |
 |---|---|
+| 1.2.0 | Editor glue and "reveal on touch" (candidate 38): `src/ui/editor-glue.ts` has `EditorSet` (one retry, then the editor is dropped: the lens's policy, now everyone's), `fileOfState`, `isLivePreview` and `cmOf`; `src/ui/reveal-on-touch.ts` has `revealOnTouch({ scan, raw, rendered, key })`. The lens, dialogue focus, the name marks, "Appears in", the placeholders and the ghost beats moved onto them, and the screenplay layout is built on them. Two behavior changes: the name marks drop an editor after a second failed dispatch, and ghost beats skip lines outside the visible ranges |
+| 1.2.0 | "Read the book" rebuilds when the metadata cache is ready (candidate 52): the reader redraws on `resolved` when the chapter list or the title changed, keeping the position, so a `compile: false` chapter leaves the list after startup (`tests/e2e/specs/read-book.spec.ts`, `read-note.spec.ts`). `scrollTo` also allows for the sticky bar's height |
 | 1.1.1 | One settings table (candidate 53, the schema half of 37): `core/settings-schema.ts` has one row per setting (English default, kind, the features that read it, the pt-BR value of word-bearing keys), checked against `EscritaSettings` with `satisfies`. `DEFAULT_SETTINGS`, the English and pt-BR default sets, `SETTING_FEATURES`, `UNIVERSE_KEYS` and `normalizeSettings` are derived from it; `EN`, `PT_BR` and `PROPERTY_KEYS` are gone, and `WORD_KEYS` stays a tuple checked against the table at compile time. The form keys moved from the universe's settings to `core/form.ts`, and `ENTRY_KINDS`, the language helpers and the path rules (`listsPath`, `normalizeNotePath`, `cleanVaultFolder`) moved to core, so no core file imports a module folder (`tests/settings-imports.test.ts`). Valid data loads as before (`tests/settings-g3.test.ts` and the setup fixtures are unchanged); four drift fixes for a broken `data.json` are listed in the README changelog. `tests/settings-schema.test.ts` loads every row in both sets. Still open in 37: the module strings and the derived `also` |
 | 1.1 | Export writers share the title page; the modal splits (candidate 46): `core/export-pipeline.ts` has `titlePageOf(doc, preset)`, `bylineOf` and `minHeadingOf`, and `EpubCover` lives there; the title page type is `ManuscriptTitle` (the screenplay's `TitlePage` is in `core/fountain.ts`); `writers/xml.ts` holds `xmlEscape` (`epub.ts` no longer imports `docx.ts`); `logic.ts` has `headingFormat`, `ExportState` and `stateOfLast`; the dialogs are in `export/dialogs.ts` and `modal.ts` went from 714 to 576 lines before the screenplay options. Every property read goes through `propertyValue`. No export expectation changed (`tests/export-title-page.test.ts`) |
 | 1.1 | The five known issues from the review of 2026-10-08. 1: the beat click lands on the beat, not at the restored cursor; closed, not a bug (three regression specs in `tests/e2e/specs/beat-click.spec.ts`: cursor near the top, the leaf's history restoring an old cursor, a background tab). 2: "Appears in" reads chapter numbers with `core/book.ts` (`chapterNumber`, `chapterTitle`). 3: export reads the cover property through `propertyValue`, ignoring case like `Compile:`. 4: `templatesFolder` and `globalDarlingsNote` follow renames (data followers in `TemplatesFeature` and `DarlingsModule`, also while off). 5: `submissionsOffNotice` passes the language. Test-only aliases gone: `export/logic.ts` `inFolder`, `universe/migrate-plan.ts` `basename` and `dirname`, and `placeholders/logic.ts` `parentPath` (the tests and `placeholders/view.ts` use `core/paths.ts`) |

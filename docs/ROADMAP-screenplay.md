@@ -42,7 +42,7 @@ outlined and exported.
 | Phase | Contents | Effort |
 |---|---|---|
 | 1 | Screenplay notes and the Fountain parser (SP 1) · Export: Fountain and PDF (SP 6) | M + L. **Shipped in 1.1.0** |
-| 2 | Writing in screenplay format (SP 2) · Pages, not words (SP 4) · Scene outline (SP 3) | M + S + S. **SP 2 planned for 1.2** |
+| 2 | Writing in screenplay format (SP 2) · Pages, not words (SP 4) · Scene outline (SP 3) | M + S + S. **SP 2 shipped in 1.2.0** |
 | 3 | Revision for scripts (SP 5) · FDX export and Fountain import (SP 6) · Feature-length scripts as a book (SP 7) | M + M + M |
 
 Export comes in phase 1 on purpose: a writer can draft in plain Fountain today, with no
@@ -101,7 +101,7 @@ help from the editor, but can't hand in the script without a correct PDF.
 
 ## 2. Writing in screenplay format
 
-**Planned for 1.2 (PLAN-1.2), 2026-10-19,** with three changes to the text below: Reading view
+**Shipped in 1.2.0 (PLAN-1.2), 2026-10-19,** with three changes to the text below: Reading view
 keeps today's plain rendering (its layout comes later, if a writer asks); dialogue focus and the
 revision lens reading Fountain move to section 5, with the other lens rules for scripts; and the
 editor help is its own feature switch, `screenplay`, so a writer can turn it off without
@@ -123,6 +123,27 @@ turning off typing.
   `CONTINUOUS`, `LATER`; author: `DIA`, `NOITE`, `CONTÍNUO`, `MAIS TARDE`).
 - **Dialogue focus** (SF 7) and the **revision lens** (SF 5) read Fountain dialogue
   and action instead of quote marks and dashes.
+
+**As built in 1.2.0, and what differs from the text above:**
+- **No Reading view layout.** Reading view is unchanged; the export preview shows the pages.
+- **Fountain in dialogue focus and the lens moved to section 5.** Dialogue focus is off in a
+  screenplay note (it would dim the wrong lines), and so is the prose Enter flow.
+- **A feature switch of its own**, `screenplay`, the 20th, on in the Everything preset only. A
+  missing key reads as off; an install whose other switches match Everything gets it on.
+- **Tab and Enter** are one pure table, `core/screenplay-keys.ts`: Enter after a cue or
+  parenthetical goes to dialogue; after dialogue, a blank line and the next cue; after a scene
+  heading or action, a blank line; after a transition, a blank line and a scene heading; Enter on
+  an empty cue, heading or transition line goes back to action. Tab on an empty line cycles
+  action, character, transition, scene heading; Tab after a cue opens `()`. Shift-Tab goes back.
+  Each step is one undo. Typed letters of a cue, heading or transition come out in capitals, and
+  leaving a line Fountain would not read as chosen adds the forced mark (`@`, `.`, `>`).
+- **Suggestions**: cues already in the script, then the universe's names; locations after a
+  scene prefix; time words after ` - `. The words are the **Times of day** setting.
+- **The layout**: columns in `ch` under Courier (or the theme's font, the **Font** setting), CSS
+  only. A typed `-----` shows as `---` until the cursor is on the line.
+- **Two commands for phones**, "Next screenplay element" and "Previous screenplay element".
+- **Open**: cue suggestions also offer the universe's places and objects; an undone
+  Tab-opened parenthetical forgets the cue's mode (IMPROVEMENTS, "Known issues").
 
 ## 3. Scene outline
 
@@ -152,6 +173,8 @@ scene heading as the boundary.
   spelled two ways (the name-variant rule).
 - **Locked pages, revision colors and scene numbers** are production features and stay
   out (see the end of this file). Snapshots (SF 4) already compare drafts word by word.
+- **Moved here from section 2 (1.2):** dialogue focus (SF 7) and the lens reading Fountain
+  dialogue and action instead of quote marks.
 
 ## 6. Export
 
@@ -259,4 +282,4 @@ outline shows sequences as chapters and scenes inside them.
 | Page size | Letter | A4 |
 | More / continued labels | `(MORE)`, `(CONT'D)` | `(MAIS)`, `(CONT.)` |
 | Scene numbers in PDF | off | off |
-| Screenplay font in the editor | off | (author's choice) |
+| Screenplay font in the editor (1.2) | Courier | (author's choice) |

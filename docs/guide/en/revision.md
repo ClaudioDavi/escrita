@@ -66,8 +66,33 @@ have one (it says "Selection"):
   a short story and a long chapter can be compared. Each row has previous and next buttons that
   select the match ("3 / 12").
 
+- **Rhythm**: see below.
+
 The syllable count is approximate on purpose. The lens skips headings, math blocks and, by
 default, `>` quotes, so its word count can differ a little from the status bar's.
+
+### Rhythm
+
+The **Rhythm** section shows the sentences of one paragraph, so you can see how a paragraph
+sounds before you read it aloud. It is for the paragraph at the cursor, or for the sentences
+your selection touches (it says "Selection"). It is not a count for the whole note.
+
+- **One bar per sentence.** The bar's length is the sentence's length in words, and the number is
+  beside it. Sentences are drawn in the order they are written.
+- **A run is drawn in orange.** A run is three or more sentences in a row whose lengths are
+  within three words of each other (the longest and the shortest differ by at most 3). They
+  make a steady beat, which can lull a reader. The section says "4 sentences of about the same
+  length". This is fixed, not a setting.
+- **The long-sentence line.** A line across the bars marks the **Long sentence** setting
+  (45 words by default). A bar that passes it is marked, and the section says "Long sentence:
+  over 45 words".
+- **A click selects the sentence** in the note.
+- **A paragraph is the text between blank lines.** A list item or a quote with no blank line
+  inside counts as one paragraph.
+- **With the cursor outside a paragraph**, on a blank line, the section says to
+  place the cursor in a paragraph.
+
+Turn it off with **Show rhythm**, in the settings below.
 
 ### Step through the matches
 
@@ -128,6 +153,7 @@ In Settings › Escrita › **Revision · the lens**:
 | **Names without an entry** and **Not names** | The opt-in rule and its list of words it never marks. See [The world](the-world.md#names-without-an-entry). |
 | **Show dialogue share** | Shows the dialogue measure in the panel. |
 | **Show readability** | Shows the readability measure. |
+| **Show rhythm** | Shows the Rhythm section. On by default. |
 
 The number fields save when you leave the field. A value out of range is put back.
 

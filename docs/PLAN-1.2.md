@@ -178,8 +178,8 @@ reads it in the reader, and sees the rhythm of a paragraph's sentences in the le
 - **V** (Wave 3, asked by the author 2026-10-19): a video of the screenplay editor at work,
   recorded by the harness (`tests/e2e/lib/record.ts`) in a real Obsidian. It shows a short scene
   typed with Tab and Enter, a suggestion picked, and the layout in Live Preview. It goes in the
-  screenplay guide pages, both languages, as a GIF in `docs/guide/images/`, which GitHub and a
-  vault both show.
+  screenplay guide pages, both languages, as a GIF at `docs/images/screenplay-editor.gif` (where
+  the other guide GIFs are), which GitHub and a vault both show.
 
 ## Waves
 
@@ -323,6 +323,57 @@ Obsidian, Live Preview, cursor off the line:
   - A rhythm paragraph is text between blank lines: say so in `revision.md`.
   - The look of the rhythm panel, the reader chip and the button waits for the G2 screenshots.
   - The guide pages still say 19 features (Wave 3).
+
+### Wave 2 (2026-10-19)
+
+**Judge (Opus): PASS.**
+
+- **E, the screenplay module** (`src/screenplay/`): the layout, the keys and caps, the suggest,
+  the two commands and the "Screenplay editor" settings group.
+  - Q9 and Q12 guards in `src/editor/features.ts`.
+  - `ctx.suggest` in `core/module-context.ts`: Obsidian cannot unregister an `EditorSuggest`, so it
+    stays registered and is inert while the feature is off.
+- **F, the checks** (`tests/e2e/specs/screenplay-editor.spec.ts`, 22 tests): each element's
+  class, the key sequences, one undo per step, caps, forced marks, suggestions, the switch off,
+  the guards, timings, and a "demo: writing a scene" test for the video (gate V).
+- **A bug the spec found, outside the plan.** `draftIfNew` (`src/main.ts`) ran `processFrontMatter`
+  on a just-created note while its editor held unsaved typing, and the draft status replaced the
+  text (a data-loss bug since 1.0.4). Fixed with `NoteService.flush(file)` (`src/core/notes.ts`),
+  which saves the file's views first. Spec: `tests/e2e/specs/draft-status.spec.ts`.
+- **Checks:** vitest 5,066 passed; full e2e 255 passed.
+- **Typing timings** on a 6,968-line script: keydown to DOM 5.9 to 8.4 ms median, p95 11.8 to 14.4
+  ms; first layout 9.8 to 12.4 ms. The median is inside the 10 ms bar of the plan; the p95 is a little over it.
+- **Open after the judge:**
+  - `!important` in `src/screenplay/styles.css` and the undo that joins typing within 500 ms after
+    a Tab or Enter step (`keys.ts`; `isolateHistory` needs `@codemirror/commands`): fixed in
+    Wave 3 by task G.
+  - Other `processFrontMatter` callers (publish, outline, progress modal) could lose unsaved text
+    the same way; an undone Tab-opened parenthetical forgets the cue's mode; cue suggestions include
+    the universe's places and objects. All three are in IMPROVEMENTS.md, "Known issues".
+  - Source mode gets the keys and caps but no layout, by design (Q5). A rhythm paragraph is the
+    text between blank lines. `outline.reader.noBook` is unused (IMPROVEMENTS, "Known issues").
+  - A collection's reader title is its file name, the same as the collection export
+    (`src/export/index.ts:243`): consistent, closed.
+
+### Wave 3 (2026-10-19)
+
+**Task H, docs and release prep (Sonnet).**
+
+- **Guides, both languages.**
+  - `screenplays.md`: a "Write in the editor" section with the video at the top (the GIF is added
+    after the recording, at `docs/images/screenplay-editor.gif`), the layout, the Tab and Enter
+    table, capitals and forced marks, suggestions, the two commands, the settings, and three
+    rows in "When something looks wrong".
+  - `writing.md`: "Read this note". `revision.md`: "Rhythm" and the **Show rhythm** setting.
+  - `features-and-settings.md`: 20 switches, the Screenplay editor row, Everything is 19 (20 with
+    the universe), the upgrade rule, "Settings added in 1.2". `getting-started.md`: "of 20".
+- **README:** the feature lines and the 1.2.0 changelog entry. **ARCHITECTURE.md:** "The
+  screenplay editor" and "Editor glue" sections, `OFF_WHEN_MISSING`, `ctx.suggest`, `flush`, the
+  reader's source kinds, the lens Rhythm bullet. **CONTEXT.md:** the 1.2 line and "1.2 additions".
+- **IMPROVEMENTS.md:** 38 and 52 to "Done" under 1.2.0, 47's first slice noted, four new known
+  issues. **Roadmaps:** ROADMAP.md, SF 15, SF 16, SP 2 and the novel roadmap's section 8.
+- **Version:** `npm version minor` (1.1.1 to 1.2.0). `minAppVersion` is unchanged (1.13.0): the
+  code uses no newer API.
 
 ## Risks
 

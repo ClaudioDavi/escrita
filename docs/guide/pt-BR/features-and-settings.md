@@ -16,7 +16,7 @@ resultado e o Obsidian leva você até ela. As linhas de um recurso desligado n�
 porque o recurso não está carregado.
 
 Cada seção da aba do Escrita é um cartão sob o próprio título: Recursos, Propriedades e pastas,
-Livros, Formas, Novas obras, Metas, Publicação · a checagem, Exportação, Envios, Esboço, Marcadores, Darlings, Editor,
+Livros, Formas, Novas obras, Metas, Publicação · a checagem, Exportação, Envios, Esboço, Marcadores, Darlings, Editor, Editor de roteiro,
 Revisão · a lente, Estágios, Nota inicial, Versões e Universo. A seção de um recurso desligado
 some até você ligar o recurso de novo.
 
@@ -29,13 +29,13 @@ Abra Configurações › Escrita. A seção **Recursos** fica no topo. Ela tem:
 - **Idioma da escrita**. Automático segue o idioma do Obsidian: qualquer português dá pt-BR e
   qualquer inglês dá inglês. Outro idioma dá nenhum. A lente de revisão e o reconhecimento de
   nomes leem esse idioma. (Antes ele ficava na seção Revisão.)
-- **Dezenove interruptores em cinco grupos**, cada um com uma linha sobre o que faz. Os
+- **Vinte interruptores em cinco grupos**, cada um com uma linha sobre o que faz. Os
   estágios ficam sempre ligados, porque o esboço, a aba Obras e a checagem de publicação leem
   os estágios.
 
 | Grupo | Interruptores |
 |---|---|
-| Escrita | Metas e sprints · Esboço e beats fantasmas · Marcadores · Enter e tipografia · Foco no diálogo · Mover parágrafo ou cena · Inserir de um modelo · Ortografia sob demanda · Contagens no explorador |
+| Escrita | Metas e sprints · Esboço e beats fantasmas · Marcadores · Enter e tipografia · Editor de roteiro · Foco no diálogo · Mover parágrafo ou cena · Inserir de um modelo · Ortografia sob demanda · Contagens no explorador |
 | Revisão | Lente de revisão · Versões · Darlings |
 | Acompanhamento | Versão a cada estágio · Bloco de obras e onde você parou |
 | Publicação | Checagem de publicação · Exportar · Envios |
@@ -47,11 +47,14 @@ universo é uma lista (Desligado, Por livro, Universo) em vez de um interruptor,
 é o interruptor.
 
 Quando você atualiza de uma versão anterior, todos os recursos continuam ligados, então
-nada some até você escolher. Uma instalação nova começa no ponto de partida Escritor (abaixo).
+nada some até você escolher. A única exceção é o **Editor de roteiro**, novo na 1.2: ele vem
+**desligado**, a não ser que todos os outros interruptores estejam ligados (como em **Tudo**),
+e então vem ligado, para o conjunto continuar valendo como Tudo. Uma instalação nova começa no
+ponto de partida Escritor (abaixo).
 
 ## Pontos de partida
 
-Você não precisa acertar dezenove interruptores um a um. Acima deles, **Ponto de partida**
+Você não precisa acertar vinte interruptores um a um. Acima deles, **Ponto de partida**
 tem três botões: **Essencial**, **Escritor** e **Tudo**. Cada um é uma lista de recursos. Uma
 predefinição é só um ponto de partida, nunca um modo: o Escrita não guarda qual botão você
 apertou, e depois dela você pode mudar qualquer interruptor.
@@ -60,7 +63,7 @@ apertou, e depois dela você pode mudar qualquer interruptor.
 |---|---|
 | Essencial (9) | Metas e sprints · Esboço e beats fantasmas · Marcadores · Enter e tipografia · Lente de revisão · Darlings · Versões · Exportar · Bloco de obras e onde você parou |
 | Escritor (16) | Tudo do Essencial, mais Foco no diálogo · Mover parágrafo ou cena · Inserir de um modelo · Contagens no explorador · Versão a cada estágio · Checagem de publicação · Envios |
-| Tudo (18) | Todos os interruptores: acrescenta ao Escritor a Ortografia sob demanda e as Threads |
+| Tudo (19) | Todos os interruptores menos o universo: acrescenta ao Escritor a Ortografia sob demanda, as Threads e o Editor de roteiro |
 
 Uma predefinição desliga todo interruptor que não está na lista dela. Apertar um botão ainda
 não muda nada. Abre uma etapa de confirmação, **Aplicar "Escritor"?**, com duas linhas:
@@ -78,14 +81,14 @@ calculada toda vez que a página é desenhada, a partir dos interruptores.
 **Uma predefinição nunca muda o universo.** A linha do Universo compartilhado é um modo
 (Desligado, Por livro, Universo), e um modo move pastas, então é sempre escolha sua, na seção
 Universo. A predefinição deixa o modo como está, nunca o lista na confirmação e o ignora ao
-calcular a etiqueta. Por isso Tudo diz "18" aqui: o universo é o décimo nono interruptor, e a
-preparação o conta como "19 de 19" porque o oferece como escolha separada (**Mundo
+calcular a etiqueta. Por isso Tudo diz "19" aqui: o universo é o vigésimo interruptor, e a
+preparação o conta como "20 de 20" porque o oferece como escolha separada (**Mundo
 compartilhado**). Ao escolher Tudo, uma lembrança abaixo das listas diz que o modo do universo
 continua o que está.
 
 **Instalação nova e atualização.** Uma instalação nova começa no Escritor. Uma instalação que
 já tem configurações do Escrita mantém cada interruptor como estava: atualizar não desliga
-nada. Uma instalação 0.9 com todos os interruptores ligados aparece como **Tudo**. Uma com os
+nada. Uma instalação 0.9 com todos os interruptores ligados aparece como **Tudo**, e ganha o Editor de roteiro ligado junto. Uma com os
 padrões antigos aparece como **Personalizado**, porque a ortografia sob demanda vem desligada
 por padrão.
 
@@ -145,9 +148,10 @@ as palavras que o Escrita escreve no seu cofre.
 | Interruptor | Desligado significa |
 |---|---|
 | Metas e sprints | Sem contagem de palavras escritas, meta diária, janela de progresso, sprints nem barra de status. As configurações dele se escondem. |
-| Esboço e beats fantasmas | Sem painel do esboço, sem beats fantasmas no editor, sem comandos de beat, sem **Ler o livro**. Também somem o comando **Novo livro**, a escolha Livro em **Nova obra…**, o botão **+ Novo livro** do bloco de obras e as linhas Pasta dos livros e Modelo da nota do livro. |
+| Esboço e beats fantasmas | Sem painel do esboço, sem beats fantasmas no editor, sem comandos de beat, sem **Ler o livro** nem **Ler esta nota**. Também somem o comando **Novo livro**, a escolha Livro em **Nova obra…**, o botão **+ Novo livro** do bloco de obras e as linhas Pasta dos livros e Modelo da nota do livro. |
 | Marcadores | Sem pílulas de marcador, pontos no explorador, painel nem selo no esboço. (A checagem de publicação continua parando num marcador esquecido numa nota, enquanto a Publicação estiver ligada.) |
 | Enter e tipografia | O Enter não faz quebras de cena nem capítulos; sem travessões e aspas automáticos. |
+| Editor de roteiro | As notas de roteiro voltam a ser texto Fountain puro: sem colunas, sem os passos de Tab e Enter, sem maiúsculas ao digitar, sem sugestões, sem marcas forçadas, e os dois comandos de elemento somem. Exportar um roteiro continua funcionando. |
 | Foco no diálogo | O comando e o esmaecimento somem. |
 | Mover parágrafo ou cena | Os quatro comandos de mover somem. |
 | Inserir de um modelo | O comando some. (O universo continua usando a pasta de modelos.) |
@@ -260,6 +264,32 @@ Tem nove linhas: começos de cabeçalho de cena, finais de transição, tamanho 
 cena, os dois rótulos de quebra de página, a linha de crédito e duas propriedades da folha de
 rosto. O autor e o contato da folha de rosto são as linhas de Exportação que já existem. Tudo está
 em [Roteiros](screenplays.md#configurações).
+
+## Configurações acrescentadas na 1.2
+
+O **Editor de roteiro** é um interruptor novo no grupo Escrita, e com ele vem uma seção nova
+depois do Editor. Ela aparece enquanto o interruptor está ligado. O interruptor vem ligado só em
+**Tudo**.
+
+| Configuração | Recurso | O que faz |
+|---|---|---|
+| Fonte | Editor de roteiro | **Courier** (Courier Prime, se estiver instalada) ou **Fonte do tema**. Courier. |
+| Horas do dia | Editor de roteiro | As palavras oferecidas depois de ` - ` num cabeçalho de cena. `DAY, NIGHT, CONTINUOUS, LATER` (`DIA, NOITE, CONTÍNUO, MAIS TARDE` numa instalação em português). |
+| Mostrar o ritmo | Lente de revisão | Mostra a seção Ritmo no painel da lente. Ligada. |
+
+### O editor de roteiro
+
+O editor monta uma nota de roteiro na Visualização ao vivo e dá a Tab e Enter os significados de
+roteiro. Ele age só numa nota cuja forma é `screenplay` (`roteiro`). Como escrever com ele está
+em [Roteiros](screenplays.md#escrever-no-editor), e a seção Ritmo em
+[Revisão](revision.md#ritmo).
+
+Ele não precisa de nenhum outro interruptor. Com o universo ligado, também oferece os nomes do
+universo para um nome de personagem. O **fluxo do Enter** da prosa e o **foco no diálogo** não
+fazem nada numa nota de roteiro, com este interruptor ligado ou não.
+
+**Ler esta nota** é um segundo comando de leitura, ao lado de **Ler o livro**. Pertence ao mesmo
+interruptor, Esboço e beats fantasmas. Veja [Escrita](writing.md#ler-esta-nota).
 
 ## Linhas de pasta e como os campos salvam
 

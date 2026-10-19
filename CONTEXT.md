@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (1.1.0 at the time of writing). The author's
+Current version: see `manifest.json` (1.2.0 at the time of writing). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down
@@ -58,8 +58,8 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
 ## How the code is shaped
 
 - `src/main.ts` builds the services, then each module (`src/<module>/index.ts`,
-  a `FeatureModule`). Modules: goals, outline, placeholders, darlings, editor, lens,
-  publish, export, submissions, explorer, snapshots, desk, universe. **They are switchable features** (19
+  a `FeatureModule`). Modules: goals, outline, placeholders, darlings, editor, screenplay, lens,
+  publish, export, submissions, explorer, snapshots, desk, universe. **They are switchable features** (20
   ids in `core/features.ts`; the editor is split into typing, dialogue focus, moving
   blocks, templates and spellcheck): the `FeatureRegistry` loads and unloads each from the
   writer's switches at runtime, and a module registers everything through its
@@ -111,7 +111,7 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   (parent, base name, `.md`, folder cleaning, joins, "is inside") go through `core/paths.ts`;
   folder and note suggests are in `src/ui/suggest.ts`.
 - **1.1 additions.** A screenplay is a note whose `form` is `screenplay`, not a module and not a
-  switch (the feature count stays 19). The form rule moved from the universe to `core/form.ts`
+  switch (the feature count stayed 19 in 1.1; 1.2 added a switch for the editor help). The form rule moved from the universe to `core/form.ts`
   (`FORM_KINDS` now has seven values; the settings keys keep their names, and the three rows are
   a "Forms" group after Books, always shown). Pure core: `core/fountain.ts` (the `Script` model
   and `parseFountain`), `core/screenplay-pages.ts` (`paginate`), `core/pdf.ts` and
@@ -121,6 +121,19 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   and `export/screenplay.ts`; its "Screenplays" settings group holds the words. Character cues
   count as mentions in "Appears in". Improvement 46: `titlePageOf`, `bylineOf` and `minHeadingOf`
   in `core/export-pipeline.ts`. Details: ARCHITECTURE.md, "Form" and "Screenplays".
+- **1.2 additions.** The screenplay editor is a module and a switch (`screenplay`, the 20th id, on in
+  the Everything preset only; a missing key reads as off, `OFF_WHEN_MISSING` in `core/features.ts`,
+  settled on load by `settleNewSwitches`). `src/screenplay/` has `layout.ts` (line classes in Live
+  Preview, built on `EditorSet`), `keys.ts` (Tab, Enter, caps, the mode of a line), `suggest.ts`
+  (one `EditorSuggest`, registered with `ctx.suggest`) and `settings-ui.ts`. Pure core:
+  `core/fountain-doc.ts` (the parse cached per document version), `fountainLines` in
+  `core/fountain.ts`, `core/screenplay-keys.ts` (`decideKey`) and `core/screenplay-suggest.ts`.
+  `src/ui/editor-glue.ts` (`EditorSet`, `fileOfState`, `isLivePreview`, `cmOf`) and
+  `src/ui/reveal-on-touch.ts` are the shared editor plumbing (improvement 38). `NoteService.flush(file)`
+  saves a file's views before a write that reads the disk. The reader's source is a book, a
+  collection or a note (`readerSource`; "Read this note"). The lens keeps each sentence's length
+  (`sentenceWords`, `sentencePara`) for the Rhythm section. Details: ARCHITECTURE.md, "The screenplay
+  editor" and "Editor glue".
 - **Markdown questions** (frontmatter, code, comments, what a line is) go through
   `segment(text)` / `segmentDoc(doc)` in `core/markdown.ts`. Line predicates live next
   to `isSceneBreakLine` in `core/markers.ts`.
@@ -250,6 +263,11 @@ and what upkeep it asks of the writer.
   `core/settings-schema.ts` has one row per setting, and the defaults, the language sets, `SETTING_FEATURES`
   and `normalizeSettings` come from it. A new setting is one row plus its field in the interface; core imports
   no module folder. Plan and results in `docs/PLAN-1.1.1.md`.
+- **1.2 (shipped), writing a script and reading a story**: the screenplay editor (SP 2: Live
+  Preview layout, Tab and Enter, caps, forced marks, suggestions, two commands for phones), "Read
+  this note" (SF 15), Rhythm in the lens panel (SF 16), and a fix for typing lost when a new tracked
+  note got its draft status. Improvements 38 (editor glue) and 52 (the reader rebuilds when the cache
+  is ready), and the first slice of 47. Plan and results in `docs/PLAN-1.2.md`.
 - **Next**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
 
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and
@@ -267,7 +285,7 @@ segmenter follows them, pinned in `tests/markdown-consumers.test.ts`. 0.9 adds: 
 (`outline/reader-view.ts`) has no DOM test, but since 1.1 it has e2e checks (`tests/e2e/specs/read-book.spec.ts`)
 and measured timings on a 31-chapter book (G0d: first text in 8 to 18 ms, longest task 23 to 28 ms,
 accepted at 30 ms; PLAN-1.1, Wave 2). Its startup race (a `compile: false` chapter shown before
-the metadata cache is ready) is an IMPROVEMENTS candidate. Its decisions are pure, in `outline/reader-model.ts` and
+the metadata cache is ready) was fixed in 1.2 (improvement 52). Its decisions are pure, in `outline/reader-model.ts` and
 `reader-plan.ts`, whose default heading is the core preset's. The EPUB
 CI job (EPUBCheck) runs on every pull request. The unlinked rows read the note's
 live text, not the mentions index's offsets, which lag about 4 s behind edits.

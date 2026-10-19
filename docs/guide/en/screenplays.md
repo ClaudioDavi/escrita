@@ -2,11 +2,12 @@
 
 This page covers writing a screenplay in a note and sending it out: how a note becomes a
 screenplay, how to write the script in plain Fountain, exporting it as a PDF or a Fountain
-file, the title page, the page breaks, and the settings. It is new in 1.1.0.
+file, the title page, the page breaks, and the settings. Screenplays are new in 1.1.0, and the
+editor that lays the script out as you type is new in 1.2.0.
 
-Escrita does not lay the script out in the editor yet. You write Fountain as plain text, in a
-note like any other, and the layout happens when you export. Planning and revising work as
-they do for a short story.
+You write Fountain as plain text, in a note like any other. In Live Preview the screenplay
+editor shows it laid out as on the page, with Tab and Enter as in a screenwriting program. The
+PDF is made when you export. Planning and revising work as they do for a short story.
 
 ![Exporting a screenplay, with captions in Portuguese: the script is plain Fountain in a note, the export window offers PDF or Fountain on US Letter or A4, the preview shows the title page and a speech breaking across pages with (MAIS) and (CONT.), and the PDF opens in Obsidian.](../../images/screenplay-export.gif)
 
@@ -14,10 +15,12 @@ The same as a video: [screenplay-export.mp4](../../images/screenplay-export.mp4)
 
 Other pages: [Publishing](publishing.md), [Writing](writing.md),
 [Features and settings](features-and-settings.md) and [The world](the-world.md). Export has its
-own switch in Features › Publishing, and everything here needs it on.
+own switch in Features › Publishing, and the export parts of this page need it on. The editor
+has its own switch too, in Features › Writing.
 
 - [How a note becomes a screenplay](#how-a-note-becomes-a-screenplay)
 - [Write the script](#write-the-script)
+- [Write in the editor](#write-in-the-editor)
 - [Export a screenplay](#export-a-screenplay)
 - [The title page](#the-title-page)
 - [How the pages break](#how-the-pages-break)
@@ -122,6 +125,104 @@ The outline shows the beat, a placeholder is still a placeholder (and the export
 the way it does for a short story), and the thread shows in the threads panel. **None of them
 ever prints**, in the PDF or in the Fountain file. Your other `%% … %%` comments are left out of
 the PDF. In the Fountain file they are left out too, unless you tick **Keep notes**.
+
+## Write in the editor
+
+![A scene typed in the screenplay editor: Tab and Enter move from a scene heading to action, a cue and its dialogue, a character name is picked from the suggestions, and the script is laid out in columns as on the page.](../../images/screenplay-editor.gif)
+
+The screenplay editor works in a note whose form is `screenplay`, and only there. In any other
+note nothing changes. It has its own switch, **Screenplay editor**, in Features › Writing. The
+switch is on in the **Everything** starting point and off in the others, so turn it on by hand
+if you want it. See [Features and settings](features-and-settings.md#the-screenplay-editor).
+
+### The layout
+
+In **Live Preview** the script is laid out in columns, as on the page, in Courier:
+
+- the scene heading is bold, at the left;
+- action runs the full width;
+- the character cue sits in the middle, the parenthetical a little to its left, and the
+  dialogue in a narrower column below them;
+- a transition goes to the right;
+- centered text is centered.
+
+The text stays exactly as you typed it. `#` is still a `#` and `---` is still `---`, only drawn
+the way a script draws them. An underline written as `_text_` is drawn underlined. **Source
+mode** stays plain: no layout. Reading view is unchanged too, and the export preview shows the
+pages.
+
+### Tab and Enter
+
+Both keys follow Final Draft, Fade In and Highland. Each step is one change, so one **undo**
+takes it back. Where this table has no answer, the key does what it always does in Obsidian.
+
+| Key | Where | What it does |
+|---|---|---|
+| Enter | At the end of a character cue or a parenthetical | Goes to the next line, ready for dialogue. |
+| Enter | At the end of dialogue | Leaves a blank line and starts the next character cue. |
+| Enter | At the end of a scene heading or action | Leaves a blank line and stays in action. |
+| Enter | At the end of a transition | Leaves a blank line and starts a scene heading. |
+| Enter | On an empty line you opened as a cue, a scene heading or a transition | Goes back to action. |
+| Tab | On an empty line | Cycles the element: action, character, transition, scene heading, and round again. |
+| Tab | At the end of a character cue | Opens a parenthetical, `()`, with the cursor between the brackets. |
+| Shift-Tab | On an empty line | Cycles the other way. |
+
+Enter, Tab and Shift-Tab act only at the end of a line (or on an empty one). In the middle of
+a line they do what Obsidian does.
+
+When you press Tab on an empty line, the name of the element shows faintly there: **Character**,
+**Transition**, **Scene heading** or **Action**. It is not text. It goes away when you type.
+
+**Enter flow and dialogue focus are off in a screenplay.** The prose Enter flow (scene breaks,
+chapters) would break Fountain's blank-line rules, so it does nothing in a screenplay note,
+whether or not the screenplay editor is on. Dialogue focus dims the wrong lines in a script, so
+it stays off there too.
+
+### Capitals and forced marks
+
+A character cue, a scene heading and a transition are written in capitals. While the line is
+one of those, the letters you **type** come out in capitals, so you never press Caps Lock.
+Text already there is never changed. A parenthetical is left as you type it.
+
+Sometimes Fountain would not read your line as the element you chose. A cue with a lowercase
+letter, a scene heading with a prefix that is not on your list, or a transition that ends in
+none of your transition endings. When you **leave the line**, Escrita adds Fountain's forced
+mark in front: `@` for a cue, a period for a scene heading, `>` for a transition. It never adds
+one while you type, and never when the line already reads right. That is the one change the
+editor makes without a key press of yours, and it is the one you would have typed.
+
+### Suggestions
+
+While you type, a list offers what the script already knows. Press Enter or click to pick one.
+
+- **On a character cue**: the cues already in the script, most spoken first, with how many
+  speeches each has. With the universe on, the names of its characters follow, marked
+  "universe". (Places and objects of the universe may show too.)
+- **After a scene prefix** such as `INT. `: the locations already used in the script's scene
+  headings, most used first.
+- **After ` - ` in a scene heading**: the times of day, from the **Times of day** setting
+  (`DAY, NIGHT, CONTINUOUS, LATER`, and `DIA, NOITE, CONTÍNUO, MAIS TARDE` in a Portuguese
+  install).
+
+The suggestions match from the start of what you typed, ignoring case and accents.
+
+### On a phone
+
+A phone has no Tab key, so there are two commands for the mobile toolbar: **Next screenplay
+element** (Tab) and **Previous screenplay element** (Shift-Tab). They are offered only in a
+screenplay note, and they have no default hotkey. Enter works as above.
+
+### The settings
+
+In Settings › Escrita, the **Screenplay editor** section (it shows while the switch is on):
+
+| Setting | What it does | Default |
+|---|---|---|
+| Font | **Courier** (Courier Prime if you have it installed) or **Theme font**, the editor's own. | Courier |
+| Times of day | The words offered after ` - ` in a scene heading. Separate them with commas or new lines. | `DAY, NIGHT, CONTINUOUS, LATER` (`DIA, NOITE, CONTÍNUO, MAIS TARDE` in Portuguese) |
+
+The scene heading prefixes and transition endings in the Export section drive the editor too:
+they decide what the layout and the keys call a heading and a transition.
 
 ## Export a screenplay
 
@@ -292,3 +393,7 @@ The form rows are in their own group, **Forms**, right after Books:
 | The title page has no credit | The note has no author | Set the author property or **Author name** |
 | A speech moved whole to the next page | It has no sentence end where it could split | Split it yourself with a new cue, or end a sentence earlier |
 | The **Screenplays** group is missing | Export is off | Turn on Export in Features |
+| The script is plain text, with no columns | The screenplay editor is off, the note is not a screenplay, or you are in Source mode | Turn on **Screenplay editor** in Features, check the form, and use Live Preview |
+| Tab does nothing | The note is not a screenplay, the cursor is in the middle of a line, or the switch is off | Move to the end of the line, or run **Next screenplay element** |
+| A `@`, a period or a `>` appeared at the start of a line | Fountain would have read the line as another element, so Escrita added the forced mark when you left it | Keep it, or undo it and change the line |
+| The suggestions don't show | The switch is off, or the line is not a cue, a heading with a prefix, or after ` - ` | Type the cue in capitals, or after the prefix |
