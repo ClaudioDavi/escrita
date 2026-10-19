@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  blockForLine, dropPositions, movePositions, readerChapters, readerHeadingFormat, readingPoint, restoreTarget,
-  type SectionBox,
+  blockForLine, dropPositions, movePositions, readerChapters, readerHeadingFormat, readerSource, readerStatePath,
+  readingPoint, restoreTarget, sameSource, type SectionBox,
 } from "../src/outline/reader-plan";
 import type { ChapterRef } from "../src/core/book-source";
 import type { ReadPosition } from "../src/data";
@@ -105,5 +105,63 @@ describe("following the vault", () => {
     expect(dropPositions(b, "Outro.md")).toBe(true);
     expect(Object.keys(b)).toEqual(["Livro.md"]);
     expect(dropPositions(b, "nada")).toBe(false);
+  });
+});
+
+describe("readerSource (SF 15, Q13-Q15)", () => {
+  const fmt = "Capítulo {n} — {title}";
+  const chapters = [ref("L/C/01 A.md", 1, "A"), ref("L/C/02 B.md", 2, "B", false)];
+
+  it("a book keeps its title and its included chapters with the export's headings", () => {
+    const s = readerSource("L.md", { book: { title: "Livro", chapters }, collection: null, headingFormat: fmt });
+    expect(s).toEqual({ kind: "book", title: "Livro", sections: [{ path: "L/C/01 A.md", heading: "Capítulo 1 — A" }] });
+  });
+  it("a book wins over a collection, as the export decides", () => {
+    const s = readerSource("L.md", { book: { title: "Livro", chapters }, collection: { stories: ["x.md"], missing: [] }, headingFormat: fmt });
+    expect(s.kind).toBe("book");
+  });
+  it("a collection lists its contos in order, each headed by its title alone, skipping the missing", () => {
+    const s = readerSource("Contos/Coletânea.md", {
+      book: null, collection: { stories: ["Contos/A visita.md", "Contos/1984.md"], missing: ["Fantasma"] }, headingFormat: fmt,
+    });
+    expect(s.kind).toBe("collection");
+    expect(s.title).toBe("Coletânea");
+    expect(s.sections).toEqual([
+      { path: "Contos/A visita.md", heading: "A visita" },
+      { path: "Contos/1984.md", heading: "1984" },
+    ]);
+  });
+  it("an empty collection has no sections", () => {
+    const s = readerSource("C.md", { book: null, collection: { stories: [], missing: [] }, headingFormat: fmt });
+    expect(s).toEqual({ kind: "collection", title: "C", sections: [] });
+  });
+  it("a note is one section with no heading, titled by its name", () => {
+    const s = readerSource("Contos/A visita.md", { book: null, collection: null, headingFormat: fmt });
+    expect(s).toEqual({ kind: "note", title: "A visita", sections: [{ path: "Contos/A visita.md", heading: "" }] });
+  });
+});
+
+describe("sameSource", () => {
+  const a = readerSource("L.md", { book: { title: "L", chapters: [ref("c/1.md", 1, "A")] }, collection: null, headingFormat: "{title}" });
+  it("is true for the same list, false when a chapter leaves or the title changes", () => {
+    const b = readerSource("L.md", { book: { title: "L", chapters: [ref("c/1.md", 1, "A")] }, collection: null, headingFormat: "{title}" });
+    expect(sameSource(a, b)).toBe(true);
+    const left = readerSource("L.md", { book: { title: "L", chapters: [ref("c/1.md", 1, "A", false)] }, collection: null, headingFormat: "{title}" });
+    expect(sameSource(a, left)).toBe(false);
+    const renamed = readerSource("L.md", { book: { title: "M", chapters: [ref("c/1.md", 1, "A")] }, collection: null, headingFormat: "{title}" });
+    expect(sameSource(a, renamed)).toBe(false);
+  });
+});
+
+describe("readerStatePath (Q15)", () => {
+  it("reads { source } and an old { book } as the same", () => {
+    expect(readerStatePath({ source: "N.md" })).toBe("N.md");
+    expect(readerStatePath({ book: "Livro.md" })).toBe("Livro.md");
+    expect(readerStatePath({ source: "N.md", book: "Livro.md" })).toBe("N.md");
+  });
+  it("is null when it names nothing", () => {
+    expect(readerStatePath(null)).toBeNull();
+    expect(readerStatePath({})).toBeNull();
+    expect(readerStatePath({ source: "", book: 3 })).toBeNull();
   });
 });

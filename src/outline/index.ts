@@ -125,6 +125,16 @@ export class OutlineModule extends FeatureModule {
       },
     });
     ctx.command({
+      id: "read-note",
+      name: t("outline.command.readNote"),
+      checkCallback: (checking) => {
+        const file = plugin.app.workspace.getActiveFile();
+        if (!this.readableNote(file)) return false;
+        if (!checking) void this.openReaderFor(file.path);
+        return true;
+      },
+    });
+    ctx.command({
       id: "add-beat",
       name: t("outline.command.addBeat"),
       editorCheckCallback: (checking, editor, ectx) => {
@@ -202,13 +212,27 @@ export class OutlineModule extends FeatureModule {
 
   /** "Read the book": the reader view in the main area, on this book (a reader already open on it is reused). */
   async openReader(book: Book): Promise<void> {
+    await this.openReaderFor(book.note.path);
+  }
+
+  /**
+   * The reader on a source path (1.2, SF 15): a book's note, a collection's note or a single note.
+   * A reader already open on it is reused (board 33d), else a new tab.
+   */
+  async openReaderFor(path: string): Promise<void> {
     const { workspace } = this.plugin.app;
-    const state = { type: READER_VIEW, active: true, state: { book: book.note.path } };
-    // board 33d: back to the tab already reading this book, else a new tab
-    const open = workspace.getLeavesOfType(READER_VIEW).find((l) => (l.view.getState() as { book?: unknown }).book === book.note.path);
+    const state = { type: READER_VIEW, active: true, state: { source: path } };
+    const open = workspace.getLeavesOfType(READER_VIEW).find((l) => (l.view.getState() as { source?: unknown }).source === path);
     const leaf = open ?? workspace.getLeaf("tab");
     await leaf.setViewState(state);
     await workspace.revealLeaf(leaf);
+  }
+
+  /** Whether "Read this note" is offered on this file: a note outside a book that is prose (not a snapshot, export, submission or screenplay). */
+  private readableNote(file: TFile | null): file is TFile {
+    if (!file || file.extension !== "md") return false;
+    const place = this.plugin.books.classify(file);
+    return !place.book && !place.snapshot && !place.export && !place.submission && place.form !== "screenplay";
   }
 
   // ---------------------------------------------------------------- beats in the editor

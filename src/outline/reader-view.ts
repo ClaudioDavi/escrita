@@ -1,14 +1,14 @@
 import { Component, ItemView, MarkdownRenderer, Notice, TFile, debounce, setIcon, setTooltip, type ViewStateResult, type WorkspaceLeaf } from "obsidian";
 import type EscritaPlugin from "../main";
-import { bookSource, type Book } from "../core/books";
+import { bookSource, collectionAt, type Book } from "../core/books";
 import { movedPath } from "../core/path-keys";
 import { VIEW_TYPES } from "../core/view-types";
 import type { BookSource } from "../core/book-source";
 import { lang, plural, t } from "../i18n";
 import { anchorAfterEdit, readerBlocks, type ReaderBlock } from "./reader-model";
 import {
-  blockForLine, readerChapters, readerHeadingFormat, readingPoint, restoreTarget,
-  type ReaderChapter, type SectionBox,
+  blockForLine, readerHeadingFormat, readerSource, readerStatePath, readingPoint, restoreTarget, sameSource,
+  type ReaderChapter, type ReaderSource, type SectionBox,
 } from "./reader-plan";
 
 export const READER_VIEW = VIEW_TYPES.reader;
@@ -38,9 +38,15 @@ interface ChapterEls {
  * reader sees it (markers hidden as in the export), in the main area. Read-only. Chapters
  * render as they scroll into view; a click on a paragraph opens its chapter at that line;
  * the reading position is saved per book and restored on open.
+ *
+ * 1.2 (SF 15, PLAN-1.2 Q13-Q15): the same view reads a collection's contos or one note. The
+ * source is a path (a book's note, a collection's note or the note itself), which is also
+ * the position key.
  */
 export class ReaderView extends ItemView {
-  private bookPath: string | null = null;
+  private sourcePath: string | null = null;
+  /** what the path resolved to at the last build; null when it names nothing in the vault */
+  private src: ReaderSource | null = null;
   private book: Book | null = null;
   private chapters: ChapterEls[] = [];
   private observer: IntersectionObserver | null = null;
@@ -51,6 +57,8 @@ export class ReaderView extends ItemView {
 
   private saveSoon = debounce(() => this.savePosition(), SAVE_DELAY, true);
   private rebuildSoon = debounce(() => { void this.build(); }, 400, true);
+  /** the vault's list of chapters may have changed (the metadata cache settled): rebuild only if it did */
+  private resolvedSoon = debounce(() => { void this.rebuildIfChanged(); }, 400, true);
   /** chapters modified since the last refresh (paths), re-rendered together after a quiet time */
   private dirty = new Set<string>();
   private refreshSoon = debounce(() => { void this.refreshDirty(); }, 800, true);
@@ -61,18 +69,19 @@ export class ReaderView extends ItemView {
 
   getViewType(): string { return READER_VIEW; }
   getDisplayText(): string {
-    return this.book ? t("outline.reader.tab", { book: this.book.title }) : t("outline.reader.title");
+    return this.src ? t("outline.reader.tab", { book: this.src.title }) : t("outline.reader.title");
   }
   getIcon(): string { return "book-open"; }
 
   getState(): Record<string, unknown> {
-    return { ...super.getState(), book: this.bookPath };
+    return { ...super.getState(), source: this.sourcePath };
   }
 
   async setState(state: unknown, result: ViewStateResult): Promise<void> {
-    const s = state as { book?: unknown } | null;
-    if (s && typeof s.book === "string" && s.book !== this.bookPath) {
-      this.bookPath = s.book;
+    // an old { book } state is the same thing as { source } (Q15)
+    const path = readerStatePath(state);
+    if (path !== null && path !== this.sourcePath) {
+      this.sourcePath = path;
       await super.setState(state, result);
       await this.build();
       return;
@@ -85,18 +94,23 @@ export class ReaderView extends ItemView {
     this.registerDomEvent(this.contentEl, "scroll", () => { if (!this.restoring) this.saveSoon(); });
     this.registerDomEvent(this.contentEl, "click", (e) => this.onClick(e));
     // The chapter list follows the vault: a new, renamed or deleted file in the book's folder rebuilds it.
+    // A collection or a note has no folder: it is touched by its own file and the contos it lists.
     const touched = (f: { path: string }) => {
       const folder = this.book?.folder.path;
-      if (folder && f.path.startsWith(folder + "/")) this.rebuildSoon();
+      if (folder) {
+        if (f.path.startsWith(folder + "/")) this.rebuildSoon();
+      } else if (this.src && (f.path === this.sourcePath || this.src.sections.some((s) => s.path === f.path))) {
+        this.rebuildSoon();
+      }
     };
     const { vault } = this.app;
     this.registerEvent(vault.on("create", touched));
     this.registerEvent(vault.on("delete", touched));
     this.registerEvent(vault.on("rename", (f, old) => {
       // the book itself moved (its note or a folder holding it): follow it, so the tab keeps reading it
-      const moved = this.bookPath === null ? null : movedPath(this.bookPath, old, f.path);
+      const moved = this.sourcePath === null ? null : movedPath(this.sourcePath, old, f.path);
       if (moved !== null) {
-        this.bookPath = moved;
+        this.sourcePath = moved;
         this.app.workspace.requestSaveLayout();
         this.rebuildSoon();
         return;
@@ -109,7 +123,16 @@ export class ReaderView extends ItemView {
       if (this.chapters.some((c) => c.chapter.path === f.path)) {
         this.dirty.add(f.path);
         this.refreshSoon();
+      } else if (this.chapters.length === 0 && f.path === this.sourcePath) {
+        this.rebuildSoon();   // an empty note that got its first words
       }
+    }));
+    // Improvement 52: what a chapter is (included or left out, a collection's links) comes from the
+    // metadata cache, which is not ready when the view opens at startup. When it settles, draw the list
+    // again if it changed; the reading place is kept. A collection's own list changing is the same case.
+    this.registerEvent(this.app.metadataCache.on("resolved", () => this.resolvedSoon()));
+    this.registerEvent(this.app.metadataCache.on("changed", (f) => {
+      if (this.src?.kind === "collection" && f.path === this.sourcePath) this.resolvedSoon();
     }));
     this.register(() => this.teardown());
     await this.build();
@@ -127,6 +150,33 @@ export class ReaderView extends ItemView {
     return bookSource(this.app, p.books, p.notes, () => p.settings);
   }
 
+  /** What the source path is now: a book, a collection or a note; null when it is none in the vault. */
+  private resolve(): { src: ReaderSource; book: Book | null } | null {
+    const path = this.sourcePath;
+    if (!path) return null;
+    const s = this.plugin.settings;
+    const headingFormat = readerHeadingFormat(s.chapterHeadingFormat, lang());
+    const unnumbered = s.unnumberedTitles;
+    const book = this.plugin.books.allBooks().find((b) => b.note.path === path) ?? null;
+    if (book) {
+      const chapters = this.source().chapters(book);
+      return { src: readerSource(path, { book: { title: book.title, chapters }, collection: null, headingFormat, unnumbered }), book };
+    }
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof TFile) || file.extension !== "md") return null;
+    const collection = collectionAt(this.app, file, () => s);
+    return { src: readerSource(path, { book: null, collection, headingFormat, unnumbered }), book: null };
+  }
+
+  /** The metadata cache settled: draw again only when the list or the title is not what is drawn. */
+  private async rebuildIfChanged(): Promise<void> {
+    const now = this.resolve();
+    if (!now || !this.src || sameSource(this.src, now.src)) return;
+    // the place in the text is saved first, and the rebuild restores it
+    this.savePosition();
+    await this.build();
+  }
+
   private teardown(): void {
     this.token++;
     this.observer?.disconnect();
@@ -135,6 +185,7 @@ export class ReaderView extends ItemView {
     this.chapters = [];
     this.saveSoon.cancel();
     this.rebuildSoon.cancel();
+    this.resolvedSoon.cancel();
     this.refreshSoon.cancel();
     this.dirty.clear();
   }
@@ -205,30 +256,48 @@ export class ReaderView extends ItemView {
     this.teardown();
     const el = this.contentEl;
     el.empty();
-    const book = this.bookPath ? this.plugin.books.allBooks().find((b) => b.note.path === this.bookPath) ?? null : null;
-    this.book = book;
-    if (!book) {
-      this.message(el, t("outline.reader.noBook"));
+    const now = this.resolve();
+    this.book = now?.book ?? null;
+    this.src = now?.src ?? null;
+    if (!now) {
+      this.message(el, t("outline.reader.noNote"));
       return;
     }
-    const source = this.source();
-    const s = this.plugin.settings;
-    const list = readerChapters(source.chapters(book), readerHeadingFormat(s.chapterHeadingFormat, lang()), s.unnumberedTitles);
+    const { src, book } = now;
+    const list = src.sections;
 
     const bar = el.createDiv({ cls: "escrita-reader-bar" });
-    bar.createDiv({ cls: "escrita-reader-book", text: book.title });
-    bar.createDiv({ cls: "escrita-reader-count", text: plural("outline.chapters", list.length) });
-    const outline = bar.createEl("button", { cls: "clickable-icon escrita-reader-tool", attr: { "aria-label": t("outline.reader.openOutline") } });
-    setIcon(outline, "list-tree");
-    setTooltip(outline, t("outline.reader.openOutline"));
-    outline.addEventListener("click", () => { void this.plugin.outline.openOutline(book.note.path); });
+    bar.createDiv({ cls: "escrita-reader-book", text: src.title });
+    if (src.kind === "book") bar.createDiv({ cls: "escrita-reader-count", text: plural("outline.chapters", list.length) });
+    else if (src.kind === "collection") bar.createDiv({ cls: "escrita-reader-count", text: plural("outline.reader.stories", list.length) });
+    else bar.createSpan({ cls: "escrita-reader-chip", text: t("outline.reader.readOnly") });
+    if (book) {
+      const outline = bar.createEl("button", { cls: "clickable-icon escrita-reader-tool", attr: { "aria-label": t("outline.reader.openOutline") } });
+      setIcon(outline, "list-tree");
+      setTooltip(outline, t("outline.reader.openOutline"));
+      outline.addEventListener("click", () => { void this.plugin.outline.openOutline(book.note.path); });
+    }
 
+    // a note with nothing to show says so; the text is read here, so the first draw does not read it twice
+    let firstBlocks: ReaderBlock[] | undefined;
+    if (src.kind === "note") {
+      firstBlocks = await this.blocksOf(src.sections[0].path).catch(() => undefined);
+      if (this.src !== src) return;
+      if (firstBlocks && firstBlocks.length === 0) {
+        this.message(el, t("outline.reader.emptyNote"));
+        return;
+      }
+    }
     if (list.length === 0) {
+      if (src.kind === "collection") {
+        this.message(el, t("outline.reader.emptyCollection"));
+        return;
+      }
       const box = el.createDiv({ cls: "escrita-reader-empty" });
       box.createDiv({ cls: "escrita-reader-empty-title", text: t("outline.reader.empty") });
       // board 33e: a book with no chapter at all offers the first one (one whose chapters are all left out doesn't:
       // creating at the top would renumber them)
-      if (source.chapters(book).length === 0) {
+      if (book && this.source().chapters(book).length === 0) {
         box.createDiv({ cls: "escrita-reader-empty-hint", text: t("outline.reader.emptyHint") });
         const b = box.createEl("button", { cls: "mod-cta", text: t("outline.reader.createFirst") });
         b.addEventListener("click", () => { void this.createFirst(book); });
@@ -246,10 +315,10 @@ export class ReaderView extends ItemView {
     });
 
     this.restoring = true;
-    const target = restoreTarget(this.plugin.data.readPosition[book.note.path], list);
+    const target = restoreTarget(this.plugin.data.readPosition[this.sourcePath ?? ""], list);
     try {
       const first = this.chapters[target.index];
-      await this.render(first);
+      await this.render(first, src.kind === "note" ? firstBlocks : undefined);
       if (token !== this.token) return;
       this.scrollTo(first, target.line);
       this.observe();
@@ -344,11 +413,13 @@ export class ReaderView extends ItemView {
   private scrollTo(c: ChapterEls, line: number): void {
     const i = blockForLine(c.blocks.map((b) => b.line), line);
     (i >= 0 ? c.blocks[i].el : c.section).scrollIntoView({ block: "start" });
+    // the sticky bar covers the top of the page: the block lands just below it, where savePosition reads it
+    if (i >= 0) this.contentEl.scrollTop -= this.contentEl.querySelector(".escrita-reader-bar")?.getBoundingClientRect().height ?? 0;
   }
 
   private savePosition(): void {
-    const book = this.book;
-    if (!book || this.restoring || this.chapters.length === 0) return;
+    const key = this.sourcePath;
+    if (!key || this.restoring || this.chapters.length === 0) return;
     const top = this.contentEl.getBoundingClientRect().top;
     // below the sticky bar
     const edge = top + (this.contentEl.querySelector(".escrita-reader-bar")?.getBoundingClientRect().height ?? 0) + 1;
@@ -360,9 +431,9 @@ export class ReaderView extends ItemView {
     }));
     const pos = readingPoint(boxes, edge);
     if (!pos) return;
-    const old = this.plugin.data.readPosition[book.note.path];
+    const old = this.plugin.data.readPosition[key];
     if (old && old.chapter === pos.chapter && old.line === pos.line) return;
-    this.plugin.data.readPosition[book.note.path] = pos;
+    this.plugin.data.readPosition[key] = pos;
     this.plugin.requestSave();
   }
 
