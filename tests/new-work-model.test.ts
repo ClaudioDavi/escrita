@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { classify, type ClassifySettings, type VaultTree } from "../src/core/classify";
 import { cloneDefaultStages, type StageMapping } from "../src/core/stages";
+import { formFor } from "../src/core/form";
+import { NEW_WORK_KINDS } from "../src/core/new-work";
 import { templateVars } from "../src/core/template";
 import { defaultsFor } from "../src/settings";
 import { newWorkStrings } from "../src/new-work/strings";
 import {
-  bookNoteText, cursorAfterBody, defaultFolderFor, fromTemplate, storyNoteText, targetPath, type BookTexts, type NewWorkSettings, type StoryTexts,
+  bookNoteText, cursorAfterBody, defaultFolderFor, fromTemplate, screenplayNoteText, storyNoteText, targetPath, type BookTexts, type NewWorkSettings, type StoryTexts,
 } from "../src/new-work/model";
 
 // A frontmatter reader as small as the notes need: `key: value`, a blank value is YAML null.
@@ -92,6 +94,39 @@ describe("storyNoteText", () => {
 
   it("falls back to the status property's default when it is blank", () => {
     expect(storyNoteText({ ...enSettings, statusProperty: " " }, storyTexts(en))).toContain("status: draft\n");
+  });
+});
+
+describe("screenplayNoteText", () => {
+  for (const [label, s, d] of cases) {
+    it(`is a draft with the screenplay form word and no target or deadline (${label})`, () => {
+      const text = screenplayNoteText(s as NewWorkSettings, storyTexts(d));
+      const fm = readFrontmatter(text);
+      expect(fm[s.formProperty]).toBe(s.formValues.screenplay);
+      expect(fm[s.targetProperty]).toBeUndefined();
+      expect(fm[s.deadlineProperty]).toBeUndefined();
+      expect(classifyNote("Roteiros/Curta.md", text, s).stage).toBe("draft");
+      expect(formFor("Roteiros/Curta.md", fm[s.formProperty], s)).toBe("screenplay");
+    });
+  }
+
+  it("uses the pt-BR word and ends with one beat and an empty line", () => {
+    const text = screenplayNoteText(ptSettings, storyTexts(pt));
+    expect(text).toContain("form: roteiro\n");
+    expect(text).toContain("status: rascunho\n");
+    expect(text.endsWith("---\n%% beat: O que acontece primeiro %%\n")).toBe(true);
+  });
+
+  it("writes the writer's draft word and form property", () => {
+    const text = screenplayNoteText(custom, storyTexts(en));
+    expect(text).toContain("estado: esboço\n");
+    expect(text).toContain("tipo: screenplay\n");
+  });
+});
+
+describe("the kinds list", () => {
+  it("is Short story, Screenplay, Book", () => {
+    expect([...NEW_WORK_KINDS]).toEqual(["story", "screenplay", "book"]);
   });
 });
 

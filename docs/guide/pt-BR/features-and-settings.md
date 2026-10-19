@@ -168,7 +168,7 @@ as palavras que o Escrita escreve no seu cofre.
 | Universo compartilhado | Sem painel, sem comandos do universo, sem "Aparece em", sem marcas de nomes nem nomes na lente. |
 | Threads | Sem comandos de thread, sinal na margem nem aba no painel. |
 
-Os contos nunca se desligam. **Nova obra…** e **Novo conto** são comandos do núcleo, como a preparação, então ficam mesmo com todos os recursos desligados.
+Os contos nunca se desligam. **Nova obra…**, **Novo conto** e **Novo roteiro** são comandos do núcleo, como a preparação, então ficam mesmo com todos os recursos desligados.
 
 Ao desligar um recurso, um aviso curto diz o que fica e onde.
 
@@ -240,12 +240,14 @@ desligado.
 
 ## Configurações da 1.0.4
 
-A seção **Novas obras** vem depois de Livros. Ela define onde **Nova obra…**, **Novo conto** e **Novo livro** criam notas, e qual modelo seu eles usam. Fica sempre à vista, exceto as duas linhas do livro, que se escondem quando Esboço e beats fantasmas está desligado. Nada aqui é sobrescrito: uma nota que já existe fica como está.
+A seção **Novas obras** vem depois de Livros. Ela define onde **Nova obra…**, **Novo conto**, **Novo roteiro** e **Novo livro** criam notas, e qual modelo seu eles usam. Fica sempre à vista, exceto as duas linhas do livro, que se escondem quando Esboço e beats fantasmas está desligado. Nada aqui é sobrescrito: uma nota que já existe fica como está.
 
 | Configuração | Precisa de | O que faz |
 |---|---|---|
 | Pasta dos contos | | Onde **Novo conto** cria a nota. Vazia por padrão: a pasta ao lado do livro aberto quando um capítulo ou a nota do livro está aberto, senão a pasta da nota aberta (a raiz do cofre sem nenhuma nota aberta). |
 | Modelo de conto | | Uma nota sua no lugar do modelo embutido. `{{title}}`, `{{date}}` e `{{time}}` são preenchidos, e um status de rascunho é acrescentado quando não há. Vazio por padrão (embutido). Se a nota não for encontrada, vale o modelo embutido, com um aviso. |
+| Pasta dos roteiros | | Onde **Novo roteiro** cria a nota. Vazia por padrão, com a mesma regra da linha acima. |
+| Modelo de roteiro | | Uma nota sua no lugar da nota de roteiro embutida (status de rascunho, a forma roteiro, um beat). `{{title}}`, `{{date}}` e `{{time}}` são preenchidos, e um status de rascunho é acrescentado quando não há. Vazio por padrão (embutido). |
 | Pasta dos livros | Esboço | Onde **Novo livro** cria a pasta do livro. Vazia por padrão, com a mesma regra da linha acima. |
 | Modelo da nota do livro | Esboço | Uma nota sua no lugar da nota de livro embutida. Vazio por padrão (embutido). O primeiro capítulo segue o modelo de capítulo. |
 

@@ -8,7 +8,7 @@ import { cleanFolder, joinPath, noMd } from "../core/paths";
 import { resolveTemplate } from "../core/records";
 import { templateVars } from "../core/template";
 import { t } from "../i18n";
-import { bookNoteText, cursorAfterBody, defaultFolderFor, fromTemplate, storyNoteText, targetPath } from "./model";
+import { bookNoteText, cursorAfterBody, defaultFolderFor, fromTemplate, screenplayNoteText, storyNoteText, targetPath } from "./model";
 import { NewWorkList, NewWorkModal } from "./modals";
 
 /**
@@ -18,7 +18,7 @@ import { NewWorkList, NewWorkModal } from "./modals";
  * (`core/new-work.ts`), so the desk and the outline view call it without importing this
  * folder. It registers only through `this.ctx`.
  *
- * "New work…" opens the list; "New short story" and "New book" (id `create-book`, moved from
+ * "New work…" opens the list; "New short story", "New screenplay" and "New book" (id `create-book`, moved from
  * the outline and offered only while it is on) skip it. A conto is one note; a book is a
  * folder with a book note and a first chapter. Both land in the prose, in the draft stage.
  */
@@ -37,6 +37,11 @@ export class NewWorkModule extends CoreModule implements NewWorkStarter {
       id: "new-short-story",
       name: t("new-work.command.newStory"),
       callback: () => this.start("story"),
+    });
+    this.ctx.command({
+      id: "new-screenplay",
+      name: t("new-work.command.newScreenplay"),
+      callback: () => this.start("screenplay"),
     });
     this.ctx.command({
       id: "create-book",
@@ -60,19 +65,19 @@ export class NewWorkModule extends CoreModule implements NewWorkStarter {
       kind,
       folder: this.defaultFolder(kind),
       template: this.templateSetting(kind),
-      submit: (title, folder) => (kind === "story" ? this.createStory(title, folder) : this.createBook(title, folder)),
+      submit: (title, folder) => (kind === "book" ? this.createBook(title, folder) : this.createPiece(kind, title, folder)),
     }).open();
   }
 
   offers(kind: NewWorkKind): boolean {
-    return kind === "story" || this.plugin.features.isOn("outline");
+    return kind !== "book" || this.plugin.features.isOn("outline");
   }
 
   // ---------------------------------------------------------------- where and with what
 
   private settingFolder(kind: NewWorkKind): string {
     const s = this.plugin.settings;
-    return cleanFolder(kind === "story" ? s.storiesFolder : s.booksFolder);
+    return cleanFolder(kind === "story" ? s.storiesFolder : kind === "screenplay" ? s.screenplaysFolder : s.booksFolder);
   }
 
   /** The setting's folder, else the active note's folder (the vault root is ""). */
@@ -84,7 +89,7 @@ export class NewWorkModule extends CoreModule implements NewWorkStarter {
 
   private templateSetting(kind: NewWorkKind): string {
     const s = this.plugin.settings;
-    return (kind === "story" ? s.storyTemplate : s.bookNoteTemplate).trim();
+    return (kind === "story" ? s.storyTemplate : kind === "screenplay" ? s.screenplayTemplate : s.bookNoteTemplate).trim();
   }
 
   /** The writer's template note's text; null (with a notice when a path was set) for the built-in one. */
@@ -105,7 +110,8 @@ export class NewWorkModule extends CoreModule implements NewWorkStarter {
 
   // ---------------------------------------------------------------- creating
 
-  private async createStory(title: string, folder: string): Promise<boolean> {
+  /** A conto or a screenplay: one note, the built-in text or the writer's template, opened at its end. */
+  private async createPiece(kind: "story" | "screenplay", title: string, folder: string): Promise<boolean> {
     const { app, settings, notes } = this.plugin;
     const path = this.pathFor(title, folder);
     if (path === null) return false;
@@ -114,9 +120,10 @@ export class NewWorkModule extends CoreModule implements NewWorkStarter {
       return false;
     }
     try {
-      const template = await this.readTemplate("story");
+      const template = await this.readTemplate(kind);
+      const builtIn = kind === "story" ? storyNoteText : screenplayNoteText;
       const text = template === null
-        ? storyNoteText(settings, { beat: t("new-work.text.beat") })
+        ? builtIn(settings, { beat: t("new-work.text.beat") })
         : fromTemplate(template, templateVars(title.trim(), new Date()), settings);
       // "fail": the check above found nothing, so a file that appeared since is not touched
       const file = (await notes.create(path, text, { exists: "fail" })).file;

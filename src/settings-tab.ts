@@ -319,21 +319,23 @@ export class EscritaSettingTab extends PluginSettingTab {
     });
   }
 
-  /** Where New short story and New book create, and the templates they use (1.0.4, Q5). The book rows follow the outline. */
+  /** Where New short story, New screenplay and New book create, and the templates they use (1.0.4, Q5). The book rows follow the outline. */
   private newWorksItems(ui: SettingsUi, bookRowsShown: boolean): SettingGroupItem[] {
     const s = this.plugin.settings;
     const app = ui.app;
-    const folder = (key: "storiesFolder" | "booksFolder", name: string, desc: string) => folderRow(ui, {
+    const folder = (key: "storiesFolder" | "screenplaysFolder" | "booksFolder", name: string, desc: string) => folderRow(ui, {
       name, desc, placeholder: "", get: () => s[key], set: (v) => { s[key] = v; },
       problemOf: () => null, suggest: (input) => { new FolderSuggest(app, input); },
     });
-    const template = (key: "storyTemplate" | "bookNoteTemplate", name: string, desc: string) => textRow(ui, {
+    const template = (key: "storyTemplate" | "screenplayTemplate" | "bookNoteTemplate", name: string, desc: string) => textRow(ui, {
       name, desc, placeholder: t("new-work.modal.builtIn"), key, get: () => s[key], set: (v) => { s[key] = v; },
       suggest: (input) => { new NoteSuggest(app, input); },
     });
     return [
       folder("storiesFolder", t("settings.storiesFolder"), t("settings.storiesFolder.desc")),
       template("storyTemplate", t("settings.storyTemplate"), t("settings.storyTemplate.desc")),
+      folder("screenplaysFolder", t("settings.screenplaysFolder"), t("settings.screenplaysFolder.desc")),
+      template("screenplayTemplate", t("settings.screenplayTemplate"), t("settings.screenplayTemplate.desc")),
       ...(bookRowsShown ? [
         folder("booksFolder", t("settings.booksFolder"), t("settings.booksFolder.desc")),
         template("bookNoteTemplate", t("settings.bookNoteTemplate"), t("settings.bookNoteTemplate.desc")),

@@ -180,6 +180,8 @@
   "keepUrlOnRename": true,
   "storiesFolder": "",
   "storyTemplate": "",
+  "screenplaysFolder": "",
+  "screenplayTemplate": "",
   "booksFolder": "",
   "bookNoteTemplate": ""
 }

@@ -12,7 +12,7 @@ export interface NewWorkSettings {
   statusProperty: string;
   stages: StageMapping;
   formProperty: string;
-  formValues: { shortStory: string };
+  formValues: { shortStory: string; screenplay: string };
   targetProperty: string;
   goalProperty: string;
   deadlineProperty: string;
@@ -55,6 +55,21 @@ export function storyNoteText(s: NewWorkSettings, texts: StoryTexts): string {
       [s.formProperty, yamlValue(s.formValues.shortStory)],
       [s.targetProperty, ""],
       [s.deadlineProperty, ""],
+    ]),
+    `%% beat: ${texts.beat} %%`,
+    "",
+  ].join("\n");
+}
+
+/**
+ * A screenplay (1.2): the draft word as status, the screenplay form, then one beat and an
+ * empty line for the cursor. No target or deadline: a script is not counted in words.
+ */
+export function screenplayNoteText(s: NewWorkSettings, texts: StoryTexts): string {
+  return [
+    ...frontmatter([
+      [statusKey(s), yamlValue(writtenWord(s.stages, "draft"))],
+      [s.formProperty, yamlValue(s.formValues.screenplay)],
     ]),
     `%% beat: ${texts.beat} %%`,
     "",

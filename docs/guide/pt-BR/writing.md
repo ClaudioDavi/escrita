@@ -11,11 +11,12 @@ página Recursos, então você pode desligar o que não usa.
 
 ## Começar uma obra
 
-Três comandos começam uma obra. Nenhum tem atalho padrão; associe os que quiser nas configurações
+Quatro comandos começam uma obra. Nenhum tem atalho padrão; associe os que quiser nas configurações
 do Obsidian.
 
-- **Nova obra…** abre uma lista curta: **Conto** e **Livro**. Sob cada nome, uma linha cinza diz
+- **Nova obra…** abre uma lista curta: **Conto**, **Roteiro** e **Livro**. Sob cada nome, uma linha cinza diz
   onde ele vai ficar. Escolha um.
+- **Novo roteiro** também pula a lista. Está sempre disponível. Veja [Roteiros](screenplays.md#começar-um-roteiro).
 - **Novo conto** pula a lista.
 - **Novo livro** também pula a lista. É o antigo **Criar um livro**, com o mesmo id de comando,
   então um atalho que você definiu continua funcionando. Só é oferecido enquanto o esboço está
@@ -83,6 +84,8 @@ No grupo **Novas obras**:
 
 - **Pasta dos contos.** Onde Novo conto cria a nota.
 - **Modelo de conto.**
+- **Pasta dos roteiros.** Onde Novo roteiro cria a nota.
+- **Modelo de roteiro.**
 - **Pasta dos livros.** Onde Novo livro cria a pasta do livro. Aparece enquanto o esboço está ligado.
 - **Modelo da nota do livro.** Aparece enquanto o esboço está ligado.
 

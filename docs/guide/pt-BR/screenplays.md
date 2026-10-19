@@ -18,6 +18,7 @@ Outras páginas: [Publicação](publishing.md), [Escrita](writing.md),
 o seu interruptor em Recursos › Publicação, e as partes de exportação desta página precisam dela
 ligada. O editor também tem o seu, em Recursos › Escrita.
 
+- [Começar um roteiro](#começar-um-roteiro)
 - [Como uma nota vira roteiro](#como-uma-nota-vira-roteiro)
 - [Escrever o roteiro](#escrever-o-roteiro)
 - [Escrever no editor](#escrever-no-editor)
@@ -26,6 +27,23 @@ ligada. O editor também tem o seu, em Recursos › Escrita.
 - [Como as páginas quebram](#como-as-páginas-quebram)
 - [Configurações](#configurações)
 - [Quando algo parece errado](#quando-algo-parece-errado)
+
+## Começar um roteiro
+
+Rode **Novo roteiro** na paleta de comandos (em inglês, **New screenplay**), ou escolha
+**Roteiro** na lista de **Nova obra…**. Não tem atalho, e funciona com todos os recursos
+desligados: o recurso do editor só acrescenta a ajuda do Tab e do Enter. Uma janela pequena pede
+o título e a pasta. A pasta começa na **Pasta dos roteiros** (Configurações › Escrita, **Novas
+obras**), senão na pasta da nota aberta.
+
+A nota criada traz o status de rascunho, a forma roteiro (então o Escrita a lê como roteiro de
+imediato, sem regra de pasta) e um beat, `%% beat: … %%`. Ela abre com o cursor na linha vazia
+sob o beat, então, com o editor de roteiro ligado, você aperta Tab e começa. Não tem meta nem
+prazo: um roteiro não é contado em palavras.
+
+Para usar uma nota sua, defina o **Modelo de roteiro** no mesmo grupo. `{{title}}`, `{{date}}` e
+`{{time}}` são preenchidos, e um status de rascunho é acrescentado quando não há; ponha a forma
+você mesmo nesse modelo.
 
 ## Como uma nota vira roteiro
 

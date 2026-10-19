@@ -32,25 +32,30 @@ const group = (groups: readonly RenderedGroup[], heading: string) => groups.find
 const names = (g: RenderedGroup | undefined) => g?.rows.map((r) => r.def.name ?? "") ?? [];
 
 describe("the New works rows", () => {
-  it("a group after Books, with the four rows; the writing day stays in Books", () => {
+  it("a group after Books, with the six rows; the writing day stays in Books", () => {
     const { open } = build();
     const headings = open.groups().map((g) => g.def.heading);
     expect(headings.indexOf(t("settings.newWorks"))).toBe(headings.indexOf(t("settings.forms")) + 1);   // Books, its writing day, Forms, then New works
     expect(names(group(open.groups(), t("settings.newWorks")))).toEqual([
-      t("settings.storiesFolder"), t("settings.storyTemplate"), t("settings.booksFolder"), t("settings.bookNoteTemplate"),
+      t("settings.storiesFolder"), t("settings.storyTemplate"), t("settings.screenplaysFolder"), t("settings.screenplayTemplate"),
+      t("settings.booksFolder"), t("settings.bookNoteTemplate"),
     ]);
     expect(names(group(open.groups(), t("settings.books")))).toContain(t("settings.dayEndsAt"));
   });
 
-  it("the book rows follow the outline; the story rows stay", () => {
+  it("the book rows follow the outline; the story and screenplay rows stay", () => {
     const { open } = build(["outline"]);
-    expect(names(group(open.groups(), t("settings.newWorks")))).toEqual([t("settings.storiesFolder"), t("settings.storyTemplate")]);
+    expect(names(group(open.groups(), t("settings.newWorks")))).toEqual([
+      t("settings.storiesFolder"), t("settings.storyTemplate"), t("settings.screenplaysFolder"), t("settings.screenplayTemplate"),
+    ]);
   });
 
   it("the template fields show the built-in label as a placeholder, the folders none", () => {
     const { open } = build();
     const input = (name: string) => (rowNamed(open.groups(), name)!.setting.components[0] as unknown as { inputEl: HTMLInputElement }).inputEl;
     expect(input(t("settings.storyTemplate")).placeholder).toBe(t("new-work.modal.builtIn"));
+    expect(input(t("settings.screenplayTemplate")).placeholder).toBe(t("new-work.modal.builtIn"));
+    expect(input(t("settings.screenplaysFolder")).placeholder).toBe("");
     expect(input(t("settings.bookNoteTemplate")).placeholder).toBe(t("new-work.modal.builtIn"));
     expect(input(t("settings.storiesFolder")).placeholder).toBe("");
   });

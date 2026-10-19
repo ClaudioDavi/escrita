@@ -18,6 +18,7 @@ Other pages: [Publishing](publishing.md), [Writing](writing.md),
 own switch in Features › Publishing, and the export parts of this page need it on. The editor
 has its own switch too, in Features › Writing.
 
+- [Start a screenplay](#start-a-screenplay)
 - [How a note becomes a screenplay](#how-a-note-becomes-a-screenplay)
 - [Write the script](#write-the-script)
 - [Write in the editor](#write-in-the-editor)
@@ -26,6 +27,23 @@ has its own switch too, in Features › Writing.
 - [How the pages break](#how-the-pages-break)
 - [Settings](#settings)
 - [When something looks wrong](#when-something-looks-wrong)
+
+## Start a screenplay
+
+Run **New screenplay** from the command palette (in Portuguese, **Novo roteiro**), or pick
+**Screenplay** in the list of **New work…**. It has no hotkey, and it works with every switch
+off: the editor switch only adds the Tab and Enter help. A small window asks for a title and a
+folder. The folder starts at **Screenplays folder** (Settings › Escrita, **New works**), else
+the folder of the open note.
+
+The note it makes holds the draft status, the screenplay form (so Escrita reads it as a
+screenplay at once, with no folder rule needed) and one beat, `%% beat: … %%`. It opens with the
+cursor on the empty line under the beat, so with the screenplay editor on you can press Tab and
+start. It has no target or deadline: a script is not counted in words.
+
+To use your own note instead, set **Screenplay template** in the same group. `{{title}}`,
+`{{date}}` and `{{time}}` are filled in, and a draft status is added when it has none; add the
+form yourself in that template.
 
 ## How a note becomes a screenplay
 

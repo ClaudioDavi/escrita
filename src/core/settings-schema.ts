@@ -126,6 +126,8 @@ export const SETTINGS_SCHEMA = {
   templatesFolder: { default: "", kind: optionalFolder, readBy: ["templates", "universe"] },
   storiesFolder: { default: "", kind: optionalFolder, readBy: ALWAYS },
   storyTemplate: { default: "", kind: templatePath, readBy: ALWAYS },
+  screenplaysFolder: { default: "", kind: optionalFolder, readBy: ALWAYS },
+  screenplayTemplate: { default: "", kind: templatePath, readBy: ALWAYS },
   booksFolder: { default: "", kind: optionalFolder, readBy: ["outline"] },
   bookNoteTemplate: { default: "", kind: templatePath, readBy: ["outline"] },
   numberPadding: { default: 2, kind: number, readBy: ALWAYS },

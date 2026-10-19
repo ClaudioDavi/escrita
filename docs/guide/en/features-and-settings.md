@@ -160,7 +160,7 @@ the words Escrita writes into your vault.
 | Shared universe | No panel, no universe commands, no "Appears in", no name marks or lens names. |
 | Threads | No thread commands, margin flag or panel tab. |
 
-Short stories never switch off. **New work…** and **New short story** are core commands, like the setup, so they stay even with every feature off.
+Short stories never switch off. **New work…**, **New short story** and **New screenplay** are core commands, like the setup, so they stay even with every feature off.
 
 Turning a feature off shows a short notice that says what stays and where.
 
@@ -229,12 +229,14 @@ they are part of Shared universe, so they go when the universe is off.
 
 ## Settings added in 1.0.4
 
-The **New works** section comes after Books. It sets where **New work…**, **New short story** and **New book** create notes, and which template of yours they use. It is always shown, except the two book rows, which hide when Outline and ghost beats is off. Nothing here is ever overwritten: a note that already exists is left alone.
+The **New works** section comes after Books. It sets where **New work…**, **New short story**, **New screenplay** and **New book** create notes, and which template of yours they use. It is always shown, except the two book rows, which hide when Outline and ghost beats is off. Nothing here is ever overwritten: a note that already exists is left alone.
 
 | Setting | Needs | What it does |
 |---|---|---|
 | Short stories folder | | Where **New short story** creates the note. Empty by default: the folder beside the open book when a chapter or the book note is open, else the open note's folder (the vault root with no note open). |
 | Short story template | | A note of yours to use instead of the built-in template. `{{title}}`, `{{date}}` and `{{time}}` are filled in, and a draft status is added when it has none. Empty by default (built-in). A note that can't be found falls back to the built-in one, with a notice. |
+| Screenplays folder | | Where **New screenplay** creates the note. Empty by default, with the same fallback as above. |
+| Screenplay template | | A note of yours to use instead of the built-in screenplay note (draft status, the screenplay form, one beat). `{{title}}`, `{{date}}` and `{{time}}` are filled in, and a draft status is added when it has none. Empty by default (built-in). |
 | Books folder | Outline | Where **New book** creates the book's folder. Empty by default, with the same fallback as above. |
 | Book note template | Outline | A note of yours to use instead of the built-in book note. Empty by default (built-in). The first chapter follows the chapter template. |
 

@@ -412,6 +412,19 @@ heading that is only its prefix, with a test in `tests/screenplay-suggest.test.t
 turns off Obsidian's own spellcheck while recording, because its English dictionary underlined
 the Portuguese text.
 
+### After Wave 3: New screenplay (2026-10-19)
+
+The author found that 1.2 had no way to start a screenplay: the command was missing from the
+palette and from "New work…". Added on branch 1.2: a third `NewWorkKind`, `screenplay` (the list
+is Short story, Screenplay, Book; always offered), the command `new-screenplay` ("New
+screenplay" / "Novo roteiro", no hotkey), the settings `screenplaysFolder` and
+`screenplayTemplate` in "New works", and `screenplayNoteText` in `src/new-work/model.ts` (draft
+status, the screenplay form word, one beat, an empty last line). `createStory` became
+`createPiece(kind, …)`, shared by both kinds. Tests in `tests/new-work-model.test.ts`,
+`tests/settings-new-works.test.ts` and `tests/lifecycle-new-work.test.ts`; the e2e spec
+`new-work.spec.ts` has a new check 10. Guide pages in both languages and the README changelog
+were updated.
+
 ## Risks
 
 - **Obsidian's Live Preview owns Markdown styling.** Headings, quotes and rules may not yield to

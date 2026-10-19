@@ -10,7 +10,7 @@ let app: App;
 
 test.beforeAll(async () => {
   app = await App.launch({ vault: writer({ seeded: true }) });
-  await app.setSettings({ storiesFolder: "Contos", booksFolder: "Livros" });
+  await app.setSettings({ storiesFolder: "Contos", screenplaysFolder: "Roteiros", booksFolder: "Livros" });
 });
 
 test.afterAll(async () => {
@@ -26,20 +26,22 @@ const rows = () => app.page.locator(".prompt .suggestion-item");
 const modalTitle = () => app.page.locator(".modal .modal-title");
 
 /** "Nova obra…", pick a kind from the list, type the title, Enter. */
-async function startWork(kind: "Conto" | "Livro", title: string): Promise<void> {
+async function startWork(kind: "Conto" | "Roteiro" | "Livro", title: string): Promise<void> {
   await app.command("new-work");
   await rows().filter({ hasText: new RegExp(`^${kind}`) }).click();
   await app.page.locator(".modal input").first().fill(title);
   await app.page.keyboard.press("Enter");
 }
 
-test("1. Nova obra… lists Conto and Livro with where each goes", async () => {
+test("1. Nova obra… lists Conto, Roteiro and Livro with where each goes", async () => {
   await app.command("new-work");
-  await expect(rows()).toHaveCount(2);
+  await expect(rows()).toHaveCount(3);
   await expect(rows().nth(0)).toContainText("Conto");
   await expect(rows().nth(0)).toContainText("Uma nota em Contos/");
-  await expect(rows().nth(1)).toContainText("Livro");
-  await expect(rows().nth(1)).toContainText("Uma pasta com nota do livro e capítulos, em Livros/");
+  await expect(rows().nth(1)).toContainText("Roteiro");
+  await expect(rows().nth(1)).toContainText("Uma nota em Roteiros/");
+  await expect(rows().nth(2)).toContainText("Livro");
+  await expect(rows().nth(2)).toContainText("Uma pasta com nota do livro e capítulos, em Livros/");
   await app.screenshot("1. the list");
 });
 
@@ -96,8 +98,9 @@ test("4. Livro: folder, chapters folder, book note, first chapter open, outline 
 test("5. outline off: Livro leaves the list, the footer and the palette", async () => {
   await app.setFeature("outline", false);
   await app.command("new-work");
-  await expect(rows()).toHaveCount(1);
-  await expect(rows().first()).toContainText("Conto");
+  await expect(rows()).toHaveCount(2);
+  await expect(rows().nth(0)).toContainText("Conto");
+  await expect(rows().nth(1)).toContainText("Roteiro");
   await app.closeModals();
   await app.openFile("Início.md");
   const footer = app.page.locator(".escrita-desk-new");
@@ -179,4 +182,28 @@ test("9. at phone width the footer wraps and its targets are 32 px or more", asy
   } finally {
     await app.emulateMobile(false);
   }
+});
+
+test("10. Novo roteiro: the note opens in the screenplays folder, form roteiro, cursor on the empty line, Tab shows the ghost name", async () => {
+  await app.setFeature("screenplay", true);
+  await app.command("new-screenplay");
+  await expect(modalTitle()).toHaveText("Novo roteiro");
+  await app.page.locator(".modal input").first().fill("Curta");
+  await app.page.keyboard.press("Enter");
+  const text = await app.waitForFile("Roteiros/Curta.md");
+  expect(text).toMatch(/^status: rascunho$/m);
+  expect(text).toMatch(/^form: roteiro$/m);
+  expect(text).not.toMatch(/^target:/m);
+  expect(text).toMatch(/^%% beat: .+ %%$/m);
+
+  await app.waitFor("the note to be active", async () => (await app.activeFile()) === "Roteiros/Curta.md");
+  const last = text.split("\n").length - 1;
+  await app.waitFor("the cursor on the empty line", async () => (await app.cursor())?.line === last, 3000).catch(() => {});
+  expect(await app.cursor()).toMatchObject({ file: "Roteiros/Curta.md", line: last, text: "", ch: 0 });
+
+  await expect(app.page.locator(".workspace-leaf.mod-active .cm-editor.escrita-screenplay")).toHaveCount(1);
+  await app.page.keyboard.press("Tab");
+  await expect(app.page.locator(".workspace-leaf.mod-active .escrita-sp-ghost")).toHaveCount(1);
+  expect((await app.page.locator(".workspace-leaf.mod-active .escrita-sp-ghost").innerText()).toLowerCase()).toBe("personagem");
+  await app.setFeature("screenplay", false);
 });

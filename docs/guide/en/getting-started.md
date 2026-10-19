@@ -248,7 +248,7 @@ what it hid. Its commands, its setting and how it sits next to a zen plugin are 
 
 You don't need the setup for this. Open the command palette and run **New short story** (in
 Portuguese, **Novo conto**). Or run **New work…** (**Nova obra…**): a list asks "What are you
-writing?" with **Short story** and **Book**, each with a grey line saying where it goes ("A note
+writing?" with **Short story**, **Screenplay** and **Book**, each with a grey line saying where it goes ("A note
 in Stories/"). Pick **Short story**. The commands have no hotkey. You can also click **+ New
 short story** under the works list in the home note.
 
@@ -358,10 +358,11 @@ The outline, chapter targets and the rest are in [Writing](writing.md).
 | Name | What it does |
 |---|---|
 | **Set up a writing vault** (command) | Opens the two-step window. Also reachable from the Features page when there is no home note. |
-| **New work…** (command) | Opens the list: **Short story** or **Book**, each with where it goes. |
+| **New work…** (command) | Opens the list: **Short story**, **Screenplay** or **Book**, each with where it goes. |
 | **New short story** (command) | Opens the window for a short story. |
+| **New screenplay** (command) | Opens the window for a screenplay, a note in the screenplay form. See [Screenplays](screenplays.md#start-a-screenplay). |
 | **New book** (command) | Opens the window for a book. It was **Create a book**, with the same command id, so your hotkey still works. Offered only while the outline is on. |
-| **Short stories folder**, **Short story template**, **Books folder**, **Book note template** (settings) | The **New works** group. The two book rows show only while the outline is on. Empty folders mean the folder beside the open book or note. |
+| **Short stories folder**, **Short story template**, **Screenplays folder**, **Screenplay template**, **Books folder**, **Book note template** (settings) | The **New works** group. The two book rows show only while the outline is on. Empty folders mean the folder beside the open book or note. |
 
 **New book** is a core command, available whenever the outline is on. **Open the
 home note**, **Enter writing mode**, **Exit writing mode** and the settings **Home note**,

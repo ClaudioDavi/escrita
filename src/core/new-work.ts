@@ -4,9 +4,9 @@
 // imports that module. Pure, no Obsidian imports.
 
 /** What "New work…" offers. The list is built from this, so a later kind adds a member. */
-export type NewWorkKind = "story" | "book";
+export type NewWorkKind = "story" | "screenplay" | "book";
 
-export const NEW_WORK_KINDS: readonly NewWorkKind[] = ["story", "book"];
+export const NEW_WORK_KINDS: readonly NewWorkKind[] = ["story", "screenplay", "book"];
 
 export interface NewWorkStarter {
   /**
@@ -14,6 +14,6 @@ export interface NewWorkStarter {
    * left out. A kind not offered now does nothing. Never throws.
    */
   start(kind?: NewWorkKind): void;
-  /** Whether `kind` is offered now: a book needs the outline on (board 42 a′). */
+  /** Whether `kind` is offered now: a book needs the outline on (board 42 a′); a story and a screenplay always. */
   offers(kind: NewWorkKind): boolean;
 }

@@ -11,12 +11,13 @@ page, so you can turn off what you don't use.
 
 ## Start a new work
 
-Three commands start a work. None has a default hotkey; bind the ones you want in Obsidian's
+Four commands start a work. None has a default hotkey; bind the ones you want in Obsidian's
 settings.
 
-- **New work…** opens a short list: **Short story** and **Book**. Under each name a grey line says
+- **New work…** opens a short list: **Short story**, **Screenplay** and **Book**. Under each name a grey line says
   where it will go. Pick one.
 - **New short story** skips the list.
+- **New screenplay** skips the list too. It is always offered. See [Screenplays](screenplays.md#start-a-screenplay).
 - **New book** skips the list too. It is the old **Create a book**, with the same command id, so a
   hotkey you set keeps working. It is offered only while the outline is on.
 
@@ -82,6 +83,8 @@ In the **New works** group:
 
 - **Short stories folder.** Where New short story creates the note.
 - **Short story template.**
+- **Screenplays folder.** Where New screenplay creates the note.
+- **Screenplay template.**
 - **Books folder.** Where New book creates the book's folder. Shown while the outline is on.
 - **Book note template.** Shown while the outline is on.
 

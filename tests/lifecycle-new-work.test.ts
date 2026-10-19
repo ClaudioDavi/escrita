@@ -6,7 +6,7 @@ import { NewWorkModule } from "../src/new-work";
 import { OutlineModule } from "../src/outline";
 import { fakePlugin, type FakePlugin } from "./support/fake-plugin";
 
-const COMMANDS = ["new-work", "new-short-story", "create-book"].map((c) => `escrita:${c}`);
+const COMMANDS = ["new-work", "new-short-story", "new-screenplay", "create-book"].map((c) => `escrita:${c}`);
 
 let plugin: FakePlugin;
 let reg: FeatureRegistry;
@@ -30,7 +30,7 @@ function offered(id: string): boolean {
 }
 
 describe("new work lifecycle", () => {
-  it("registers its three commands through the context, create-book among them", () => {
+  it("registers its four commands through the context, create-book among them", () => {
     expect([...plugin.commands.keys()].sort()).toEqual([...COMMANDS, "escrita:open-outline", "escrita:open-outline-board", "escrita:read-book", "escrita:read-note", "escrita:add-beat", "escrita:renumber-chapters"].sort());
   });
 
@@ -40,12 +40,14 @@ describe("new work lifecycle", () => {
     expect(offered("escrita:create-book")).toBe(false);
     expect(offered("escrita:new-work")).toBe(true);
     expect(offered("escrita:new-short-story")).toBe(true);
+    expect(offered("escrita:new-screenplay")).toBe(true);
     plugin.turn("outline", true);
     expect(offered("escrita:create-book")).toBe(true);
   });
 
   it("offers a book as the outline is, and a story always", () => {
     expect(mod.offers("story")).toBe(true);
+    expect(mod.offers("screenplay")).toBe(true);
     expect(mod.offers("book")).toBe(true);
     plugin.turn("outline", false);
     expect(mod.offers("story")).toBe(true);

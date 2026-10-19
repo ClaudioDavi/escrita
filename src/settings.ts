@@ -24,6 +24,9 @@ export interface EscritaSettings extends UniverseSettings, FormSettings {
   // template = the built-in one. Setup writes the folders it creates (PLAN-1.0.4 Q3).
   storiesFolder: string;
   storyTemplate: string;
+  /** 1.2: where "New screenplay" creates the note, and the note that replaces its built-in template */
+  screenplaysFolder: string;
+  screenplayTemplate: string;
   booksFolder: string;
   bookNoteTemplate: string;
   numberPadding: number;

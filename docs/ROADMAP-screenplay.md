@@ -125,6 +125,7 @@ turning off typing.
   and action instead of quote marks and dashes.
 
 **As built in 1.2.0, and what differs from the text above:**
+- **New screenplay** (added after Wave 3): a third kind of "New work…" and a command, `new-screenplay`, with the settings `screenplaysFolder` and `screenplayTemplate`. The built-in note is the draft status, the screenplay form and one beat.
 - **No Reading view layout.** Reading view is unchanged; the export preview shows the pages.
 - **Fountain in dialogue focus and the lens moved to section 5.** Dialogue focus is off in a
   screenplay note (it would dim the wrong lines), and so is the prose Enter flow.

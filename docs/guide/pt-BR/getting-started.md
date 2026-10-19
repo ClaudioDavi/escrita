@@ -249,7 +249,7 @@ que ele escondeu. Os comandos, a configuração e como ele convive com um plugin
 
 Você não precisa do preparo para isso. Abra a paleta de comandos e rode **Novo conto** (em
 inglês, **New short story**). Ou rode **Nova obra…** (**New work…**): uma lista pergunta "O que
-você vai escrever?" com **Conto** e **Livro**, cada um com uma linha cinza dizendo para onde vai
+você vai escrever?" com **Conto**, **Roteiro** e **Livro**, cada um com uma linha cinza dizendo para onde vai
 ("Uma nota em Contos/"). Escolha **Conto**. Os comandos não têm atalho. Também dá para clicar em
 **+ Novo conto** embaixo da lista de obras na nota inicial.
 
@@ -360,10 +360,11 @@ O esboço, as metas por capítulo e o resto estão em [Escrita](writing.md).
 | Nome | O que faz |
 |---|---|
 | **Preparar o cofre para escrever** (comando) | Abre a janela de dois passos. Também se chega a ele pela página Recursos quando não há nota inicial. |
-| **Nova obra…** (comando) | Abre a lista: **Conto** ou **Livro**, cada um com o lugar para onde vai. |
+| **Nova obra…** (comando) | Abre a lista: **Conto**, **Roteiro** ou **Livro**, cada um com o lugar para onde vai. |
 | **Novo conto** (comando) | Abre a janela de um conto. |
+| **Novo roteiro** (comando) | Abre a janela de um roteiro, uma nota na forma roteiro. Veja [Roteiros](screenplays.md#começar-um-roteiro). |
 | **Novo livro** (comando) | Abre a janela de um livro. Era **Criar um livro**, com o mesmo id de comando, então o seu atalho continua valendo. Só é oferecido enquanto o esboço está ligado. |
-| **Pasta dos contos**, **Modelo de conto**, **Pasta dos livros**, **Modelo da nota do livro** (configurações) | O grupo **Novas obras**. As duas linhas do livro só aparecem com o esboço ligado. Pasta vazia é a pasta ao lado do livro ou da nota aberta. |
+| **Pasta dos contos**, **Modelo de conto**, **Pasta dos roteiros**, **Modelo de roteiro**, **Pasta dos livros**, **Modelo da nota do livro** (configurações) | O grupo **Novas obras**. As duas linhas do livro só aparecem com o esboço ligado. Pasta vazia é a pasta ao lado do livro ou da nota aberta. |
 
 **Novo livro** é um comando do núcleo, disponível sempre que o esboço está ligado. **Abrir a nota
 inicial**, **Entrar no modo escrita**, **Sair do modo escrita** e as configurações **Nota
