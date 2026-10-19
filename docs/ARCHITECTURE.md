@@ -1224,8 +1224,15 @@ document ─ fountainDocLines (cached) ─┬→ layout.ts   line classes `escri
   suggest, so it stays registered and answers null while the feature is off (`enabled`).
 - **Guards elsewhere.** `onEnter` in `editor/features.ts` returns false for a screenplay (Q9)
   and dialogue focus is off in one (Q12), whether or not this feature is on.
-- **Known limits.** Cue suggestions include the universe's places and objects, not only
-  characters. An undone Tab-opened parenthetical forgets the cue's mode. Fountain in the lens
+- **Cue names.** `cueNames(table)` (`core/screenplay-suggest.ts`) keeps the terms whose
+  `origin` is `name` and whose `person` is true: `NameTerm.person` (optional, set from
+  `NameSource.person`) is the one field the names port grew for this.
+- **Undo.** Each key's transaction carries `isolateHistory.of("full")` (`@codemirror/commands`,
+  external, Obsidian's own copy), and so does the forced mark, so typing never joins a step. An
+  `invertedEffects` facet gives a line back the mode a text-changing step took from it, so undoing
+  a Tab-opened `()` leaves the cue in its mode.
+- **Known limits.** After Enter right after a cue, the cue's mode ends when the cursor leaves the
+  line (no text change, so no undo step); undoing that Enter does not bring the mode back. Fountain in the lens
   and dialogue focus is SP 5.
 
 ## Editor glue (`src/ui/editor-glue.ts`, `src/ui/reveal-on-touch.ts`, 1.2, IMPROVEMENTS 38)
@@ -1539,7 +1546,7 @@ measurer, the vault index and the notes service are core and always on.
 
 ## Core modules (`core/module-context.ts` `CoreModule`, 1.0)
 
-A part of Escrita that is not one of the 19 features and never switches off is a
+A part of Escrita that is not one of the 20 features and never switches off is a
 `CoreModule` (a `Component`). The first is the setup ("Set up a writing vault", `src/setup/`,
 SF 10); the second, in 1.0.4, is new-work (see "Start a new work" below). It has no `FeatureId`: it is not on the Features page, in a preset, in
 `settings.features` or in the registry.

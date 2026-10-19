@@ -357,6 +357,30 @@ Obsidian, Live Preview, cursor off the line:
 
 ### Wave 3 (2026-10-19)
 
+**Judge (Opus): PASS.**
+
+**Task G, the open fixes (Sonnet).**
+
+- No `!important` left in `src/screenplay/styles.css`: the rules sit under
+  `.markdown-source-view.mod-cm6 .cm-editor.escrita-screenplay`.
+- Undo: `@codemirror/commands` 6.8.1 (devDependency, external); each key step carries
+  `isolateHistory.of("full")`, and an `invertedEffects` facet gives a cue its mode back when a
+  Tab-opened `()` is undone (e2e test 12b). The judge also isolated the forced mark's transaction.
+- `notes.flush(file)` before `processFrontMatter` in publish and unpublish, the progress modal's
+  two writes and the outline's summary write (`tests/publish-flush.test.ts`).
+- Cue suggestions offer only characters: `NameTerm.person` (optional) and `cueNames(table)`.
+- `outline.reader.noBook` removed.
+- Still open (IMPROVEMENTS, "Known issues"): the universe's and the outline's "create chapter"
+  `processFrontMatter` writes have no flush; undoing an Enter right after a cue does not give the
+  cue its mode back.
+
+**Judge fixes.** The guides (both languages), ARCHITECTURE.md, ROADMAP-screenplay.md and
+IMPROVEMENTS.md said G's four items were open: brought up to date. ARCHITECTURE "19 features" →
+20. A README fix line for the flushed property writes. One indent in `progress-modal.ts`.
+
+**Checks:** typecheck clean; vitest 245 files, 5,070 passed, 3 skipped; build; `test:bundle` 4
+passed; eslint clean; full e2e 256 passed (9.2 min).
+
 **Task H, docs and release prep (Sonnet).**
 
 - **Guides, both languages.**

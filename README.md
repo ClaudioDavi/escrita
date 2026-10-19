@@ -111,6 +111,7 @@ You can write a screenplay in the editor, laid out as on the page, and read a sh
 - **Rhythm**: the lens panel has a Rhythm section for the paragraph at the cursor or the selected sentences: one bar per sentence, a line at the long-sentence limit, and runs of three or more sentences within three words of each other in orange. A click selects the sentence. The **Show rhythm** setting turns it off. See [Revision](docs/guide/en/revision.md#rhythm).
 - **Fixes**:
   - Typing could be lost in a new note that was tracked as soon as it was made: Escrita added the draft status while the editor still held text it had not saved. The text is saved first now.
+  - The same could happen when publishing or unpublishing a note, setting a target or a deadline in the progress window, or editing a chapter summary in the outline while the note had unsaved typing. Each of these saves the note first now.
   - **Read the book** opened before Obsidian had read the notes could show a chapter it should have left out, or a title that was not up to date. It now redraws when the notes are ready, and keeps your place.
   - **Read the book** keeps the first lines of a chapter in view when the top bar is over them.
 - Upgrade notes:

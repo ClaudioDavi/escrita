@@ -142,8 +142,9 @@ turning off typing.
 - **The layout**: columns in `ch` under Courier (or the theme's font, the **Font** setting), CSS
   only. A typed `-----` shows as `---` until the cursor is on the line.
 - **Two commands for phones**, "Next screenplay element" and "Previous screenplay element".
-- **Open**: cue suggestions also offer the universe's places and objects; an undone
-  Tab-opened parenthetical forgets the cue's mode (IMPROVEMENTS, "Known issues").
+- **Fixed before release** (PLAN-1.2, Wave 3): cue suggestions offer only the universe's
+  characters, and undoing a Tab-opened parenthetical gives the cue its mode back. Open: undoing
+  an Enter right after a cue does not (IMPROVEMENTS, "Known issues").
 
 ## 3. Scene outline
 

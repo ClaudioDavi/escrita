@@ -701,7 +701,7 @@ export class ProgressModal extends Modal {
 
   private async writeFrontmatter(book: Book, fn: (fm: Record<string, unknown>) => void): Promise<boolean> {
     try {
-        // the editor may hold unsaved text: on disk first, or the write below replaces it
+      // the editor may hold unsaved text: on disk first, or the write below replaces it
       await this.plugin.notes.flush(book.note);
       await this.plugin.app.fileManager.processFrontMatter(book.note, fn);
       return true;

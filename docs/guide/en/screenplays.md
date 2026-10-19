@@ -197,7 +197,7 @@ While you type, a list offers what the script already knows. Press Enter or clic
 
 - **On a character cue**: the cues already in the script, most spoken first, with how many
   speeches each has. With the universe on, the names of its characters follow, marked
-  "universe". (Places and objects of the universe may show too.)
+  "universe". Only characters are offered, never places or objects.
 - **After a scene prefix** such as `INT. `: the locations already used in the script's scene
   headings, most used first.
 - **After ` - ` in a scene heading**: the times of day, from the **Times of day** setting

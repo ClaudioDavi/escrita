@@ -613,24 +613,23 @@ confirmed:
   then passed alone, 9 of 9. Not reproduced, no cause found. If it comes back, look at the order
   of the note's creation, the split and the editor's first load.
 
-Found in 1.2 (Wave 2 and its judge), not fixed:
+Found in 1.2 (Wave 2 and its judge). Fixed in 1.2.0 (Wave 3, task G): the publish and unpublish
+writes, the progress modal's two property writes and the outline's summary write now call
+`notes.flush(file)` first; cue suggestions offer only characters (`NameTerm.person`,
+`cueNames`); undoing a Tab-opened parenthetical gives the cue its mode back (`invertedEffects` in
+`src/screenplay/keys.ts`); `outline.reader.noBook` is gone. Still open:
 
-- **Other `processFrontMatter` callers can lose unsaved text.** 1.2 fixed `draftIfNew` with
-  `NoteService.flush(file)`, which saves the file's views before the write. The publish module,
-  the outline's `commit` and the progress modal's setting rows still call `processFrontMatter`
-  with no flush, so a status or target written while the writer's editor holds unsaved typing
-  can replace it. Fix: one `plugin.notes.frontmatter(file, fn)` that flushes first, and move
-  the three callers onto it.
-- **An undone Tab-opened parenthetical forgets the cue's mode.** Tab after a cue opens `()`; undo
-  removes the parenthetical but the cue line has already let go of its mode, so the next Tab
-  starts again from an empty cycle. (`src/screenplay/keys.ts`, the mode field.)
-- **Cue suggestions include the universe's places and objects.** `plugin.names.tableFor(path)`
-  gives every entry's name, and the screenplay suggest does not filter by entry type, so a place
-  or an object is offered on a cue line. Fix: a `kind` filter on the names port, or a
-  `characters(path)` reader.
-- **`outline.reader.noBook` is unused.** The string was kept for a book that left the vault; the
-  reader now says `noNote` for any source. Delete the key in both languages and in the strings
-  parity test's list, if it names it.
+- **Three `processFrontMatter` callers have no flush.** `src/universe/index.ts:518`, the three
+  writes in `src/universe/migrate.ts` and the outline's "create chapter" write
+  (`src/outline/view.ts:1346`, on a file it just made) call `processFrontMatter` without
+  `notes.flush(file)`, so a write to a note whose editor holds unsaved typing could replace it.
+  Fix: one `plugin.notes.frontmatter(file, fn)` that flushes first, and move every caller onto
+  it (with a test that greps `src/` for a bare `processFrontMatter`).
+- **Undoing an Enter right after a cue loses the cue's mode.** The mode ends when the cursor
+  leaves the cue line, a step with no text change and so no undo entry of its own; after the undo
+  the cue (with nothing below it yet) is no longer held as a cue. An effects-only history entry
+  would cost a second Ctrl+Z. (`src/screenplay/keys.ts`; noted in
+  `tests/e2e/specs/screenplay-editor.spec.ts`, test 12.)
 
 ## Done
 

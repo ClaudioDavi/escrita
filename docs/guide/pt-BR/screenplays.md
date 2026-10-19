@@ -202,7 +202,7 @@ escolher.
 
 - **Num nome de personagem**: os nomes que já estão no roteiro, o que mais fala primeiro, com
   quantas falas cada um tem. Com o universo ligado, vêm em seguida os nomes dos personagens dele,
-  marcados "universo". (Lugares e objetos do universo também podem aparecer.)
+  marcados "universo". Só personagens aparecem, nunca lugares ou objetos.
 - **Depois de um começo de cabeçalho** como `INT. `: os lugares já usados nos cabeçalhos de cena
   do roteiro, o mais usado primeiro.
 - **Depois de ` - ` num cabeçalho de cena**: as horas do dia, da configuração **Horas do dia**

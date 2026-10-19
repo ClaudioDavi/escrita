@@ -121,7 +121,7 @@ export class ScreenplayKeys {
           const mark = forcedMarkFor(line.text, e.mode, opts);
           if (mark) changes.push({ from: line.from, insert: mark });
         }
-        view.dispatch({ changes, effects: settle.of(null), userEvent: "input" });
+        view.dispatch({ changes, effects: settle.of(null), userEvent: "input", annotations: isolateHistory.of("full") });
       }
     });
 
