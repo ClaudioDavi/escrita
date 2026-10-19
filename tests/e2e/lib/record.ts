@@ -17,7 +17,7 @@ export class Recorder {
   private session: CDPSession | null = null;
   private framesDir: string;
 
-  private constructor(private readonly page: Page, readonly dir: string) {
+  private constructor(private page: Page, readonly dir: string) {
     this.framesDir = path.join(dir, "frames");
   }
 
@@ -29,17 +29,32 @@ export class Recorder {
     fs.mkdirSync(dir, { recursive: true });
     fs.rmSync(r.framesDir, { recursive: true, force: true });
     fs.mkdirSync(r.framesDir, { recursive: true });
-    r.session = await page.context().newCDPSession(page);
-    const session = r.session;
+    await r.attach(page);
+    return r;
+  }
+
+  /** Starts the screencast of `page` (frames of every page share one timeline and one numbering). */
+  private async attach(page: Page): Promise<void> {
+    this.page = page;
+    this.session = await page.context().newCDPSession(page);
+    const session = this.session;
     session.on("Page.screencastFrame", (ev: { data: string; sessionId: number; metadata: { timestamp?: number } }) => {
       const at = ev.metadata.timestamp ?? Date.now() / 1000;
-      const file = path.join(r.framesDir, `${String(r.frames.length).padStart(6, "0")}.jpg`);
-      r.frames.push({ file, at });
-      r.pending.push(fs.promises.writeFile(file, Buffer.from(ev.data, "base64")));
+      const file = path.join(this.framesDir, `${String(this.frames.length).padStart(6, "0")}.jpg`);
+      this.frames.push({ file, at });
+      this.pending.push(fs.promises.writeFile(file, Buffer.from(ev.data, "base64")));
       void session.send("Page.screencastFrameAck", { sessionId: ev.sessionId }).catch(() => { /* page closing */ });
     });
     await session.send("Page.startScreencast", { format: "jpeg", quality: 85, maxWidth: 1280, everyNthFrame: 1 });
-    return r;
+  }
+
+  /**
+   * Moves the recording to another page of the same Obsidian (the settings window is a page of
+   * its own). Give both pages the same size or the encoder scales the new frames to the first.
+   */
+  async follow(page: Page): Promise<void> {
+    try { await this.session?.send("Page.stopScreencast"); } catch { /* already gone */ }
+    await this.attach(page);
   }
 
   /** Stops the screencast and waits for the frames to be on disk. */
@@ -73,17 +88,27 @@ export class Recorder {
   }
 }
 
+export interface CaptionOptions {
+  /** where on the window; default the bottom edge */
+  where?: "bottom" | "top" | "center";
+  /** font size in px; default 16 */
+  size?: number;
+}
+
 /** Shows a caption over the window (a fixed element on the body); a new call replaces it. */
-export async function caption(page: Page, text: string): Promise<void> {
-  await page.evaluate((s) => {
+export async function caption(page: Page, text: string, opts: CaptionOptions = {}): Promise<void> {
+  await page.evaluate(([s, where, size]) => {
     document.getElementById("escrita-e2e-caption")?.remove();
     const el = document.createElement("div");
     el.id = "escrita-e2e-caption";
     el.textContent = s;
-    el.style.cssText = "position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:2147483647;" +
-      "background:rgba(0,0,0,0.82);color:#fff;font:600 16px sans-serif;padding:8px 16px;border-radius:8px;pointer-events:none;";
+    const place = where === "top" ? "top:12px;transform:translateX(-50%);"
+      : where === "center" ? "top:50%;transform:translate(-50%,-50%);"
+      : "bottom:12px;transform:translateX(-50%);";
+    el.style.cssText = `position:fixed;left:50%;${place}z-index:2147483647;max-width:90%;text-align:center;` +
+      `background:rgba(0,0,0,0.82);color:#fff;font:600 ${size}px sans-serif;padding:8px 16px;border-radius:8px;pointer-events:none;`;
     document.body.appendChild(el);
-  }, text);
+  }, [text, opts.where ?? "bottom", opts.size ?? 16] as const);
 }
 
 export function removeCaption(page: Page): Promise<void> {
