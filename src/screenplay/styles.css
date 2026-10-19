@@ -59,18 +59,18 @@
 }
 
 /* Markdown's headings: a # line is a Fountain section, at the size of the text */
-body .escrita-screenplay .cm-line.HyperMD-header,
-body .escrita-screenplay .cm-line.HyperMD-header * {
-  font-size: inherit !important;
-  font-weight: var(--font-normal) !important;
-  line-height: inherit !important;
-  color: inherit !important;
+.markdown-source-view.mod-cm6 .cm-editor.escrita-screenplay .cm-line.HyperMD-header,
+.markdown-source-view.mod-cm6 .cm-editor.escrita-screenplay .cm-line.HyperMD-header * {
+  font-size: inherit;
+  font-weight: var(--font-normal);
+  line-height: inherit;
+  color: inherit;
 }
 
-body .escrita-screenplay .cm-line.escrita-sp-section,
-body .escrita-screenplay .cm-line.escrita-sp-section * {
-  font-size: var(--font-smaller) !important;
-  color: var(--text-muted) !important;
+.markdown-source-view.mod-cm6 .cm-editor.escrita-screenplay .cm-line.escrita-sp-section,
+.markdown-source-view.mod-cm6 .cm-editor.escrita-screenplay .cm-line.escrita-sp-section * {
+  font-size: var(--font-smaller);
+  color: var(--text-muted);
 }
 
 .escrita-screenplay .cm-line .cm-fold-indicator {
@@ -79,27 +79,27 @@ body .escrita-screenplay .cm-line.escrita-sp-section * {
 
 /* Markdown's quotes: a > line is a transition or a centered line, with no bar. The 18px of
    padding balances the indent Obsidian gives the quote's first line. */
-body .escrita-screenplay .cm-line.HyperMD-quote {
+.markdown-source-view.mod-cm6 .cm-editor.escrita-screenplay .cm-line.HyperMD-quote {
   padding-left: 18px;
   border-left: 0;
   background: none;
 }
 
 /* the bar itself is the line's ::before (a 2px border), found by the e2e check */
-body .escrita-screenplay .cm-line.HyperMD-quote::before {
-  border-left: 0 !important;
+.markdown-source-view.mod-cm6 .cm-editor.escrita-screenplay .cm-line.HyperMD-quote::before {
+  border-left: 0;
 }
 
-body .escrita-screenplay .cm-line.HyperMD-quote,
-body .escrita-screenplay .cm-line.HyperMD-quote * {
-  color: var(--text-normal) !important;
-  font-style: normal !important;
+.markdown-source-view.mod-cm6 .cm-editor.escrita-screenplay .cm-line.HyperMD-quote,
+.markdown-source-view.mod-cm6 .cm-editor.escrita-screenplay .cm-line.HyperMD-quote * {
+  color: var(--text-normal);
+  font-style: normal;
 }
 
 /* the rule between scenes is a block widget with no line class of ours: the editor's class scopes it, and it shows the three dashes as typed */
-body .escrita-screenplay .cm-line.hr hr,
-body .escrita-screenplay .cm-line.hr br {
-  display: none !important;
+.markdown-source-view.mod-cm6 .cm-editor.escrita-screenplay .cm-line.hr hr,
+.markdown-source-view.mod-cm6 .cm-editor.escrita-screenplay .cm-line.hr br {
+  display: none;
 }
 
 .escrita-screenplay .cm-line.hr::after {
@@ -112,9 +112,9 @@ body .escrita-screenplay .cm-line.hr br {
   font-style: normal;
 }
 
-.escrita-screenplay .escrita-sp-underline .cm-em,
-.escrita-screenplay .cm-em.escrita-sp-underline {
-  font-style: normal !important;
+.markdown-source-view.mod-cm6 .cm-editor.escrita-screenplay .escrita-sp-underline .cm-em,
+.markdown-source-view.mod-cm6 .cm-editor.escrita-screenplay .cm-em.escrita-sp-underline {
+  font-style: normal;
 }
 
 /* the element's name, faint, on an empty line after Tab or Enter */

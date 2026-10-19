@@ -201,6 +201,8 @@ export class PublishModule extends FeatureModule implements PublishNextPort {
     // The text as it was, before the properties change. Never blocks publishing.
     if (this.plugin.features.isOn("snapshots")) await this.plugin.snapshots.beforePublish(file);
     try {
+      // the editor may hold unsaved text: on disk first, or the write below replaces it
+      await this.plugin.notes.flush(file);
       await this.plugin.app.fileManager.processFrontMatter(file, (fm: Frontmatter) => {
         previous = fm[s.statusProperty];
         wasPublished = isPublished(previous, s.stages);
@@ -241,6 +243,8 @@ export class PublishModule extends FeatureModule implements PublishNextPort {
     const record = this.plugin.data.publish[file.path];
     const status = record?.previousStatus?.trim() || writtenWord(s.stages, "ready");
     try {
+      // the editor may hold unsaved text: on disk first, or the write below replaces it
+      await this.plugin.notes.flush(file);
       await this.plugin.app.fileManager.processFrontMatter(file, (fm: Frontmatter) => {
         fm[s.statusProperty] = status;
       });

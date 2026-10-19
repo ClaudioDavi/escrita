@@ -333,7 +333,8 @@ test("12. one Ctrl+Z undoes exactly one step", async () => {
   await undo();
   expect(await text()).toBe("Mara entra.\n\nANA");
   // Enter after a cue, right after typing it (no pause long enough for a typing group of its own): still its own step.
-  // (The cue's mode is not brought back by an undo, so the line starts again from a fresh cue.)
+  // (The cue's mode is let go when the cursor leaves it, a step with no text change; test 12b pins
+  // the case that is brought back, a Tab.)
   await newScript();
   await kb().press("Tab");
   await typeKeys("ana");
@@ -341,6 +342,24 @@ test("12. one Ctrl+Z undoes exactly one step", async () => {
   expect(await text()).toBe("ANA\n");
   await undo();
   expect(await text()).toBe("ANA");
+});
+
+test("12b. a step never joins the typing after it, and an undone Tab gives the cue its mode back", async () => {
+  await newScript();
+  await kb().press("Tab");
+  await typeKeys("ana");
+  await kb().press("Tab");
+  await kb().type("baixinho", { delay: 10 }); // right after the step, well inside a typing group
+  expect(await text()).toBe("ANA\n(baixinho)");
+  await undo();
+  expect(await text()).toBe("ANA\n()");
+  await undo();
+  expect(await text()).toBe("ANA");
+  // the cue (nothing follows it, so the parser would read action) is held in its mode again
+  await expect(ob.page.locator(".workspace-leaf.mod-active .cm-line.escrita-sp-character")).toHaveCount(1);
+  // and so what is typed on it goes on in capitals
+  await typeKeys("x");
+  expect(await text()).toBe("ANAX");
 });
 
 test("13. Enter flow of prose never acts in a tracked screenplay (and still does in a tracked conto)", async () => {

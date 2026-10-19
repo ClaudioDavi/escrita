@@ -7,7 +7,7 @@
 import { EditorSuggest, type App, type Editor, type EditorPosition, type EditorSuggestContext, type EditorSuggestTriggerInfo, type TFile } from "obsidian";
 import { fountainDoc, fountainDocLines } from "../core/fountain-doc";
 import type { FountainOptions } from "../core/fountain";
-import { candidates, triggerAt, type SuggestKind } from "../core/screenplay-suggest";
+import { candidates, cueNames, triggerAt, type SuggestKind } from "../core/screenplay-suggest";
 import type { TermTable } from "../core/names";
 import { plural, t } from "../i18n";
 import { cmOf } from "../ui/editor-glue";
@@ -65,8 +65,8 @@ export class ScreenplaySuggest extends EditorSuggest<ScreenplayItem> {
     const opts = this.host.opts();
     const script = fountainDoc(cm.state.doc, opts);
     const table = this.host.names(context.file.path);
-    // the entries' own names (not their aliases or first names): what a writer would put on a cue
-    const names = this.kind === "cue" ? table.terms.filter((x) => x.origin === "name").map((x) => x.text) : [];
+    // the characters' own names (not aliases, first names, places or objects): what a writer would put on a cue
+    const names = this.kind === "cue" ? cueNames(table) : [];
     const trigger = { kind: this.kind, start: context.start.ch, query: context.query };
     const found = candidates(trigger, script, names, this.host.times(), opts.sceneHeadings);
     const speeches = new Map<string, number>();

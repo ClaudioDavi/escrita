@@ -22,6 +22,13 @@ describe("matchLang", () => {
 });
 
 describe("terms", () => {
+  it("marks the terms of a character, and only those, as a person (the screenplay's cues)", () => {
+    const t = pt([src("a", "Maria Souza"), src("b", "Casa Velha", { person: false, aliases: ["O Casarão"] })]);
+    expect(t.terms.filter((x) => x.person).map((x) => x.id)).toEqual(expect.arrayContaining(["a"]));
+    expect(t.terms.filter((x) => x.id === "b").every((x) => !x.person)).toBe(true);
+    expect(t.terms.filter((x) => x.id === "a").every((x) => x.person === true)).toBe(true);
+  });
+
   it("derives the first name after titles, and the full name minus titles", () => {
     const t = pt([src("a", "Dona Benta Encerrabodes")]);
     expect(t.terms.map((x) => `${x.text}:${x.origin}`).sort()).toEqual(

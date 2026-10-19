@@ -37,6 +37,8 @@ export interface NameTerm {
   profile: StemProfile;
   origin: TermOrigin;
   caseSensitive: boolean;
+  /** the entry is a character (read-only, for callers that want people: the screenplay's cues) */
+  person?: boolean;
 }
 
 /** An `ignore` phrase of an entry: occurrences wholly inside its span are dropped. */
@@ -110,7 +112,7 @@ export function compileTerms(
   const ignores: IgnorePhrase[] = [];
   const seenIgnore = new Set<string>();
 
-  const add = (id: string, text: string, origin: TermOrigin, caseSensitive: boolean): void => {
+  const add = (id: string, text: string, origin: TermOrigin, caseSensitive: boolean, person: boolean): void => {
     const raw = tokens(text.normalize("NFC")).map((t) => t.text);
     if (raw.length === 0) return;
     if (raw.length === 1) {
@@ -121,22 +123,22 @@ export function compileTerms(
     const words = raw.flatMap(splitHyphen);
     const profile = profileOf(words[0]);
     const keys = words.map((w) => wordKey(foldName(w), lang, profile));
-    const term: NameTerm = { id, text: raw.join(" "), words, keys, profile, origin, caseSensitive };
+    const term: NameTerm = { id, text: raw.join(" "), words, keys, profile, origin, caseSensitive, ...(person ? { person } : {}) };
     const k = `${id}\u0000${profile}\u0000${caseSensitive}\u0000${caseSensitive ? words.join(" ") : words.map(foldName).join(" ")}\u0000${keys.join(" ")}`;
     const had = byKey.get(k);
     if (!had || RANK[origin] < RANK[had.origin]) byKey.set(k, term);
   };
 
   for (const src of sources) {
-    add(src.id, src.name, "name", src.caseSensitive);
-    for (const a of src.aliases) add(src.id, a, "alias", src.caseSensitive);
+    add(src.id, src.name, "name", src.caseSensitive, src.person);
+    for (const a of src.aliases) add(src.id, a, "alias", src.caseSensitive, src.person);
     if (src.person && src.firstName) {
       const words = tokens(src.name.normalize("NFC")).map((t) => t.text);
       let i = 0;
       while (i < words.length && titles.has(normalizeWord(words[i]))) i++;
       const rest = words.slice(i);
-      if (rest.length >= 2) add(src.id, rest[0], "first", src.caseSensitive);
-      if (i > 0 && rest.length >= 1) add(src.id, rest.join(" "), "first", src.caseSensitive);
+      if (rest.length >= 2) add(src.id, rest[0], "first", src.caseSensitive, src.person);
+      if (i > 0 && rest.length >= 1) add(src.id, rest.join(" "), "first", src.caseSensitive, src.person);
     }
     for (const phrase of src.ignore) {
       const words = tokens(phrase.normalize("NFC")).flatMap((t) => splitHyphen(t.text));
