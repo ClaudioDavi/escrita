@@ -76,7 +76,8 @@ export function triggerAt(ctx: SuggestContext): SuggestTrigger | null {
 /** The place in a scene heading's text: after its prefix, before the first " - ". */
 function locationOf(text: string, forced: boolean, re: RegExp | null): string {
   let rest = text.trim();
-  if (!forced) rest = rest.replace(re ?? /^\S+?(?:\.\s+|\s+)/, "");
+  // the space added lets a heading that is only its prefix ("EXT.", still being typed) give no place
+  if (!forced) rest = (rest + " ").replace(re ?? /^\S+?(?:\.\s+|\s+)/, "");
   const dash = rest.indexOf(" - ");
   return (dash >= 0 ? rest.slice(0, dash) : rest).trim();
 }

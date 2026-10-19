@@ -130,7 +130,7 @@ arquivo Fountain também ficam de fora, a menos que você marque **Levar as nota
 
 ## Escrever no editor
 
-![Uma cena digitada no editor de roteiro: Tab e Enter passam de um cabeçalho de cena para a ação, um nome de personagem e a fala dele, o nome é escolhido entre as sugestões, e o roteiro aparece em colunas como na página.](../../images/screenplay-editor.gif)
+![Uma cena digitada no editor de roteiro, com legendas: Tab e Enter passam de um cabeçalho de cena para a ação, um nome de personagem e a fala dele, o nome é escolhido entre as sugestões, e o roteiro aparece em colunas como na página.](../../images/screenplay-editor.gif)
 
 O editor de roteiro funciona numa nota cuja forma é `screenplay` (`roteiro`), e só nela. Em
 qualquer outra nota nada muda. Ele tem o seu próprio interruptor, **Editor de roteiro**, em

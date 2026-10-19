@@ -611,6 +611,8 @@ const SEED = [
 test("demo: writing a scene", async () => {
   await ob.setTheme("light");
   await ob.setSettings({ screenplayFont: "courier" });
+  // Obsidian's own spellcheck underlines Portuguese in red in the video; off while recording only
+  if (RECORDING) await ob.page.evaluate(() => (app.vault as unknown as { setConfig(k: string, v: unknown): void }).setConfig("spellcheck", false));
   const file = await newScript(SEED);
   await focusAt();
   const rec = await Recorder.start(ob.page);

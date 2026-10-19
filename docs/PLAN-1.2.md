@@ -399,6 +399,19 @@ passed; eslint clean; full e2e 256 passed (9.2 min).
 - **Version:** `npm version minor` (1.1.1 to 1.2.0). `minAppVersion` is unchanged (1.13.0): the
   code uses no newer API.
 
+### Gate V, the video (2026-10-19)
+
+**Passed.** The author approved the recording, which ran in the harness's own Obsidian:
+`RECORD=<dir> npx playwright test screenplay-editor -g "demo"`, 41.6 s. ffmpeg encoded it as
+`docs/images/screenplay-editor.gif` (960 px wide, 8 fps, 258 KB). It is shown in both screenplay
+guides and the README.
+
+The first take showed a bug: after `EXT. `, the place suggestions offered "EXT." itself, read from
+the heading being typed. `locationOf` (`core/screenplay-suggest.ts`) now gives no place for a
+heading that is only its prefix, with a test in `tests/screenplay-suggest.test.ts`. The demo also
+turns off Obsidian's own spellcheck while recording, because its English dictionary underlined
+the Portuguese text.
+
 ## Risks
 
 - **Obsidian's Live Preview owns Markdown styling.** Headings, quotes and rules may not yield to

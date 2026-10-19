@@ -128,7 +128,7 @@ the PDF. In the Fountain file they are left out too, unless you tick **Keep note
 
 ## Write in the editor
 
-![A scene typed in the screenplay editor: Tab and Enter move from a scene heading to action, a cue and its dialogue, a character name is picked from the suggestions, and the script is laid out in columns as on the page.](../../images/screenplay-editor.gif)
+![A scene typed in the screenplay editor, with captions in Portuguese: Tab and Enter move from a scene heading to action, a cue and its dialogue, a character name is picked from the suggestions, and the script is laid out in columns as on the page.](../../images/screenplay-editor.gif)
 
 The screenplay editor works in a note whose form is `screenplay`, and only there. In any other
 note nothing changes. It has its own switch, **Screenplay editor**, in Features › Writing. The

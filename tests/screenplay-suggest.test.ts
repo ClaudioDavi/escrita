@@ -103,6 +103,12 @@ describe("candidates", () => {
     expect(candidates(trig("location", "co"), s, [], [])).toEqual(["COZINHA"]);
     expect(candidates(trig("location", "COZINHA"), s, [], [])).toEqual([]);
   });
+  it("locations: a heading that is only its prefix, still being typed, offers no place", () => {
+    const text = "INT. COZINHA - NOITE\n\nAção.\n\nEXT. \n\nMais.";
+    const s = script(text);
+    expect(candidates(trig("location", ""), s, [], [])).toEqual(["COZINHA"]);
+    expect(candidates(trig("location", ""), s, [], [], PT.sceneHeadings)).toEqual(["COZINHA"]);
+  });
   it("locations: cut exactly with the settings' prefixes", () => {
     const s = script("INT. / EXT. CARRO - DIA", );
     const o: FountainOptions = { sceneHeadings: ["INT. / EXT"], transitions: [] };
