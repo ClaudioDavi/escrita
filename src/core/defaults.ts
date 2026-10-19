@@ -51,7 +51,7 @@ export type WordKey = typeof WORD_KEYS[number];
 /**
  * Keys a set holds that only an install takes, never the setup (PLAN-1.0, Wave 2 seams,
  * 2026-10-07): a fresh install gets them from its set (and a blank snapshots folder comes
- * back from it, through classify's `snapshotsRoot`), but the setup never lists or changes them, because they name where
+ * back from it, through classify's `pluginRoot`), but the setup never lists or changes them, because they name where
  * things already are. `snapshotsFolder` is Escrita's own store (moving the setting would
  * orphan every snapshot) and `excludeFolders` is a list the writer curates. pt-BR uses
  * "Escrita/Versões" and "Modelos"; English is unchanged, and a 0.9 install (set "en") keeps

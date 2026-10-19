@@ -3,6 +3,7 @@ import { classify, type ClassifySettings, type VaultTree } from "../src/core/cla
 import { loadRows, type RowsPort, type RowSettings } from "../src/outline/rows";
 import { readChapterDefault } from "../src/core/measure";
 import { DEFAULT_STAGES } from "../src/core/stages";
+import { classifySettings } from "./support/classify-settings";
 
 // IMPROVEMENTS 8 (Wave 1b judge): the outline's chapter rows still compute the effective
 // piece themselves (outline/rows.ts, through effectivePiece); the explorer, the goals modal
@@ -32,11 +33,11 @@ function tree(fm: Record<string, Record<string, unknown>>): VaultTree<N, N> {
   };
 }
 
-const S: ClassifySettings = {
+const S = classifySettings({
   chaptersFolder: "Chapters", trackFolders: "", excludeFolders: "", chapterTemplate: "",
   targetProperty: "target", limitProperty: "limit", unitProperty: "unit", chapterTargetProperty: "chapterTarget",
   snapshotsFolder: "Escrita/Snapshots",
-};
+});
 const R: RowSettings = {
   summaryProperty: "summary", statusProperty: "status", povProperty: "pov", targetProperty: "target",
   limitProperty: "limit", unitProperty: "unit", deadlineProperty: "deadline", chapterTargetProperty: "chapterTarget",

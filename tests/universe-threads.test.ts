@@ -4,9 +4,10 @@ import { cleanSeen, dropSeen, pruneSeen, recordSeen, renameSeen, seenAt, seenKey
 import { defaultUniverseSettings } from "../src/universe/settings";
 import { VaultIndex } from "../src/core/vault-index";
 import { MemoryVault, ManualTimers, type MemFile } from "./support/memory-vault";
+import { classifySettings } from "./support/classify-settings";
 
 const settings = (): ThreadsSettings => ({
-  ...defaultUniverseSettings(), chaptersFolder: "Chapters", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "", threadKeyword: "thread",
+  ...classifySettings(), ...defaultUniverseSettings(), chaptersFolder: "Chapters", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "", threadKeyword: "thread",
 });
 
 async function build(files: Record<string, string>, s = settings()) {

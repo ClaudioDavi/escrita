@@ -6,9 +6,9 @@ import type { TFile } from "obsidian";
 import type EscritaPlugin from "../main";
 import type { VaultIndexes } from "../main";
 import { chapterTitle } from "./book";
-import { classifyKey, inFolder, snapshotsRoot, type ClassifySettings } from "./classify";
+import { classifyKey, inFolder, pluginRoot, statusPropertyOf, type ClassifySettings } from "./classify";
 import type { Piece } from "./measure";
-import { stageOf, type Stage, type StageMapping } from "./stages";
+import { stageOf, type Stage } from "./stages";
 import type { IndexChange, IndexFile, IndexSpec, VaultIndex } from "./vault-index";
 import { deskEntry, sameDeskEntry, type DeskEntry, type WorksReader } from "./works";
 
@@ -24,7 +24,6 @@ export interface WorksPlacement {
 
 /** The settings the entries depend on: what classify reads, plus the book goal property. */
 export interface WorksSettings extends ClassifySettings {
-  stages: StageMapping;
   goalProperty?: string;
 }
 
@@ -51,11 +50,11 @@ export function worksSpec<F extends IndexFile>(deps: WorksDeps<F>): IndexSpec<F,
     name: "desk",
     mode: "metadata",
     structural: true,
-    include: (f) => f.extension === "md" && !inFolder(f.path, snapshotsRoot(deps.settings().snapshotsFolder)),
+    include: (f) => f.extension === "md" && !inFolder(f.path, pluginRoot("snapshots", deps.settings())),
     compute: (f) => {
       const s = deps.settings();
       const p = deps.placement(f);
-      const status = deps.frontmatter(f)?.[s.statusProperty || "status"];
+      const status = deps.frontmatter(f)?.[statusPropertyOf(s)];
       const title = p.kind === "book-note" && p.book ? p.book.title
         : p.kind === "chapter" ? chapterTitle(basename(f.path))
         : basename(f.path);

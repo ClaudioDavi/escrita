@@ -3,6 +3,7 @@
 
 import type EscritaPlugin from "../main";
 import { countIn } from "../core/measure";
+import { statusPropertyOf } from "../core/classify";
 import { readStatus } from "../core/stages";
 import { bookChapterProgress, type DeskEntry } from "../core/works";
 import { buildDesk, filterByFolders, type DeskModel, type WorkSource } from "./works";
@@ -71,7 +72,7 @@ export async function gatherDesk(plugin: EscritaPlugin, source: string, today: s
   const { folders } = parseBlock(source);
   const entries = [...works.list()];
   const edited = editedAtOf(plugin.data.leftOff, (p) => works.get(p));
-  const statusProp = settings.statusProperty || "status";
+  const statusProp = statusPropertyOf(settings);
 
   const make = async ([path, e]: [string, DeskEntry]): Promise<WorkSource | null> => {
     if (e.role === "chapter") return null;

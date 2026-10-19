@@ -5,6 +5,7 @@ import { MentionsIndex } from "../../src/universe/mentions-index";
 import type { EntriesSettings } from "../../src/universe/entries";
 import { defaultUniverseSettings } from "../../src/universe/settings";
 import { ManualTimers, MemoryVault, type MemFile } from "./memory-vault";
+import { classifySettings } from "./classify-settings";
 
 export const src = (id: string, name: string, aliases: string[] = []): NameSource => ({
   id, name, aliases, person: true, firstName: false, caseSensitive: false, ignore: [],
@@ -12,7 +13,7 @@ export const src = (id: string, name: string, aliases: string[] = []): NameSourc
 export const table = (sources: NameSource[]): TermTable => compileTerms(sources, { lang: "pt", extraTitles: [] });
 
 export function settings(): EntriesSettings {
-  return { ...defaultUniverseSettings(), universeMode: "universe", chaptersFolder: "Chapters", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "" };
+  return { ...classifySettings(), ...defaultUniverseSettings(), universeMode: "universe", chaptersFolder: "Chapters", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "" };
 }
 
 export function setup(files: Record<string, string>, sources: NameSource[], opts: { batch?: number; resolve?: (l: string, from: string) => string | null; timers?: ManualTimers; formOf?: (path: string) => FormKind | null } = {}) {

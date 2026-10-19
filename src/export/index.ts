@@ -13,7 +13,7 @@ import { chapterTitle } from "../core/book";
 import { bookSource, collectionAt, type Book } from "../core/books";
 import { propertyValue, type BookSource, type ChapterRef } from "../core/book-source";
 import { storyChapters, type Collection } from "../core/collection";
-import { exportRoot, followFolderSetting } from "../core/classify";
+import { followFolderSetting, pluginRoot } from "../core/classify";
 import { NoteExistsError, FolderBlockedError } from "../core/notes";
 import { macrotaskYield, yieldBudget } from "../core/vault-index";
 import { noteName } from "../core/paths";
@@ -66,7 +66,7 @@ export class ExportModule extends FeatureModule {
       moved: (oldPath, newPath) => {
         // the export folder itself was renamed (or a folder holding it): the setting follows, like the snapshots'
         const f = this.plugin.app.vault.getAbstractFileByPath(newPath);
-        const next = f instanceof TFolder ? followFolderSetting(exportRoot(this.plugin.settings.exportFolder), oldPath, f.path) : null;
+        const next = f instanceof TFolder ? followFolderSetting(pluginRoot("export", this.plugin.settings), oldPath, f.path) : null;
         if (next !== null) {
           this.plugin.settings.exportFolder = next;
           void this.plugin.saveSettings();
@@ -415,7 +415,7 @@ export class ExportModule extends FeatureModule {
   // ------------------------------------------------------------------ writing
 
   private pathFor(title: string, state: ModalState): string {
-    return joinPath(exportRoot(this.plugin.settings.exportFolder), exportFileName(title, state.format, state.preset));
+    return joinPath(pluginRoot("export", this.plugin.settings), exportFileName(title, state.format, state.preset));
   }
 
   /**
@@ -487,7 +487,7 @@ export class ExportModule extends FeatureModule {
           const ours = Object.values(p.data.exportChoices).some((c) => c.last?.path === e.existing);
           file = (await p.notes.create(path, data, { exists: "replace", trashOld: !ours })).file;
         } else {
-          const again = joinPath(exportRoot(p.settings.exportFolder), keepBothName(title, state.format, state.preset, new Date()));
+          const again = joinPath(pluginRoot("export", p.settings), keepBothName(title, state.format, state.preset, new Date()));
           file = (await p.notes.create(again, data, { exists: "unique" })).file;
         }
       }

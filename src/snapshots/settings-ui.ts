@@ -1,5 +1,5 @@
 import { fmt, plural, t } from "../i18n";
-import { exportRoot, inFolder, snapshotsFolderProblem, snapshotsRoot, submissionsRoot } from "../core/classify";
+import { inFolder, snapshotsFolderProblem, pluginRoot } from "../core/classify";
 import { bookProblem, overlapProblem, type FolderProblem } from "../core/folder-problem";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
@@ -13,24 +13,24 @@ import { folderRow, textRow, toggleRow, type SettingsBlock } from "../ui/setting
 export function snapshotsSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): SettingsBlock[] {
   const s = plugin.settings;
   const problemOf = (v: string): FolderProblem | null => {
-    const first = snapshotsFolderProblem(v, ui.app.vault.configDir, s.trackFolders, () => false);
+    const first = snapshotsFolderProblem(v, ui.app.vault.configDir, s.trackFolders, () => false, s.defaultsLanguage);
     if (first) return first;
-    const root = snapshotsRoot(v, s.defaultsLanguage);
-    const overlap = overlapProblem(root, [exportRoot(s.exportFolder, s.defaultsLanguage), submissionsRoot(s.submissionsFolder, s.defaultsLanguage)]);
+    const root = pluginRoot("snapshots", { ...s, snapshotsFolder: v });
+    const overlap = overlapProblem(root, [pluginRoot("export", s), pluginRoot("submissions", s)]);
     if (overlap) return overlap;
     const inBook = bookProblem(root, plugin.books.allBooksEverywhere());
     if (inBook) return inBook;
     return snapshotsFolderProblem(v, ui.app.vault.configDir, s.trackFolders, (r) =>
-      r !== s.snapshotsFolder && ui.app.vault.getMarkdownFiles().some((f) => inFolder(f.path, r)));
+      r !== s.snapshotsFolder && ui.app.vault.getMarkdownFiles().some((f) => inFolder(f.path, r)), s.defaultsLanguage);
   };
   return [{
     items: [
       folderRow(ui, {
         name: t("settings.snapshotsFolder"),
         desc: t("settings.snapshotsFolder.desc"),
-        placeholder: snapshotsRoot("", s.defaultsLanguage),
+        placeholder: pluginRoot("snapshots", { ...s, snapshotsFolder: "" }),
         get: () => s.snapshotsFolder,
-        set: (v) => { s.snapshotsFolder = snapshotsRoot(v, s.defaultsLanguage); },
+        set: (v) => { s.snapshotsFolder = pluginRoot("snapshots", { ...s, snapshotsFolder: v }); },
         problemOf,
         problemText: snapshotsProblemText,
       }),

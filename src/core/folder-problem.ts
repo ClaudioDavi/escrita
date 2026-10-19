@@ -1,4 +1,4 @@
-import { exportRoot, inExports, inFolder, inSnapshots, inSubmissions, snapshotsFolderProblem, submissionsRoot, snapshotsRoot, type ClassifySettings, type SnapshotsFolderProblem } from "./classify";
+import { inExports, inFolder, inSnapshots, inSubmissions, snapshotsFolderProblem, type ClassifySettings, type SnapshotsFolderProblem, pluginRoot } from "./classify";
 
 /** What is wrong with a plugin folder setting (export, submissions, snapshots), if anything. */
 export type FolderProblem = SnapshotsFolderProblem
@@ -9,11 +9,11 @@ export type FolderProblem = SnapshotsFolderProblem
   /** it holds a book (the book's folder or note is inside it) */
   | { reason: "holds-book"; folder: string };
 
-type FolderSettings = Pick<ClassifySettings, "exportFolder" | "submissionsFolder" | "snapshotsFolder">;
+type FolderSettings = Pick<ClassifySettings, "exportFolder" | "submissionsFolder" | "snapshotsFolder" | "defaultsLanguage">;
 
 /** The roots of the three plugin folders, as saved right now. */
 export function pluginFolders(s: FolderSettings): { export: string; submissions: string; snapshots: string } {
-  return { export: exportRoot(s.exportFolder), submissions: submissionsRoot(s.submissionsFolder), snapshots: snapshotsRoot(s.snapshotsFolder) };
+  return { export: pluginRoot("export", s), submissions: pluginRoot("submissions", s), snapshots: pluginRoot("snapshots", s) };
 }
 
 /** The first of `others` that `root` contains or sits inside, if any. */

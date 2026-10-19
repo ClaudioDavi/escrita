@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
   ancestors, classify, DEFAULT_SNAPSHOTS_FOLDER, inBook, inFolder, inSnapshots, listBooks, lookupPath, placementPath,
-  snapshotsFolderProblem, snapshotsRoot, type BookOf, type ClassifySettings, type Kind, type VaultTree,
+  snapshotsFolderProblem, pluginRoot, type BookOf, type ClassifySettings, type Kind, type VaultTree,
 } from "../src/core/classify";
 import { readPiece, type Piece } from "../src/core/measure";
 import { folderList } from "../src/core/lists";
 import { cloneDefaultStages, type Stage, type StageMapping } from "../src/core/stages";
+import { classifySettings } from "./support/classify-settings";
 
 // ---------------------------------------------------------------------------
 // An in-memory vault. Handles keep their identity, like TFile/TFolder.
@@ -81,11 +82,11 @@ class FakeTree implements VaultTree<FakeFile, FakeDir> {
   allFiles(): FakeFile[] { return [...this.files.values()]; }
 }
 
-const BASE: ClassifySettings = {
+const BASE = classifySettings({
   chaptersFolder: "Chapters", trackFolders: "", excludeFolders: "", chapterTemplate: "",
   targetProperty: "target", limitProperty: "limit", unitProperty: "unit",
   snapshotsFolder: "Escrita/Snapshots",
-};
+});
 
 const ENTRIES = [
   // a root-level book
@@ -481,7 +482,8 @@ describe("parity with the replaced code", () => {
         expect(p.book?.chaptersFolder ?? null, ctx).toBe(ob?.chaptersFolder ?? null);
         expect(p.book?.title ?? null, ctx).toBe(ob?.title ?? null);
         expect(p.kind === "chapter", ctx).toBe(legacy.isChapter(tree, s, file));
-        expect(p.tracked, ctx).toBe(legacy.tracked(file, s));
+        // 1.2.1: the replaced code knew no own notes (a darlings note is never tracked)
+        expect(p.tracked, ctx).toBe(p.own === null && legacy.tracked(file, s));
         expect(p.piece, ctx).toEqual(legacy.pieceOf(tree, s, file));
         expect(p.kind === "note" && p.piece !== null, ctx).toBe(!ob && legacy.pieceOf(tree, s, file) !== null);
         expect(p.kind === "book-note", ctx).toBe(legacy.valid(tree, s, "book", path));
@@ -661,24 +663,24 @@ describe("adapter: placementPath", () => {
 // ---------------------------------------------------------------------------
 // Snapshots: one folder per note (the note path, .md included) of .txt files.
 
-describe("snapshotsRoot", () => {
+describe("pluginRoot (snapshots)", () => {
   it("trims, collapses and strips slashes", () => {
-    expect(snapshotsRoot("Escrita/Snapshots")).toBe("Escrita/Snapshots");
-    expect(snapshotsRoot("  /Arquivo//Instantâneos/ ")).toBe("Arquivo/Instantâneos");
-    expect(snapshotsRoot("Arquivo\\Snaps")).toBe("Arquivo/Snaps");
-    expect(snapshotsRoot(".escrita/snapshots")).toBe(".escrita/snapshots");
+    expect(pluginRoot("snapshots", { snapshotsFolder: "Escrita/Snapshots" })).toBe("Escrita/Snapshots");
+    expect(pluginRoot("snapshots", { snapshotsFolder: "  /Arquivo//Instantâneos/ " })).toBe("Arquivo/Instantâneos");
+    expect(pluginRoot("snapshots", { snapshotsFolder: "Arquivo\\Snaps" })).toBe("Arquivo/Snaps");
+    expect(pluginRoot("snapshots", { snapshotsFolder: ".escrita/snapshots" })).toBe(".escrita/snapshots");
   });
   it("never means the whole vault: empty or not a string gives the default", () => {
-    for (const v of ["", "   ", "/", "//", null, undefined, 3]) expect(snapshotsRoot(v)).toBe(DEFAULT_SNAPSHOTS_FOLDER);
+    for (const v of ["", "   ", "/", "//", null, undefined, 3]) expect(pluginRoot("snapshots", { snapshotsFolder: v })).toBe(DEFAULT_SNAPSHOTS_FOLDER);
     expect(DEFAULT_SNAPSHOTS_FOLDER).toBe("Escrita/Snapshots");
   });
   it("inSnapshots matches the folder and what is inside it only", () => {
-    const s = { snapshotsFolder: "/Escrita/Snapshots/" };
+    const s = classifySettings({ snapshotsFolder: "/Escrita/Snapshots/" });
     expect(inSnapshots("Escrita/Snapshots", s)).toBe(true);
     expect(inSnapshots("Escrita/Snapshots/Novels/Livro.md/2026-09-30 1200.txt", s)).toBe(true);
     expect(inSnapshots("Escrita/Snapshots2/x.md", s)).toBe(false);
     expect(inSnapshots("Escrita/x.md", s)).toBe(false);
-    expect(inSnapshots("x.md", { snapshotsFolder: "" })).toBe(false);
+    expect(inSnapshots("x.md", classifySettings({ snapshotsFolder: "" }))).toBe(false);
   });
 });
 

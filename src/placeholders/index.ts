@@ -5,7 +5,7 @@ import type { SettingsUi } from "../core/module-context";
 import type { FeatureId } from "../core/features";
 import { folderList } from "../core/lists";
 import type { IndexChange, VaultIndex } from "../core/vault-index";
-import { classifyKey, snapshotsRoot } from "../core/classify";
+import { classifyKey, pluginRoot } from "../core/classify";
 import type { Applied } from "../core/note-text";
 import { t } from "../i18n";
 import { locate, placeholderSpec, planInsert, resolvePlaceholder, scan, stepIndex, type IndexedMarker } from "./logic";
@@ -158,7 +158,7 @@ export class PlaceholdersModule extends FeatureModule {
   /** Folders the index leaves out: the exclude folders and the snapshots folder. */
   private excluded(): string[] {
     const s = this.plugin.settings;
-    return [...folderList(s.excludeFolders), snapshotsRoot(s.snapshotsFolder)];
+    return [...folderList(s.excludeFolders), pluginRoot("snapshots", s)];
   }
 
   private applyDots(): void {

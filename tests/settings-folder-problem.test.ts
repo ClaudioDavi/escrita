@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { bookProblem, holdsOwnNotes, overlapProblem, pluginFolderProblem } from "../src/core/folder-problem";
+import { classifySettings } from "./support/classify-settings";
 
-const S = { exportFolder: "Escrita/Exports", submissionsFolder: "Escrita/Submissions", snapshotsFolder: "Escrita/Snapshots" };
+const S = classifySettings({ exportFolder: "Escrita/Exports", submissionsFolder: "Escrita/Submissions", snapshotsFolder: "Escrita/Snapshots" });
 const none = () => false;
 
 describe("pluginFolderProblem", () => {

@@ -7,7 +7,7 @@
 // holds nothing to lose; and on the adapter, trash is trashSystem, then
 // trashLocal (mobile has no system trash).
 //
-// Paths: the root is normalized once (core's snapshotsRoot) and a note's part
+// Paths: the root is normalized once (core's pluginRoot) and a note's part
 // keeps its exact bytes (paths.ts). Lookups try the exact path first and the
 // normalized one only as a fallback (core's lookupPath), since the Vault API
 // normalizes every path it creates. The adapter takes paths as they are, so a

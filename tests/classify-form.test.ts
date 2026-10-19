@@ -2,19 +2,20 @@ import { describe, expect, it } from "vitest";
 import { classify, classifyKey, type ClassifySettings, type Named, type VaultTree } from "../src/core/classify";
 import { FORM_DEFAULTS, FORM_KINDS } from "../src/core/form";
 import { DEFAULT_SETTINGS, normalizeSettings } from "../src/settings";
+import { classifySettings } from "./support/classify-settings";
 
 // PLAN-1.1 Q1: the form is a field on the classifier result, read with the universe off.
 
-const base: ClassifySettings = {
+const base = classifySettings({
   chaptersFolder: "Chapters", trackFolders: "Contos\nRoteiros\nNovels", excludeFolders: "", chapterTemplate: "", snapshotsFolder: "Escrita/Snapshots",
   targetProperty: "target", limitProperty: "limit", unitProperty: "unit",
-};
-const pt: ClassifySettings = {
+});
+const pt = classifySettings({
   ...base,
   formProperty: "forma",
   formValues: { ...FORM_DEFAULTS, shortStory: "conto", screenplay: "roteiro" },
   formFolders: "Roteiros: roteiro\nContos: conto",
-};
+});
 
 function tree(paths: string[], fm: Record<string, Record<string, unknown>> = {}): VaultTree<Named, Named> {
   const files = new Map(paths.map((p) => [p, { path: p }]));

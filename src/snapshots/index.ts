@@ -12,7 +12,7 @@ import type EscritaPlugin from "../main";
 import { FeatureModule, type FeatureSlots, type SettingsUi } from "../core/module-context";
 import type { Follower } from "../core/vault-index";
 import { movedPath } from "../core/path-keys";
-import { followFolderSetting, inSnapshots, snapshotsRoot } from "../core/classify";
+import { followFolderSetting, inSnapshots, pluginRoot } from "../core/classify";
 import { writingDay } from "../core/dates";
 import { measureText } from "../core/measure";
 import { revertPlan, wholeText, type AnchoredChange, type Change } from "../core/note-text";
@@ -63,7 +63,7 @@ export class SnapshotsModule extends FeatureModule {
   // ---------------------------------------------------------------- paths
 
   root(): string {
-    return snapshotsRoot(this.plugin.settings.snapshotsFolder);
+    return pluginRoot("snapshots", this.plugin.settings);
   }
 
   isSnapshotPath(path: string): boolean {

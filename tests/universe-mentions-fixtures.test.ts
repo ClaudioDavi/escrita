@@ -9,6 +9,7 @@ import { compileTerms, type NameSource } from "../src/core/names";
 import { defaultUniverseSettings } from "../src/universe/settings";
 import { MentionsIndex } from "../src/universe/mentions-index";
 import { ManualTimers, MemoryVault, settle, type MemFile } from "./support/memory-vault";
+import { classifySettings } from "./support/classify-settings";
 
 const read = (n: string) => readFileSync(new URL(`./fixtures/names/${n}`, import.meta.url), "utf8");
 const rows = (s: string) => s.split("\n").filter((l) => l && !l.startsWith("#")).map((l) => l.split("\t"));
@@ -39,7 +40,7 @@ async function indexFor(files: Record<string, string>, table: ReturnType<typeof 
     add: (s) => hub.add(s),
     rebuild: (n) => hub.rebuild(n),
     table: () => table,
-    settings: () => ({ ...defaultUniverseSettings(), universeMode: "universe", chaptersFolder: "Chapters", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "" }),
+    settings: () => ({ ...classifySettings(), ...defaultUniverseSettings(), universeMode: "universe", chaptersFolder: "Chapters", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "" }),
     formOf: () => null,
     resolve,
     timers,

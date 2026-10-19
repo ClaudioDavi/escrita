@@ -9,8 +9,8 @@ import { cleanVaultFolder, listsPath, parentOf } from "./paths";
 import { effectivePiece, parseUnit, readChapterDefault, readPiece, type Piece, type PieceProperties, type PieceUnit } from "./measure";
 import { LANGUAGE_DEFAULTS } from "./defaults";
 import { isDefaultsLanguage } from "./language";
-import { DEFAULT_FORM_PROPERTY, FORM_DEFAULTS, formFor, type FormKind, type FormSettings } from "./form";
-import { DEFAULT_STAGES, DEFAULT_STATUS_PROPERTY, readStatus, stageOf, type Stage, type StageMapping } from "./stages";
+import { DEFAULT_FORM_PROPERTY, formFor, type FormKind, type FormSettings } from "./form";
+import { DEFAULT_STATUS_PROPERTY, readStatus, stageOf, type Stage, type StageMapping } from "./stages";
 // one direction only: classify imports scope, scope never imports classify (no cycle at load)
 import { inFolder, NO_SCOPE, scopeFor, type Scope, type ScopeLookup, type ScopeMode, type ScopeSettings } from "./scope";
 // inFolder and NO_SCOPE live in core/scope.ts (0.9); re-exported so their callers keep importing them from here
@@ -49,11 +49,8 @@ export interface VaultTree<F extends Named, D extends Named> {
  * so callers don't change.
  */
 export interface ClassifySettings extends PieceProperties {
-  /**
-   * The book note's property holding its chapters' default target (Q47). Optional: missing or
-   * blank means no book default, so a chapter's piece is its own.
-   */
-  chapterTargetProperty?: string;
+  /** The book note's property holding its chapters' default target (Q47); blank means no book default. */
+  chapterTargetProperty: string;
   /** "Chapters", "Capítulos", or a nested path like "Drafts/Chapters" */
   chaptersFolder: string;
   /** raw folderList text; empty = the whole vault */
@@ -61,53 +58,36 @@ export interface ClassifySettings extends PieceProperties {
   /** raw folderList text */
   excludeFolders: string;
   chapterTemplate: string;
-  /** where Escrita keeps snapshots; read through snapshotsRoot(), so "" means the default */
+  /** where Escrita keeps snapshots; read through pluginRoot("snapshots"), so "" means the default */
   snapshotsFolder: string;
-  /** the frontmatter property holding the status; defaults to DEFAULT_STATUS_PROPERTY */
-  statusProperty?: string;
-  /** the writer's words for each stage; defaults to DEFAULT_STAGES */
-  stages?: StageMapping;
-  /**
-   * Where submission notes live (SF 12; 0.8). Optional in the type: it is read through
-   * submissionsRoot(), so missing or "" means the default folder for `defaultsLanguage`,
-   * like the snapshots folder.
-   */
-  submissionsFolder?: string;
-  /**
-   * Where export writes its files (Q3; 0.8). Optional in the type: it is read through
-   * exportRoot(), so missing or "" means the default folder for `defaultsLanguage`.
-   */
-  exportFolder?: string;
-  /**
-   * The scope keys (0.9, IMPROVEMENTS 9; PLAN-0.9 Q15): what `Placement.scope` reads.
-   * EscritaSettings has all four (UniverseSettings). Optional so the many hand-built test
-   * settings stay valid: a missing `universeMode` means "off" (every scope is none), and
-   * the others take UniverseSettings' defaults ("Universe.md", "", "universe").
-   */
-  universeMode?: ScopeMode;
-  universeNote?: string;
-  defaultUniverseFolders?: string;
+  /** the frontmatter property holding the status; blank means DEFAULT_STATUS_PROPERTY */
+  statusProperty: string;
+  /** the writer's words for each stage */
+  stages: StageMapping;
+  /** where submission notes live (SF 12; 0.8); read through pluginRoot("submissions") */
+  submissionsFolder: string;
+  /** where export writes its files (Q3; 0.8); read through pluginRoot("export") */
+  exportFolder: string;
+  /** the scope keys (0.9, IMPROVEMENTS 9; PLAN-0.9 Q15): what `Placement.scope` reads */
+  universeMode: ScopeMode;
+  universeNote: string;
+  defaultUniverseFolders: string;
   /** the property on a work, chapter or entry that links its universe note */
-  universeProperty?: string;
+  universeProperty: string;
   /**
    * Escrita's own notes (1.2.1): the per-book darlings note's name, the global darlings note's
-   * path and the lens's word lists note's path. Optional so the many hand-built test settings stay
-   * valid: a missing key means no such own note; a blank one means the default ("Darlings.md";
+   * path and the lens's word lists note's path. A blank one means the default ("Darlings.md";
    * the two default word lists names at the vault root).
    */
-  darlingsNote?: string;
-  globalDarlingsNote?: string;
-  lensListsNote?: string;
-  /** the install's default set (1.0): a blank export or submissions folder falls back to its words; missing is "en" */
-  defaultsLanguage?: string;
-  /**
-   * The form keys (1.1, PLAN-1.1 Q1): what `Placement.form` reads. EscritaSettings has all
-   * three. Optional so hand-built test settings stay valid: missing means "form", the English
-   * words and no folders.
-   */
-  formProperty?: string;
-  formValues?: FormSettings["formValues"];
-  formFolders?: string;
+  darlingsNote: string;
+  globalDarlingsNote: string;
+  lensListsNote: string;
+  /** the install's default set (1.0): a blank export, submissions or snapshots folder falls back to its words */
+  defaultsLanguage: string;
+  /** the form keys (1.1, PLAN-1.1 Q1): what `Placement.form` reads */
+  formProperty: string;
+  formValues: FormSettings["formValues"];
+  formFolders: string;
 }
 
 /** The snapshots folder when the setting is empty or unusable. */
@@ -263,28 +243,39 @@ function notePathOf(setting: unknown): string {
  */
 export function ownNoteOf(path: string, bookFolder: string | null, settings: ClassifySettings): OwnNote | null {
   const same = (a: string, b: string) => a !== "" && a.toLowerCase() === b.toLowerCase();
-  if (typeof settings.globalDarlingsNote === "string" && same(path, notePathOf(settings.globalDarlingsNote) || "Darlings.md")) return "darlings";
-  if (bookFolder !== null && typeof settings.darlingsNote === "string") {
-    if (same(path, `${bookFolder}/${notePathOf(settings.darlingsNote) || "Darlings.md"}`)) return "darlings";
-  }
-  if (typeof settings.lensListsNote === "string") {
-    const lists = notePathOf(settings.lensListsNote);
-    if (lists ? same(path, lists) : DEFAULT_LISTS_NOTES.some((n) => same(path, n))) return "lists";
-  }
+  if (same(path, notePathOf(settings.globalDarlingsNote) || "Darlings.md")) return "darlings";
+  if (bookFolder !== null && same(path, `${bookFolder}/${notePathOf(settings.darlingsNote) || "Darlings.md"}`)) return "darlings";
+  const lists = notePathOf(settings.lensListsNote);
+  if (lists ? same(path, lists) : DEFAULT_LISTS_NOTES.some((n) => same(path, n))) return "lists";
   return null;
 }
 
+/** The three folders Escrita keeps for itself (IMPROVEMENTS 43). */
+export type PluginRootKind = "snapshots" | "submissions" | "export";
+
+/** The settings `pluginRoot` reads; loose on purpose, a saved value may be anything. */
+export interface PluginRootSettings {
+  snapshotsFolder?: unknown;
+  submissionsFolder?: unknown;
+  exportFolder?: unknown;
+  defaultsLanguage?: unknown;
+}
+
 /**
- * The snapshots folder setting as a vault path: trimmed, backslashes and
- * repeated slashes turned into single slashes, edge slashes stripped. Empty (or
- * not a string) gives the install's set's folder (`defaultsLanguage`;
- * DEFAULT_SNAPSHOTS_FOLDER in English and without one), so the result is never "" and
- * never means the whole vault. The one place this normalization lives: settings,
- * classify and the snapshots module all go through it.
+ * A plugin folder setting as a vault path (IMPROVEMENTS 43): trimmed, backslashes and repeated
+ * slashes turned into single slashes, edge slashes stripped. Empty (or not a string) gives the
+ * install's set's folder (`defaultsLanguage`; DEFAULT_SNAPSHOTS_FOLDER, DEFAULT_SUBMISSIONS_FOLDER
+ * and DEFAULT_EXPORT_FOLDER in English and without one), so the result is never "" and never means
+ * the whole vault. The one place this normalization lives: settings, classify and the snapshots,
+ * submissions and export modules all go through it.
  */
-export function snapshotsRoot(setting: unknown, defaultsLanguage?: unknown): string {
-  // the install's set: `Escrita/Snapshots` in English (DEFAULT_SNAPSHOTS_FOLDER), `Escrita/Versões` in pt-BR
-  return folderRoot(setting, languageSet(defaultsLanguage).snapshotsFolder);
+export function pluginRoot(kind: PluginRootKind, settings: PluginRootSettings): string {
+  const set = languageSet(settings.defaultsLanguage);
+  switch (kind) {
+    case "snapshots": return folderRoot(settings.snapshotsFolder, set.snapshotsFolder);
+    case "submissions": return folderRoot(settings.submissionsFolder, set.submissionsFolder);
+    case "export": return folderRoot(settings.exportFolder, set.exportFolder);
+  }
 }
 
 /** The install's default set for a blank folder setting (1.0); an unknown or missing language is "en". */
@@ -309,16 +300,6 @@ export function followFolderSetting(current: string, oldPath: string, newPath: s
   return folderRoot(newPath, "") + root.slice(from.length);
 }
 
-/** The submissions folder setting as a vault path, normalized like snapshotsRoot; never "" (DEFAULT_SUBMISSIONS_FOLDER). */
-export function submissionsRoot(setting: unknown, defaultsLanguage?: unknown): string {
-  return folderRoot(setting, languageSet(defaultsLanguage).submissionsFolder);
-}
-
-/** The export folder setting as a vault path, normalized like snapshotsRoot; never "" (DEFAULT_EXPORT_FOLDER). */
-export function exportRoot(setting: unknown, defaultsLanguage?: unknown): string {
-  return folderRoot(setting, languageSet(defaultsLanguage).exportFolder);
-}
-
 /**
  * One fingerprint of every setting `classify` reads except the scope keys (IMPROVEMENTS 16):
  * folders, chapters folder, chapter template, snapshots, submissions and export folders
@@ -330,8 +311,8 @@ export function exportRoot(setting: unknown, defaultsLanguage?: unknown): string
 export function classifyKey(s: ClassifySettings): string {
   return JSON.stringify([
     str(s.trackFolders), str(s.excludeFolders), str(s.chaptersFolder), str(s.chapterTemplate),
-    snapshotsRoot(s.snapshotsFolder), submissionsRoot(s.submissionsFolder, s.defaultsLanguage), exportRoot(s.exportFolder, s.defaultsLanguage),
-    str(s.statusProperty), s.stages ?? null,
+    pluginRoot("snapshots", s), pluginRoot("submissions", s), pluginRoot("export", s),
+    str(s.statusProperty), s.stages,
     str(s.targetProperty), str(s.limitProperty), str(s.unitProperty), str(s.deadlineProperty), str(s.chapterTargetProperty),
     str(s.formProperty), s.formValues ?? null, str(s.formFolders),
     str(s.darlingsNote), str(s.globalDarlingsNote), str(s.lensListsNote),
@@ -349,17 +330,17 @@ export function scopeKey(s: Pick<ClassifySettings, "universeMode" | "universeNot
 
 /** Whether `path` is the submissions folder or inside it. */
 export function inSubmissions(path: string, settings: Pick<ClassifySettings, "submissionsFolder" | "defaultsLanguage">): boolean {
-  return inFolder(path, submissionsRoot(settings.submissionsFolder, settings.defaultsLanguage));
+  return inFolder(path, pluginRoot("submissions", settings));
 }
 
 /** Whether `path` is the export folder or inside it. */
 export function inExports(path: string, settings: Pick<ClassifySettings, "exportFolder" | "defaultsLanguage">): boolean {
-  return inFolder(path, exportRoot(settings.exportFolder, settings.defaultsLanguage));
+  return inFolder(path, pluginRoot("export", settings));
 }
 
 /** Whether `path` is the snapshots folder or inside it. */
-export function inSnapshots(path: string, settings: Pick<ClassifySettings, "snapshotsFolder">): boolean {
-  return inFolder(path, snapshotsRoot(settings.snapshotsFolder));
+export function inSnapshots(path: string, settings: Pick<ClassifySettings, "snapshotsFolder" | "defaultsLanguage">): boolean {
+  return inFolder(path, pluginRoot("snapshots", settings));
 }
 
 /** What is wrong with a snapshots folder setting, if anything (see snapshotsFolderProblem). */
@@ -379,9 +360,9 @@ export type SnapshotsFolderProblem =
  * the whole vault is tracked, so only existing notes matter there.
  */
 export function snapshotsFolderProblem(
-  value: string, configDir: string, trackFolders: string, hasNotes: (root: string) => boolean,
+  value: string, configDir: string, trackFolders: string, hasNotes: (root: string) => boolean, defaultsLanguage?: unknown,
 ): SnapshotsFolderProblem | null {
-  const root = snapshotsRoot(value);
+  const root = pluginRoot("snapshots", { snapshotsFolder: value, defaultsLanguage });
   if (root.split("/").some((seg) => seg.trim() === ".." || seg.trim() === ".")) return { reason: "path" };
   const config = configDir.trim().replace(/^\/+|\/+$/g, "");
   if (config !== "" && (inFolder(root, config) || inFolder(config, root))) return { reason: "config", folder: config };
@@ -511,12 +492,17 @@ function chapterPieceOf<F extends Named, D extends Named>(
   }
 }
 
+/** The status property to read: the setting, or DEFAULT_STATUS_PROPERTY while it is blank. */
+export function statusPropertyOf(settings: Pick<ClassifySettings, "statusProperty">): string {
+  return settings.statusProperty.trim() !== "" ? settings.statusProperty : DEFAULT_STATUS_PROPERTY;
+}
+
 /** The one stage rule for works: only a tracked note or book note has one. */
 function stageFor(fm: Record<string, unknown> | undefined, tracked: boolean, settings: ClassifySettings): Stage | null {
   if (!tracked) return null;
   try {
-    const prop = typeof settings.statusProperty === "string" && settings.statusProperty.trim() !== "" ? settings.statusProperty : DEFAULT_STATUS_PROPERTY;
-    return stageOf(readStatus(fm, prop), settings.stages ?? DEFAULT_STAGES);
+    const prop = statusPropertyOf(settings);
+    return stageOf(readStatus(fm, prop), settings.stages);
   } catch {
     return null;
   }
@@ -532,7 +518,7 @@ export function scopeLookup<F extends Named, D extends Named>(
   tree: VaultTree<F, D>, settings: ClassifySettings, path: string, book: BookOf<F, D> | null,
   own?: { fm: Record<string, unknown> | undefined },
 ): ScopeLookup {
-  const prop = settings.universeProperty ?? "universe";
+  const prop = settings.universeProperty;
   return {
     book: (p) => (book && p === path ? { note: book.note.path, folder: book.folder.path } : null),
     universe: (p) => {
@@ -547,16 +533,16 @@ export function scopeLookup<F extends Named, D extends Named>(
 /** The settings' scope keys as ScopeSettings, with UniverseSettings' defaults for the missing ones. */
 export function scopeSettings(settings: ClassifySettings): ScopeSettings {
   return {
-    universeMode: settings.universeMode ?? "off",
-    universeNote: settings.universeNote ?? "Universe.md",
-    defaultUniverseFolders: settings.defaultUniverseFolders ?? "",
+    universeMode: settings.universeMode,
+    universeNote: settings.universeNote,
+    defaultUniverseFolders: settings.defaultUniverseFolders,
   };
 }
 
 /** A markdown file's form from its frontmatter and folder (PLAN-1.1 Q1); never throws. */
 function formOfFile(path: string, fm: Record<string, unknown> | undefined, settings: ClassifySettings): FormKind | null {
   const prop = settings.formProperty || DEFAULT_FORM_PROPERTY;
-  return formFor(path, fm?.[prop], { formValues: settings.formValues ?? FORM_DEFAULTS, formFolders: settings.formFolders ?? "" });
+  return formFor(path, fm?.[prop], { formValues: settings.formValues, formFolders: settings.formFolders });
 }
 
 /**
@@ -569,7 +555,7 @@ function withScope<F extends Named, D extends Named>(
   own?: { fm: Record<string, unknown> | undefined },
 ): Placement<F, D> {
   let scope: Scope = NO_SCOPE;
-  if ((settings.universeMode ?? "off") !== "off") {
+  if (settings.universeMode !== "off") {
     try {
       scope = scopeFor({ path: p.path }, scopeSettings(settings), scopeLookup(tree, settings, p.path, p.book, own));
     } catch {

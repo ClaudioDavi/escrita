@@ -66,7 +66,7 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   (`MeasureCache`, per-file counts by mtime), `core/daysoff.ts`
   (`dayOffPredicate`, `parseDatesOff`), `core/classify.ts` (the `VaultTree` port,
   `classify`, `listBooks`, `inFolder`, `inBook`, `ancestors`, and the snapshots folder:
-  `snapshotsRoot`, `inSnapshots`, `snapshotsFolderProblem`; see "File classification"),
+  `pluginRoot`, `inSnapshots`, `snapshotsFolderProblem`; see "File classification"),
   `core/lists.ts` (`lineList`, `folderList`; import them from here),
   `core/note-text.ts` (the note text port: `Change`, `checkedChange`, `minimalChange`,
   `guardedEdit`, `replaceIfExact`, `matchLineEndings`), `core/explorer-decorations.ts` (the explorer walk, over fake
@@ -330,11 +330,11 @@ drives it with an in-memory tree. The result:
   path is never a book, a chapter or tracked, even when the folder sits inside a book
   (a snapshot folder is named like its note, `x.md/`). The outline and the explorer
   skip it through this field, goals through `tracked`, and the placeholder index
-  excludes `snapshotsRoot` like an exclude folder.
+  excludes `pluginRoot("snapshots", …)` like an exclude folder.
 
 - `submission` and `export` (0.8): the path is the submissions folder or the export
-  folder, or inside it (`inSubmissions`, `inExports`; roots from `submissionsRoot` and
-  `exportRoot`, defaults `Escrita/Submissions` and `Escrita/Exports`). Both work exactly like
+  folder, or inside it (`inSubmissions`, `inExports`; roots from `pluginRoot("submissions", …)` and
+  `pluginRoot("export", …)`, defaults `Escrita/Submissions` and `Escrita/Exports`). Both work exactly like
   `snapshot`: never a book, a chapter or tracked, so never a work, no stage, and no draft
   status (`core/new-note-status.ts` skips both). A file there is a `note` or a `file` with
   no book, even when the folder sits in a book. The rule holds whether the feature is on
@@ -344,15 +344,15 @@ drives it with an in-memory tree. The result:
 - `own` (1.2.1): `"darlings"` for a book's darlings note (`darlingsNote`, in the book's
   folder) or the global one (`globalDarlingsNote`), `"lists"` for the lens's word lists note
   (`lensListsNote`, or either default name at the root while it is blank); null otherwise
-  (`ownNoteOf` in `core/classify.ts`; the three settings are optional in `ClassifySettings`
+  (`ownNoteOf` in `core/classify.ts`; the three settings are required in `ClassifySettings`
   and part of `classifyKey`). Such a note is Escrita's own text, not writing: never tracked,
   no stage, no draft status (`needsDraftStatus` skips `own`), so never a work. The kind stays
   what the place says. Before 1.2.1 only a note in a book was out of the way (a `book-file`);
   the global darlings note, a plain `note` in a vault that tracks every folder, became a work.
 
 The snapshots, submissions and export folder settings are read only through
-`snapshotsRoot(setting)`, `submissionsRoot` and `exportRoot` (trimmed, slashes cleaned,
-empty → the default). They are checked before saving through one validation, see
+`pluginRoot(kind, settings)` with `kind` `snapshots`, `submissions` or `export` (trimmed, slashes cleaned,
+empty → the install's default, by `defaultsLanguage`; 1.2.1). They are checked before saving through one validation, see
 "Plugin folders". `snapshotsFolderProblem` is its first step: not `..`, not the config
 folder, not inside (or holding) a track folder, not a folder that already has `.md` notes.
 
@@ -364,7 +364,7 @@ the stages, the four piece properties and (1.1) the three form keys (`formProper
 puts it in its `settingsKey` (works, explorer, placeholders, entries, threads, mentions, names),
 so a new classify input is added to the key once and every index rebuilds on it.
 **`scopeKey(settings)`** (0.9) is the four scope keys (`universeMode`, `universeNote`,
-`defaultUniverseFolders`, `universeProperty`; a missing mode keys as "off"); only the specs
+`defaultUniverseFolders`, `universeProperty`; the mode is always set); only the specs
 whose values depend on scope compose it too (the universe's, through `entries.classifyKeyOf`),
 so a universe setting change doesn't rebuild the works, explorer or placeholders indexes.
 
@@ -447,8 +447,8 @@ field on the classifier, the way `scope` moved in 0.9. Pure, no Obsidian imports
   (`EscritaSettings` extends it, beside `UniverseSettings`) and have their rows in the settings
   table, marked `always`; an old six-word `formValues` gains `screenplay` on its own.
   `universe/settings.ts` only re-exports `FORM_KINDS` and `FormKind` for its callers.
-- **In the classifier.** `ClassifySettings` has the three keys, optional so hand-built test
-  settings stay valid (missing means the English defaults), and `classifyKey` includes them, so
+- **In the classifier.** `ClassifySettings` has the three keys, required like every field since 1.2.1
+  (tests build theirs with `classifySettings(partial)`), and `classifyKey` includes them, so
   a change to a form word or a folder line rebuilds every index that keys on classify.
   `formOfFile` in `core/classify.ts` reads the frontmatter the classifier already has for the
   path and never throws.
@@ -1619,7 +1619,7 @@ the names the setup gives what it creates (home note, folders, examples).
 
 `INSTALL_KEYS` (`snapshotsFolder`, `excludeFolders`) are in both sets but are not word keys:
 a fresh install takes them from its set (pt-BR: `Escrita/Versões`, `Modelos`) and a blank
-snapshots folder comes back from it (`snapshotsRoot(setting, defaultsLanguage)`), but the
+snapshots folder comes back from it (`pluginRoot("snapshots", settings)`), but the
 setup never lists or moves them, because they name where things already are.
 
 ## Feature presets (`core/feature-presets.ts`, 1.0)
@@ -2544,7 +2544,7 @@ scans its files).
 - **Storage** (`paths.ts`, `store.ts`, `fs.ts`): `<root>/<note path, .md kept>/<YYYY-MM-DD
   HHmm> <label>.txt` plus an `index.json` (entries: file, name, kind, taken, day, words,
   note path at the time, hash, length). Root from `snapshotsFolder` through core's
-  `snapshotsRoot` (default `Escrita/Snapshots`); settings refuse a folder inside a track
+  `pluginRoot("snapshots", …)` (default `Escrita/Snapshots`); settings refuse a folder inside a track
   folder or already holding `.md` notes. `.txt`, so links, search and graph ignore
   them and a rename never rewrites a snapshot. The files are the truth: every load
   reconciles the index with them (strays are adopted as manual, never pruned).

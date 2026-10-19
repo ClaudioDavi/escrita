@@ -1,5 +1,5 @@
 import { fmt, plural, t } from "../i18n";
-import { inFolder, submissionsRoot } from "../core/classify";
+import { inFolder, pluginRoot } from "../core/classify";
 import type { SettingsUi } from "../core/module-context";
 import type EscritaPlugin from "../main";
 import { textRow, type SettingsBlock } from "../ui/settings-rows";
@@ -42,7 +42,7 @@ export function submissionsSettingsItems(ui: SettingsUi, plugin: EscritaPlugin):
 
 /** What stays when the feature is turned off: the notes in the folder (read from the vault, not from live state). */
 export async function submissionsOffNotice(plugin: EscritaPlugin): Promise<string | null> {
-  const folder = submissionsRoot(plugin.settings.submissionsFolder, plugin.settings.defaultsLanguage);
+  const folder = pluginRoot("submissions", plugin.settings);
   const n = plugin.app.vault.getMarkdownFiles().filter((f) => inFolder(f.path, folder)).length;
   if (n === 0) return t("settings.features.off.submissions.none");
   return plural("settings.features.off.submissions", n, { n: fmt(n), folder });

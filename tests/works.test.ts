@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { deskEntry, sameDeskEntry, bookChapterProgress, type DeskEntry } from "../src/core/works";
 import { stageOf, DEFAULT_STAGES, type Stage } from "../src/core/stages";
+import { classifySettings } from "./support/classify-settings";
 
 const so = (s: unknown) => stageOf(s, DEFAULT_STAGES);
 type P = Parameters<typeof deskEntry>[0];
@@ -85,7 +86,7 @@ describe("bookChapterProgress", () => {
 
 // ── the works index over a MemoryVault ───────────────────────────────────
 import { VaultIndex } from "../src/core/vault-index";
-import { classify, snapshotsRoot, type ClassifySettings, type VaultTree } from "../src/core/classify";
+import { classify, pluginRoot, type ClassifySettings, type VaultTree } from "../src/core/classify";
 import { worksSpec, settingsKeyOf } from "../src/core/works-index";
 import { cloneDefaultStages } from "../src/core/stages";
 import { ManualTimers, MemoryVault, settle, type MemFile } from "./support/memory-vault";
@@ -93,11 +94,11 @@ import { ManualTimers, MemoryVault, settle, type MemFile } from "./support/memor
 function wsetup(files: Record<string, string>, over: Partial<ClassifySettings> = {}) {
   const vault = new MemoryVault(files);
   const timers = new ManualTimers();
-  const settings: ClassifySettings & { stages: ReturnType<typeof cloneDefaultStages> } = {
+  const settings = classifySettings({
     chaptersFolder: "Capítulos", chapterTemplate: "", trackFolders: "", excludeFolders: "", snapshotsFolder: "",
     statusProperty: "status", stages: cloneDefaultStages(),
     targetProperty: "target", limitProperty: "limit", unitProperty: "unit", deadlineProperty: "deadline", ...over,
-  };
+  });
   const fm = (f: MemFile) => {
     const m = /^---\n([\s\S]*?)\n---/.exec(f.text);
     const out: Record<string, unknown> = {};
@@ -152,7 +153,7 @@ describe("works index", () => {
   });
 
   it("leaves out files in the snapshots folder", async () => {
-    const { index, settings } = wsetup({ [`${snapshotsRoot("")}/A.md`]: note("draft"), "A.md": note("draft") });
+    const { index, settings } = wsetup({ [`${pluginRoot("snapshots", classifySettings())}/A.md`]: note("draft"), "A.md": note("draft") });
     await index.build();
     expect(index.paths()).toEqual(["A.md"]);
     expect(settings.snapshotsFolder).toBe("");
@@ -179,7 +180,7 @@ describe("works index", () => {
 });
 
 describe("settingsKeyOf", () => {
-  const base = { trackFolders: "a", excludeFolders: "b", chaptersFolder: "c", chapterTemplate: "", snapshotsFolder: "", statusProperty: "status", stages: cloneDefaultStages(), targetProperty: "target", limitProperty: "limit", unitProperty: "unit", deadlineProperty: "deadline", goalProperty: "goal" };
+  const base = classifySettings({ trackFolders: "a", excludeFolders: "b", chaptersFolder: "c", chapterTemplate: "", snapshotsFolder: "", statusProperty: "status", stages: cloneDefaultStages(), targetProperty: "target", limitProperty: "limit", unitProperty: "unit", deadlineProperty: "deadline", goalProperty: "goal" });
   it("changes with every setting the entries depend on", () => {
     const k = settingsKeyOf(base);
     expect(settingsKeyOf({ ...base })).toBe(k);

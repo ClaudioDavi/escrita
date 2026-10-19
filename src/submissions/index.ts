@@ -4,7 +4,7 @@ import { FeatureModule, type SettingsUi } from "../core/module-context";
 import type { FeatureId } from "../core/features";
 import type { Follower, VaultIndex } from "../core/vault-index";
 import type { PendingSource, PendingSubmission } from "../core/pending";
-import { followFolderSetting, inSubmissions, submissionsRoot } from "../core/classify";
+import { followFolderSetting, inSubmissions, pluginRoot } from "../core/classify";
 import { isoDay } from "../core/dates";
 import { writtenWord } from "../core/stages";
 import { fmt, t } from "../i18n";
@@ -48,7 +48,7 @@ export class SubmissionsModule extends FeatureModule {
       include: (f) => f.extension === "md" && inSubmissions(f.path, s()),
       compute: (f) => rowOf(plugin.app.metadataCache.getFileCache(f)?.frontmatter, propsOf(s())),
       same: sameRow,
-      settingsKey: () => `${submissionsRoot(s().submissionsFolder)}|${propsKey(propsOf(s()))}`,
+      settingsKey: () => `${pluginRoot("submissions", s())}|${propsKey(propsOf(s()))}`,
     });
     this.register(this.index.onChange(() => this.changed()));
     // a work renamed or moved changes what a `work` link resolves to, though no submission note changed
@@ -90,7 +90,7 @@ export class SubmissionsModule extends FeatureModule {
       moved: (oldPath, newPath) => {
         const f = this.plugin.app.vault.getAbstractFileByPath(newPath);
         const next = f instanceof TFolder
-          ? followFolderSetting(submissionsRoot(this.plugin.settings.submissionsFolder), oldPath, f.path)
+          ? followFolderSetting(pluginRoot("submissions", this.plugin.settings), oldPath, f.path)
           : null;
         if (next !== null) {
           this.plugin.settings.submissionsFolder = next;
@@ -163,7 +163,7 @@ export class SubmissionsModule extends FeatureModule {
     if (!(work instanceof TFile)) { new Notice(t("submissions.notice.open")); return; }
 
     const s = plugin.settings;
-    const folder = submissionsRoot(s.submissionsFolder);
+    const folder = pluginRoot("submissions", s);
     const result = pendingValue(s.submissionResults);
     const pathFor = (market: string, sent: string) => normalizePath(submissionPath(folder, sent, work.basename, market));
     const linkFor = (market: string, sent: string) =>

@@ -8,6 +8,7 @@ import type { Scope } from "../src/core/scope";
 import { defaultUniverseSettings } from "../src/universe/settings";
 import type { WorkInfo } from "../src/universe/works-list";
 import { ManualTimers, MemoryVault, settle, type MemFile } from "./support/memory-vault";
+import { classifySettings } from "./support/classify-settings";
 
 const U: Scope = { kind: "universe", root: "Universo", note: "Universo.md" };
 const V: Scope = { kind: "universe", root: "Outro", note: "Outro.md" };
@@ -145,7 +146,7 @@ describe("MentionCtx over the mentions index", () => {
       onMetaChanged: () => {}, onResolved: () => {}, onLayoutReady: (cb) => cb(), layoutReady: () => true, hasCache: () => true,
     };
     const hub = new IndexHub<MemFile>(events, s.vault, timers, { snapshotsRoot: () => "Escrita/Snapshots" });
-    const settings: EntriesSettings = { ...defaultUniverseSettings(), universeMode: "universe", chaptersFolder: "Capítulos", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "" };
+    const settings: EntriesSettings = { ...classifySettings(), ...defaultUniverseSettings(), universeMode: "universe", chaptersFolder: "Capítulos", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "" };
     const table = compileTerms([teo], { lang: "pt", extraTitles: [] });
     const mentions = new MentionsIndex<MemFile>({
       add: (spec) => hub.add(spec), rebuild: (n) => hub.rebuild(n), table: () => table, settings: () => settings, formOf: () => null,

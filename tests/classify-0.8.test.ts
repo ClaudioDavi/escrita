@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-  classify, classifyKey, followFolderSetting, DEFAULT_EXPORT_FOLDER, DEFAULT_SUBMISSIONS_FOLDER, exportRoot, listBooks, submissionsRoot,
+  classify, classifyKey, followFolderSetting, DEFAULT_EXPORT_FOLDER, DEFAULT_SUBMISSIONS_FOLDER, listBooks, pluginRoot,
   type ClassifySettings, type Named, type VaultTree,
 } from "../src/core/classify";
+import { classifySettings } from "./support/classify-settings";
 
-const settings: ClassifySettings = {
+const settings = classifySettings({
   chaptersFolder: "Chapters", trackFolders: "", excludeFolders: "", chapterTemplate: "", snapshotsFolder: "Escrita/Snapshots",
   targetProperty: "target", limitProperty: "limit", unitProperty: "unit",
-};
+});
 
 function tree(paths: string[], fm: Record<string, Record<string, unknown>> = {}): VaultTree<Named, Named> {
   const files = new Map(paths.map((p) => [p, { path: p }]));
@@ -22,13 +23,13 @@ function tree(paths: string[], fm: Record<string, Record<string, unknown>> = {})
   };
 }
 
-describe("submissionsRoot and exportRoot", () => {
-  it("normalize like snapshotsRoot and never return empty", () => {
-    expect(submissionsRoot(" /Envios//Contos/ ")).toBe("Envios/Contos");
-    expect(exportRoot("Saída\\Docs")).toBe("Saída/Docs");
+describe("pluginRoot (submissions and export)", () => {
+  it("normalize like the snapshots root and never return empty", () => {
+    expect(pluginRoot("submissions", { submissionsFolder: " /Envios//Contos/ " })).toBe("Envios/Contos");
+    expect(pluginRoot("export", { exportFolder: "Saída\\Docs" })).toBe("Saída/Docs");
     for (const v of ["", "  ", "/", null, undefined, 4]) {
-      expect(submissionsRoot(v)).toBe(DEFAULT_SUBMISSIONS_FOLDER);
-      expect(exportRoot(v)).toBe(DEFAULT_EXPORT_FOLDER);
+      expect(pluginRoot("submissions", { submissionsFolder: v })).toBe(DEFAULT_SUBMISSIONS_FOLDER);
+      expect(pluginRoot("export", { exportFolder: v })).toBe(DEFAULT_EXPORT_FOLDER);
     }
   });
 });

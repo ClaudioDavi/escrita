@@ -109,6 +109,7 @@ A small release: four fixes, one small addition and a new default.
   - In the outline, Enter in a beat's field sent the cursor to the note's text when the note was open in an editor. It now lands in the new, empty beat field, so you can type one beat after another.
   - The darlings notes and the word lists note are never counted as works. A darlings note made in a vault that tracks every folder (as the setup leaves a new vault) used to get the draft status and show in the home block as a work; goals counted its words too. They get no status now, and the goals ignore them.
   - The screenplay layout no longer flickers when the note is saved.
+- Improvement: required classifier settings and one plugin-folder root (candidate 43). Nothing changes in use.
 - Upgrade notes:
   - An install that already has the setting keeps what it had. To get smart typography in every note, set **Settings › Escrita › Editor › Where smart typography applies** to **In every note**.
   - A darlings or word lists note that already has a status from before keeps it. Remove the property if you do not want it listed as a work.

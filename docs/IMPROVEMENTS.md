@@ -312,19 +312,6 @@ interface lives. Test through the interface.
   submissions: PendingSource; publish: PublishNextPort }`) and `port<K>(id)`. Candidate 24's
   "create entry" port lands there. `pendingOf` joins `core/pending.ts`.
 
-### 43. Required classifier settings, and one plugin-folder root
-
-**Strength:** medium
-
-- **Problem.** `ClassifySettings` fields are optional "so the many hand-built test settings
-  stay valid" (`classify.ts:64-91`). That spreads fallbacks (`classify.ts:457,474,487`,
-  `works-index.ts:58`, `desk/gather.ts:74`) although `settings.ts` normalizes them at load. The
-  three folder roots take the language unevenly: `submissionsRoot` and `exportRoot` do,
-  `inSnapshots`, `classifyKey`, `folder-problem.ts:16`, `vault-indexes.ts:56` and nine callers
-  in export and submissions don't. Harmless only because load fills blanks.
-- **Change.** Required fields; a `classifySettings(partial)` test builder on
-  `defaultsFor("en")` (about 21 test files); one `pluginRoot(kind, settings)`.
-
 ### 44. Threads own their code
 
 **Strength:** medium · **Pairs with:** candidate 6 (done)
@@ -635,6 +622,7 @@ writes, the progress modal's two property writes and the outline's summary write
 
 | Version | Improvement |
 |---|---|
+| 1.2.1 | Required classifier settings, and one plugin-folder root (candidate 43): every `ClassifySettings` field is required, so the fallbacks for a missing key are gone from `core/classify.ts` (`ownNoteOf`, the scope and form readers, `classifyKey`) and the stage and status reads share `statusPropertyOf`; settings load already fills every key, so nothing changes at run time. `pluginRoot(kind, settings)` (`core/classify.ts`) is the one folder-root rule for snapshots, submissions and export, always with the install's language; `snapshotsRoot`, `submissionsRoot` and `exportRoot` are gone and every caller (`inSnapshots`, `classifyKey`, `folder-problem.ts`, `vault-indexes.ts`, the three modules and the settings rows) goes through it. Tests build their settings with `classifySettings(partial)` (`tests/support/classify-settings.ts`, on `defaultsFor("en")`) |
 | 1.2.0 | Editor glue and "reveal on touch" (candidate 38): `src/ui/editor-glue.ts` has `EditorSet` (one retry, then the editor is dropped: the lens's policy, now everyone's), `fileOfState`, `isLivePreview` and `cmOf`; `src/ui/reveal-on-touch.ts` has `revealOnTouch({ scan, raw, rendered, key })`. The lens, dialogue focus, the name marks, "Appears in", the placeholders and the ghost beats moved onto them, and the screenplay layout is built on them. Two behavior changes: the name marks drop an editor after a second failed dispatch, and ghost beats skip lines outside the visible ranges |
 | 1.2.0 | "Read the book" rebuilds when the metadata cache is ready (candidate 52): the reader redraws on `resolved` when the chapter list or the title changed, keeping the position, so a `compile: false` chapter leaves the list after startup (`tests/e2e/specs/read-book.spec.ts`, `read-note.spec.ts`). `scrollTo` also allows for the sticky bar's height |
 | 1.1.1 | One settings table (candidate 53, the schema half of 37): `core/settings-schema.ts` has one row per setting (English default, kind, the features that read it, the pt-BR value of word-bearing keys), checked against `EscritaSettings` with `satisfies`. `DEFAULT_SETTINGS`, the English and pt-BR default sets, `SETTING_FEATURES`, `UNIVERSE_KEYS` and `normalizeSettings` are derived from it; `EN`, `PT_BR` and `PROPERTY_KEYS` are gone, and `WORD_KEYS` stays a tuple checked against the table at compile time. The form keys moved from the universe's settings to `core/form.ts`, and `ENTRY_KINDS`, the language helpers and the path rules (`listsPath`, `normalizeNotePath`, `cleanVaultFolder`) moved to core, so no core file imports a module folder (`tests/settings-imports.test.ts`). Valid data loads as before (`tests/settings-g3.test.ts` and the setup fixtures are unchanged); four drift fixes for a broken `data.json` are listed in the README changelog. `tests/settings-schema.test.ts` loads every row in both sets. Still open in 37: the module strings and the derived `also` |

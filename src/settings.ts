@@ -160,7 +160,7 @@ export interface EscritaSettings extends UniverseSettings, FormSettings {
   submissionRespondedProperty: string;
 
   // Snapshots
-  /** vault folder holding one folder of snapshots per note; always read through core/classify.snapshotsRoot */
+  /** vault folder holding one folder of snapshots per note; always read through core/classify.pluginRoot */
   snapshotsFolder: string;
   /** take an automatic snapshot before the first change of each writing day to a tracked note */
   snapshotBeforeFirstEdit: boolean;

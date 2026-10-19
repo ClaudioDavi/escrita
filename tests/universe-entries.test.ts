@@ -4,6 +4,7 @@ import { defaultUniverseSettings } from "../src/universe/settings";
 import { VaultIndex } from "../src/core/vault-index";
 import { MemoryVault, ManualTimers, type MemFile } from "./support/memory-vault";
 import type { Scope } from "../src/core/scope";
+import { classifySettings } from "./support/classify-settings";
 
 const U: Scope = { kind: "universe", root: "Universo", note: "Universo.md" };
 const B: Scope = { kind: "book", root: "Romances/A Casa", note: "Romances/A Casa.md" };
@@ -11,7 +12,7 @@ const B: Scope = { kind: "book", root: "Romances/A Casa", note: "Romances/A Casa
 function settings(over: Partial<EntriesSettings> = {}): EntriesSettings {
   const d = defaultUniverseSettings();
   d.entryTypes.character.value = "personagem";
-  return { ...d, universeMode: "universe", chaptersFolder: "Chapters", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "", ...over };
+  return { ...classifySettings(), ...d, universeMode: "universe", chaptersFolder: "Chapters", snapshotsFolder: "Escrita/Snapshots", templatesFolder: "Modelos", chapterTemplate: "", ...over };
 }
 
 describe("kindOf", () => {

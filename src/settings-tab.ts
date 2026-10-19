@@ -22,7 +22,7 @@ import { sectionOrder, type SectionSlot } from "./core/settings-order";
 import type { FeatureModule, SettingsUi } from "./core/module-context";
 import type { UniverseMode } from "./universe/settings";
 import { formValuesText, parseFormValues } from "./core/form";
-import { exportRoot, snapshotsRoot, submissionsRoot } from "./core/classify";
+import { pluginRoot } from "./core/classify";
 import { holdsOwnNotes, pluginFolderProblem, type BookPaths } from "./core/folder-problem";
 import { FolderSuggest, NoteSuggest } from "./ui/suggest";
 import { customRow, drawnRow, wireCommit, dropdownRow, folderRow, noteRow, textAreaRow, textRow, toggleRow, type SettingsBlock, type TextKey } from "./ui/settings-rows";
@@ -46,10 +46,10 @@ export function pluginFolderRows(ui: SettingsUi, s: EscritaSettings, books: () =
       desc: t("export.settings.folder.desc"),
       placeholder: ui.defaults().exportFolder,
       get: () => s.exportFolder,
-      set: (v) => { s.exportFolder = exportRoot(v, s.defaultsLanguage); },
+      set: (v) => { s.exportFolder = pluginRoot("export", { ...s, exportFolder: v }); },
       problemOf: (v) => pluginFolderProblem(
-        exportRoot(v, s.defaultsLanguage), [submissionsRoot(s.submissionsFolder, s.defaultsLanguage), snapshotsRoot(s.snapshotsFolder, s.defaultsLanguage)],
-        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, exportRoot(s.exportFolder, s.defaultsLanguage), s), books(),
+        pluginRoot("export", { ...s, exportFolder: v }), [pluginRoot("submissions", s), pluginRoot("snapshots", s)],
+        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, pluginRoot("export", s), s), books(),
       ),
     }),
     folderRow(ui, {
@@ -57,10 +57,10 @@ export function pluginFolderRows(ui: SettingsUi, s: EscritaSettings, books: () =
       desc: t("submissions.settings.folder.desc"),
       placeholder: ui.defaults().submissionsFolder,
       get: () => s.submissionsFolder,
-      set: (v) => { s.submissionsFolder = submissionsRoot(v, s.defaultsLanguage); },
+      set: (v) => { s.submissionsFolder = pluginRoot("submissions", { ...s, submissionsFolder: v }); },
       problemOf: (v) => pluginFolderProblem(
-        submissionsRoot(v, s.defaultsLanguage), [exportRoot(s.exportFolder, s.defaultsLanguage), snapshotsRoot(s.snapshotsFolder, s.defaultsLanguage)],
-        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, submissionsRoot(s.submissionsFolder, s.defaultsLanguage), s), books(),
+        pluginRoot("submissions", { ...s, submissionsFolder: v }), [pluginRoot("export", s), pluginRoot("snapshots", s)],
+        ui.app.vault.configDir, s.trackFolders, (r) => holdsOwnNotes(paths(), r, pluginRoot("submissions", s), s), books(),
       ),
     }),
   ];

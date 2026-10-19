@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { defaultsFor, loadSettings, normalizeSettings } from "../src/settings";
 import { migrateSettings } from "../src/core/migrate";
-import { exportRoot, inExports, submissionsRoot } from "../src/core/classify";
+import { inExports, pluginRoot } from "../src/core/classify";
 import { normalizeStages } from "../src/core/stages";
 import { normalizeUniverse } from "../src/universe/settings";
 import { matchingPreset } from "../src/core/feature-presets";
@@ -68,10 +68,10 @@ describe("1.4 language defaults on load", () => {
   });
 
   it("classify's folder fallbacks take the install's set", () => {
-    expect(exportRoot("")).toBe("Escrita/Exports");
-    expect(exportRoot("", "pt-BR")).toBe("Escrita/Exportações");
-    expect(submissionsRoot(undefined, "pt-BR")).toBe("Escrita/Envios");
-    expect(submissionsRoot("", "xx")).toBe("Escrita/Submissions");
+    expect(pluginRoot("export", { exportFolder: "" })).toBe("Escrita/Exports");
+    expect(pluginRoot("export", { exportFolder: "", defaultsLanguage: "pt-BR" })).toBe("Escrita/Exportações");
+    expect(pluginRoot("submissions", { defaultsLanguage: "pt-BR" })).toBe("Escrita/Envios");
+    expect(pluginRoot("submissions", { submissionsFolder: "", defaultsLanguage: "xx" })).toBe("Escrita/Submissions");
     expect(inExports("Escrita/Exportações/a.docx", { exportFolder: "", defaultsLanguage: "pt-BR" })).toBe(true);
     expect(inExports("Escrita/Exports/a.docx", { exportFolder: "", defaultsLanguage: "pt-BR" })).toBe(false);
   });

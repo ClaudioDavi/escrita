@@ -3,12 +3,13 @@
 import { describe, expect, it } from "vitest";
 import { classify, classifyKey, type ClassifySettings, type Named, type VaultTree } from "../src/core/classify";
 import { needsDraftStatus, type NewNoteOptions } from "../src/core/new-note-status";
+import { classifySettings } from "./support/classify-settings";
 
-const settings: ClassifySettings = {
+const settings = classifySettings({
   chaptersFolder: "Chapters", trackFolders: "", excludeFolders: "", chapterTemplate: "", snapshotsFolder: "Escrita/Snapshots",
   targetProperty: "target", limitProperty: "limit", unitProperty: "unit",
   darlingsNote: "Darlings.md", globalDarlingsNote: "Darlings.md", lensListsNote: "",
-};
+});
 
 function tree(paths: string[], fm: Record<string, Record<string, unknown>> = {}): VaultTree<Named, Named> {
   const files = new Map(paths.map((p) => [p, { path: p }]));

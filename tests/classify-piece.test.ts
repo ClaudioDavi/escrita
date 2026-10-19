@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { classify, classifyKey, type ClassifySettings, type VaultTree } from "../src/core/classify";
+import { classifySettings } from "./support/classify-settings";
 
 // Task 1.1 (IMPROVEMENTS 8): the effective piece, computed once in classify.
 
@@ -35,11 +36,11 @@ function tree(files: string[], fm: Record<string, Record<string, unknown>>): Vau
   };
 }
 
-const S: ClassifySettings = {
+const S = classifySettings({
   chaptersFolder: "Chapters", trackFolders: "", excludeFolders: "", chapterTemplate: "",
   targetProperty: "target", limitProperty: "limit", unitProperty: "unit", chapterTargetProperty: "chapterTarget",
   snapshotsFolder: "Escrita/Snapshots",
-};
+});
 const FILES = ["B.md", "B/Chapters/01.md", "B/Chapters/02.md", "B/Chapters/03.md", "B/Chapters/04.md", "B/Chapters/05.md", "B/Notes.md", "Solto.md", "N.md", "N/Chapters/01.md"];
 
 const at = (path: string, fm: Record<string, Record<string, unknown>>, s: Partial<ClassifySettings> = {}) =>

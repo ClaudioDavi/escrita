@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { classify, classifyKey, NO_SCOPE, scopeKey, type ClassifySettings, type Named, type VaultTree } from "../src/core/classify";
+import { classifySettings } from "./support/classify-settings";
 
-const base: ClassifySettings = {
+const base = classifySettings({
   chaptersFolder: "Chapters", trackFolders: "", excludeFolders: "", chapterTemplate: "", snapshotsFolder: "Escrita/Snapshots",
   targetProperty: "target", limitProperty: "limit", unitProperty: "unit",
-};
-const uni: ClassifySettings = { ...base, universeMode: "universe", universeNote: "Universo.md", defaultUniverseFolders: "Contos", universeProperty: "universe" };
+});
+const uni = classifySettings({ ...base, universeMode: "universe", universeNote: "Universo.md", defaultUniverseFolders: "Contos", universeProperty: "universe" });
 
 function tree(paths: string[], fm: Record<string, Record<string, unknown>> = {}): VaultTree<Named, Named> {
   const files = new Map(paths.map((p) => [p, { path: p }]));

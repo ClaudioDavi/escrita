@@ -6,7 +6,7 @@ import { TFile, type TAbstractFile } from "obsidian";
 import type EscritaPlugin from "../main";
 import type { VaultIndexes } from "../main";
 import { IndexHub } from "./index-hub";
-import { snapshotsRoot } from "./classify";
+import { pluginRoot } from "./classify";
 import { macrotaskYield, type Follower, IndexFile, IndexSource, IndexSpec, IndexTimers, VaultIndex } from "./vault-index";
 
 export class VaultIndexesShell implements VaultIndexes {
@@ -53,7 +53,7 @@ export class VaultIndexesShell implements VaultIndexes {
       source,
       timers,
       {
-        snapshotsRoot: () => snapshotsRoot(plugin.settings.snapshotsFolder),
+        snapshotsRoot: () => pluginRoot("snapshots", plugin.settings),
         onError: (path, e) => console.error(`Escrita: the vault index failed on ${path || "a callback"}`, e),
       },
     );

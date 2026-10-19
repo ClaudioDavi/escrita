@@ -5,7 +5,7 @@
 //
 // Keeping ".md" in the folder name keeps note A.md's snapshots apart from the
 // snapshot folders of notes inside a folder A/, and makes a note rename one
-// folder move. The root setting is normalized by core's snapshotsRoot (the one
+// folder move. The root setting is normalized by core's pluginRoot (the one
 // place that rule lives); settings validation is core's snapshotsFolderProblem.
 //
 // The folder is named with the note path's exact bytes, but Obsidian's

@@ -3,7 +3,7 @@ import {
   foldedPath, isHiddenPath, isInside, labelPart, notePathOfDir, parseSnapshotFileName, renamedFileName, snapshotDir,
   snapshotFileName, stamp,
 } from "../src/snapshots/paths";
-import { DEFAULT_SNAPSHOTS_FOLDER, snapshotsRoot } from "../src/core/classify";
+import { DEFAULT_SNAPSHOTS_FOLDER, pluginRoot } from "../src/core/classify";
 
 const when = new Date(2026, 8, 3, 7, 5); // 2026-09-03 07:05 local
 
@@ -93,7 +93,7 @@ describe("snapshotDir / notePathOfDir / foldedPath", () => {
   });
 });
 
-describe("isHiddenPath / isInside / core snapshotsRoot", () => {
+describe("isHiddenPath / isInside / core pluginRoot", () => {
   it("isHiddenPath", () => {
     expect(isHiddenPath(".escrita/snapshots")).toBe(true);
     expect(isHiddenPath("Escrita/.x")).toBe(true);
@@ -105,9 +105,9 @@ describe("isHiddenPath / isInside / core snapshotsRoot", () => {
     expect(isInside("Escrita/Snapshots", "Escrita/SnapshotsX/a.md")).toBe(false);
     expect(isInside("", "anything.md")).toBe(false);
   });
-  it("snapshotsRoot (the one root rule) normalizes and falls back to the default", () => {
-    expect(snapshotsRoot("")).toBe(DEFAULT_SNAPSHOTS_FOLDER);
-    expect(snapshotsRoot("  /Escrita/Snapshots/ ")).toBe("Escrita/Snapshots");
-    expect(snapshotsRoot(".escrita/snapshots")).toBe(".escrita/snapshots");
+  it("pluginRoot (the one root rule) normalizes and falls back to the default", () => {
+    expect(pluginRoot("snapshots", { snapshotsFolder: "" })).toBe(DEFAULT_SNAPSHOTS_FOLDER);
+    expect(pluginRoot("snapshots", { snapshotsFolder: "  /Escrita/Snapshots/ " })).toBe("Escrita/Snapshots");
+    expect(pluginRoot("snapshots", { snapshotsFolder: ".escrita/snapshots" })).toBe(".escrita/snapshots");
   });
 });

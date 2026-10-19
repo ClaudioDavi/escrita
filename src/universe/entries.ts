@@ -7,7 +7,7 @@
 // themselves, are never entries.
 
 import { foldName } from "../core/names";
-import { classifyKey, inExports, scopeKey, inFolder, inSubmissions, snapshotsRoot, type ClassifySettings } from "../core/classify";
+import { classifyKey, inExports, scopeKey, inFolder, inSubmissions, type ClassifySettings, pluginRoot } from "../core/classify";
 import type { IndexFile, IndexSpec } from "../core/vault-index";
 import { sameScope, type Scope } from "../core/scope";
 import { ENTRY_KINDS, type EntryKind, type UniverseSettings } from "./settings";
@@ -96,16 +96,15 @@ export type EntriesSettings = Pick<UniverseSettings,
   "universeMode" | "universeNote" | "defaultUniverseFolders" | "universeProperty" | "typeProperty" | "entryTypes"
   | "caseSensitiveProperty" | "ignoreProperty" | "firstNameProperty"> & {
   templatesFolder: string;
-} & Pick<ClassifySettings, "chaptersFolder" | "snapshotsFolder" | "chapterTemplate"> & Partial<ClassifySettings>
+} & ClassifySettings
   & { screenplaySceneHeadings?: string; screenplayTransitions?: string };
 
 /**
  * classifyKey and scopeKey of the settings a universe index reads (its values depend on
- * scope). Real settings are whole; both read every field through `str()` and defaults, so a
- * partial one (a test's) is safe.
+ * scope).
  */
-export function classifyKeyOf(s: Partial<ClassifySettings>): string {
-  return JSON.stringify([classifyKey(s as ClassifySettings), scopeKey(s)]);
+export function classifyKeyOf(s: ClassifySettings): string {
+  return JSON.stringify([classifyKey(s), scopeKey(s)]);
 }
 
 /** Whether the note is a template (the templates folder, an entry template or the chapter template). */
@@ -121,7 +120,7 @@ export function isTemplatePath(path: string, s: Pick<EntriesSettings, "templates
 
 /** True for a markdown note that may hold entries or threads: not a snapshot, export, submission or template. */
 export function isUniverseNote(f: IndexFile, s: EntriesSettings): boolean {
-  return f.extension === "md" && !inFolder(f.path, snapshotsRoot(s.snapshotsFolder))
+  return f.extension === "md" && !inFolder(f.path, pluginRoot("snapshots", s))
     && !inExports(f.path, s) && !inSubmissions(f.path, s) && !isTemplatePath(f.path, s);
 }
 
