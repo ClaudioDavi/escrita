@@ -44,7 +44,7 @@ export { DEFAULTS_LANGUAGES, isDefaultsLanguage, languageOf, type DefaultsLangua
 export const WORD_KEYS = [
   "stages", "chaptersFolder", "unnumberedTitles", "submissionResults", "exportFolder", "submissionsFolder",
   "darlingsNote", "globalDarlingsNote", "universeNote", "entryTypes", "formValues", "threadKeyword", "threadClosedWord",
-  "screenplayTransitions", "screenplayMore", "screenplayContinued", "screenplayCredit",
+  "screenplayTransitions", "screenplayMore", "screenplayContinued", "screenplayCredit", "screenplayTimes",
 ] as const;
 export type WordKey = typeof WORD_KEYS[number];
 

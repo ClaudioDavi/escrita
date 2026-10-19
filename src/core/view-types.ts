@@ -10,4 +10,6 @@ export const VIEW_TYPES = {
   lens: "escrita-lens",
   placeholders: "escrita-placeholders",
   universe: "escrita-universe",
+  /** "Read the book" and, since 1.2, "Read this note" (PLAN-1.2 Q15) */
+  reader: "escrita-reader",
 } as const;

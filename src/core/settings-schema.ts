@@ -193,9 +193,9 @@ export const SETTINGS_SCHEMA = {
   collectionProperty: { default: "contents", kind: property, readBy: ["export"] },
 
   // Screenplays
-  screenplaySceneHeadings: { default: "INT, EXT, EST, INT./EXT, INT/EXT, I/E", kind: word, readBy: ["export"] },
+  screenplaySceneHeadings: { default: "INT, EXT, EST, INT./EXT, INT/EXT, I/E", kind: word, readBy: ["export", "screenplay"] },
   screenplayTransitions: {
-    default: "TO:", kind: word, readBy: ["export"], lang: "word",
+    default: "TO:", kind: word, readBy: ["export", "screenplay"], lang: "word",
     // Brazilian scripts: CORTA PARA:, FUSÃO PARA: (SP 1); the English TO: stays for pasted scripts
     ptBR: "TO:, PARA:",
   },
@@ -206,6 +206,13 @@ export const SETTINGS_SCHEMA = {
   screenplayCredit: { default: "Written by", kind: word, readBy: ["export"], lang: "word", ptBR: "Roteiro de" },
   screenplaySourceProperty: { default: "source", kind: property, readBy: ["export"] },
   screenplayDraftDateProperty: { default: "draftDate", kind: property, readBy: ["export"] },
+
+  // The screenplay editor (1.2, SP 2)
+  screenplayFont: { default: "courier", kind: enumOf<"courier" | "theme">(["courier", "theme"]), readBy: ["screenplay"] },
+  screenplayTimes: {
+    default: "DAY, NIGHT, CONTINUOUS, LATER", kind: word, readBy: ["screenplay"], lang: "word",
+    ptBR: "DIA, NOITE, CONTÍNUO, MAIS TARDE",
+  },
 
   // Submissions
   submissionsFolder: {
@@ -262,6 +269,7 @@ export const SETTINGS_SCHEMA = {
   lensSkipQuotes: { default: true, kind: bool, readBy: ["lens"] },
   lensShowDialogue: { default: true, kind: bool, readBy: ["lens"] },
   lensShowReadability: { default: true, kind: bool, readBy: ["lens"] },
+  lensShowRhythm: { default: true, kind: bool, readBy: ["lens"] },
 
   // Language: shared core, no settings row in 1.0
   defaultsLanguage: { default: "en", kind: enumOf<"en" | "pt-BR">(DEFAULTS_LANGUAGES), readBy: ALWAYS },

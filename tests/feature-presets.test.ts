@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { FEATURE_IDS, FEATURE_SPECS, switchedOn, wanted, type FeatureSwitches } from "../src/core/features";
-import { PRESETS, PRESET_IDS, matchingPreset, presetChanges, presetSwitches } from "../src/core/feature-presets";
+import { PRESETS, PRESET_IDS, matchingPreset, presetChanges, presetSwitches, settleNewSwitches } from "../src/core/feature-presets";
 
-const allOn = (): FeatureSwitches => ({ features: {}, explorerCounts: true, spellcheckOnDemand: true, universeMode: "off" });
+const allOn = (): FeatureSwitches => ({ features: { screenplay: true }, explorerCounts: true, spellcheckOnDemand: true, universeMode: "off" });
 // a 0.9 install with spellcheck on demand off (its default) and features { lens, snapshots } saved.
 // (The author's own fixture has spellcheck on, so it reads Everything: tests/settings-g3.test.ts.)
 const fixture = (): FeatureSwitches => ({
@@ -13,7 +13,7 @@ describe("PRESETS", () => {
   it("has the sizes of board 38, without the universe", () => {
     expect(PRESETS.essentials).toHaveLength(9);
     expect(PRESETS.writer).toHaveLength(16);
-    expect(PRESETS.everything).toHaveLength(18);
+    expect(PRESETS.everything).toHaveLength(19);
     for (const id of PRESET_IDS) expect(PRESETS[id]).not.toContain("universe");
   });
   it("is closed under requires and nested", () => {
@@ -31,7 +31,8 @@ describe("presetSwitches", () => {
   it("writes an explicit boolean for each record feature and leaves the input alone", () => {
     const cur = allOn();
     const out = presetSwitches("essentials", cur);
-    expect(cur.features).toEqual({});
+    expect(cur.features).toEqual({ screenplay: true });
+    expect(out.features.screenplay).toBe(false);
     expect(out.features.goals).toBe(true);
     expect(out.features.threads).toBe(false);
     expect(out.features.universe).toBeUndefined();
@@ -55,6 +56,9 @@ describe("presetSwitches", () => {
 describe("matchingPreset", () => {
   it("reads an all-on 0.9 install as everything", () => {
     expect(matchingPreset(allOn())).toBe("everything");
+  });
+  it("reads an install with no screenplay key as Custom until settleNewSwitches writes it", () => {
+    expect(matchingPreset({ ...allOn(), features: {} })).toBeNull();
   });
   it("reads a 0.9 install with spellcheck off as Custom", () => {
     expect(matchingPreset(fixture())).toBeNull();
@@ -96,5 +100,24 @@ describe("presetChanges", () => {
     const s = presetSwitches("writer", allOn());
     s.features.snapshots = false;
     expect(presetChanges(s, "writer")).toEqual({ off: [], on: ["snapshots"] });
+  });
+});
+
+describe("settleNewSwitches (PLAN-1.2 Q2)", () => {
+  it("writes screenplay on when the key is missing and every other switch is on", () => {
+    const cur = { ...allOn(), features: {} };
+    expect(settleNewSwitches(cur).screenplay).toBe(true);
+  });
+  it("writes screenplay off when the key is missing and the switches are Writer's", () => {
+    const { screenplay: _s, ...rest } = presetSwitches("writer", allOn()).features;
+    expect(settleNewSwitches({ ...allOn(), features: rest }).screenplay).toBe(false);
+  });
+  it("keeps a stored value", () => {
+    expect(settleNewSwitches({ ...allOn(), features: { screenplay: false } }).screenplay).toBe(false);
+    expect(settleNewSwitches({ ...allOn(), features: { screenplay: true, lens: false } }).screenplay).toBe(true);
+  });
+  it("returns the same object when nothing is missing", () => {
+    const cur = allOn();
+    expect(settleNewSwitches(cur)).toBe(cur.features);
   });
 });

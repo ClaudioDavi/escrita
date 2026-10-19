@@ -53,7 +53,8 @@
   "chapterTargetProperty": "chapterTarget",
   "features": {
     "lens": true,
-    "snapshots": true
+    "snapshots": true,
+    "screenplay": true
   },
   "weekdaysOff": [],
   "datesOff": "",
@@ -76,6 +77,8 @@
   "screenplayPage": "letter",
   "screenplaySceneNumbers": false,
   "screenplayMore": "(MORE)",
+  "screenplayFont": "courier",
+  "screenplayTimes": "DAY, NIGHT, CONTINUOUS, LATER",
   "screenplayContinued": "(CONT'D)",
   "screenplayCredit": "Written by",
   "screenplaySourceProperty": "source",
@@ -113,6 +116,7 @@
   "lensSkipQuotes": true,
   "lensShowDialogue": true,
   "lensShowReadability": true,
+  "lensShowRhythm": true,
   "defaultsLanguage": "en",
   "universeMode": "universe",
   "universeNote": "Universo.md",

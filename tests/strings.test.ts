@@ -21,6 +21,7 @@ import { appearsStrings } from "../src/universe/strings-appears";
 import { setupStrings } from "../src/setup/strings";
 import { setupLayoutStrings } from "../src/setup/layout-strings";
 import { newWorkStrings } from "../src/new-work/strings";
+import { screenplayStrings } from "../src/screenplay/strings";
 
 const all: Record<string, Strings> = {
   core: coreStrings,
@@ -44,6 +45,7 @@ submissions: submissionsStrings,
   setup: setupStrings,
   setupLayout: setupLayoutStrings,
   newWork: newWorkStrings,
+  screenplay: screenplayStrings,
 };
 
 const vars = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();

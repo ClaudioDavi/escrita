@@ -11,7 +11,7 @@ const dir = (p: string) => fileURLToPath(new URL(`./fixtures/${p}`, import.meta.
 const read = <T>(p: string): T => JSON.parse(readFileSync(dir(p), "utf8")) as T;
 
 describe("fixtures: settings-0.9", () => {
-  it("parses, and the expected settings add only the two 1.0 settings (setupOffered is data) and 1.1's screenplay word", () => {
+  it("parses, and the expected settings add only the two 1.0 settings (setupOffered is data) 1.1's screenplay word and 1.2's screenplay switch", () => {
     const data = read<EscritaData>("settings-0.9/data.json");
     const expected = read<EscritaSettings>("settings-0.9/expected-settings.json");
     expect(data.version).toBe(1);
@@ -20,7 +20,10 @@ describe("fixtures: settings-0.9", () => {
     // 1.1 adds one form word (PLAN-1.1 Q1); a 0.9 install's default set is English
     const { screenplay, ...forms } = expected.formValues;
     expect(screenplay).toBe("screenplay");
-    for (const k of Object.keys(saved)) expect(k === "formValues" ? forms : exp[k], k).toEqual(saved[k]);
+    // 1.2 adds the screenplay switch; settleNewSwitches writes it on, as this install matches Everything (PLAN-1.2 Q2)
+    const { screenplay: sw, ...features } = expected.features;
+    expect(sw).toBe(true);
+    for (const k of Object.keys(saved)) expect(k === "formValues" ? forms : k === "features" ? features : exp[k], k).toEqual(saved[k]);
     expect(expected.defaultsLanguage).toBe("en");
     expect(expected.openInWritingMode).toBe(false);
     expect(Object.keys(history(data)).length).toBe(2);

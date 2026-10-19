@@ -223,7 +223,51 @@ folder importing another.
 
 ## Results
 
-(Filled in as the waves run.)
+### Wave 0 (2026-10-19)
+
+**Contracts (Opus, main loop).**
+
+- `screenplay` is the 20th feature id: last in load order, page 5 of the "writing" group.
+- The Everything preset includes it.
+- A missing key reads as off (`OFF_WHEN_MISSING`, `core/features.ts`).
+- `settleNewSwitches` (`core/feature-presets.ts`) writes the key when an install loads: on only
+  when every other switch matches Everything.
+- Three settings rows: `screenplayFont`, `screenplayTimes` (a word key, in `WORD_KEYS`) and
+  `lensShowRhythm`. A "screenplay" settings slot sits after the editor.
+- New strings in both languages: the switch, the module's table (`src/screenplay/strings.ts`,
+  registered in `main.ts`), `read-note` and the reader's empty states, and the rhythm section.
+- `VIEW_TYPES.reader`.
+- Stubs for task B: `core/screenplay-keys.ts` and `core/screenplay-suggest.ts`.
+- **Deviation from Q3:** elements did not get an `endLine`. Adding it would have changed every
+  `parseFountain` result that tests pin. Instead:
+  - `fountainLines(text, md, opts)` returns each line's kind from the same reading.
+    `parseFountain`'s output is unchanged.
+  - `core/fountain-doc.ts` caches both per document version and options object
+    (`fountainDocLines`, `fountainDoc`).
+- `LensPass`'s two fields and `readerSource` were left to tasks D and C, which own those files.
+
+**S0 (Sonnet, branch `1.2-spike`, report `tests/e2e/spike/S0-REPORT.md` there).** In a real
+Obsidian, Live Preview, cursor off the line:
+
+- **Headings** (`.HyperMD-header-N`, `.cm-header`) and **quotes** (`.HyperMD-quote`,
+  `.cm-quote`) take our line class, and CSS scoped under the screenplay class resets them.
+  - The quote keeps Obsidian's `text-indent: -18px`. Our CSS may not use `text-indent` (the
+    review bot bans it), so the layout compensates with padding.
+- **`---`** becomes a block widget, `div.hr.cm-line`, with no text and **no line class**. A
+  replace decoration at `Prec.highest` did not win.
+  - CSS under an editor-level class works: hide the `hr` and `br`, then `::after { content: "---" }`.
+  - The cost: a typed `-----` shows as `---` until the cursor is on the line.
+- **`_x_`** is `.cm-em`, the same as `*x*`. So underline is a mark decoration on the `_…_`
+  ranges with `border-bottom` (no `text-decoration`, a bot rule), and `*x*` stays italic.
+- `editorInfoField` holds the file when the view plugin is first built.
+- A 5,828-line (about 120-page) script parses in 2.2 ms median and 4.3 ms p95 in Node. The
+  cached whole parse is enough (Q3).
+
+**Decision (Opus):** CSS only (Q4), with the three details above for `---`, the quote indent and
+`_x_`.
+
+**Boards (G1):** 45 (the screenplay editor), 46 ("Read this note") and 47 (the rhythm), under
+"1.2" on the design canvas. They wait for the author.
 
 ## Risks
 

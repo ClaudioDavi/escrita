@@ -11,11 +11,11 @@ import { CoreModule, startCoreModule } from "../src/core/module-context";
 import type EscritaPlugin from "../src/main";
 
 describe("PRESETS (board 38)", () => {
-  it("are Essentials 9, Writer 16, Everything 18 plus the universe", () => {
+  it("are Essentials 9, Writer 16, Everything 19 plus the universe", () => {
     expect(PRESET_IDS).toEqual(["essentials", "writer", "everything"]);
     expect(PRESETS.essentials.length).toBe(9);
     expect(PRESETS.writer.length).toBe(16);
-    expect(PRESETS.everything.length).toBe(18);
+    expect(PRESETS.everything.length).toBe(19);
     expect([...PRESETS.everything, PRESET_IGNORED].sort()).toEqual([...FEATURE_IDS].sort());
   });
 

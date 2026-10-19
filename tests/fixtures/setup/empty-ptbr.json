@@ -186,7 +186,8 @@
           "export": true,
           "submissions": false,
           "desk": true,
-          "threads": false
+          "threads": false,
+          "screenplay": false
         },
         "explorerCounts": false,
         "spellcheckOnDemand": false,

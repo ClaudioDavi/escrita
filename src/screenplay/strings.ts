@@ -1,0 +1,29 @@
+import type { Strings } from "../i18n";
+
+// The screenplay editor (1.2, SP 2, PLAN-1.2): commands and its settings group.
+export const screenplayStrings: Strings = {
+  en: {
+    "screenplay.cmd.next": "Next screenplay element",
+    "screenplay.cmd.previous": "Previous screenplay element",
+    "screenplay.notice.notScreenplay": "This note is not a screenplay.",
+    "screenplay.settings.heading": "Screenplay editor",
+    "screenplay.settings.font": "Font",
+    "screenplay.settings.font.desc": "Courier, as on the page (Courier Prime when installed), or the theme's editor font.",
+    "screenplay.settings.font.courier": "Courier",
+    "screenplay.settings.font.theme": "Theme font",
+    "screenplay.settings.times": "Times of day",
+    "screenplay.settings.times.desc": "Offered after \" - \" on a scene heading. Separate with commas or new lines.",
+  },
+  "pt-BR": {
+    "screenplay.cmd.next": "Próximo elemento do roteiro",
+    "screenplay.cmd.previous": "Elemento anterior do roteiro",
+    "screenplay.notice.notScreenplay": "Esta nota não é um roteiro.",
+    "screenplay.settings.heading": "Editor de roteiro",
+    "screenplay.settings.font": "Fonte",
+    "screenplay.settings.font.desc": "Courier, como na página (Courier Prime, se estiver instalada), ou a fonte do editor no tema.",
+    "screenplay.settings.font.courier": "Courier",
+    "screenplay.settings.font.theme": "Fonte do tema",
+    "screenplay.settings.times": "Horas do dia",
+    "screenplay.settings.times.desc": "Oferecidas depois de \" - \" num cabeçalho de cena. Separe com vírgulas ou linhas.",
+  },
+};

@@ -1,6 +1,6 @@
 import { mergeDefaults } from "./core/merge";
 import { migrateSettings } from "./core/migrate";
-import { presetSwitches } from "./core/feature-presets";
+import { presetSwitches, settleNewSwitches } from "./core/feature-presets";
 import { type StageMapping } from "./core/stages";
 import { FEATURE_SPECS, type FeatureId } from "./core/features";
 import { switchesOf } from "./core/feature-registry";
@@ -138,6 +138,12 @@ export interface EscritaSettings extends UniverseSettings, FormSettings {
   /** the work property holding the draft date on the title page */
   screenplayDraftDateProperty: string;
 
+  // The screenplay editor (1.2, SP 2, PLAN-1.2 Q5, Q11; drawn by the screenplay module's section)
+  /** the editor's font in a screenplay note: a Courier stack, or the theme's editor font */
+  screenplayFont: "courier" | "theme";
+  /** time-of-day words offered after " - " on a scene heading, comma or newline separated */
+  screenplayTimes: string;
+
   // Submissions (0.8, SF 12; drawn by the submissions module's section, task 3.2)
   /** vault folder of submission notes; kept out of tracking (classify `submission`, task 1.6) */
   submissionsFolder: string;
@@ -199,6 +205,8 @@ export interface EscritaSettings extends UniverseSettings, FormSettings {
   lensSkipQuotes: boolean;
   lensShowDialogue: boolean;
   lensShowReadability: boolean;
+  /** the Rhythm section of the lens panel (1.2, SF 16, PLAN-1.2 Q17) */
+  lensShowRhythm: boolean;
 
   // Language (1.0, PLAN-1.0 "Q1 as built"; no settings row in 1.0)
   /**
@@ -250,7 +258,9 @@ export function loadSettings(saved: unknown, obsidianLocale: string): { settings
   if (!fresh) {
     const migrated = migrateSettings(saved);
     const lang = (migrated as { defaultsLanguage: DefaultsLanguage }).defaultsLanguage;
-    return { settings: normalizeSettings(mergeDefaults(defaultsFor(lang), migrated)), fresh };
+    const settings = normalizeSettings(mergeDefaults(defaultsFor(lang), migrated));
+    settings.features = settleNewSwitches(switchesOf(settings));   // 1.2: PLAN-1.2 Q2
+    return { settings, fresh };
   }
   const lang = languageOf(obsidianLocale);
   const settings = normalizeSettings(mergeDefaults(defaultsFor(lang), { defaultsLanguage: lang }));

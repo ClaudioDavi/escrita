@@ -88,9 +88,9 @@ describe("settings rows and features (Q13)", () => {
     expect(rowShown("targetProperty", new Set())).toBe(true);
   });
 
-  it("with the defaults, only spellcheck on demand and the universe are off", () => {
+  it("with the defaults, only screenplay (off when missing), spellcheck on demand and the universe are off", () => {
     const want = wanted(switchesOf({ ...DEFAULT_SETTINGS, universeMode: "off" }));
-    expect([...FEATURE_IDS].filter((i) => !want.has(i)).sort()).toEqual(["spellcheck", "universe"]);
+    expect([...FEATURE_IDS].filter((i) => !want.has(i)).sort()).toEqual(["screenplay", "spellcheck", "universe"]);
   });
 });
 

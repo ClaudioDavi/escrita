@@ -62,6 +62,7 @@ import { setupStrings } from "./setup/strings";
 import { setupLayoutStrings } from "./setup/layout-strings";
 import { NewWorkModule } from "./new-work";
 import { newWorkStrings } from "./new-work/strings";
+import { screenplayStrings } from "./screenplay/strings";
 import type { NewWorkStarter } from "./core/new-work";
 
 /** How long after a note is created before its status is checked: templates land first. */
@@ -118,7 +119,7 @@ export default class EscritaPlugin extends Plugin {
       exportStrings, submissionsStrings,
       explorerStrings, snapshotsStrings, deskStrings, lensStrings,
       universeStrings, universeViewStrings, universeCreateStrings, universeMigrateStrings, appearsStrings,
-      setupStrings, setupLayoutStrings, newWorkStrings,
+      setupStrings, setupLayoutStrings, newWorkStrings, screenplayStrings,
     ]) {
       registerStrings(s);
     }

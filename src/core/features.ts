@@ -4,10 +4,11 @@
 export const FEATURE_IDS = [
   "goals", "outline", "placeholders", "explorerCounts", "darlings", "typing", "dialogueFocus",
   "moveBlocks", "templates", "spellcheck", "lens", "snapshots", "stageSnapshot", "publish",
-  "export", "submissions", "desk", "universe", "threads",
+  "export", "submissions", "desk", "universe", "threads", "screenplay",
 ] as const;   // also the load order: today's (main.ts:116-127), Q12; unload runs in reverse
 // 0.8 (PLAN-0.8 Q11): "export" and "submissions" follow "publish" (19 ids). An id with no
-// module registered loads nothing.
+// module registered loads nothing. 1.2 (PLAN-1.2 Q1): "screenplay", the editor help in a
+// screenplay note, last (20 ids); it is drawn after typing on the Features page.
 export type FeatureId = typeof FEATURE_IDS[number];
 export type FeatureGroup = "writing" | "revision" | "desk" | "publishing" | "world";
 
@@ -30,13 +31,13 @@ export const FEATURE_SPECS: readonly FeatureSpec[] = [
   { id: "goals", group: "writing", page: 1 },
   { id: "outline", group: "writing", page: 2 },
   { id: "placeholders", group: "writing", page: 3 },
-  { id: "explorerCounts", group: "writing", switch: "explorerCounts", page: 9 },
+  { id: "explorerCounts", group: "writing", switch: "explorerCounts", page: 10 },
   { id: "darlings", group: "revision", page: 3 },
   { id: "typing", group: "writing", page: 4 },
-  { id: "dialogueFocus", group: "writing", page: 5 },
-  { id: "moveBlocks", group: "writing", page: 6 },
-  { id: "templates", group: "writing", page: 7 },
-  { id: "spellcheck", group: "writing", switch: "spellcheckOnDemand", page: 8 },
+  { id: "dialogueFocus", group: "writing", page: 6 },
+  { id: "moveBlocks", group: "writing", page: 7 },
+  { id: "templates", group: "writing", page: 8 },
+  { id: "spellcheck", group: "writing", switch: "spellcheckOnDemand", page: 9 },
   { id: "lens", group: "revision", page: 1 },
   { id: "snapshots", group: "revision", page: 2 },
   { id: "stageSnapshot", group: "desk", requires: ["snapshots"], page: 1 },
@@ -46,6 +47,7 @@ export const FEATURE_SPECS: readonly FeatureSpec[] = [
   { id: "desk", group: "desk", page: 2 },
   { id: "universe", group: "world", switch: "universeMode", page: 1 },
   { id: "threads", group: "world", page: 2 },
+  { id: "screenplay", group: "writing", page: 5 },
 ];
 
 export interface FeatureSwitches {
@@ -55,13 +57,20 @@ export interface FeatureSwitches {
   universeMode: "off" | "perBook" | "universe";
 }
 
-/** The writer's switch alone (missing key = on). */
+/**
+ * Features that are off while their key is missing (PLAN-1.2 Q2): the screenplay editor, which
+ * the author put in the Everything preset only. Every other id is on when its key is missing
+ * (0.7). `settleNewSwitches` (feature-presets.ts) writes the key on load.
+ */
+export const OFF_WHEN_MISSING: readonly FeatureId[] = ["screenplay"];
+
+/** The writer's switch alone (missing key = on, except OFF_WHEN_MISSING). */
 export function switchedOn(id: FeatureId, s: FeatureSwitches): boolean {
   switch (FEATURE_SPECS.find((f) => f.id === id)?.switch) {
     case "explorerCounts": return s.explorerCounts;
     case "spellcheckOnDemand": return s.spellcheckOnDemand;
     case "universeMode": return s.universeMode !== "off";
-    default: return s.features[id] !== false;
+    default: return OFF_WHEN_MISSING.includes(id) ? s.features[id] === true : s.features[id] !== false;
   }
 }
 

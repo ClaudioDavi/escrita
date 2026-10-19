@@ -7,7 +7,7 @@ import type { FeatureId } from "./features";
 
 export type SectionId =
   | "features" | "shared" | "books" | "dayEnds" | "forms" | "newWorks" | "goals" | "publish" | "export" | "submissions" | "outline" | "placeholders"
-  | "darlings" | "editor" | "lens" | "stages" | "desk" | "snapshots"
+  | "darlings" | "editor" | "screenplay" | "lens" | "stages" | "desk" | "snapshots"
   | "universe" | "threads";
 
 export interface SectionSlot {
@@ -50,6 +50,7 @@ export const SECTION_ORDER: readonly SectionSlot[] = [
   { id: "placeholders", heading: "settings.placeholders", feature: "placeholders", also: ["publish"] },
   { id: "darlings", heading: "settings.darlings", feature: "darlings" },
   { id: "editor", heading: "settings.editor", feature: "typing", also: ["dialogueFocus", "moveBlocks", "lens"] },
+  { id: "screenplay", heading: "screenplay.settings.heading", feature: "screenplay" },
   { id: "lens", heading: "settings.lens", feature: "lens" },
   { id: "stages", heading: "settings.stages", feature: null },
   { id: "desk", heading: "settings.homeNoteHeading", feature: "desk" },

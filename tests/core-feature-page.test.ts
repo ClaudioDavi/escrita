@@ -18,7 +18,7 @@ describe("derived Features page (IMPROVEMENTS 20)", () => {
 
   it("matches the approved board order, with export and submissions after publish", () => {
     expect(FEATURE_PAGE).toEqual([
-      { group: "writing", ids: ["goals", "outline", "placeholders", "typing", "dialogueFocus", "moveBlocks", "templates", "spellcheck", "explorerCounts"] },
+      { group: "writing", ids: ["goals", "outline", "placeholders", "typing", "screenplay", "dialogueFocus", "moveBlocks", "templates", "spellcheck", "explorerCounts"] },
       { group: "revision", ids: ["lens", "snapshots", "darlings"] },
       { group: "desk", ids: ["stageSnapshot", "desk"] },
       { group: "publishing", ids: ["publish", "export", "submissions"] },

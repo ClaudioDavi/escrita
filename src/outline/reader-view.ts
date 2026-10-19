@@ -2,6 +2,7 @@ import { Component, ItemView, MarkdownRenderer, Notice, TFile, debounce, setIcon
 import type EscritaPlugin from "../main";
 import { bookSource, type Book } from "../core/books";
 import { movedPath } from "../core/path-keys";
+import { VIEW_TYPES } from "../core/view-types";
 import type { BookSource } from "../core/book-source";
 import { lang, plural, t } from "../i18n";
 import { anchorAfterEdit, readerBlocks, type ReaderBlock } from "./reader-model";
@@ -10,7 +11,7 @@ import {
   type ReaderChapter, type SectionBox,
 } from "./reader-plan";
 
-export const READER_VIEW = "escrita-reader";
+export const READER_VIEW = VIEW_TYPES.reader;
 
 /** Chapters render when they come within this distance of the visible area (G0d: the rest stay a placeholder). */
 const LOAD_MARGIN = "900px 0px";

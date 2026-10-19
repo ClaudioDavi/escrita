@@ -247,7 +247,8 @@
           "export": true,
           "submissions": true,
           "desk": true,
-          "threads": false
+          "threads": false,
+          "screenplay": false
         },
         "explorerCounts": true,
         "spellcheckOnDemand": false,

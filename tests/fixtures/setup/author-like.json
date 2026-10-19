@@ -388,6 +388,17 @@
     },
     {
       "kind": "setting",
+      "target": "screenplayTimes",
+      "state": "change",
+      "tick": "language",
+      "ticked": false,
+      "reason": {
+        "key": "setup.reason.settingHasWorks"
+      },
+      "value": "DIA, NOITE, CONTÍNUO, MAIS TARDE"
+    },
+    {
+      "kind": "setting",
       "target": "trackFolders",
       "state": "change",
       "tick": "folders",
@@ -495,7 +506,8 @@
           "export": true,
           "submissions": true,
           "desk": true,
-          "threads": false
+          "threads": false,
+          "screenplay": false
         },
         "explorerCounts": true,
         "spellcheckOnDemand": false,

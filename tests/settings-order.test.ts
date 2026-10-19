@@ -7,6 +7,7 @@ import { coreStrings } from "../src/strings";
 import { exportStrings } from "../src/export/strings";
 import { submissionsStrings } from "../src/submissions/strings";
 import { universeStrings } from "../src/universe/strings";
+import { screenplayStrings } from "../src/screenplay/strings";
 
 const all = new Set<FeatureId>(FEATURE_IDS);
 const without = (...ids: FeatureId[]) => new Set([...FEATURE_IDS].filter((i) => !ids.includes(i)));
@@ -16,7 +17,7 @@ describe("sectionOrder (PLAN-0.8 Q13)", () => {
   it("with every feature loaded, keeps today's visual order", () => {
     expect(ids(all)).toEqual([
       "features", "shared", "books", "dayEnds", "forms", "newWorks", "goals", "publish", "export", "submissions", "outline", "placeholders", "darlings",
-      "editor", "lens", "stages", "desk", "snapshots", "universe", "threads",
+      "editor", "screenplay", "lens", "stages", "desk", "snapshots", "universe", "threads",
     ]);
   });
 
@@ -57,7 +58,7 @@ describe("sectionOrder (PLAN-0.8 Q13)", () => {
     expect(new Set(keys).size).toBe(keys.length);
     expect(SECTION_ORDER[0].heading).not.toBeNull();
     expect(SECTION_ORDER.filter((s) => s.heading === null).map((s) => s.id)).toEqual(["dayEnds", "threads"]);
-    const tables = [coreStrings, exportStrings, submissionsStrings, universeStrings];
+    const tables = [coreStrings, exportStrings, submissionsStrings, universeStrings, screenplayStrings];
     for (const k of keys) {
       for (const lang of ["en", "pt-BR"] as const) expect(tables.some((s) => s[lang][k]), `${k} (${lang})`).toBe(true);
     }

@@ -6,9 +6,14 @@ function sw(over: Partial<FeatureSwitches> = {}): FeatureSwitches {
 }
 
 describe("switchedOn", () => {
-  it("a missing key means on", () => {
+  it("a missing key means on, except screenplay (OFF_WHEN_MISSING)", () => {
     const s = sw();
-    for (const id of FEATURE_IDS) expect(switchedOn(id, s)).toBe(true);
+    for (const id of FEATURE_IDS) expect(switchedOn(id, s)).toBe(id !== "screenplay");
+  });
+
+  it("screenplay is on only when its key is true", () => {
+    expect(switchedOn("screenplay", sw({ features: { screenplay: true } }))).toBe(true);
+    expect(switchedOn("screenplay", sw({ features: { screenplay: false } }))).toBe(false);
   });
 
   it("a false key means off, and only for that feature", () => {
@@ -45,7 +50,8 @@ describe("switchedOn", () => {
 
 describe("wanted", () => {
   it("is every feature when all switches are on", () => {
-    expect([...wanted(sw())]).toEqual([...FEATURE_IDS]);
+    expect([...wanted(sw({ features: { screenplay: true } }))]).toEqual([...FEATURE_IDS]);
+    expect([...wanted(sw())]).toEqual(FEATURE_IDS.filter((id) => id !== "screenplay"));
   });
 
   it("snapshots off takes the stage snapshot off, and its stored value is untouched", () => {
@@ -65,7 +71,7 @@ describe("wanted", () => {
   });
 
   it("combines the three setting-backed switches", () => {
-    const w = wanted(sw({ explorerCounts: false, spellcheckOnDemand: false, universeMode: "off" }));
+    const w = wanted(sw({ features: { screenplay: true }, explorerCounts: false, spellcheckOnDemand: false, universeMode: "off" }));
     expect([...w].filter((id) => ["explorerCounts", "spellcheck", "universe"].includes(id))).toEqual([]);
     expect(w.size).toBe(FEATURE_IDS.length - 3);
   });

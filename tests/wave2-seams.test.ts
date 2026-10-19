@@ -25,7 +25,7 @@ describe("Wave 2 seams", () => {
 
   it("the view ids are the ones saved in workspaces since 0.x", () => {
     expect(VIEW_TYPES).toEqual({
-      outline: "escrita-outline", lens: "escrita-lens", placeholders: "escrita-placeholders", universe: "escrita-universe",
+      outline: "escrita-outline", lens: "escrita-lens", placeholders: "escrita-placeholders", universe: "escrita-universe", reader: "escrita-reader",
     });
   });
 });

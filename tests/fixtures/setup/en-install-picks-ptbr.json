@@ -325,6 +325,17 @@
     },
     {
       "kind": "setting",
+      "target": "screenplayTimes",
+      "state": "change",
+      "tick": "language",
+      "ticked": true,
+      "reason": {
+        "key": "setup.reason.settingChange"
+      },
+      "value": "DIA, NOITE, CONTÍNUO, MAIS TARDE"
+    },
+    {
+      "kind": "setting",
       "target": "trackFolders",
       "state": "kept",
       "tick": null,
@@ -440,7 +451,8 @@
           "export": true,
           "submissions": true,
           "desk": true,
-          "threads": true
+          "threads": true,
+          "screenplay": true
         },
         "explorerCounts": true,
         "spellcheckOnDemand": true,

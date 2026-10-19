@@ -311,10 +311,45 @@ interface Draft {
  * spaces keeps it going. Emphasis in a cue is read, then dropped from `name`.
  */
 export function parseFountain(text: string, md: Markdown, opts: FountainOptions): Script {
+  const { block, drafts } = readScript(text, md, opts);
+  const elements = drafts.map(({ el, raw }) => {
+    el.runs = parseRuns(raw);
+    return el;
+  });
+  return { titleBlock: block, elements };
+}
+
+/**
+ * What each line of the note is in the script (1.2, SP 2, PLAN-1.2 Q3): the type of the element
+ * that holds it, `centered` for a centered action, `titlePage` for the `Title:` block, and null
+ * for everything else (blank lines, frontmatter, code, `%%` notes, boneyard). Index = the
+ * note's 0-based line; the length is the note's line count. The same reading as
+ * `parseFountain`, so the editor's layout never disagrees with the export.
+ */
+export function fountainLines(text: string, md: Markdown, opts: FountainOptions): (LineKind | null)[] {
+  const doc = md.text === text ? md : segment(text);
+  const { titleLines, owner } = readScript(text, doc, opts);
+  const kinds = new Array<LineKind | null>(doc.lineCount).fill(null);
+  for (const line of titleLines) if (line < kinds.length) kinds[line] = "titlePage";
+  for (const [line, d] of owner) {
+    if (line >= kinds.length) continue;
+    kinds[line] = d.el.type === "action" && d.el.centered ? "centered" : d.el.type;
+  }
+  return kinds;
+}
+
+/** The kind of a line in a screenplay note (`fountainLines`). */
+export type LineKind = ScriptElementType | "centered" | "titlePage";
+
+function readScript(text: string, md: Markdown, opts: FountainOptions): {
+  block: Partial<TitlePage> | null; titleLines: number[]; drafts: Draft[]; owner: Map<number, Draft>;
+} {
   const doc = md.text === text ? md : segment(text);
   const all = withoutBoneyard(proseLines(doc)).map((l) => ({ line: l.line, text: unlink(l.text) }));
   const { block, next } = readTitleBlock(all);
+  const titleLines = all.slice(0, next).map((l) => l.line);
   const lines = all.slice(next);
+  const owner = new Map<number, Draft>();   // each script line and the element that holds it
 
   const prefixes = [...opts.sceneHeadings].map((p) => p.trim().replace(/[. ]+$/, "")).filter((p) => p !== "").sort((a, b) => b.length - a.length);
   const sceneRe = prefixes.length > 0 ? new RegExp("^(?:" + prefixes.map(escapeRe).join("|") + ")[. ]", "i") : null;
@@ -328,6 +363,7 @@ export function parseFountain(text: string, md: Markdown, opts: FountainOptions)
   const emit = (el: ScriptElement, raw: string): Draft => {
     const d = { el, raw };
     drafts.push(d);
+    owner.set(el.line, d);
     open = null;
     return d;
   };
@@ -347,7 +383,7 @@ export function parseFountain(text: string, md: Markdown, opts: FountainOptions)
 
     if (inSpeech) {
       if (trimmed.startsWith("~")) {
-        if (open && open.el.type === "lyric") open.raw += "\n" + trimmed.slice(1).trim();
+        if (open && open.el.type === "lyric") { open.raw += "\n" + trimmed.slice(1).trim(); owner.set(line, open); }
         else open = emit({ type: "lyric", line, runs: [] }, trimmed.slice(1).trim());
         continue;
       }
@@ -355,7 +391,7 @@ export function parseFountain(text: string, md: Markdown, opts: FountainOptions)
         emit({ type: "parenthetical", line, runs: [] }, trimmed);
         continue;
       }
-      if (open && open.el.type === "dialogue") open.raw += "\n" + trimmed;
+      if (open && open.el.type === "dialogue") { open.raw += "\n" + trimmed; owner.set(line, open); }
       else open = emit({ type: "dialogue", line, runs: [] }, trimmed);
       continue;
     }
@@ -370,6 +406,7 @@ export function parseFountain(text: string, md: Markdown, opts: FountainOptions)
     const addAction = (rawText: string, forced: boolean) => {
       if (!forced && open && open.el.type === "action" && !(open.el as { forced?: boolean }).forced && !(open.el as { centered?: boolean }).centered) {
         open.raw += "\n" + rawText;
+        owner.set(line, open);
         return;
       }
       const el: ScriptElement = { type: "action", line, runs: [] };
@@ -396,7 +433,7 @@ export function parseFountain(text: string, md: Markdown, opts: FountainOptions)
         const inner = trimmed.slice(1, -1).trim();
         // centered lines with no blank between are one centered block (Brick & Steel's titles, as Afterwriting reads them)
         const prev: Draft | null = open;
-        if (!startsBlock && prev && prev.el.type === "action" && (prev.el as { centered?: boolean }).centered) prev.raw += "\n" + inner;
+        if (!startsBlock && prev && prev.el.type === "action" && (prev.el as { centered?: boolean }).centered) { prev.raw += "\n" + inner; owner.set(line, prev); }
         else open = emit({ type: "action", line, centered: true, runs: [] }, inner);
       } else {
         emit({ type: "transition", line, forced: true, runs: [] }, trimmed.slice(1).trim());
@@ -404,7 +441,7 @@ export function parseFountain(text: string, md: Markdown, opts: FountainOptions)
       continue;
     }
     if (trimmed.startsWith("~")) {
-      if (open && open.el.type === "lyric") open.raw += "\n" + trimmed.slice(1).trim();
+      if (open && open.el.type === "lyric") { open.raw += "\n" + trimmed.slice(1).trim(); owner.set(line, open); }
       else open = emit({ type: "lyric", line, runs: [] }, trimmed.slice(1).trim());
       continue;
     }
@@ -432,11 +469,7 @@ export function parseFountain(text: string, md: Markdown, opts: FountainOptions)
     addAction(/^(\t| {4})/.test(t) ? t.trimEnd() : trimmed, false);
   }
 
-  const elements = drafts.map(({ el, raw }) => {
-    el.runs = parseRuns(raw);
-    return el;
-  });
-  return { titleBlock: block, elements };
+  return { block, titleLines, drafts, owner };
 }
 
 /** `Heading #12#` into the heading and `12`. */

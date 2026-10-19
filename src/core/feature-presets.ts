@@ -14,7 +14,7 @@
 // it. Everything is "19 of 19" on the boards because the universe is counted there as
 // available, not as switched.
 //
-import { FEATURE_IDS, FEATURE_SPECS, switchedOn, type FeatureId, type FeatureSwitches } from "./features";
+import { FEATURE_IDS, FEATURE_SPECS, OFF_WHEN_MISSING, switchedOn, type FeatureId, type FeatureSwitches } from "./features";
 
 export const PRESET_IDS = ["essentials", "writer", "everything"] as const;
 export type PresetId = typeof PRESET_IDS[number];
@@ -31,7 +31,8 @@ const WRITER: readonly FeatureId[] = [
  * and export are essentials). Every id not in a list is switched off by that preset,
  * "universe" aside (never in a list, never touched). Each list is closed under `requires`
  * (stageSnapshot needs snapshots, which every preset holds). Essentials 9, Writer 16,
- * Everything 18 here (19 with the universe, as the boards count). A fresh install with no
+ * Everything 19 here (20 with the universe, as the boards count). The screenplay editor
+ * (1.2) is in Everything only (PLAN-1.2 Q2). A fresh install with no
  * setup run starts on Writer (Q7); an existing install keeps its switches (Q6).
  */
 export const PRESETS: Readonly<Record<PresetId, readonly FeatureId[]>> = Object.freeze({
@@ -39,6 +40,24 @@ export const PRESETS: Readonly<Record<PresetId, readonly FeatureId[]>> = Object.
   writer: Object.freeze([...WRITER]),
   everything: Object.freeze(FEATURE_IDS.filter((id) => id !== "universe")),
 });
+
+/**
+ * The `features` record with a value for each OFF_WHEN_MISSING id the saved switches lack
+ * (PLAN-1.2 Q2): on when the rest of the switches match "everything" (so that install still
+ * matches it), off otherwise. Ids already stored are kept. Returns `current.features` itself
+ * when nothing is missing. `loadSettings` applies it to a saved install; a fresh one gets the
+ * Writer preset, which writes every key.
+ */
+export function settleNewSwitches(current: FeatureSwitches): FeatureSwitches["features"] {
+  const missing = OFF_WHEN_MISSING.filter((id) => !Object.prototype.hasOwnProperty.call(current.features, id));
+  if (missing.length === 0) return current.features;
+  const allOn = { ...current.features };
+  for (const id of missing) allOn[id] = true;
+  const everything = matchingPreset({ ...current, features: allOn }) === "everything";
+  const out = { ...current.features };
+  for (const id of missing) out[id] = everything;
+  return out;
+}
 
 /** The one feature no preset touches (see the file comment). */
 export const PRESET_IGNORED: FeatureId = "universe";

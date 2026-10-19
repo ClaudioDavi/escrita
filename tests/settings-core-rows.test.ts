@@ -14,6 +14,7 @@ import { lensStrings } from "../src/lens/strings";
 import { exportStrings } from "../src/export/strings";
 import { submissionsStrings } from "../src/submissions/strings";
 import { universeStrings } from "../src/universe/strings";
+import { screenplayStrings } from "../src/screenplay/strings";
 import { SECTION_ORDER } from "../src/core/settings-order";
 import { DEFAULT_SETTINGS, defaultsFor, type EscritaSettings } from "../src/settings";
 import { EscritaSettingTab, featureGroupHeading } from "../src/settings-tab";
@@ -76,7 +77,7 @@ describe("the Features page", () => {
       "settings.lens.rules", "settings.lens.measures", "universe.settings.types", "universe.settings.names",
     ];
     for (const language of ["en", "pt-BR"]) {
-      const dict = Object.assign({}, ...[coreStrings, lensStrings, exportStrings, submissionsStrings, universeStrings].map((s) => s[language])) as Record<string, string>;
+      const dict = Object.assign({}, ...[coreStrings, lensStrings, exportStrings, submissionsStrings, universeStrings, screenplayStrings].map((s) => s[language])) as Record<string, string>;
       const texts = keys.map((k) => dict[k]);
       expect(texts.every((x) => typeof x === "string" && x !== ""), language).toBe(true);
       expect(new Set(texts).size, `${language}: ${texts.join(" | ")}`).toBe(keys.length);
