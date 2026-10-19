@@ -280,6 +280,50 @@ Obsidian, Live Preview, cursor off the line:
 **Boards (G1):** 45 (the screenplay editor), 46 ("Read this note") and 47 (the rhythm), under
 "1.2" on the design canvas. They wait for the author.
 
+### Wave 1 (2026-10-19)
+
+**Judge (Opus): PASS.** The four branches were merged into `1.2-wave1`, which became `1.2` at
+`7f7bf62`.
+
+- **A, improvement 38.**
+  - `src/ui/editor-glue.ts` holds `EditorSet` (one retry, then drop), `fileOfState`,
+    `isLivePreview` and `cmOf`. `src/ui/reveal-on-touch.ts` is new.
+  - Six plugins moved onto them.
+  - Two behavior changes: the name marks now drop an editor after a second failed dispatch, the
+    single policy. Ghost beats skip lines outside the visible ranges.
+- **B, the script core.**
+  - `decideKey`, `capsFor`, `forcedMarkFor`, `triggerAt` and `candidates`, with 47 tests.
+  - Beyond the plan: Enter after a transition goes to scene mode, and Enter on a section,
+    synopsis or centered line falls through.
+  - `candidates` takes `sceneHeadings` as a fifth argument.
+  - Every rule on a non-empty line acts only with the cursor at the end of the line. The module
+    keeps each line's mode in the editor state.
+- **C, the reader.**
+  - `readerSource`, the `{ source }` state (which also reads the old `{ book }`), the `read-note`
+    command and the single-note outline button. The view rebuilds on `resolved` when the list or
+    the title changed (52).
+  - A new spec, `read-note.spec.ts`, with 12 tests.
+  - `scrollTo` now allows for the sticky bar's height, books included.
+- **D, the rhythm.**
+  - `LensPass.sentenceWords` and `sentencePara`; `longSentences` reads them, with unchanged
+    results.
+  - `lens/rhythm.ts`, the panel section, the setting row and the bar click.
+- **Checks on the merge:**
+  - typecheck clean;
+  - vitest 5,027 passed and 2 skipped;
+  - build and `test:bundle` (4 of 4) pass;
+  - e2e 216 passed, 2 failed and 14 did not run.
+  - Both failures came from Wave 0's 20th switch. The setup said "20 de 19", because the count
+    was written into the string; the author-vault spec pinned the switches.
+  - The judge fixed both, and the two specs pass (25 tests). The full e2e run has not been
+    repeated: it runs again in Wave 2's judge.
+- **Open, for later waves:**
+  - `outline.reader.noBook` is unused (Wave 3).
+  - A collection's reader title is its file name. Check it against the export's title.
+  - A rhythm paragraph is text between blank lines: say so in `revision.md`.
+  - The look of the rhythm panel, the reader chip and the button waits for the G2 screenshots.
+  - The guide pages still say 19 features (Wave 3).
+
 ## Risks
 
 - **Obsidian's Live Preview owns Markdown styling.** Headings, quotes and rules may not yield to
