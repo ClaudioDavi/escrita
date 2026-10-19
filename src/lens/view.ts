@@ -71,10 +71,18 @@ export class LensView extends ItemView {
 
   render(): void {
     const el = this.contentEl;
-    const focused = el.querySelector<HTMLElement>(`:focus[${FOCUS_KEY}]`)?.getAttribute(FOCUS_KEY) ?? null;
+    const was = el.querySelector<HTMLElement>(`:focus[${FOCUS_KEY}]`);
+    const focused = was?.getAttribute(FOCUS_KEY) ?? null;
+    // a redraw keeps the writer's place (1.2.1): the scroll, and the control in use where it was on
+    // screen, even when the Rhythm section above it changes height as the cursor moves
+    const top = el.scrollTop;
+    const wasAt = was ? was.getBoundingClientRect().top : null;
     el.empty();
     this.build(el);
-    if (focused) el.querySelector<HTMLElement>(`[${FOCUS_KEY}="${focused}"]`)?.focus();
+    el.scrollTop = top;
+    const now = focused ? el.querySelector<HTMLElement>(`[${FOCUS_KEY}="${focused}"]`) : null;
+    if (now && wasAt !== null) el.scrollTop += now.getBoundingClientRect().top - wasAt;
+    now?.focus({ preventScroll: true });
   }
 
   // ---------------------------------------------------------------- building

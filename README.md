@@ -101,7 +101,7 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ### 1.2.1 (2026-10-19)
 
-A small release: four fixes, one small addition and a new default.
+A small release: five fixes, one small addition and a new default.
 
 - **Tab writes under a beat**: in the outline, Tab in a beat's field opens the note in its editor with the cursor on the first line of prose under that beat. A beat with no prose yet gets the cursor on the empty line right after it; Escrita adds that empty line only when there is none, and nothing else changes. Shift+Tab still turns an unwritten beat into a chapter. The hints under the outline list the new key. See [Writing](docs/guide/en/writing.md#edit-from-the-keyboard).
 - **Smart typography is on for every note by default**: **Where smart typography applies** now starts as **In every note**, so a short story or an essay gets curly quotes and dashes too. It used to start as **Only in book chapters**.
@@ -109,6 +109,7 @@ A small release: four fixes, one small addition and a new default.
   - In the outline, Enter in a beat's field sent the cursor to the note's text when the note was open in an editor. It now lands in the new, empty beat field, so you can type one beat after another.
   - The darlings notes and the word lists note are never counted as works. A darlings note made in a vault that tracks every folder (as the setup leaves a new vault) used to get the draft status and show in the home block as a work; goals counted its words too. They get no status now, and the goals ignore them.
   - The screenplay layout no longer flickers when the note is saved.
+  - In the lens panel, stepping through a rule's matches no longer scrolls the panel back to the top. The arrow you clicked stays where it was, even when the Rhythm section above it changes as the cursor moves.
 - Improvement: required classifier settings and one plugin-folder root (candidate 43). Nothing changes in use.
 - Upgrade notes:
   - An install that already has the setting keeps what it had. To get smart typography in every note, set **Settings › Escrita › Editor › Where smart typography applies** to **In every note**.

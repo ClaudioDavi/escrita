@@ -81,6 +81,32 @@ test("2. clicking a bar selects that sentence and leaves the text alone", async 
   expect(await ob.readVaultFile(FILE)).toBe(BODY);
 });
 
+test("2b. stepping through a rule keeps its row where it was, though the panel redraws (1.2.1)", async () => {
+  // a short window, so the panel scrolls and the rule rows sit below the Rhythm section
+  await ob.page.setViewportSize({ width: 1280, height: 560 });
+  try {
+    await ob.page.evaluate((l) => {
+      (app.workspace.getLeavesOfType("markdown")[0].view as any).editor.setCursor({ line: l, ch: 10 });
+    }, original.split("\n").findIndex((l) => l.startsWith(S1)));
+    await expect(rows()).toHaveCount(5);
+    const row = ob.page.locator(".escrita-lens-row").filter({ has: ob.page.locator(".escrita-lens-step:not([disabled])") }).first();
+    const next = row.locator(".escrita-lens-step").nth(1);
+    await next.scrollIntoViewIfNeeded();
+    const scrolled = await ob.page.locator(".escrita-lens").evaluate((el) => el.scrollTop);
+    expect(scrolled, "the panel is scrolled to reach the row").toBeGreaterThan(0);
+    for (let i = 0; i < 3; i++) {
+      const before = (await next.boundingBox())!.y;
+      await next.click();
+      await sleep(400); // the selection moves, the panel redraws
+      const after = (await next.boundingBox())!.y;
+      expect(Math.abs(after - before), `step ${i + 1}: the button stays under the pointer`).toBeLessThan(3);
+    }
+    expect(await editorText(ob)).toBe(original);
+  } finally {
+    await ob.page.setViewportSize({ width: 1280, height: 800 });
+  }
+});
+
 for (const theme of ["light", "dark"] as const) {
   test(`3. screenshots for G2, ${theme}`, async () => {
     await ob.setTheme(theme);
