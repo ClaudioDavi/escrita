@@ -48,6 +48,7 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 | 1.0.4 | Start a new work: New work…, New short story, New book, the home block footer and the New works settings (SF 14, PLAN-1.0.4) · Deadlines by month · Improvement: path helpers in core (candidate 33) |
 | 1.1.0 | Screenwriting, phase 1: screenplay notes in Fountain, `screenplay` as the seventh form, character cues in "Appears in", the Forms group after Books (SP 1) · Fountain and PDF export, US Letter or A4, with a preview and the Screenplays settings (SP 6) · The end-to-end harness (204 tests) · Fixes: the Progress chart after a met goal, the entry tab hiding the chapter, the reader's jump on an edit, setting up again in a finished vault · Improvement: export writers share the title page, the modal splits (candidate 46) |
 | 1.1.1 | Code only, no new feature (PLAN-1.1.1): the review bot's warnings cleared (the e2e harness under `tests/`, underlines as backgrounds, the export preview indent as a spacer) · four fixes for a broken `data.json` · Improvement: one settings table (candidate 53, the schema half of 37) |
+| 1.2.0 | Writing a script and reading a story: the screenplay editor, a 20th switch on in Everything only: Live Preview lays out each Fountain element as on the page, Tab and Enter as in screenwriting programs, capitals as you type, forced marks, and suggestions for cues, places and times of day, with two commands for phones (SP 2) · Read this note: the reader for a conto, an essay or a collection (SF 15) · Rhythm in the lens panel (SF 16) · A fix for typing lost when a new tracked note got its draft status (`NoteService.flush`) · User guide updated in both languages · Improvements: editor glue and "reveal on touch" (38) and "Read the book" rebuilds when the metadata cache is ready (52); the first slice of 47 |
 
 ## 1.1, screenwriting (phase 1): shipped
 
@@ -79,29 +80,37 @@ changes; setting up again in a finished vault says there is nothing to do.
 | Gate G0d, 0.7: the Reading-view "Appears in" section across re-renders | Closed as decided: Reading view shows the panel only, no post-processor. `tests/e2e/specs/appears-in-reading.spec.ts` checks it across 5 toggles, a split and a 200-line entry |
 | Gate G0d, 0.9: "Read the book" timings on a 30-chapter book | Measured (`tests/e2e/specs/read-book.spec.ts`, 31 chapters, 90,951 words). First text on screen 8–18 ms (painted 29–60 ms); longest task while scrolling 22.9–28.4 ms, none of 50 ms, accepted at 30 ms (the 20 ms bar was missed by 3–8 ms); typing in a 3,000-word chapter 7.5–9.6 ms |
 | The by-hand checks of TEST-0.9 and TEST-1.0 | Run by the harness. What needs an eye stays in PLAN-1.1, "By-hand checks (G2)": the pictures, a PDF in a reader, writing mode with a third-party theme |
-| The reader's startup race (a `compile: false` chapter read as included) | Candidate 52 in IMPROVEMENTS.md (not in 1.1) |
+| The reader's startup race (a `compile: false` chapter read as included) | Candidate 52 in IMPROVEMENTS.md (not in 1.1; fixed in 1.2.0) |
 | Phone gates | Waived (no phone to test on, 2026-10-05) |
 
 **Closed by the author (2026-10-16, follow the spec and other tools):** a speech with no sentence
 end moves whole to the next page (kept), and indents follow the Fountain spec (ignored outside
 action; an indented `CUT TO:` is a transition).
 
-## 1.2, writing a script and reading a story: planned
+## 1.2, writing a script and reading a story: shipped
 
-**Planned** on 2026-10-19 with the author. Plan: [PLAN-1.2.md](PLAN-1.2.md).
+**Shipped** as 1.2.0 on 2026-10-19. Planned with the author the same day. Plan and results: [PLAN-1.2.md](PLAN-1.2.md).
 
 Three features that help while drafting and revising, chosen over universe phase 2 because the
 author's next months are short forms (contos, essays, short films). Upkeep for the writer: none.
 
 | Feature | Ref | Effort | Stage | Status |
 |---|---|---|---|---|
-| The screenplay editor: Live Preview lays out each Fountain element as on the page, Tab and Enter as in screenwriting programs, suggestions for characters, places and times of day. A new switch, `screenplay` (the 20th) | SP 2 | M | Draft | Planned |
-| Read a note: "Read the book" for a single conto or essay, and for a collection's contos in order | SF 15 | S | Revision | Planned |
-| Sentence rhythm: a strip of bars in the lens panel, one per sentence of the paragraph at the cursor, with runs of same-length sentences marked | SF 16 | S | Revision | Planned |
+| The screenplay editor: Live Preview lays out each Fountain element as on the page, Tab and Enter as in screenwriting programs, suggestions for characters, places and times of day. A new switch, `screenplay` (the 20th) | SP 2 | M | Draft | Shipped |
+| Read a note: "Read the book" for a single conto or essay, and for a collection's contos in order | SF 15 | S | Revision | Shipped |
+| Sentence rhythm: a strip of bars in the lens panel, one per sentence of the paragraph at the cursor, with runs of same-length sentences marked | SF 16 | S | Revision | Shipped |
 
 **Improvements:** editor glue and "reveal on touch" in `src/ui/` (candidate 38; the screenplay
 layout is the fifth decoration plugin and is built on it) and "Read the book" rebuilds when the
-metadata cache is ready (candidate 52; the reader for a note touches the same code).
+metadata cache is ready (candidate 52; the reader for a note touches the same code). Both are in
+"Done" under 1.2.0 in IMPROVEMENTS.md. The rhythm also did the first slice of candidate 47.
+
+**What differs from the plan:** elements got no `endLine` (a `fountainLines` function does the
+same job without changing `parseFountain`); the `---` rule between scenes is drawn by CSS, so a
+typed `-----` shows as `---` until the cursor is on it; a missing switch reads as off, and an
+install whose other switches all match Everything gets it on. The pre-existing data-loss bug in
+`draftIfNew` was found by the screenplay spec and fixed in this version. Open items are in
+IMPROVEMENTS.md, "Known issues".
 
 **Not in 1.2:** Reading view layout for screenplays, Fountain in dialogue focus and the lens
 (moved to SP 5), pages as a unit (SP 4) and the scene outline (SP 3).
@@ -155,7 +164,7 @@ as the features ship rather than all at once before 1.0. No website (rule 5): pl
 Markdown files that read well on GitHub and inside a vault.
 
 **Where.** `docs/guide/en/` and `docs/guide/pt-BR/`, the same file names in both. Images,
-if any, sit in `docs/guide/images/`. The universe guide moved there in 0.7, as
+if any, sit in `docs/images/` (the GIFs and videos of the guides and the README). The universe guide moved there in 0.7, as
 `docs/guide/en/the-world.md` (and its pt-BR twin).
 
 **The guides**, one per stage of a work's life, the way the Features page groups them:
@@ -163,7 +172,7 @@ if any, sit in `docs/guide/images/`. The universe guide moved there in 0.7, as
 | Guide | Covers |
 |---|---|
 | Getting started | Install, the first conto, the first book, the home note. From 1.0, the setup command |
-| Writing | Outline and ghost beats, goals and sprints, placeholders, Enter flow and typography, dialogue focus, moving blocks, templates, explorer counts |
+| Writing | Outline and ghost beats, reading a note (1.2), goals and sprints, placeholders, Enter flow and typography, dialogue focus, moving blocks, templates, explorer counts |
 | Revision | The revision lens and its word lists, snapshots, darlings |
 | Tracking | Stages, the stage snapshot, the home block and where you left off |
 | Publishing | The publish check; export and submissions (0.8); EPUB, collections, publishing a book chapter by chapter (0.9) |
@@ -200,6 +209,6 @@ and the README links to every guide.
 | Companion-plugin guide (unscheduled) | N 6 | S | Dropped from 0.8 on 2026-10-05; written only if a need shows up (for example, a StoryLine clash reported by a writer) |
 | Longform importer | N 5 | S–M | Not wanted for 1.0 |
 | Screenwriting, phase 1: screenplay notes, Fountain parser, Fountain and PDF export | SP 1, SP 6 | M + L | Shipped in 1.1.0 (see "1.1" above). Export first: a script can be drafted in plain Fountain, but can't be handed in without a correct PDF. Builds on the 0.8 export pipeline and the `form` property (0.6) |
-| Screenwriting, phase 2: screenplay layout and Tab/Enter in the editor, pages as a unit, scene outline | SP 2–4 | M + S + S | SP 2 planned for 1.2 (without Reading view); SP 3 and SP 4 after |
+| Screenwriting, phase 2: screenplay layout and Tab/Enter in the editor, pages as a unit, scene outline | SP 2–4 | M + S + S | SP 2 shipped in 1.2.0 (without Reading view); SP 3 and SP 4 after |
 | Screenwriting, phase 3: script report, FDX export, Fountain import, feature-length scripts as a book | SP 5–7 | M + M + M | |
 | Universe phase 2: story timeline, `when` and eras, narrative mode, shift dates, facts over time, continuity checks, canon | U 2.1–2.4 | L | After screenwriting. Planned for 0.9 and moved on 2026-10-06 as bloat at this stage; the draft design is in `research_notes/0.9-dates-draft/` (local) |

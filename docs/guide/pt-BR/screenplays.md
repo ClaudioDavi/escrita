@@ -2,11 +2,12 @@
 
 Esta página cobre como escrever um roteiro numa nota e enviá-lo: como uma nota vira roteiro,
 como escrever o roteiro em Fountain puro, exportar em PDF ou em arquivo Fountain, a folha de
-rosto, as quebras de página e as configurações. É novidade da 1.1.0.
+rosto, as quebras de página e as configurações. Os roteiros são novidade da 1.1.0, e o editor
+que monta o roteiro enquanto você digita é novidade da 1.2.0.
 
-O Escrita ainda não monta o roteiro no editor. Você escreve Fountain como texto puro, numa nota
-como outra qualquer, e o layout acontece na exportação. Planejar e revisar funcionam como num
-conto.
+Você escreve Fountain como texto puro, numa nota como outra qualquer. Na Visualização ao vivo, o
+editor de roteiro mostra o texto montado como na página, com Tab e Enter como num programa de
+roteiro. O PDF é feito na exportação. Planejar e revisar funcionam como num conto.
 
 ![Exportando um roteiro: o roteiro é Fountain puro numa nota, a janela de exportação oferece PDF ou Fountain em US Letter ou A4, a prévia mostra a folha de rosto e uma fala que quebra entre páginas com (MAIS) e (CONT.), e o PDF abre no Obsidian.](../../images/screenplay-export.gif)
 
@@ -14,10 +15,12 @@ O mesmo em vídeo: [screenplay-export.mp4](../../images/screenplay-export.mp4).
 
 Outras páginas: [Publicação](publishing.md), [Escrita](writing.md),
 [Recursos e configurações](features-and-settings.md) e [O mundo](the-world.md). A exportação tem
-o seu interruptor em Recursos › Publicação, e tudo aqui precisa dela ligada.
+o seu interruptor em Recursos › Publicação, e as partes de exportação desta página precisam dela
+ligada. O editor também tem o seu, em Recursos › Escrita.
 
 - [Como uma nota vira roteiro](#como-uma-nota-vira-roteiro)
 - [Escrever o roteiro](#escrever-o-roteiro)
+- [Escrever no editor](#escrever-no-editor)
 - [Exportar um roteiro](#exportar-um-roteiro)
 - [A folha de rosto](#a-folha-de-rosto)
 - [Como as páginas quebram](#como-as-páginas-quebram)
@@ -124,6 +127,108 @@ O esboço mostra o beat, um marcador continua sendo um marcador (e a exportaçã
 faz num conto), e a thread aparece no painel de threads. **Nenhum deles sai impresso**, nem no
 PDF nem no arquivo Fountain. Os seus outros comentários `%% … %%` ficam de fora do PDF. No
 arquivo Fountain também ficam de fora, a menos que você marque **Levar as notas**.
+
+## Escrever no editor
+
+![Uma cena digitada no editor de roteiro: Tab e Enter passam de um cabeçalho de cena para a ação, um nome de personagem e a fala dele, o nome é escolhido entre as sugestões, e o roteiro aparece em colunas como na página.](../../images/screenplay-editor.gif)
+
+O editor de roteiro funciona numa nota cuja forma é `screenplay` (`roteiro`), e só nela. Em
+qualquer outra nota nada muda. Ele tem o seu próprio interruptor, **Editor de roteiro**, em
+Recursos › Escrita. O interruptor vem ligado no ponto de partida **Tudo** e desligado nos outros,
+então ligue à mão se quiser. Veja
+[Recursos e configurações](features-and-settings.md#o-editor-de-roteiro).
+
+### O layout
+
+Na **Visualização ao vivo** o roteiro aparece em colunas, como na página, em Courier:
+
+- o cabeçalho de cena fica em negrito, na margem esquerda;
+- a ação ocupa a largura toda;
+- o nome do personagem fica no meio, a rubrica um pouco à esquerda dele, e a fala numa coluna
+  mais estreita embaixo;
+- a transição vai para a direita;
+- o texto centralizado fica centralizado.
+
+O texto continua exatamente como você digitou. `#` continua sendo `#` e `---` continua sendo
+`---`, só desenhados como um roteiro os desenha. Um sublinhado escrito como `_texto_` aparece
+sublinhado. O **Código-fonte** continua puro, sem layout. O modo de leitura também não muda, e a
+prévia da exportação mostra as páginas.
+
+### Tab e Enter
+
+As duas teclas seguem o Final Draft, o Fade In e o Highland. Cada passo é uma só mudança, então
+um **desfazer** a desfaz. Onde esta tabela não tem resposta, a tecla faz o que sempre faz no
+Obsidian.
+
+| Tecla | Onde | O que faz |
+|---|---|---|
+| Enter | No fim de um nome de personagem ou de uma rubrica | Vai para a linha seguinte, pronta para a fala. |
+| Enter | No fim de uma fala | Deixa uma linha em branco e começa o próximo nome de personagem. |
+| Enter | No fim de um cabeçalho de cena ou da ação | Deixa uma linha em branco e continua na ação. |
+| Enter | No fim de uma transição | Deixa uma linha em branco e começa um cabeçalho de cena. |
+| Enter | Numa linha vazia aberta como personagem, cabeçalho de cena ou transição | Volta para a ação. |
+| Tab | Numa linha vazia | Troca o elemento: ação, personagem, transição, cabeçalho de cena, e de novo. |
+| Tab | No fim de um nome de personagem | Abre uma rubrica, `()`, com o cursor entre os parênteses. |
+| Shift-Tab | Numa linha vazia | Troca no sentido contrário. |
+
+Enter, Tab e Shift-Tab agem só no fim de uma linha (ou numa linha vazia). No meio de uma linha
+fazem o que o Obsidian faz.
+
+Quando você aperta Tab numa linha vazia, o nome do elemento aparece esmaecido ali: **Personagem**,
+**Transição**, **Cabeçalho de cena** ou **Ação**. Não é texto. Some quando você digita.
+
+**O fluxo do Enter e o foco no diálogo ficam desligados num roteiro.** O fluxo do Enter da prosa
+(quebras de cena, capítulos) quebraria as regras de linha em branco do Fountain, então não faz
+nada numa nota de roteiro, com o editor de roteiro ligado ou não. O foco no diálogo esmaeceria as
+linhas erradas num roteiro, então também fica desligado lá.
+
+### Maiúsculas e marcas forçadas
+
+Um nome de personagem, um cabeçalho de cena e uma transição se escrevem em maiúsculas. Enquanto a
+linha é um desses, as letras que você **digita** saem em maiúsculas, e você nunca aperta Caps Lock.
+O texto que já estava lá nunca é mudado. Uma rubrica fica como você digita.
+
+Às vezes o Fountain não leria a sua linha como o elemento que você escolheu. Um nome com letra
+minúscula, um cabeçalho de cena com um começo que não está na sua lista, ou uma transição que não
+termina em nenhum dos seus finais de transição. Quando você **sai da linha**, o Escrita põe na
+frente a marca forçada do Fountain: `@` para um nome de personagem, um ponto para um cabeçalho de
+cena, `>` para uma transição. Nunca põe uma enquanto você digita, nem quando a linha já é lida
+certo. É a única mudança que o editor faz sem uma tecla sua, e é a que você mesmo digitaria.
+
+### Sugestões
+
+Enquanto você digita, uma lista oferece o que o roteiro já conhece. Aperte Enter ou clique para
+escolher.
+
+- **Num nome de personagem**: os nomes que já estão no roteiro, o que mais fala primeiro, com
+  quantas falas cada um tem. Com o universo ligado, vêm em seguida os nomes dos personagens dele,
+  marcados "universo". (Lugares e objetos do universo também podem aparecer.)
+- **Depois de um começo de cabeçalho** como `INT. `: os lugares já usados nos cabeçalhos de cena
+  do roteiro, o mais usado primeiro.
+- **Depois de ` - ` num cabeçalho de cena**: as horas do dia, da configuração **Horas do dia**
+  (`DAY, NIGHT, CONTINUOUS, LATER`, e `DIA, NOITE, CONTÍNUO, MAIS TARDE` numa instalação em
+  português).
+
+As sugestões combinam pelo começo do que você digitou, sem diferenciar maiúsculas nem acentos.
+
+### No celular
+
+O celular não tem tecla Tab, então há dois comandos para a barra de ferramentas do celular:
+**Próximo elemento do roteiro** (Tab) e **Elemento anterior do roteiro** (Shift-Tab). Só são
+oferecidos numa nota de roteiro, e não têm atalho padrão. O Enter funciona como acima.
+
+### As configurações
+
+Em Configurações › Escrita, a seção **Editor de roteiro** (aparece enquanto o interruptor está
+ligado):
+
+| Configuração | O que faz | Padrão |
+|---|---|---|
+| Fonte | **Courier** (Courier Prime, se estiver instalada) ou **Fonte do tema**, a do próprio editor. | Courier |
+| Horas do dia | As palavras oferecidas depois de ` - ` num cabeçalho de cena. Separe com vírgulas ou linhas. | `DAY, NIGHT, CONTINUOUS, LATER` (`DIA, NOITE, CONTÍNUO, MAIS TARDE` em português) |
+
+Os começos de cabeçalho de cena e os finais de transição da seção Exportar também guiam o editor:
+eles decidem o que o layout e as teclas chamam de cabeçalho e de transição.
 
 ## Exportar um roteiro
 
@@ -299,3 +404,7 @@ As linhas de forma ficam num grupo próprio, **Formas**, logo depois de Livros:
 | A folha de rosto está sem crédito | A nota não tem autor | Defina a propriedade de autor ou o **Nome do autor** |
 | Uma fala foi inteira para a página seguinte | Ela não tem fim de frase onde possa se dividir | Divida você mesmo com um novo nome de personagem, ou termine uma frase antes |
 | O grupo **Roteiros** não aparece | A Exportação está desligada | Ligue a Exportação em Recursos |
+| O roteiro é texto puro, sem colunas | O editor de roteiro está desligado, a nota não é um roteiro, ou você está no Código-fonte | Ligue **Editor de roteiro** em Recursos, confira a forma e use a Visualização ao vivo |
+| Tab não faz nada | A nota não é um roteiro, o cursor está no meio de uma linha, ou o interruptor está desligado | Vá para o fim da linha, ou rode **Próximo elemento do roteiro** |
+| Apareceu um `@`, um ponto ou um `>` no começo de uma linha | O Fountain leria a linha como outro elemento, então o Escrita pôs a marca forçada quando você saiu dela | Mantenha, ou desfaça e mude a linha |
+| As sugestões não aparecem | O interruptor está desligado, ou a linha não é um nome de personagem, um cabeçalho com começo, nem vem depois de ` - ` | Digite o nome em maiúsculas, ou depois do começo do cabeçalho |

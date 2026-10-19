@@ -18,7 +18,7 @@ npx playwright show-report tests/e2e/report/html   # screenshots and failures
 
 On the author's machine, run it under the shared lock when other agents are working
 (`flock <scratchpad>/heavy.lock npx playwright test`). One Obsidian runs at a time
-(`workers: 1`). The full run is 204 tests in about 8 minutes (plus the launches); run one spec file while iterating.
+(`workers: 1`). The full run was 255 tests at the end of 1.2 (204 at 1.1) and takes longer than the 1.1 run of about 8 minutes (plus the launches); run one spec file while iterating.
 
 A test marked `test.fail()` is a known finding: the list reporter shows it with a cross, and
 Playwright counts it as passed while the bug is still there. When the bug is fixed the test
@@ -43,6 +43,9 @@ Playwright counts it as passed while the bug is still there. When the bug is fix
 | `tests/e2e/specs/scope.spec.ts`, `switches.spec.ts` | TEST-0.9.md, scope and the feature switches |
 | `tests/e2e/specs/appears-in-reading.spec.ts` | 0.7's G0d, closed as decided: Reading view shows the panel only |
 | `tests/e2e/specs/screenplay.spec.ts` | PLAN-1.1's own checks: a screenplay's export (PDF, Fountain, page, warnings, preview, settings) |
+| `tests/e2e/specs/screenplay-editor.spec.ts` | PLAN-1.2, the screenplay editor (22 tests): each element's class, Tab and Enter sequences and the text they leave, one undo per step, caps, forced marks, suggestions, the switch off, the commands, Q9 and Q12 guards, timings on a 6,968-line script, and "demo: writing a scene" for the video (`RECORD=<folder>`, gate V) |
+| `tests/e2e/specs/read-note.spec.ts` | PLAN-1.2, "Read this note" (12 tests): a conto, a collection, the old `{ book }` state, the startup case of candidate 52 |
+| `tests/e2e/specs/draft-status.spec.ts` | PLAN-1.2, a new tracked note's draft status no longer replaces text typed before it is written |
 | `tests/e2e/specs/visual-1.1.1.spec.ts` | PLAN-1.1.1, part 1: the lines drawn as backgrounds and spacers (lens marks, name underline, desk, Ignore, publish check, export indent, closed thread), dark and light. `RECORD=<folder>` also writes `visual-1.1.1.mp4` (CDP screencast, `lib/record.ts`) and one PNG per step; without it there are no pauses and no files |
 
 Helpers beyond `app.ts`: `tests/e2e/lib/more.ts` (the settings page, overlap, small targets, sideways

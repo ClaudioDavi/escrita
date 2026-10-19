@@ -285,6 +285,30 @@ chapter in order, one after the other.
 
 Turn it on or off with the outline (Features › Outline and ghost beats).
 
+## Read this note
+
+A short story or an essay reads the same way. Open the note and run **Read this note**. A tab
+opens with the note as a reader will see it, without the editor.
+
+- **Where the command is offered.** On a Markdown note that is not in a book, and not a
+  screenplay, a snapshot, an export or a submission. A chapter or a book note has **Read the
+  book** instead. If the command is missing, the note is one of those, or Outline and ghost
+  beats is off.
+- **The outline button.** The outline of a single note has a small book icon, **Read this
+  note**, next to its title. It is not shown for a screenplay.
+- **A collection.** On a collection note (the one with a `contents` list) the same command reads
+  its stories in order, each under its title as the collection export prints it. The top bar
+  shows how many stories there are.
+- **It looks like the export, and it is read-only.** Comments, beats and placeholders are
+  hidden. Click a paragraph and the note opens in a new tab at that line.
+- **It remembers where you stopped**, as the book's reader does, and follows a rename or a move.
+- **It keeps up as you edit.** If the metadata is not ready when the tab opens, or you rename a
+  story in a collection, the tab redraws on its own and stays at your place.
+- **Empty notes** say "This note has no text to read yet." An empty collection says "This
+  collection lists no notes to read yet."
+
+It belongs to the same switch as **Read the book** (Features › Outline and ghost beats).
+
 ## Set a goal and watch your progress
 
 *Features › Goals and sprints.*

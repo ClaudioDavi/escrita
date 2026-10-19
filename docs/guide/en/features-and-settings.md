@@ -15,7 +15,7 @@ feature that is off don't show, because the feature isn't loaded.
 
 Each section of Escrita's tab is a card under its own heading: Features, Properties and
 folders, Books, Forms, New works, Goals, Publishing · the check, Export, Submissions, Outline, Placeholders,
-Darlings, Editor, Revision · the lens, Stages, Home note, Snapshots and Universe. A section
+Darlings, Editor, Screenplay editor, Revision · the lens, Stages, Home note, Snapshots and Universe. A section
 of a feature that is off is gone until you turn the feature on.
 
 ## The Features page
@@ -26,12 +26,12 @@ Open Settings › Escrita. The **Features** section is at the top. It has:
 - **Writing language** (Idioma da escrita). Automatic follows Obsidian's language: any
   Portuguese gives pt-BR and any English gives English. Another language gives none. The
   revision lens and the matching of names read it. (It used to be in the Revision section.)
-- **Nineteen switches in five groups**, each with one line on what it does. Stages are
+- **Twenty switches in five groups**, each with one line on what it does. Stages are
   always on, because the outline, the Works tab and the publish check read them.
 
 | Group | Switches |
 |---|---|
-| Writing | Goals and sprints · Outline and ghost beats · Placeholders · Enter flow and smart typography · Dialogue focus · Move a paragraph or scene · Insert from a template · Spellcheck on demand · Word counts in the explorer |
+| Writing | Goals and sprints · Outline and ghost beats · Placeholders · Enter flow and smart typography · Screenplay editor · Dialogue focus · Move a paragraph or scene · Insert from a template · Spellcheck on demand · Word counts in the explorer |
 | Revision | Revision lens · Snapshots · Darlings |
 | The desk (Acompanhamento in pt-BR) | Snapshot at each stage · Works block and where you left off |
 | Publishing | Publish check · Export · Submissions |
@@ -42,11 +42,13 @@ explorer**, **Spellcheck on demand** and the **Shared universe** mode. The unive
 dropdown (Off, Per book, Universe) instead of a switch, because the mode is the switch.
 
 When you update from an earlier version, every feature stays on, so nothing disappears until
-you choose. A new install starts on the Writer starting point (below).
+you choose. The one exception is the **Screenplay editor**, new in 1.2: it comes up **off**,
+unless every other switch is on (as in **Everything**), in which case it comes up on so the set
+still reads Everything. A new install starts on the Writer starting point (below).
 
 ## Starting points
 
-You don't have to set nineteen switches one by one. Above them, **Starting point**
+You don't have to set twenty switches one by one. Above them, **Starting point**
 (Ponto de partida) has three buttons: **Essentials**, **Writer** and **Everything**. Each one
 is a list of features. A preset is only a starting point, never a mode: Escrita doesn't
 remember which button you pressed, and after it you can change any switch.
@@ -55,7 +57,7 @@ remember which button you pressed, and after it you can change any switch.
 |---|---|
 | Essentials (9) | Goals and sprints · Outline and ghost beats · Placeholders · Enter flow and smart typography · Revision lens · Darlings · Snapshots · Export · Works block and where you left off |
 | Writer (16) | Everything in Essentials, plus Dialogue focus · Move a paragraph or scene · Insert from a template · Word counts in the explorer · Snapshot at each stage · Publish check · Submissions |
-| Everything (18) | Every switch, which adds Spellcheck on demand and Threads to Writer |
+| Everything (19) | Every switch except the universe, which adds Spellcheck on demand, Threads and Screenplay editor to Writer |
 
 A preset turns off every switch that isn't in its list. Pressing one doesn't change anything
 yet. It opens a confirm step, **Apply "Writer"?**, with two lines: **Turns off** and **Turns
@@ -73,14 +75,14 @@ out each time the page draws, from the switches.
 **The universe is never changed by a preset.** The Shared universe row is a mode (Off, Per
 book, Universe), and a mode moves folders, so it is always your own choice, in the Universe
 section. A preset leaves it as it is, never lists it in the confirm step, and ignores it when
-it works out the label. That is why Everything says "18" here: the universe is the nineteenth
-switch, and the setup counts it as "19 of 19" because it offers it as a separate choice
+it works out the label. That is why Everything says "19" here: the universe is the twentieth
+switch, and the setup counts it as "20 of 20" because it offers it as a separate choice
 (**Shared world**). Choosing Everything adds a reminder under the lists that the universe mode
 stays as it is.
 
 **A new install and an update.** A new install starts on Writer. An install that already
 has Escrita settings keeps every switch as it was: nothing is turned off by updating. A 0.9
-install with every switch on reads **Everything**. One on its old defaults reads **Custom**,
+install with every switch on reads **Everything**, and gets the Screenplay editor on with it. One on its old defaults reads **Custom**,
 because spellcheck on demand is off by default.
 
 **The setup link.** Below the three buttons, a quiet link, **Set up a writing vault**
@@ -138,9 +140,10 @@ the words Escrita writes into your vault.
 | Switch | Off means |
 |---|---|
 | Goals and sprints | No word tracking, daily goal, progress window, sprints or status bar. Its settings hide. |
-| Outline and ghost beats | No outline panel, no ghost beats in the editor, no beat commands, no **Read the book**. Also no **New book** command, no Book choice in **New work…**, no **+ New book** button in the home block and no Books folder or Book note template rows. |
+| Outline and ghost beats | No outline panel, no ghost beats in the editor, no beat commands, no **Read the book** and no **Read this note**. Also no **New book** command, no Book choice in **New work…**, no **+ New book** button in the home block and no Books folder or Book note template rows. |
 | Placeholders | No placeholder pills, explorer dots, panel or outline badge. (The publish check still stops on a placeholder left in a note, while Publish is on.) |
 | Enter flow and smart typography | Enter doesn't make scene breaks or chapters; no automatic dashes and quotes. |
+| Screenplay editor | Screenplay notes are plain Fountain text again: no columns, no Tab and Enter steps, no capitals as you type, no suggestions, no forced marks, and the two element commands go. Exporting a screenplay still works. |
 | Dialogue focus | The command and its dimming go. |
 | Move a paragraph or scene | The four move commands go. |
 | Insert from a template | The command goes. (The universe still uses the templates folder.) |
@@ -247,6 +250,31 @@ changes. Screenplay is the seventh form value (`screenplay`, or `roteiro` in a P
 scene heading prefixes, transition endings, page size, scene numbers, the two page-break labels,
 the credit line and two title page properties. The title page's author and contact are the
 Export rows that already exist. All of it is in [Screenplays](screenplays.md#settings).
+
+## Settings added in 1.2
+
+**Screenplay editor** is a new switch in the Writing group, and with it a new section after
+Editor. It shows while the switch is on. The switch is on in **Everything** only.
+
+| Setting | Feature | What it does |
+|---|---|---|
+| Font | Screenplay editor | **Courier** (Courier Prime if installed) or **Theme font**. Courier. |
+| Times of day | Screenplay editor | The words offered after ` - ` in a scene heading. `DAY, NIGHT, CONTINUOUS, LATER` (`DIA, NOITE, CONTÍNUO, MAIS TARDE` in a Portuguese install). |
+| Show rhythm | Revision lens | Shows the Rhythm section in the lens panel. On. |
+
+### The screenplay editor
+
+The editor lays out a screenplay note in Live Preview and gives Tab and Enter their screenplay
+meanings. It acts only in a note whose form is `screenplay`. Writing with it is explained in
+[Screenplays](screenplays.md#write-in-the-editor), and the Rhythm section in
+[Revision](revision.md#rhythm).
+
+It needs no other switch. With the universe on, it also offers the universe's names for a
+character cue. The prose **Enter flow** and **Dialogue focus** do nothing in a screenplay note,
+whether this switch is on or not.
+
+**Read this note** is a second reading command, next to **Read the book**. It belongs to the
+same switch, Outline and ghost beats. See [Writing](writing.md#read-this-note).
 
 ## Folder rows and how fields save
 

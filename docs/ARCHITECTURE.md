@@ -790,6 +790,12 @@ refuse.
   transaction, so the change joins the undo history and typing can't slip in between.
   Otherwise the vault (`vaultText`): the plan runs inside `vault.process`. Reading-mode
   views are saved first (`view.save()`), so their pending text is never lost.
+- **`flush(file)`** (1.2). Saves every view of the file (`view.save()`), so a write that reads
+  the disk sees text the editor has not saved. The vault adapter calls it before every read and
+  `vault.process`. `draftIfNew` in `main.ts` calls it before `processFrontMatter`: before, the
+  draft status of a just-created tracked note replaced what the writer had typed in the first
+  seconds (spec `tests/e2e/specs/draft-status.spec.ts`). Other `processFrontMatter` callers
+  (publish, the outline, the progress modal) do not call it yet; see IMPROVEMENTS.
 - **Bound to its note.** Obsidian reuses a view's editor when its tab opens another
   note. The editor port checks, on every read and apply, that its view still shows the
   file in source mode; if not, `read()` rejects (`EditorMovedError`) and `apply()`
@@ -1085,7 +1091,8 @@ give the same bytes.
 ## Screenplays (`core/fountain.ts`, `screenplay-pages.ts`, `pdf.ts`, `screenplay-pdf.ts`, `screenplay-presets.ts`, `export-formats.ts`, 1.1)
 
 SP 1 and SP 6 (PLAN-1.1). A screenplay is **a note whose form is `screenplay`**, written in plain
-Fountain; it is not a feature module and has no switch (Q2). Reading it, paginating it and
+Fountain; the note itself is not a feature module and has no switch (Q2). Since 1.2 the editor
+help for one is a feature, `screenplay` (next section). Reading it, paginating it and
 drawing the PDF are pure core files. The module side (the formats, the title page, the modal) is
 in "export". All of it is offline and needs no dependency.
 
@@ -1151,6 +1158,91 @@ note text → segment() → parseFountain → Script ─┬→ paginate → Page
   `screenplay` is offered PDF and Fountain, and then none of the prose formats.** A book or a
   collection exports as prose even when its notes are screenplays (feature-length scripts are
   SP 7, phase 3). A PDF is US Letter by default or A4; there is no screenplay DOCX.
+
+## The screenplay editor (`src/screenplay/`, `core/fountain-doc.ts`, `core/screenplay-keys.ts`, `core/screenplay-suggest.ts`, 1.2)
+
+SP 2 (PLAN-1.2). The 20th feature, `screenplay` (writing group, page 5, last in load order). It
+acts only in a note whose `books.classify(file).form` is `screenplay`, changes no text without a
+key press (the one exception is the forced mark, below) and leaves Source mode, Reading view and
+every other note alone. Reading view gets no layout (Q6): the export preview already shows the
+pages.
+
+```
+document ─ fountainDocLines (cached) ─┬→ layout.ts   line classes `escrita-sp-<kind>` + body class
+                                      ├→ keys.ts     decideKey → one transaction; modes; caps; ghost
+                                      └→ suggest.ts  triggerAt / candidates → EditorSuggest
+```
+
+- **`core/fountain.ts`, `fountainLines(text, md, opts) → (LineKind | null)[]`.** The kind of every
+  line of the note (a `ScriptElement` type, `centered` for centered action, `titlePage` for the
+  `Title:` block, null for blank lines, frontmatter, code, `%%` notes and boneyard), from the same
+  reading as `parseFountain`, so the layout never disagrees with the export. **Deviation from
+  the plan (Q3):** elements did not get an `endLine`, because it would have changed every
+  `parseFountain` result the tests pin.
+- **`core/fountain-doc.ts`.** `fountainDocLines(doc, opts)` and `fountainDoc(doc, opts)` cache the
+  parse per document version and options object (a `WeakMap` over CodeMirror's `Text`, as
+  `segmentDoc` does). The module keeps one `FountainOptions` object until the settings words
+  change, so the cache holds across keystrokes. S0 measured 2.2 ms median and 4.3 ms p95 for a
+  5,828-line script in Node; in the real editor, keydown to DOM is 5.9 to 8.4 ms median on 6,968
+  lines. No incremental parser. `core/fountain-marks.ts` finds `_x_` underline ranges.
+- **`core/screenplay-keys.ts`, pure.** `decideKey(key, ctx: KeyContext) → KeyEdit | null` is the
+  one table of Tab, Shift-Tab and Enter (pinned case by case in `tests/screenplay-keys.test.ts`);
+  null means "not ours" and the key falls through to Obsidian. `ElementMode` is what an empty or
+  half-typed line is going to be (`action`, `scene`, `character`, `parenthetical`, `dialogue`,
+  `transition`). The rules act only at the end of a line, or on an empty one. `capsFor(kind, mode)`
+  says whether typed characters are uppercased (cue, scene heading, transition; never a
+  parenthetical). `forcedMarkFor(line, mode, opts)` asks the parser whether the line reads as the
+  chosen element and, if not, whether `@`, `.` or `>` in front would, so it never disagrees.
+- **`core/screenplay-suggest.ts`, pure.** `triggerAt(ctx)` finds the trigger (a cue, a location
+  after a scene prefix, a time after ` - `) and `candidates(trigger, script, names, times,
+  sceneHeadings)` the choices: the script's own cues by use, then the universe's names; the
+  locations used by use; the time words of the setting. Matching ignores case and accents.
+- **`src/screenplay/index.ts`.** The `FeatureModule` (`slots: { editors: 1 }`). It builds the
+  options (`fountainOptions`), registers the layout and keys as one editor extension, registers
+  the suggest (`ctx.suggest`), the two commands (`screenplay-next-element` and
+  `screenplay-previous-element`, offered by `editorCheckCallback` in a screenplay only, no default
+  hotkey) and the "Screenplay editor" settings group (`settings-ui.ts`). It reads the universe's
+  names through `plugin.names.tableFor(path)`, never importing the universe.
+- **`layout.ts`.** A view plugin on `EditorSet`. In Live Preview in a screenplay note it puts a
+  line class on every line of the visible ranges and the editor attributes `escrita-screenplay`
+  (and `escrita-screenplay-courier`). It rebuilds on a document or viewport change, never on a
+  cursor move. Lines held in a mode take that element's column before the parser can read them.
+  `styles.css` holds the columns in `ch` (cue 22, dialogue 10 with a 35 measure, parenthetical
+  16, transition right-aligned, scene heading bold), and the Q4 overrides, CSS only (S0):
+  `#` headings and `>` quotes are reset under the screenplay class (the quote's `text-indent`
+  is compensated with padding: the review bot bans ours); the `---` block widget is hidden and
+  redrawn with `::after`, so a typed `-----` shows as `---` until the cursor is on the line;
+  `_x_` gets a mark with `border-bottom`.
+- **`keys.ts`.** A `Prec.highest` keymap for Enter, Tab and Shift-Tab, and an input handler for
+  caps. Each reads the editor into a `KeyContext`, calls `decideKey` and dispatches one
+  transaction (one undo). A StateField holds the **modes**: state, not text, mapped through
+  changes; a line forgets its mode when it reads as the element or when the cursor leaves it.
+  Leaving a typed line applies `forcedMarkFor` in a transaction of its own. A faint widget
+  (`GhostWidget`) names the element on an empty line in a mode. The keys do nothing while an IME
+  is composing.
+- **`suggest.ts`.** One `EditorSuggest` with three triggers. Obsidian cannot unregister a
+  suggest, so it stays registered and answers null while the feature is off (`enabled`).
+- **Guards elsewhere.** `onEnter` in `editor/features.ts` returns false for a screenplay (Q9)
+  and dialogue focus is off in one (Q12), whether or not this feature is on.
+- **Known limits.** Cue suggestions include the universe's places and objects, not only
+  characters. An undone Tab-opened parenthetical forgets the cue's mode. Fountain in the lens
+  and dialogue focus is SP 5.
+
+## Editor glue (`src/ui/editor-glue.ts`, `src/ui/reveal-on-touch.ts`, 1.2, IMPROVEMENTS 38)
+
+Shared editor plumbing, importing no module folder.
+
+- **`EditorSet`.** The set of editors a plugin has built; `broadcast` and `send` dispatch with
+  one retry and drop an editor after a second failure (the retry the lens used to own, now
+  everyone's, on top of `core/dispatch-retry.ts`). Used by the lens, dialogue focus, the name marks,
+  "Appears in", the placeholders, the ghost beats and the screenplay layout.
+- **`fileOfState(state)`, `isLivePreview(target)`, `cmOf(editor)`.** The file of an editor state
+  (`editorInfoField`), whether a state or view is Live Preview, and the CodeMirror view of an
+  Obsidian `Editor`. They replace four copies of the same lines.
+- **`revealOnTouch({ scan, raw, rendered, key? })`.** A view plugin for a marker drawn as a
+  widget in Live Preview and shown as typed when the selection touches it, or in Source mode.
+  The placeholders and the ghost beats are the same plugin with different widgets. Ghost beats
+  skip lines outside the visible ranges.
 
 ## Book source (`core/book-source.ts`, 0.8)
 
@@ -1342,18 +1434,23 @@ module internals (`tests/settings-imports.test.ts`: only shared core, top-level 
 
 Every feature the writer can turn off is a `FeatureModule` (a `Component`) with a
 `FeatureId`. `main.ts` builds them once, keyed by id, and hands them to the
-`FeatureRegistry`. There are 19 ids, in load order: goals, outline, placeholders,
+`FeatureRegistry`. There are 20 ids, in load order: goals, outline, placeholders,
 explorerCounts, darlings, typing, dialogueFocus, moveBlocks, templates, spellcheck, lens,
-snapshots, stageSnapshot, publish, export, submissions, desk, universe, threads (0.8 added
-`export` and `submissions`, in the publishing group after `publish`). Stages, the classifier, the
+snapshots, stageSnapshot, publish, export, submissions, desk, universe, threads, screenplay (0.8 added
+`export` and `submissions`, in the publishing group after `publish`; 1.2 added `screenplay`, last in load
+order and drawn after `typing` on the Features page). Stages, the classifier, the
 measurer, the vault index and the notes service are core and always on.
 
 - **The pure part** (`core/features.ts`, no Obsidian imports): `FEATURE_SPECS` (group,
   `requires`, and where the switch lives), `switchedOn` (the writer's switch alone; a
-  missing key is on), `wanted` (switched on and every requirement on, computed to a fixed
+  missing key is on, except the ids in `OFF_WHEN_MISSING`), `wanted` (switched on and every requirement on, computed to a fixed
   point) and `planApply(loaded, want)` (what to unload, in reverse order, and load, in
   order). Three switches are existing settings (`explorerCounts`, `spellcheckOnDemand`,
-  `universeMode`: a mode other than "off" is on); the other 16 are in `settings.features`.
+  `universeMode`: a mode other than "off" is on); the other 17 are in `settings.features`.
+  **`OFF_WHEN_MISSING`** (1.2) lists the ids that read as off when their key is missing: today
+  only `screenplay`, which the author put in the Everything preset only. `settleNewSwitches`
+  (`core/feature-presets.ts`) runs when an install loads and writes the key: on only when every
+  other switch matches Everything, so an install that read "Everything" still does.
   `FEATURE_SPECS` also gives each switch its `page` position, and `FEATURE_PAGE` (derived in
   `core/features.ts`: the groups in fixed order, inside each the switches by `page`) is the
   Features page's one source. `switchesOf(settings)` in `core/feature-registry.ts` reads the
@@ -1366,14 +1463,16 @@ measurer, the vault index and the notes service are core and always on.
   that needs more than `isOn` (the settings tab, and the desk reading the submissions'
   `pending` port).
 - **`ModuleContext`.** The one door to the plugin's registration methods. `command`,
-  `ribbon`, `statusBar`, `view`, `editor`, `codeBlock`, `postProcessor`, `index`, `follow`,
+  `ribbon`, `statusBar`, `view`, `editor`, `codeBlock`, `postProcessor`, `suggest`, `index`, `follow`,
   `decorate`, `onLayoutReady` and `afterUnload` each record an undo, and the registry runs
   them when the feature unloads. Commands: `addCommand` rewrites the id of the object it is
   given (`escrita:<id>`), so the context builds a fresh `Command` on each load and removes
   with the raw id (`Plugin.removeCommand` adds the prefix itself; spike G0a). Removal drops
   default hotkeys only; custom ones survive in `hotkeys.json`. The mobile toolbar is
   rebuilt only when its config changes, so a pinned removed command keeps a dead button
-  until restart.
+  until restart. **`ctx.suggest(s)`** (1.2) registers an `EditorSuggest`; Obsidian cannot
+  unregister one, so it stays for the plugin's life, the module makes it inert while off, and
+  registering the same object on a later load does nothing.
 - **Slots (Q1 to Q5).** A view type, a code block language, a Reading-view post-processor
   and an editor extension array can each be registered on the plugin once, and a second
   `registerView` for one type throws (G0b). A module that is off at startup never runs its
@@ -1512,9 +1611,10 @@ setup never lists or moves them, because they name where things already are.
 Three starting points for the Features page and the setup: `PRESET_IDS` (`essentials`,
 `writer`, `everything`) and `PRESETS`, the list of features each switches on. Pure; not to be
 confused with `core/presets.ts`, the manuscript presets of the export. Essentials is 9
-features, Writer 16, Everything 18 (19 with the universe, which no preset touches: its switch
+features, Writer 16, Everything 19 (20 with the universe, which no preset touches: its switch
 is `universeMode`, the writer's separate answer, because it moves folders). Each list is
-closed under `requires`.
+closed under `requires`. Since 1.2 Everything is 19 (20 with the universe) because the
+screenplay editor is in Everything only (PLAN-1.2 Q2); Essentials and Writer are unchanged.
 
 - `presetSwitches(id, current)` returns the switches after the preset, a new object. It
   writes an explicit boolean for every feature, so `data.json` says what the preset chose,
@@ -1825,12 +1925,27 @@ replaces and how to add one: `docs/TESTING.md`.
   next opening shows an edit). The tab follows its book when the book note, or a folder holding
   it, is renamed. A book with no chapters offers "Create the first chapter". It has no DOM
   test; its decisions are the pure files above.
+- **Read this note, and the reader's source kinds** (1.2, SF 15). The view state is `{ source }`
+  (a path); an old `{ book }` is read as the same thing (`readerStatePath`), and the view type
+  and the position key did not change. `readerSource(path, facts) → { kind, title, sections }` in
+  `reader-plan.ts` resolves a path: a **book** wins (its note is the key), then a **collection**
+  (`core/books.ts` `collectionAt`; each conto is headed by its title alone, unnumbered, as the
+  collection export heads them, and the title is the collection's file name, same as the export,
+  `export/index.ts`), else one **note** with no heading (its title is in the top bar). The seam
+  is still `ReaderChapter[]`. The top bar shows the chapter count and the outline button for a
+  book only, and the number of stories for a collection. `sameSource` skips a rebuild when
+  nothing drawn changed. The view rebuilds on the metadata cache's `resolved` when the list or
+  the title changed, keeping the position (IMPROVEMENTS 52, the startup race of a
+  `compile: false` chapter), and `scrollTo` allows for the sticky bar. The id `escrita-reader` is
+  in `VIEW_TYPES.reader` (`core/view-types.ts`). The reader stays in the outline module (Q16).
 - **Reading position** (`data.readPosition`, `ReadPosition { chapter, line }`, keyed by the book
   note's path). Saved when the view scrolls, cleaned on load (`cleanReadPositions`: no chapter
   dropped, the line a whole number, at least 0). The outline's data follower moves a key or a
   chapter with a rename (`movePositions`) and drops an entry with a deleted book or chapter,
   while the outline is off too. Deleting a chapter sends the position back to the top.
-- **Commands**: "Open outline", "Open outline as a board", "Read the book" ("Create a book" moved to the new-work
+- **Commands**: "Open outline", "Open outline as a board", "Read the book", "Read this note" (`read-note`, 1.2: offered
+  on a Markdown note that is not in a book, a screenplay, a snapshot, an export or a submission; the outline of a
+  single note has a button for it) ("Create a book" moved to the new-work
   core module in 1.0.4 as "New book", same id; see "Start a new work"), "Add a beat to this chapter",
   "Renumber chapters of this book".
 
@@ -2318,6 +2433,15 @@ scans its files).
   5 ms) that catches quadratic code, and a local budget that runs only with
   `ESCRITA_PERF=1`: the median of five runs under 60 ms, which keeps a phone under its
   800 ms settle. CI machine speed varies too much to pin the tighter number.
+- **Rhythm** (1.2, SF 16; `rhythm.ts`). `LensPass` also holds `sentenceWords: Uint16Array` (words
+  per sentence) and `sentencePara: Int32Array` (the paragraph of each sentence), filled once in
+  `analyze` from the one `layout` call; `longSentences` reads `sentenceWords` instead of its own
+  map, with unchanged results. This is the first slice of IMPROVEMENTS 47. `rhythmAt(pass, range,
+  longSentence)` is pure: the bars of the paragraph at the cursor (a paragraph is the text between
+  blank lines) or of the sentences a selection overlaps, with `run` marked on every sentence in a
+  run of `RUN_MIN` (3) or more whose lengths are within `RUN_SPREAD` (3) words, and `long` over the
+  `lensLongSentence` setting. The panel draws it in a section gated by `lensShowRhythm`; a click
+  on a bar selects its sentence.
 - **Measures** (`measures.ts`, `readability.ts`, `syllables.ts`). Dialogue share is
   speech words over words read, from `dialogueInDoc` with the writer's quote and paragraph
   styles, per scene when there is more than one (split at `isSceneBreakAt`). Readability

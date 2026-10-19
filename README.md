@@ -51,13 +51,13 @@ Each part is a switch on the Features page, so you can turn off what you don't u
 
 **Features and settings.** The Features page turns each part on or off. It has three starting points (Essentials, Writer, Everything), and a fresh install takes its defaults (status words, folder names) from Obsidian's language. A feature that is off isn't loaded, and its data stays. Guide: [English](docs/guide/en/features-and-settings.md) · [Português](docs/guide/pt-BR/features-and-settings.md).
 
-**Writing.** **New work…**, **New short story** and **New book** start a note that is already a work in the draft stage, from a built-in template or a note of yours, with the cursor in the prose; the home note has the same two buttons. The outline sits in the sidebar and lists your chapters and their beats, with point of view, filters, a board and a "Read the book" view. Goals, pacing, sprints, days off, targets for a single short story or essay, placeholders, Enter flow, smart typography, dialogue focus, moving a paragraph or scene, templates, spellcheck on demand and word counts in the file explorer are here too. Guide: [English](docs/guide/en/writing.md) · [Português](docs/guide/pt-BR/writing.md).
+**Writing.** **New work…**, **New short story** and **New book** start a note that is already a work in the draft stage, from a built-in template or a note of yours, with the cursor in the prose; the home note has the same two buttons. The outline sits in the sidebar and lists your chapters and their beats, with point of view, filters, a board and a "Read the book" view; "Read this note" reads a short story, an essay or a collection the same way. Goals, pacing, sprints, days off, targets for a single short story or essay, placeholders, Enter flow, smart typography, dialogue focus, moving a paragraph or scene, templates, spellcheck on demand and word counts in the file explorer are here too. A note whose form is `screenplay` is laid out as on the page in Live Preview, with Tab and Enter as in a screenwriting program, capitals as you type, and suggestions for cues, places and times of day (the screenplay editor, in [Screenplays](docs/guide/en/screenplays.md#write-in-the-editor)). Guide: [English](docs/guide/en/writing.md) · [Português](docs/guide/pt-BR/writing.md).
 
 ![Writing under the outline: a chapter's planned beats show as faint labels in the editor; typing under one ticks it off, with the quotes curled and the ellipsis set as you type, and a new beat is added from the outline.](docs/images/outline-and-beats.gif)
 
 **Tracking.** Works move through five stages (idea, draft, revision, ready, published), mapped to your own status words. The home note shows what to write today and opens each work where you left off. Writing mode strips the screen down to the note. A snapshot is taken at each stage change. Guide: [English](docs/guide/en/tracking.md) · [Português](docs/guide/pt-BR/tracking.md).
 
-**Revision.** The revision lens underlines what is worth rereading (echoes, adverbs, gerunds, crutch words, name variants, long sentences) and never changes your text. Snapshots keep named and automatic copies of a note that you can compare word by word and restore. Darlings keep the passages you cut, restorable to where they came from. Guide: [English](docs/guide/en/revision.md) · [Português](docs/guide/pt-BR/revision.md).
+**Revision.** The revision lens underlines what is worth rereading (echoes, adverbs, gerunds, crutch words, name variants, long sentences) and never changes your text. Its Rhythm section draws one bar per sentence of a paragraph, so a run of sentences of the same length shows. Snapshots keep named and automatic copies of a note that you can compare word by word and restore. Darlings keep the passages you cut, restorable to where they came from. Guide: [English](docs/guide/en/revision.md) · [Português](docs/guide/pt-BR/revision.md).
 
 ![Revising a chapter: the revision lens underlines echoes and a misspelled name, a paragraph goes to the darlings, and the chapter is compared word by word with its first draft.](docs/images/revision-lens.gif)
 
@@ -98,6 +98,25 @@ To try your build, link or copy the repository folder into a test vault's `.obsi
 To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updates `manifest.json` and `versions.json`), commit, then push a tag with the bare version number (for example `git tag 0.1.1 && git push --tags`). The release workflow builds the plugin and drafts a GitHub release with `main.js`, `manifest.json` and `styles.css`; publish the draft when it looks right.
 
 ## Changelog
+
+### 1.2.0 (2026-10-19)
+
+You can write a screenplay in the editor, laid out as on the page, and read a short story the way a reader will.
+
+- **The screenplay editor**: in a note whose form is `screenplay`, Live Preview shows the script in columns, in Courier, as on the page. The text stays as you typed it, and Source mode stays plain. Tab and Enter work as in Final Draft, Fade In and Highland: Tab on an empty line cycles action, character, transition and scene heading; Tab after a cue opens a parenthetical; Enter goes from a cue to its dialogue, from dialogue to the next cue, and from a transition to a scene heading. Each step is one undo. Cues, scene headings and transitions come out in capitals as you type, and when you leave a line Fountain would not read as you meant, Escrita adds the forced mark (`@`, a period or `>`). The name of the element shows faintly on an empty line after Tab. A suggestion list offers the cues already in the script (and the universe's names), the locations after `INT. `, and the times of day after ` - `. Two commands, **Next screenplay element** and **Previous screenplay element**, stand in for Tab and Shift-Tab on a phone. The prose Enter flow and dialogue focus are off in a screenplay. See [Screenplays](docs/guide/en/screenplays.md#write-in-the-editor).
+
+  ![A scene typed in the screenplay editor: Tab and Enter move from a scene heading to action, a cue and its dialogue, a character name is picked from the suggestions, and the script is laid out in columns as on the page.](docs/images/screenplay-editor.gif)
+- **Screenplay editor settings**: a **Screenplay editor** switch in the Writing group of the Features page and a section with the **Font** (Courier or the theme's) and the **Times of day**. Features now has 20 switches.
+- **Read this note**: a short story, an essay or a collection opens in the reader, as a book does with **Read the book**. A collection reads its stories in order. The outline of a single note has a button for it. Where you stopped is kept. See [Writing](docs/guide/en/writing.md#read-this-note).
+- **Rhythm**: the lens panel has a Rhythm section for the paragraph at the cursor or the selected sentences: one bar per sentence, a line at the long-sentence limit, and runs of three or more sentences within three words of each other in orange. A click selects the sentence. The **Show rhythm** setting turns it off. See [Revision](docs/guide/en/revision.md#rhythm).
+- **Fixes**:
+  - Typing could be lost in a new note that was tracked as soon as it was made: Escrita added the draft status while the editor still held text it had not saved. The text is saved first now.
+  - **Read the book** opened before Obsidian had read the notes could show a chapter it should have left out, or a title that was not up to date. It now redraws when the notes are ready, and keeps your place.
+  - **Read the book** keeps the first lines of a chapter in view when the top bar is over them.
+- Upgrade notes:
+  - The **Screenplay editor** switch is **off** after the update, unless every other switch is on (as in **Everything**), in which case it is on and the set still reads Everything. Turn it on in Features › Writing.
+  - Essentials (9) and Writer (16) are as they were. Everything is now 19, 20 with the universe.
+- Improvements: the editor glue and "reveal on touch" are shared in one place, and six editor plugins moved onto it (candidate 38); "Read the book" rebuilds when the metadata cache is ready (candidate 52); the lens keeps each sentence's length once, the first slice of candidate 47.
 
 ### 1.1.1 (2026-10-18)
 

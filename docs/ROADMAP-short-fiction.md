@@ -56,7 +56,7 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 0.9.0 | Collections of contos, exported as one file (13) | M | Shipped |
 | 1.0 | Set up a writing vault and presets (10) | S | Shipped |
 | 1.0.4 | Start a new work: "New short story" and "New book" (14) | S–M | Shipped |
-| 1.2 | Read a note (15) · Sentence rhythm in the lens panel (16) | S + S | Planned |
+| 1.2.0 | Read a note (15) · Sentence rhythm in the lens panel (16) | S + S | Shipped |
 
 Sections keep their original numbers so references from the other roadmaps stay valid.
 
@@ -960,7 +960,7 @@ first chapter; a template note set in settings replaces each built-in one; Engli
 
 ---
 
-## 15. Read a note (v1.2, planned)
+## 15. Read a note (v1.2, shipped in 1.2.0)
 
 **Why.** Reading a draft in another typeface, away from the editor, shows what the eye skips
 while writing: a typo, a repeated word, a paragraph that drags. "Read the book" (novel roadmap,
@@ -982,7 +982,21 @@ exists.
   that line, the position is kept per note and follows renames.
 - Mockup: a board on the design canvas (the reader's top bar for a note and for a collection).
 
-## 16. Sentence rhythm (v1.2, planned)
+**Shipped in 1.2.0.** As built, and where it differs from the text above:
+- The command `read-note` is in the outline module, so it needs Outline and ghost beats on, as
+  "Read the book" does (no new switch: upkeep, rule 3). `read-book` keeps its id and name.
+- It is offered on a Markdown note that is not in a book and not a screenplay, a snapshot, an
+  export or a submission. The outline of a single note has a book-icon button for it, and not
+  for a screenplay.
+- The view state is `{ source }`; an old `{ book }` is read as the same. A source is a book, a
+  collection or a note (`readerSource`). A note has no heading. A collection's contos are each
+  headed by their title, and the collection's own title in the bar is its file name, the same
+  as the collection export (`export/index.ts`). The bar shows the number of stories.
+- The position is kept per source in the same place as a book's and follows renames.
+- The reader redraws when the metadata cache is ready (IMPROVEMENTS 52, done in the same
+  version). Spec: `tests/e2e/specs/read-note.spec.ts`.
+
+## 16. Sentence rhythm (v1.2, shipped in 1.2.0)
 
 **Why.** Prose goes flat when sentence after sentence has the same length. The lens's long
 sentences rule (5) finds one sentence that is too long; nothing shows the pattern. Seeing the
@@ -1002,6 +1016,15 @@ lens.
 - A click on a bar selects that sentence in the editor; it never changes the text (rule 2).
 - Like Dialogue and Readability, it can be hidden in the lens settings.
 - Mockup: a board on the design canvas (the section in light and dark, a run, a long sentence).
+
+**Shipped in 1.2.0.** As built, and where it differs from the text above:
+- `LensPass` holds `sentenceWords` and `sentencePara`, filled once in `analyze` (the first slice
+  of IMPROVEMENTS 47), and `lens/rhythm.ts` is the pure model. A run is 3 or more sentences
+  within 3 words of each other; a paragraph is the text between blank lines.
+- The setting is **Show rhythm** (`lensShowRhythm`, on by default).
+- Runs are drawn in orange (the echo color), a bar over the long-sentence threshold is marked,
+  and the section says "Place the cursor in a paragraph to see its sentences" when there is
+  none. A click on a bar selects its sentence.
 
 ## Settings summary (new)
 
@@ -1033,7 +1056,7 @@ lens.
 | | Echo window / long sentence length | 40 / 45 | same |
 | | Skip quotes (`>` lines) | on | same |
 | | One toggle per rule | all on | same |
-| | Show dialogue share / readability | on / on | same |
+| | Show dialogue share / readability / rhythm (1.2) | on / on / on | same |
 | Templates | Templates folder (read by "Insert from a template" and offered nowhere else) | (empty) | `Modelos` |
 
 After each milestone, update the author's `escrita/.obsidian/plugins/escrita/data.json`
