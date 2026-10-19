@@ -8,6 +8,7 @@
 //   RECORD=<folder> TOUR_LANG=en    npx playwright test tour   # the video: <folder>/tour-en.mp4
 //   RECORD=<folder> TOUR_LANG=pt-BR npx playwright test tour   # <folder>/tour-pt-BR.mp4
 //   TOUR_SHOTS=<folder> TOUR_LANG=en npx playwright test tour           # one PNG per caption, no recording
+//   TOUR_THEME=<a vault's .obsidian folder> ...   # that vault's community theme, CSS snippets and fonts (read only)
 //
 // Without RECORD there are no pauses and no caption is waited on (a run is about 45 s). Either way the test logs the
 // time the recording would take, step by step ("planned"): the pauses it would hold plus the typing
@@ -347,13 +348,33 @@ const KEY_MS = 70;
 const TEMPO = 1.4;
 const FAST_KEY_MS = 25;
 /** the shortest a caption stays up, in the planned time */
-const MIN_CAPTION_MS = 2600;
+const MIN_CAPTION_MS = 3000;
+
+/**
+ * TOUR_THEME=<a vault's .obsidian folder>: the files that give the run that vault's look (its community
+ * theme, its enabled CSS snippets and its text font), read from there and never written to. The mode
+ * stays light: the tour sets it.
+ */
+function themeFiles(): Record<string, string> {
+  const dir = process.env.TOUR_THEME;
+  if (!dir) return {};
+  const read = (rel: string) => fs.readFileSync(path.join(dir, rel), "utf8");
+  const look = JSON.parse(read("appearance.json")) as { cssTheme?: string; textFontFamily?: string; enabledCssSnippets?: string[] };
+  const out: Record<string, string> = {};
+  if (look.cssTheme) for (const f of ["theme.css", "manifest.json"]) out[`.obsidian/themes/${look.cssTheme}/${f}`] = read(`themes/${look.cssTheme}/${f}`);
+  for (const s of look.enabledCssSnippets ?? []) out[`.obsidian/snippets/${s}.css`] = read(`snippets/${s}.css`);
+  out[".obsidian/appearance.json"] = JSON.stringify({
+    cssTheme: look.cssTheme ?? "", textFontFamily: look.textFontFamily ?? "", enabledCssSnippets: look.enabledCssSnippets ?? [],
+  });
+  return out;
+}
 
 test.describe.configure({ mode: "serial" });
 
 test("tour", async () => {
   test.setTimeout(1_200_000);
-  const ob = await App.launch({ vault: LANG === "pt-BR" ? emptyPt({ seeded: true }) : emptyEn({ seeded: true }) });
+  const vault = LANG === "pt-BR" ? emptyPt({ seeded: true }) : emptyEn({ seeded: true });
+  const ob = await App.launch({ vault: { ...vault, files: { ...vault.files, ...themeFiles() } } });
   const page = ob.page;
   const kb = () => ob.page.keyboard;
 

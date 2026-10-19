@@ -91,7 +91,7 @@ export class Recorder {
 export interface CaptionOptions {
   /** where on the window; default the bottom edge */
   where?: "bottom" | "top" | "center";
-  /** font size in px; default 16 */
+  /** font size in px; default 24 */
   size?: number;
 }
 
@@ -104,11 +104,13 @@ export async function caption(page: Page, text: string, opts: CaptionOptions = {
     el.textContent = s;
     const place = where === "top" ? "top:12px;transform:translateX(-50%);"
       : where === "center" ? "top:50%;transform:translate(-50%,-50%);"
-      : "bottom:12px;transform:translateX(-50%);";
-    el.style.cssText = `position:fixed;left:50%;${place}z-index:2147483647;max-width:90%;text-align:center;` +
-      `background:rgba(0,0,0,0.82);color:#fff;font:600 ${size}px sans-serif;padding:8px 16px;border-radius:8px;pointer-events:none;`;
+      : "bottom:40px;transform:translateX(-50%);";
+    // large, warm and high-contrast, so it reads at phone size on YouTube
+    el.style.cssText = `position:fixed;left:50%;${place}z-index:2147483647;max-width:84%;text-align:center;` +
+      `background:rgba(32,22,16,0.92);color:#fdf6ea;font:600 ${size}px/1.3 system-ui,sans-serif;letter-spacing:0.01em;` +
+      `padding:12px 24px;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,0.35);pointer-events:none;`;
     document.body.appendChild(el);
-  }, [text, opts.where ?? "bottom", opts.size ?? 16] as const);
+  }, [text, opts.where ?? "bottom", opts.size ?? 24] as const);
 }
 
 export function removeCaption(page: Page): Promise<void> {
