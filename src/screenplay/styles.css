@@ -1,0 +1,137 @@
+/* Escrita: screenplay module. In a screenplay note in Live Preview the editor carries
+   .escrita-screenplay and each line .escrita-sp-<kind> (layout.ts). The text stays as typed;
+   these rules only draw it as on the page: the industry columns in ch (core/screenplay-presets
+   has the same ones for the PDF). Obsidian's own Markdown styling is undone under the editor class
+   (S0, PLAN-1.2): headings, quotes and the rule between scenes. No text-decoration, no
+   text-indent: a border and padding do their work. */
+
+.escrita-screenplay-courier .cm-content,
+.escrita-screenplay-courier .cm-line {
+  font-family: "Courier Prime", "Courier New", Courier, var(--font-monospace);
+}
+
+/* the columns (a 35ch measure for dialogue: 10ch in, 45ch out) */
+.escrita-screenplay .cm-line.escrita-sp-character {
+  padding-left: 22ch;
+}
+
+.escrita-screenplay .cm-line.escrita-sp-parenthetical {
+  padding-left: 16ch;
+  padding-right: max(0px, calc(100% - 45ch));
+}
+
+.escrita-screenplay .cm-line.escrita-sp-dialogue {
+  padding-left: 10ch;
+  padding-right: max(0px, calc(100% - 45ch));
+}
+
+.escrita-screenplay .cm-line.escrita-sp-lyric {
+  padding-left: 10ch;
+  font-style: italic;
+}
+
+.escrita-screenplay .cm-line.escrita-sp-scene {
+  font-weight: var(--font-bold);
+}
+
+.escrita-screenplay .cm-line.escrita-sp-transition {
+  text-align: right;
+}
+
+.escrita-screenplay .cm-line.escrita-sp-centered {
+  text-align: center;
+}
+
+.escrita-screenplay .cm-line.escrita-sp-pageBreak {
+  color: var(--text-faint);
+  border-bottom: 1px dashed var(--background-modifier-border);
+}
+
+.escrita-screenplay .cm-line.escrita-sp-titlePage {
+  color: var(--text-muted);
+}
+
+/* sections and synopses: the outline of the script, small and quiet */
+.escrita-screenplay .cm-line.escrita-sp-section,
+.escrita-screenplay .cm-line.escrita-sp-synopsis {
+  font-size: var(--font-smaller);
+  color: var(--text-muted);
+}
+
+/* Markdown's headings: a # line is a Fountain section, at the size of the text */
+body .escrita-screenplay .cm-line.HyperMD-header,
+body .escrita-screenplay .cm-line.HyperMD-header * {
+  font-size: inherit !important;
+  font-weight: var(--font-normal) !important;
+  line-height: inherit !important;
+  color: inherit !important;
+}
+
+body .escrita-screenplay .cm-line.escrita-sp-section,
+body .escrita-screenplay .cm-line.escrita-sp-section * {
+  font-size: var(--font-smaller) !important;
+  color: var(--text-muted) !important;
+}
+
+.escrita-screenplay .cm-line .cm-fold-indicator {
+  display: none;
+}
+
+/* Markdown's quotes: a > line is a transition or a centered line, with no bar. The 18px of
+   padding balances the indent Obsidian gives the quote's first line. */
+body .escrita-screenplay .cm-line.HyperMD-quote {
+  padding-left: 18px;
+  border-left: 0;
+  background: none;
+}
+
+body .escrita-screenplay .cm-line.HyperMD-quote,
+body .escrita-screenplay .cm-line.HyperMD-quote * {
+  color: var(--text-normal) !important;
+  font-style: normal !important;
+}
+
+/* the rule between scenes is a block widget with no line class of ours: the editor's class scopes it, and it shows the three dashes as typed */
+body .escrita-screenplay .cm-line.hr hr,
+body .escrita-screenplay .cm-line.hr br {
+  display: none !important;
+}
+
+.escrita-screenplay .cm-line.hr::after {
+  content: "---";
+}
+
+/* _underline_ is drawn as .cm-em (italic) by Obsidian: our mark takes the italic off and draws a line */
+.escrita-screenplay .escrita-sp-underline {
+  border-bottom: 1px solid currentColor;
+  font-style: normal;
+}
+
+.escrita-screenplay .escrita-sp-underline .cm-em,
+.escrita-screenplay .cm-em.escrita-sp-underline {
+  font-style: normal !important;
+}
+
+/* the element's name, faint, on an empty line after Tab or Enter */
+.escrita-sp-ghost {
+  color: var(--text-faint);
+  font-size: var(--font-smaller);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* the suggestions: the name, and a small note (how many speeches, or "universe") */
+.suggestion-item.escrita-sp-suggest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-3);
+  min-height: 32px;
+}
+
+.escrita-sp-suggest-note {
+  color: var(--text-faint);
+  font-size: var(--font-smaller);
+}

@@ -39,4 +39,5 @@ if (typeof HTMLElement !== "undefined") {
   // Obsidian's global createDiv: a detached div
   const g = globalThis as unknown as Record<string, unknown>;
   g.createDiv ??= (o?: string | ElOptions) => applyOptions(document.createElement("div"), o);
+  g.createSpan ??= (o?: string | ElOptions) => applyOptions(document.createElement("span"), o);
 }

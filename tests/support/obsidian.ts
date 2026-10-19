@@ -94,6 +94,14 @@ export class Keymap {
   static isModEvent(): boolean { return false; }
 }
 export class MarkdownView {}
+/** The suggest base: the screenplay editor's subclass is loaded in tests; the popover itself is not exercised. */
+export class EditorSuggest<_T> {
+  context: unknown = null;
+  limit = 100;
+  constructor(public app: unknown) {}
+  close(): void { this.context = null; }
+  setInstructions(): void {}
+}
 export class Editor {}
 /** One row a `Setting` drew, in order: what the settings tab tests read (name, line under it, heading or not). */
 export interface SettingRow { name: string; desc: string; heading: boolean }

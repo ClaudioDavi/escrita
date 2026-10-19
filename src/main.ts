@@ -63,6 +63,7 @@ import { setupLayoutStrings } from "./setup/layout-strings";
 import { NewWorkModule } from "./new-work";
 import { newWorkStrings } from "./new-work/strings";
 import { screenplayStrings } from "./screenplay/strings";
+import { ScreenplayModule } from "./screenplay";
 import type { NewWorkStarter } from "./core/new-work";
 
 /** How long after a note is created before its status is checked: templates land first. */
@@ -175,6 +176,7 @@ export default class EscritaPlugin extends Plugin {
       ["publish", this.publish], ["export", this.export], ["submissions", this.submissions],
       ["desk", this.desk],
       ["universe", this.universe], ["threads", this.threads],
+      ["screenplay", new ScreenplayModule(this)],
     ]);
     this.features = new FeatureRegistry(this, modules);
     this.features.init();

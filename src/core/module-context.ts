@@ -3,7 +3,7 @@
 // two core services that already do, that calls the Plugin-only registration
 // methods; it records an undo for each and runs them on unload.
 
-import { Component, ItemView, Notice, type App, type Command, type TextAreaComponent, type TextComponent, type MarkdownPostProcessor, type MarkdownPostProcessorContext, type ViewCreator, type WorkspaceLeaf } from "obsidian";
+import { Component, ItemView, Notice, type App, type Command, type EditorSuggest, type TextAreaComponent, type TextComponent, type MarkdownPostProcessor, type MarkdownPostProcessorContext, type ViewCreator, type WorkspaceLeaf } from "obsidian";
 import type { Extension } from "@codemirror/state";
 import type EscritaPlugin from "../main";
 import type { EscritaSettings } from "../settings";
@@ -39,6 +39,12 @@ export interface ModuleContext {
   index<F extends IndexFile, V>(spec: IndexSpec<F, V>): VaultIndex<F, V>;  // disposed and removed on unload (Q7)
   follow(f: Follower): void;                                     // removed on unload
   decorate(id: DecorationId, draw: Drawer): void;                // undrawn on unload
+  /**
+   * Registers an editor suggest (1.2, the screenplay editor). Obsidian cannot unregister one, so it
+   * stays registered for the plugin's life: the module makes it inert while off (its `onTrigger`
+   * answers null) and registers the same object again on a later load, which does nothing.
+   */
+  suggest<T>(s: EditorSuggest<T>): void;
   onLayoutReady(cb: () => void): void;                           // never runs after unload
   /**
    * Runs once after this feature has unloaded: after `onunload`, after every undo of the
@@ -278,6 +284,8 @@ export class ModuleContextImpl implements ModuleContext {
   private active = false;
   private generation = 0;
   private afterEnd: (() => void)[] = [];
+  /** the suggests already registered on the plugin (they cannot be taken back) */
+  private suggests = new Set<object>();
   /** G0f: a ribbon icon can't be removed, so it is kept by title for the plugin's life */
   private ribbons = new Map<string, { el: HTMLElement; cb: ((e: MouseEvent) => void) | null }>();
 
@@ -369,6 +377,12 @@ export class ModuleContextImpl implements ModuleContext {
 
   decorate(id: DecorationId, draw: Drawer): void {
     this.disposers.push(this.plugin.decorations.add(id, draw));
+  }
+
+  suggest<T>(s: EditorSuggest<T>): void {
+    if (this.suggests.has(s)) return;
+    this.suggests.add(s);
+    this.plugin.registerEditorSuggest(s);
   }
 
   afterUnload(cb: () => void): void {

@@ -99,6 +99,8 @@ export class TypingFeature extends FeatureModule {
     // Chapters get breaks and new chapters; other tracked writing (a conto,
     // an essay) gets scene breaks only.
     const p = this.plugin.books.classify(file);
+    // a screenplay is Fountain: its blank lines mean something, so prose Enter flow stays out (PLAN-1.2 Q9)
+    if (p.form === "screenplay") return false;
     const chapter = p.kind === "chapter";
     if (!chapter && !p.tracked) return false;
 
@@ -246,7 +248,8 @@ export class DialogueFocusFeature extends FeatureModule {
     super();
     this.dialogue = new DialogueFocus(
       (s) => fileOfState(s)?.path ?? null,
-      (p) => this.dialogueOn.has(p),
+      // not in a screenplay note: it would dim the wrong lines (PLAN-1.2 Q12)
+      (p) => this.dialogueOn.has(p) && this.plugin.books.classify(p).form !== "screenplay",
       () => ({ quoteStyle: this.plugin.settings.quoteStyle, paragraphStyle: this.plugin.settings.paragraphStyle }),
     );
   }

@@ -224,6 +224,8 @@ export class FakePlugin extends Component {
   registerMarkdownCodeBlockProcessor(lang: string, h: (source: string, el: HTMLElement, ctx: unknown) => unknown): void {
     this.codeBlocks.set(lang, h);
   }
+  suggests: unknown[] = [];
+  registerEditorSuggest(s: unknown): void { this.suggests.push(s); }
   postProcessors: MarkdownPostProcessor[] = [];
   registerMarkdownPostProcessor(fn: MarkdownPostProcessor): MarkdownPostProcessor {
     this.postProcessors.push(fn);
