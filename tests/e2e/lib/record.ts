@@ -12,16 +12,24 @@ import path from "node:path";
 export const recordDir = (): string | null => process.env.RECORD || null;
 
 /**
- * RECORD_HD=1: a 1920 x 1080 recording (a 1280 x 720 layout at 1.5 device pixels per CSS pixel) whose
+ * RECORD_HD=1: a 1920 x 1080 recording (a 1366 x 768 layout at 1.40625 device pixels per CSS pixel) whose
  * captions, zooms and pointer are drawn afterwards by tests/e2e/video/render.py from the event log
  * written next to the frames, instead of in the window.
  */
 export const recordHd = (): boolean => recordDir() !== null && process.env.RECORD_HD === "1";
 
-/** In HD mode, gives `page` the 1280 x 720 layout drawn at 1920 x 1080. */
+/** The HD layout: 16:9, tall enough for the lens panel's Rhythm section, drawn at 1920 x 1080. */
+export const HD_LAYOUT = { width: 1366, height: 768, scale: 1080 / 768 };
+
+/** In HD mode, gives `page` the HD layout. */
 export async function hdViewport(page: Page): Promise<void> {
-  const s = await page.context().newCDPSession(page);
-  await s.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1.5, mobile: false });
+  // a 1920 x 1080 viewport with the window's own zoom (Electron's, as Ctrl + = does): the layout is the HD
+  // layout's, and the screencast, which ignores an emulated device scale, still gets every device pixel
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.evaluate((z) => {
+    (window as unknown as { require(m: string): { webFrame: { setZoomFactor(f: number): void } } }).require("electron").webFrame.setZoomFactor(z);
+  }, HD_LAYOUT.scale);
+  await page.waitForFunction((w) => Math.abs(window.innerWidth - w) <= 1, HD_LAYOUT.width);
 }
 
 /** One entry of the event log: what the renderer draws, at a wall-clock time in seconds. */
@@ -83,7 +91,7 @@ export class Recorder {
     await this.attach(page);
   }
 
-  /** Logs an event for the renderer, stamped now (CSS pixels of the 1280 x 720 layout for places). */
+  /** Logs an event for the renderer, stamped now (CSS pixels of the HD layout for places). */
   mark(ev: RecordEvent, t = Date.now() / 1000): void {
     this.events.push({ ...ev, t });
   }
@@ -117,7 +125,7 @@ export class Recorder {
     const out = path.join(this.dir, `${name}.mp4`);
     if (this.frames.length === 0) throw new Error("no frames were recorded");
     // the log the HD renderer reads: every frame with its time, and the events
-    fs.writeFileSync(path.join(this.dir, `${name}.json`), JSON.stringify({ frames: this.frames, events: this.events }));
+    fs.writeFileSync(path.join(this.dir, `${name}.json`), JSON.stringify({ scale: HD_LAYOUT.scale, frames: this.frames, events: this.events }));
     const list = path.join(this.framesDir, "list.txt");
     const lines: string[] = [];
     this.frames.forEach((f, i) => {

@@ -457,8 +457,8 @@ test("tour", async () => {
     rec.mark({ type: "zoom", x: l, y: t, w: r - l, h: b - t, scale: opts.scale });
   };
   const zoomOut = () => { if (HD) rec?.mark({ type: "unzoom" }); };
-  /** HD only: a gentle zoom on the middle of the active editor, where centerCursor keeps the line being written. */
-  const zoomEditor = (scale = 1.3) => zoomTo(page.locator(".workspace-leaf.mod-active .cm-scroller"), { pad: 0, scale });
+  /** HD only: a gentle zoom on the line being written (centerCursor keeps it in the middle of the editor). */
+  const zoomEditor = (scale = 1.3) => zoomTo(page.locator(".workspace-leaf.mod-active .cm-active"), { pad: 0, scale });
   const spot = async (target: ReturnType<typeof page.locator>, ms: number, label?: string) => {
     await spotOn(target, label);
     await shotNow();
@@ -579,7 +579,9 @@ test("tour", async () => {
 
     // ============================================================ 1. the title
     section("1 title");
-    await say(W.c.title, 2600, { where: "center", size: 34 });
+    // in HD the video opens on the logo and banner cards, which already say this
+    if (HD) await pace(1500);
+    else await say(W.c.title, 2600, { where: "center", size: 34 });
 
     // ============================================================ 2. the setup
     section("2 setup");
@@ -1276,7 +1278,7 @@ test("tour", async () => {
     section("19 outro");
     await unsay();
     await say(W.c.outro1, 2600, { where: "center", size: 34 });
-    await say(W.c.outro2, 1600, { where: "center", size: 44 });
+    if (!HD) await say(W.c.outro2, 1600, { where: "center", size: 44 }); // in HD the banner card follows
     await pace(1200);
     await flushShot();
     await unsay();
