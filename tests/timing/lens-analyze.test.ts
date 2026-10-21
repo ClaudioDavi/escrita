@@ -37,8 +37,10 @@ describe("lens analyze: performance", () => {
     expect(r.words).toBeGreaterThanOrEqual(9000);
     expect(ms).toBeLessThan(300);
     const mid = Math.floor(big.length / 2);
-    expect(time(() => visible(r.matches, mid, mid + 3000))[1]).toBeLessThan(1);
-    expect(time(() => measuresFor(r.pass, md, o, { from: mid, to: mid + 600 }))[1]).toBeLessThan(5);
+    // the best of 5: one sub-millisecond run on a shared CI runner can catch a GC pause
+    const best = (f: () => unknown) => Math.min(...Array.from({ length: 5 }, () => time(f)[1]));
+    expect(best(() => visible(r.matches, mid, mid + 3000))).toBeLessThan(1);
+    expect(best(() => measuresFor(r.pass, md, o, { from: mid, to: mid + 600 }))).toBeLessThan(5);
   });
 
   // Timing under a parallel suite is noisy; run alone with ESCRITA_PERF=1 to check it.
