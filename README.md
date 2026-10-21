@@ -99,7 +99,7 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
-### 1.2.1 (2026-10-19)
+### 1.2.1 (2026-10-21)
 
 A small release: five fixes, one small addition and a new default.
 
