@@ -401,7 +401,7 @@ interface lives. Test through the interface.
   its duplicate `PREFIX` regex), `wordcount.ts` `countWords`, `countCharacters` and
   `readerText`, `stages.ts` `parseStatusColors`, `atLeast`, `ownStages`, `stageRank` (while
   `works.ts:79` and `universe/works-list.ts:72` rank by hand), `chapter-plan.ts:8`'s template
-  re-exports, `publish/checks.ts:55`'s `unclosedComment`.
+  re-exports. (`publish/checks.ts`'s `unclosedComment` re-export went in 1.2.2.)
 - Unused: `DEFAULT_COMPILE_PROPERTY` (and `"compile"` hard-coded at `settings.ts:234` and
   `export/modal.ts:603`), `pluginFolders` (still documented in ARCHITECTURE),
   `DEFAULT_SUBMISSIONS_FOLDER`, `DEFAULT_EXPORT_FOLDER`, about 25 universe exports used only in
@@ -622,6 +622,7 @@ writes, the progress modal's two property writes and the outline's summary write
 
 | Version | Improvement |
 |---|---|
+| 1.2.2 | Dead code, a first slice (candidate 49): `publish/checks.ts` no longer re-exports `unclosedComment`; `tests/publish.test.ts` and `tests/markdown-consumers.test.ts` import it from `core/readiness.ts`, its home. The rest of 49 stays a candidate |
 | 1.2.1 | Required classifier settings, and one plugin-folder root (candidate 43): every `ClassifySettings` field is required, so the fallbacks for a missing key are gone from `core/classify.ts` (`ownNoteOf`, the scope and form readers, `classifyKey`) and the stage and status reads share `statusPropertyOf`; settings load already fills every key, so nothing changes at run time. `pluginRoot(kind, settings)` (`core/classify.ts`) is the one folder-root rule for snapshots, submissions and export, always with the install's language; `snapshotsRoot`, `submissionsRoot` and `exportRoot` are gone and every caller (`inSnapshots`, `classifyKey`, `folder-problem.ts`, `vault-indexes.ts`, the three modules and the settings rows) goes through it. Tests build their settings with `classifySettings(partial)` (`tests/support/classify-settings.ts`, on `defaultsFor("en")`) |
 | 1.2.0 | Editor glue and "reveal on touch" (candidate 38): `src/ui/editor-glue.ts` has `EditorSet` (one retry, then the editor is dropped: the lens's policy, now everyone's), `fileOfState`, `isLivePreview` and `cmOf`; `src/ui/reveal-on-touch.ts` has `revealOnTouch({ scan, raw, rendered, key })`. The lens, dialogue focus, the name marks, "Appears in", the placeholders and the ghost beats moved onto them, and the screenplay layout is built on them. Two behavior changes: the name marks drop an editor after a second failed dispatch, and ghost beats skip lines outside the visible ranges |
 | 1.2.0 | "Read the book" rebuilds when the metadata cache is ready (candidate 52): the reader redraws on `resolved` when the chapter list or the title changed, keeping the position, so a `compile: false` chapter leaves the list after startup (`tests/e2e/specs/read-book.spec.ts`, `read-note.spec.ts`). `scrollTo` also allows for the sticky bar's height |

@@ -335,6 +335,18 @@ function lineEndFrom(text: string, i: number): number {
   return nl > i && text.charCodeAt(nl - 1) === 13 ? nl - 1 : nl;
 }
 
+/**
+ * Something runs open to the end of the text: a fence or a `%%` comment nothing
+ * closes, or a frontmatter with no closer. Typing the opener of a comment makes
+ * every line after it a comment until the closer is typed.
+ */
+export function runsOpen(md: Markdown): boolean {
+  if (md.unclosedFrontmatter) return true;
+  const spans = md.spans();
+  const last = spans[spans.length - 1];
+  return !!last && !last.closed;
+}
+
 let lastText: string | null = null;
 let lastMd: Markdown | null = null;
 

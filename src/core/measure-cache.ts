@@ -58,10 +58,11 @@ export class CharactersNotCountedError extends Error {
 
 /** Plain numbers detached from the text: with the characters, or words only (reading a character count throws). */
 function detach(c: Counts, chars: boolean): Counts {
-  if (chars) return Object.freeze({ words: c.words, characters: c.characters, charactersNoSpaces: c.charactersNoSpaces });
+  const open = c.open ? { open: true } : {};
+  if (chars) return Object.freeze({ words: c.words, characters: c.characters, charactersNoSpaces: c.charactersNoSpaces, ...open });
   const missing = (): never => { throw new CharactersNotCountedError(); };
   // not enumerable, so equality checks and spreads see only the words
-  return Object.freeze(Object.defineProperties({ words: c.words } as Counts, {
+  return Object.freeze(Object.defineProperties({ words: c.words, ...open } as Counts, {
     characters: { get: missing, enumerable: false },
     charactersNoSpaces: { get: missing, enumerable: false },
   }));
@@ -185,7 +186,7 @@ export class MeasureCache<F extends Measurable> {
     const prev = this.entries.get(path);
     const counts = detach(measured, chars);
     this.entries.set(path, { mtime, counts, chars });
-    const same = prev !== undefined && prev.counts.words === counts.words && (!chars || (prev.chars
+    const same = prev !== undefined && prev.counts.words === counts.words && !prev.counts.open === !counts.open && (!chars || (prev.chars
       && prev.counts.characters === counts.characters && prev.counts.charactersNoSpaces === counts.charactersNoSpaces));
     if (!same) this.emit([path]);
     return counts;

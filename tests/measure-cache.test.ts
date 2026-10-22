@@ -20,6 +20,16 @@ function setup(texts: Record<string, string> = { "a.md": "um dois", "b.md": "trÃ
 }
 
 describe("MeasureCache", () => {
+  it("keeps the open mark, and a change of it alone is a change", async () => {
+    const { cache, events, texts } = setup({ "a.md": "um dois" });
+    expect((await cache.get(file("a.md"))).open).toBeUndefined();
+    texts["a.md"] = "um dois %%";
+    const open = await cache.get(file("a.md", 2));
+    expect(open.open).toBe(true);
+    expect(events.length).toBe(2); // same words, now open
+    expect((await cache.get(file("a.md", 2), { characters: true })).open).toBe(true);
+  });
+
   it("reads once per mtime", async () => {
     const { read, cache } = setup();
     const a = await cache.get(file("a.md"));

@@ -6,6 +6,7 @@
 
 import { charLength, proseOnly, readerTextOf, wordsIn } from "./wordcount";
 import { isoDay } from "./dates";
+import { runsOpen, segment } from "./markdown";
 
 export type PieceUnit = "words" | "characters" | "characters-no-spaces";
 
@@ -31,15 +32,21 @@ export interface Counts {
   readonly words: number;
   readonly characters: number;
   readonly charactersNoSpaces: number;
+  /**
+   * The text ends inside an unclosed fence, `%%` comment or frontmatter (core/markdown
+   * runsOpen), so the words after the opener aren't counted until it closes. Set only
+   * by measureText; a sum never carries it.
+   */
+  readonly open?: boolean;
 }
 
 export const ZERO: Readonly<Counts> = Object.freeze({ words: 0, characters: 0, charactersNoSpaces: 0 });
 
 /** Counts whose character fields are computed from `chars()` on first read (own, enumerable getters). */
-function lazyCounts(words: number, chars: () => [number, number]): Counts {
+function lazyCounts(words: number, chars: () => [number, number], open = false): Counts {
   let memo: [number, number] | null = null;
   const get = (): [number, number] => (memo ??= chars());
-  return Object.defineProperties({ words } as Counts, {
+  return Object.defineProperties((open ? { words, open } : { words }) as Counts, {
     characters: { get: () => get()[0], enumerable: true },
     charactersNoSpaces: { get: () => get()[1], enumerable: true },
   });
@@ -56,7 +63,7 @@ export function measureText(md: string): Counts {
     const r = readerTextOf(prose ?? "");
     prose = null; // computed once: let the text go
     return [charLength(r), charLength(r.replace(/ /g, ""))];
-  });
+  }, runsOpen(segment(md))); // segment caches the text proseOnly just read
 }
 
 /** The count in a unit. Reading "words" never computes the characters. */
@@ -81,7 +88,7 @@ export function sumCounts(list: Iterable<Counts>): Counts {
 /** Same words and characters. The characters are compared (and so computed) only when the words agree. */
 export function sameCounts(a: Counts, b: Counts): boolean {
   if (a === b) return true;
-  return a.words === b.words && a.characters === b.characters && a.charactersNoSpaces === b.charactersNoSpaces;
+  return a.words === b.words && !a.open === !b.open && a.characters === b.characters && a.charactersNoSpaces === b.charactersNoSpaces;
 }
 
 // ── Pieces and book goals ────────────────────────────────────────────────

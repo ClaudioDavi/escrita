@@ -328,7 +328,9 @@ Pertence ao mesmo interruptor de **Ler o livro** (Recursos › Esboço e beats f
 
 O Escrita conta as palavras que você digita na nota ativa, dentro das pastas que ele acompanha. Ele
 não conta o que você cola, importa ou sincroniza: uma única mudança que acrescenta ou remove mais
-palavras do que um tamanho que você escolhe é ignorada. As palavras que você apaga na revisão
+palavras do que um tamanho que você escolhe é ignorada. Enquanto um comentário `%%` está aberto
+(você digitou o `%%` de abertura e ainda não o que fecha), a contagem espera, e as palavras abaixo
+dele não contam como apagadas e depois acrescentadas de novo. As palavras que você apaga na revisão
 também não se perdem: a janela de progresso mostra "cortadas na revisão" ao lado do que você
 acrescentou.
 

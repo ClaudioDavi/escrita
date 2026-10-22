@@ -321,7 +321,9 @@ It belongs to the same switch as **Read the book** (Features › Outline and gho
 
 Escrita counts the words you type in the active note, inside the folders it tracks. It doesn't
 count what you paste, import or sync: a single change that adds or removes more words than a size
-you choose is ignored. Words you delete while revising are not lost either; the progress window
+you choose is ignored. While a `%%` comment is open (you typed `%%` and not yet the `%%` that
+closes it), the count waits, so the words below it don't count as deleted and then added again.
+Words you delete while revising are not lost either; the progress window
 shows "cut while revising" next to what you added.
 
 - **A daily goal** for all your writing: **Daily word goal**.

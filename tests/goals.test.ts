@@ -2,13 +2,14 @@ import { describe, it, expect } from "vitest";
 import type { DayRecord } from "../src/data";
 import {
   addedOn, applyDelta, bookTotalSeries, countsAsWriting, dailyAverage, dailySeries, dayStates, deletedOn,
-  ActiveFiles, goalMet, goalMetDays, netOn, num, recordBookTotal, renameBook, streak, sumAdded,
+  ActiveFiles, countedChange, goalMet, goalMetDays, netOn, num, recordBookTotal, renameBook, streak, sumAdded,
   type History,
 } from "../src/goals/tracker";
 import { pacing, readNumberField } from "../src/goals/pacing";
 import { chartGeometry, CHART_PAD } from "../src/goals/chart";
 import { Sprint, formatClock, sprintMinutes, wordsPerHour } from "../src/goals/sprint";
 import { lastDays } from "../src/core/dates";
+import { measureText } from "../src/core/measure";
 
 const BOOK = "Novels/A Casa.md";
 
@@ -601,5 +602,43 @@ describe("goals strings", async () => {
     const plurals = [...src.matchAll(/plural\("(goals\.[\w.]+)"/g)].flatMap((m) => [`${m[1]}.one`, `${m[1]}.other`]);
     expect(direct.length + plurals.length).toBeGreaterThan(20);
     for (const k of [...direct, ...plurals]) expect(goalsStrings.en[k], k).toBeDefined();
+  });
+});
+
+describe("countedChange", () => {
+  it("records the change against the baseline and moves it", () => {
+    expect(countedChange(100, { words: 104 })).toEqual({ delta: 4, baseline: 104 });
+    expect(countedChange(100, { words: 97 })).toEqual({ delta: -3, baseline: 97 });
+  });
+
+  it("takes the first count as the baseline without recording", () => {
+    expect(countedChange(undefined, { words: 50 })).toEqual({ delta: 0, baseline: 50 });
+  });
+
+  it("ignores a count taken while a comment runs open", () => {
+    expect(countedChange(100, { words: 20, open: true })).toEqual({ delta: 0, baseline: 100 });
+    expect(countedChange(undefined, { words: 20, open: true })).toEqual({ delta: 0, baseline: undefined });
+  });
+
+  // 2026-10-22: notes to self added to a 199-word story recorded 703 added and 514 deleted.
+  it("counts only the words written when a %% comment is opened and closed", () => {
+    const head = "Não estava nos meus planos, mas foi inevitável.\n\n";
+    const tail = "Eu apenas vi a oportunidade, saí correndo e consegui alcançar o muro.\n";
+    const saves = [
+      head + tail,
+      head + "%% \n\n" + tail, // the opener typed: everything after it is a comment
+      head + "%% XXX: remover \n\n" + tail,
+      head + "%% XXX: remover %%\n\n" + tail, // closed
+      head + "%% XXX: remover %%\n\nSemana um.\n\n" + tail,
+    ];
+    let baseline: number | undefined;
+    const history: History = {};
+    for (const text of saves) {
+      const step = countedChange(baseline, measureText(text));
+      baseline = step.baseline;
+      if (step.delta !== 0) applyDelta(history, "2026-10-22", step.delta);
+    }
+    expect(addedOn(history, "2026-10-22")).toBe(2);
+    expect(deletedOn(history, "2026-10-22")).toBe(0);
   });
 });

@@ -99,6 +99,14 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
+### 1.2.2 (2026-10-22)
+
+A fix for the daily word count.
+
+- **Fix**: typing a `%%` comment no longer inflates the words written today. While a comment was open (the `%%` typed, its closer not yet), every word below it stopped counting; closing it brought them back, and the goals counted them as written, once for each comment. The count now waits while a comment, a code fence or the properties block is open, and counts what you wrote once it closes.
+- Improvement: a slice of dead code and stale comments (candidate 49): the publish checks no longer re-export `unclosedComment`. Nothing changes in use.
+- Upgrade note: days already recorded keep their numbers. If a day looks too high, the words came from comments you added that day.
+
 ### 1.2.1 (2026-10-21)
 
 A small release: five fixes, one small addition and a new default.

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { segment } from "../src/core/markdown";
+import { runsOpen, segment } from "../src/core/markdown";
 import { countCharacters, countSelection, countWords } from "../src/core/wordcount";
 import { measureText } from "../src/core/measure";
 import { isSceneBreakLine, parseBeats, parsePlaceholders } from "../src/core/markers";
@@ -9,7 +9,8 @@ import { decideEnter, trailingBreakKeep, withoutTrailingBreak } from "../src/edi
 import { scanBeats } from "../src/outline/model";
 import { insertBeat } from "../src/outline/beats-edit";
 import { placeholderSpans, scan } from "../src/placeholders/logic";
-import { runChecks, unclosedComment } from "../src/publish/checks";
+import { runChecks } from "../src/publish/checks";
+import { unclosedComment } from "../src/core/readiness";
 
 // Characterization table: what every consumer of core/markdown says about the
 // same documents. Values were recorded from the code before the segmenter; a row
@@ -1405,6 +1406,7 @@ describe("characterization table", () => {
         words: countWords(row.text),
         characters: countCharacters(row.text, { spaces: true }),
         charactersNoSpaces: countCharacters(row.text, { spaces: false }),
+        ...(runsOpen(segment(row.text)) ? { open: true } : {}),
       });
     }
   });

@@ -11,6 +11,15 @@ const PROPS = { targetProperty: "target", limitProperty: "limit", unitProperty: 
 const UNITS: PieceUnit[] = ["words", "characters", "characters-no-spaces"];
 
 describe("measureText", () => {
+  it("marks a count taken while a comment, fence or frontmatter runs open", () => {
+    expect(measureText("um dois %% três").open).toBe(true);
+    expect(measureText("um\n\n```\ndois").open).toBe(true);
+    expect(measureText("---\nstatus: x\num dois").open).toBe(true);
+    expect(measureText("um %% três %% dois").open).toBeUndefined();
+    expect("open" in measureText("um %% três %% dois")).toBe(false);
+    expect(sameCounts(measureText("um %% três"), measureText("um"))).toBe(false);
+  });
+
   it("counts words and characters in one pass, like countWords and countCharacters", () => {
     const md = "---\nlimit: 15000\nunit: characters\n---\nA   chave\n\n—  dentro. %% XXX: ver %%\n";
     expect(measureText(md)).toEqual({ words: 3, characters: 17, charactersNoSpaces: 14 });

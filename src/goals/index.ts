@@ -17,7 +17,7 @@ import { ProgressModal } from "./progress-modal";
 import { Sprint, formatClock, type SprintEvent } from "./sprint";
 import { StatusBar } from "./status-bar";
 import {
-  ActiveFiles, addedOn, applyDelta, countsAsWriting, recordBookTotal, renameBook, streak,
+  ActiveFiles, addedOn, applyDelta, countedChange, countsAsWriting, recordBookTotal, renameBook, streak,
 } from "./tracker";
 import { goalsSettingsItems, goalsOffNotice } from "./settings-ui";
 import type { SettingsBlock } from "../ui/settings-rows";
@@ -188,7 +188,8 @@ export class GoalsModule extends FeatureModule {
   private prime(file: TFile | null): void {
     if (!file || !this.plugin.books.classify(file).tracked) return;
     this.enqueue(async () => {
-      this.baseline.set(file.path, (await this.plugin.measure.counts(file)).words);
+      const { baseline } = countedChange(undefined, await this.plugin.measure.counts(file));
+      if (baseline !== undefined) this.baseline.set(file.path, baseline);
     });
   }
 
@@ -203,13 +204,13 @@ export class GoalsModule extends FeatureModule {
       return;
     }
     this.enqueue(async () => {
-      const before = this.baseline.get(file.path);
-      const after = (await this.plugin.measure.counts(file)).words;
-      this.baseline.set(file.path, after);
-      if (before === undefined || after === before) return;
+      const after = await this.plugin.measure.counts(file);
+      const { delta, baseline } = countedChange(this.baseline.get(file.path), after);
+      if (baseline !== undefined) this.baseline.set(file.path, baseline);
+      if (delta === 0) return;
       // classified after the count, as before: a rename queued meanwhile has landed
       const p = this.plugin.books.classify(file);
-      this.record(after - before, (await this.bookChange(p)) ?? this.pieceChange(p, after));
+      this.record(delta, (await this.bookChange(p)) ?? this.pieceChange(p, after.words));
     });
     this.refreshStatus();
   }

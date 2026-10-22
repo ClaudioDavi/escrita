@@ -5,7 +5,7 @@
 
 import { stageOf, type StageMapping } from "../core/stages";
 import { propertyValue } from "../core/book-source";
-import { readinessOf, unclosedComment } from "../core/readiness";
+import { readinessOf } from "../core/readiness";
 import { countIn, pieceProgress, readPiece, type PieceProperties } from "../core/measure";
 
 export type CheckLevel = "blocker" | "warning" | "passed";
@@ -51,11 +51,6 @@ export interface CheckContext {
 }
 
 export const BLOCKER_FIRST: Record<CheckLevel, number> = { blocker: 0, warning: 1, passed: 2 };
-
-// ------------------------------------------------------------------ comments
-
-// The marker checks live in core/readiness.ts; re-exported for existing callers.
-export { unclosedComment };
 
 // ------------------------------------------------------------------ status
 

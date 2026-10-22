@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (1.2.1 at the time of writing). The author's
+Current version: see `manifest.json` (1.2.2 at the time of writing). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down

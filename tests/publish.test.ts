@@ -2,8 +2,9 @@ import { describe, it, expect } from "vitest";
 import { DEFAULT_STAGES, normalizeStages } from "../src/core/stages";
 import {
   hasBlockers, isFilled, isPublished, runChecks, sortChecks,
-  unclosedComment, type Check, type CheckContext, type CheckId,
+  type Check, type CheckContext, type CheckId,
 } from "../src/publish/checks";
+import { unclosedComment } from "../src/core/readiness";
 
 const PIECE = { targetProperty: "target", limitProperty: "limit", unitProperty: "unit" };
 const ctx = (over: Partial<CheckContext> = {}): CheckContext => ({

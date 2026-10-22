@@ -280,6 +280,21 @@ export function countsAsWriting(delta: number, ignoreOver: number): boolean {
 }
 
 /**
+ * One save of a note being typed in, against the count before it: the change to
+ * record and the count to measure the next save against. A count taken while a
+ * comment or fence runs open (`open`) is partial: typing `%%` hides every word
+ * after it until the closer, so it neither records nor moves the baseline, and
+ * the words written meanwhile count once the comment closes. With no baseline
+ * yet, the first closed count becomes it.
+ */
+export function countedChange(
+  before: number | undefined, after: { words: number; open?: boolean },
+): { delta: number; baseline: number | undefined } {
+  if (after.open) return { delta: 0, baseline: before };
+  return { delta: before === undefined ? 0 : after.words - before, baseline: after.words };
+}
+
+/**
  * Which files count as "being typed in". The active file does, and so does a
  * file that stopped being active less than `graceMs` ago: the editor saves on a
  * debounce, so the last words typed before switching tabs land a moment later.

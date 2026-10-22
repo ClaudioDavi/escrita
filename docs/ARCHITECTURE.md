@@ -742,7 +742,8 @@ The approved design (canvas "Escrita plugin") shows, in Portuguese:
 
 Every count shown or recorded comes from here; don't count notes anywhere else.
 `plugin.measure.counts(file, seed?, unit?)` gives a note's `Counts` (`words`,
-`characters`, `charactersNoSpaces`), cached by mtime (`seed` is `{ text, mtime }`, the
+`characters`, `charactersNoSpaces`, and `open` when the text ends inside an unclosed fence,
+`%%` comment or frontmatter, `runsOpen` in `core/markdown.ts`; 1.2.2), cached by mtime (`seed` is `{ text, mtime }`, the
 file as the caller already read it with the mtime seen before the read; a seed older
 than the file is ignored and the file read again); `peek(path, unit?)` is the sync last
 known value; `note(file)` adds the live piece, unit and `Progress`; `book(book)`
