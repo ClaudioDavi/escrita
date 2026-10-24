@@ -36,7 +36,7 @@ export interface HistoryParts {
 }
 
 function newDeviceId(now: number): string {
-  const c = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
+  const c = typeof window !== "undefined" ? (window as { crypto?: { randomUUID?: () => string } }).crypto : undefined;
   if (c && typeof c.randomUUID === "function") return c.randomUUID();
   return `${now.toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
 }

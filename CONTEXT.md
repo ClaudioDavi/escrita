@@ -200,7 +200,9 @@ An edit at the cursor of the editor that triggered it may write straight to that
 ## Working process
 
 - **Checks before calling something done**: `npm run typecheck`, `npm test`,
-  `npm run build` (and `npm run test:bundle` after a build). CI runs all four.
+  `npm run build` (and `npm run test:bundle` after a build), and `npm run lint` (eslint with the
+  Obsidian rules, zero warnings). CI runs all five; 1.2.3 shipped with a lint warning because lint
+  wasn't run locally.
 - **The end-to-end harness** (1.1, `tests/e2e/`, `docs/TESTING.md`): `npm run e2e` runs Playwright specs
   in a real Obsidian that it starts itself, with its own profile and a copy of a fixture vault, so
   the author's Obsidian and vaults are never touched. Local only, not in CI; run `npm run build`
