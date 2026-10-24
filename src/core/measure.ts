@@ -38,15 +38,22 @@ export interface Counts {
    * by measureText; a sum never carries it.
    */
   readonly open?: boolean;
+  /**
+   * Set only together with `open`: the words in the region that runs open to the end
+   * (the unclosed comment or fence), counted as prose would be; 0 for an unclosed
+   * frontmatter, which hides nothing. Moving an opener changes `words` and this by
+   * the same amount, so their sum tells a move from typing. A sum never carries it.
+   */
+  readonly openWords?: number;
 }
 
 export const ZERO: Readonly<Counts> = Object.freeze({ words: 0, characters: 0, charactersNoSpaces: 0 });
 
 /** Counts whose character fields are computed from `chars()` on first read (own, enumerable getters). */
-function lazyCounts(words: number, chars: () => [number, number], open = false): Counts {
+function lazyCounts(words: number, chars: () => [number, number], open?: { openWords: number }): Counts {
   let memo: [number, number] | null = null;
   const get = (): [number, number] => (memo ??= chars());
-  return Object.defineProperties((open ? { words, open } : { words }) as Counts, {
+  return Object.defineProperties((open ? { words, open: true, openWords: open.openWords } : { words }) as Counts, {
     characters: { get: () => get()[0], enumerable: true },
     charactersNoSpaces: { get: () => get()[1], enumerable: true },
   });
@@ -63,7 +70,20 @@ export function measureText(md: string): Counts {
     const r = readerTextOf(prose ?? "");
     prose = null; // computed once: let the text go
     return [charLength(r), charLength(r.replace(/ /g, ""))];
-  }, runsOpen(segment(md))); // segment caches the text proseOnly just read
+  }, openRegion(md)); // segment caches the text proseOnly just read
+}
+
+/** The words in what runs open to the end of the text, or undefined when nothing does. */
+function openRegion(md: string): { openWords: number } | undefined {
+  const seg = segment(md);
+  if (!runsOpen(seg)) return undefined;
+  const spans = seg.spans();
+  const last = spans[spans.length - 1];
+  if (!last || last.closed !== false || last.kind === "frontmatter") return { openWords: 0 };
+  // count the region as prose: blank its opener (`%%`, or the fence's line) so it doesn't open again
+  const rest = md.slice(last.from);
+  const opener = last.kind === "comment" ? 2 : (rest.indexOf("\n") + 1 || rest.length + 1) - 1;
+  return { openWords: wordsIn(proseOnly(" ".repeat(opener) + rest.slice(opener))) };
 }
 
 /** The count in a unit. Reading "words" never computes the characters. */
@@ -88,7 +108,7 @@ export function sumCounts(list: Iterable<Counts>): Counts {
 /** Same words and characters. The characters are compared (and so computed) only when the words agree. */
 export function sameCounts(a: Counts, b: Counts): boolean {
   if (a === b) return true;
-  return a.words === b.words && !a.open === !b.open && a.characters === b.characters && a.charactersNoSpaces === b.charactersNoSpaces;
+  return a.words === b.words && !a.open === !b.open && a.openWords === b.openWords && a.characters === b.characters && a.charactersNoSpaces === b.charactersNoSpaces;
 }
 
 // ── Pieces and book goals ────────────────────────────────────────────────

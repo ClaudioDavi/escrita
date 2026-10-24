@@ -13,7 +13,38 @@ import type { EscritaData } from "../../src/data";
 import { NamesPort } from "../../src/core/names-source";
 import type { Follower } from "../../src/core/vault-index";
 import type { DecorationId, Drawer } from "../../src/core/explorer-decorations";
+import { HistoryStore, type HistoryHost } from "../../src/core/history-store";
 import type EscritaPlugin from "../../src/main";
+
+/** A fake app.loadLocalStorage / saveLocalStorage: per device, never synced. */
+export function fakeLocal(): HistoryHost["local"] & { map: Map<string, unknown> } {
+  const map = new Map<string, unknown>();
+  return {
+    map,
+    get: (k) => (map.has(k) ? structuredClone(map.get(k)) : null),
+    set: (k, v) => { map.set(k, structuredClone(v)); },
+  };
+}
+
+/** A fake data.json: what loadData returns, and the mtime a stat would report. */
+export class FakeDisk {
+  data: unknown = null;
+  mtime = 0;
+  /** a fake sync: this file's content and mtime become `to`'s, as when a sync tool copies it */
+  copyTo(to: FakeDisk): void { to.data = structuredClone(this.data); to.mtime = this.mtime; }
+}
+
+let diskClock = 1_000;
+/** A HistoryHost over a FakeDisk and a fake localStorage; every save advances the mtime. */
+export function fakeHistoryHost(disk = new FakeDisk(), local = fakeLocal(), now: () => number = () => Date.now()): HistoryHost {
+  return {
+    load: () => Promise.resolve(structuredClone(disk.data)),
+    save: (d) => { disk.data = structuredClone(d); disk.mtime = ++diskClock; return Promise.resolve(); },
+    mtime: () => Promise.resolve(disk.mtime),
+    local,
+    now,
+  };
+}
 
 export interface FakeIndexHandle {
   disposed: boolean;
@@ -106,6 +137,8 @@ export class FakePlugin extends Component {
   data = {
     version: 1, history: {}, publish: {}, leftOff: {}, lensDismissed: {}, threadSeen: {}, povColors: {}, readPosition: {},
   } as unknown as EscritaData;
+  /** the shared word-count history; goals moves onto it in 1.2.3 (T3), `data.history` works until then */
+  history = new HistoryStore(fakeHistoryHost());
   names = new NamesPort();
   app = { workspace: new FakeWorkspace(), vault: new FakeVault(), metadataCache: new FakeMetadataCache() };
   /** Event listeners still registered on workspace, vault and metadataCache. */

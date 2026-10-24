@@ -322,7 +322,11 @@ It belongs to the same switch as **Read the book** (Features › Outline and gho
 Escrita counts the words you type in the active note, inside the folders it tracks. It doesn't
 count what you paste, import or sync: a single change that adds or removes more words than a size
 you choose is ignored. While a `%%` comment is open (you typed `%%` and not yet the `%%` that
-closes it), the count waits, so the words below it don't count as deleted and then added again.
+closes it), the words below it don't count as deleted and then added again: what you write above it
+counts as you go, what ends up after the closing `%%` counts once you type it, and the text inside
+the comment never counts. Notes kept under a `%%` that never closes, at the end of a note, don't
+stop the count either. Words written below an open comment show up all at once when you close
+it, so if there are more of them than the size you chose, that change is ignored too.
 Words you delete while revising are not lost either; the progress window
 shows "cut while revising" next to what you added.
 
@@ -372,6 +376,23 @@ default length and target. The status bar shows the time left and the words so f
 and when the time is up you see the words, the minutes and your rate an hour. A sprint is not
 saved if you close Obsidian. You can also start one from the progress window, with its own
 length and target.
+
+### Writing on more than one device
+
+There is nothing to set up. If you write on a computer and on a phone, your streak, today's words
+and the charts add up the words from every device. Each device keeps its own record in the plugin's
+`data.json` and Escrita adds them together. The file is read again when it changes, when you come
+back to the window and every minute.
+
+Your sync has to carry `.obsidian/plugins/escrita/data.json`:
+
+- **Obsidian Sync**: turn on **Installed community plugins** in Settings › Sync.
+- **Git**: commit `data.json` and keep it out of `.gitignore`.
+- **Syncthing, Dropbox, OneDrive or iCloud**: include the `.obsidian` folder.
+- **Remotely Save or Self-hosted LiveSync**: turn on their option for the config folder or hidden
+  files.
+
+A tool that skips `.obsidian` keeps a separate streak for each device.
 
 ### Days off
 

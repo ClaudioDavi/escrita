@@ -1,9 +1,10 @@
-import { Plugin, TFile, debounce, setTooltip } from "obsidian";
+import { Plugin, TFile, debounce, normalizePath, setTooltip } from "obsidian";
 import { loadSettings, type EscritaSettings } from "./settings";
 import { EscritaSettingTab } from "./settings-tab";
 import type { EscritaData } from "./data";
 import { cleanExportChoices, cleanReadPositions, cleanSetupOffered } from "./data";
 import { cleanLeftOff } from "./core/left-off";
+import { HistoryStore, mergeSettings, stableJson, type HistoryHost } from "./core/history-store";
 import { locale, registerStrings } from "./i18n";
 import { coreStrings } from "./strings";
 import { BookService } from "./core/books";
@@ -92,6 +93,11 @@ export default class EscritaPlugin extends Plugin {
   works!: WorksReader;
   features!: FeatureRegistry;
   names!: NamesPort;
+  /** The word-count history shared by this vault's devices (core/history-store.ts, PLAN-1.2.3). */
+  history!: HistoryStore;
+  /** The settings as last read from or written to data.json: what a reload merges against, per key. */
+  private syncedSettings: Record<string, unknown> = {};
+  private settingTab: EscritaSettingTab | null = null;
 
   goals!: GoalsModule;
   outline!: OutlineModule;
@@ -191,6 +197,7 @@ export default class EscritaPlugin extends Plugin {
     // Obsidian builds the tab's rows here and on its update() only: a change of the loaded features
     // or the switches rebuilds them (PLAN-1.0.3 Q5).
     const tab = new EscritaSettingTab(this.app, this);
+    this.settingTab = tab;
     this.addSettingTab(tab);
     this.register(this.features.onApplied(() => tab.refresh()));
 
@@ -205,6 +212,48 @@ export default class EscritaPlugin extends Plugin {
       }));
     });
     this.register(() => { for (const id of this.draftTimers) window.clearTimeout(id); this.draftTimers.clear(); });
+
+    // Another device's save arrives through the sync tool as a newer data.json: read it again when
+    // the window comes back, and once a minute (PLAN-1.2.3, D6). Our own writes are skipped by mtime.
+    this.registerDomEvent(window, "focus", () => { void this.checkDisk(); });
+    this.registerDomEvent(document, "visibilitychange", () => {
+      if (document.visibilityState === "visible") void this.checkDisk();
+    });
+    this.registerInterval(window.setInterval(() => { void this.checkDisk(); }, 60_000));
+  }
+
+  /** Obsidian saw data.json change on disk (desktop, from a sync tool or git). */
+  async onExternalSettingsChange(): Promise<void> {
+    if (!this.history) return;
+    await this.history.refresh({ force: true, adopt: (raw) => this.adoptSettings(raw) });
+  }
+
+  private async checkDisk(): Promise<void> {
+    if (!this.history) return;
+    await this.history.refresh({ adopt: (raw) => this.adoptSettings(raw) });
+  }
+
+  /**
+   * Take the settings of a newer data.json, per key: a key this device didn't change since the last
+   * read or write takes the file's value, one it changed keeps its own. Applied as saveSettings
+   * does, without writing.
+   */
+  private adoptSettings(raw: unknown): void {
+    const saved = (raw as { settings?: unknown } | null)?.settings;
+    if (!isRecord(saved)) return;
+    const disk = loadSettings(saved, locale()).settings;
+    const settings = mergeSettings(this.syncedSettings, this.settings as unknown as Record<string, unknown>, disk as unknown as Record<string, unknown>);
+    this.syncedSettings = cloneJson(disk);
+    if (stableJson(settings) === stableJson(this.settings)) return;
+    // in place: the modules and the data hold this object
+    for (const k of Object.keys(this.settings)) delete (this.settings as unknown as Record<string, unknown>)[k];
+    Object.assign(this.settings, settings);
+    this.data.settings = this.settings;
+    if (!this.features) return;
+    this.features.apply();
+    this.index.settingsChanged();
+    this.features.settingsChanged();
+    this.settingTab?.refresh();
   }
 
   private draftTimers = new Set<number>();
@@ -243,17 +292,36 @@ export default class EscritaPlugin extends Plugin {
     this.measure?.unload();
     // Write now what a pending debounced save would have written.
     this.requestSave.cancel();
-    void this.persist();
+    if (this.history) void this.persist();
   }
 
   private async loadAll(): Promise<void> {
     const raw = ((await this.loadData()) ?? {}) as Partial<EscritaData>;
     const { settings, fresh } = loadSettings(raw.settings, locale());
     this.settings = settings;
+    this.syncedSettings = cloneJson(settings);
+    const host: HistoryHost = {
+      load: () => this.loadData() as Promise<unknown>,
+      save: (d) => this.saveData(d),
+      mtime: async () => {
+        const st = await this.app.vault.adapter.stat(normalizePath(`${this.manifest.dir ?? ""}/data.json`));
+        return st?.mtime ?? 0;
+      },
+      local: {
+        get: (k) => this.app.loadLocalStorage(k) as unknown,
+        set: (k, v) => { this.app.saveLocalStorage(k, v); },
+      },
+      now: () => Date.now(),
+    };
+    this.history = new HistoryStore(host, () => this.requestSave());
+    this.history.absorb(raw);
+    await this.history.markSeen();
     this.data = {
       version: 1,
       settings: this.settings,
       history: isRecord(raw.history) ? raw.history : {},
+      devices: {},
+      renames: [],
       publish: isRecord(raw.publish) ? (raw.publish) : {},
       leftOff: cleanLeftOff(raw.leftOff),
       lensDismissed: cleanDismissed(raw.lensDismissed),
@@ -267,10 +335,21 @@ export default class EscritaPlugin extends Plugin {
     if (fresh) await this.persist();
   }
 
-  private async persist(): Promise<void> {
+  /**
+   * One save at a time (the store's queue): read data.json, merge the history sections, write.
+   * Settings and the other keys are memory's (PLAN-1.2.3, D5, D6).
+   */
+  private persist(): Promise<void> {
     // Saving `stages` is what tells the next load the migration is done; the legacy keys stay.
     this.data.settings = this.settings;
-    await this.saveData(this.data);
+    return this.history.persist((parts) => {
+      this.data.settings = this.settings;
+      this.data.history = parts.history;
+      this.data.devices = parts.devices;
+      this.data.renames = parts.renames;
+      this.syncedSettings = cloneJson(this.settings);
+      return this.data;
+    }, (raw) => this.adoptSettings(raw));
   }
 
   async saveSettings(): Promise<void> {
@@ -279,6 +358,10 @@ export default class EscritaPlugin extends Plugin {
     this.index.settingsChanged();
     this.features.settingsChanged();
   }
+}
+
+function cloneJson(v: object): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(v)) as Record<string, unknown>;
 }
 
 function isRecord<T>(v: T | undefined | null): v is T {

@@ -329,8 +329,12 @@ Pertence ao mesmo interruptor de **Ler o livro** (Recursos › Esboço e beats f
 O Escrita conta as palavras que você digita na nota ativa, dentro das pastas que ele acompanha. Ele
 não conta o que você cola, importa ou sincroniza: uma única mudança que acrescenta ou remove mais
 palavras do que um tamanho que você escolhe é ignorada. Enquanto um comentário `%%` está aberto
-(você digitou o `%%` de abertura e ainda não o que fecha), a contagem espera, e as palavras abaixo
-dele não contam como apagadas e depois acrescentadas de novo. As palavras que você apaga na revisão
+(você digitou o `%%` de abertura e ainda não o que fecha), as palavras abaixo dele não contam como
+apagadas e depois acrescentadas de novo: o que você escreve acima dele conta na hora, o que fica
+depois do `%%` que fecha conta quando você o digita, e o texto dentro do comentário nunca conta.
+Anotações guardadas sob um `%%` que nunca fecha, no fim da nota, também não param a contagem. As palavras escritas abaixo de um comentário aberto aparecem todas de
+uma vez quando você o fecha; se forem mais do que o tamanho que você escolheu, essa mudança também é
+ignorada. As palavras que você apaga na revisão
 também não se perdem: a janela de progresso mostra "cortadas na revisão" ao lado do que você
 acrescentou.
 
@@ -380,6 +384,23 @@ até agora, com um botão **parar**. **Parar o sprint** o encerra antes da hora.
 você recebe um aviso, e quando o tempo acaba você vê as palavras, os minutos e o seu ritmo por
 hora. Um sprint não é guardado se você fecha o Obsidian. Você também pode começar um pela janela de
 progresso, com duração e meta próprias.
+
+### Escrevendo em mais de um aparelho
+
+Não há nada para configurar. Se você escreve no computador e no celular, a sua sequência, as
+palavras de hoje e os gráficos somam as palavras de todos os aparelhos. Cada aparelho guarda o seu
+próprio registro no `data.json` do plugin, e o Escrita soma tudo. O arquivo é lido de novo quando
+muda, quando você volta para a janela e a cada minuto.
+
+A sua sincronização precisa levar o arquivo `.obsidian/plugins/escrita/data.json`:
+
+- **Obsidian Sync**: ative **Plugins da comunidade instalados** em Configurações › Sincronização.
+- **Git**: faça o commit do `data.json` e não o deixe no `.gitignore`.
+- **Syncthing, Dropbox, OneDrive ou iCloud**: inclua a pasta `.obsidian`.
+- **Remotely Save ou Self-hosted LiveSync**: ative a opção deles para a pasta de configuração ou
+  para arquivos ocultos.
+
+Uma ferramenta que ignora a `.obsidian` mantém uma sequência separada para cada aparelho.
 
 ### Dias de folga
 

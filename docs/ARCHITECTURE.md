@@ -35,6 +35,7 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   `main.ts` and loaded and unloaded by the `FeatureRegistry` from the writer's switches.
 - **Plugin services** (on `this.plugin`): `settings` (see `src/settings.ts` —
   all settings already exist, with a settings tab), `data.history` (see `src/data.ts`),
+  `history` (`HistoryStore`: the merged view of every device's days; see "goals"),
   `requestSave()` (debounced persist), `saveSettings()`, `books` (`BookService`:
   `classify(file | folder | path | null)` → `{ path, kind, markdown, book, tracked, piece, snapshot, stage, submission, export }`,
   `chapters(book)`, `allBooks()`, `frontmatter(file)`; see "File classification" below),
@@ -1720,7 +1721,7 @@ hotkeys keep working.
   goal counter only while goals are on, two commands (enter, exit), the setting
   `openInWritingMode`. It writes nothing to the vault.
 - **Daily progress** (`core/daily-progress.ts`): the goals module provides `dailyProgress`
-  (today's words and the daily goal, notified whenever the status bar redraws); writing
+  (today's words and the daily goal, notified only when either changes, not on every status bar repaint; 1.2.3); writing
   mode's counter reads it through `dailyProgressOf(plugin.features)`, null while goals are off.
 - **View ids** (`core/view-types.ts` `VIEW_TYPES`): the outline, lens, placeholders and
   universe panels' ids, from which each module defines its own constant. Code that only
@@ -1767,13 +1768,68 @@ replaces and how to add one: `docs/TESTING.md`.
   count. On `vault` `modify` of a tracked Markdown file **that is the active file**
   (so sync/git pulls of other files don't count), recount; `delta = after - before`.
   If `|delta| > settings.ignoreJumpsOver`, don't count it (still update the cache).
-  Positive deltas add to `added`, negative to `deleted`, in `data.history[writingDay]`
+  Positive deltas add to `added`, negative to `deleted`, in `plugin.history.own()[writingDay]`
   (and per book in `books[bookNotePath]` when the file is a chapter; also set that
   book's `total` = sum of its chapters' counts). Tracked = `books.classify(file).tracked`:
   inside one of `folderList(trackFolders)` (or anywhere when empty), not inside
   `excludeFolders`, and not the chapter template (the rule lives in `core/classify.ts`). `plugin.measure` moves and drops cached counts on rename and delete by itself;
   goals only keeps its baselines and history keys in step.
   `plugin.requestSave()` after changes.
+- **Open comments** (1.2.3, `countedChange` in `tracker.ts`). Each file's baseline is a
+  `Baseline` `{ words, open, hidden?, openWords? }`, `open` from `Counts.open`. The save that opens a
+  comment, fence or frontmatter records only words it added (`max(0, change)`) and keeps `hidden`
+  (the closed count before minus the open count after); while open, changes count as usual; the save that closes
+  records `after - before - hidden` (nothing when `hidden` is unknown) and takes the book or
+  piece total again. `prime()` measures the note again on every file-open, carrying `hidden` while the note stays
+  open, so a tab switch doesn't forget it; any change it didn't see drops it. Moving the opener
+  while the note stays open (cut and pasted further up or down) records nothing:
+  `Counts.openWords` (`openRegion` in `core/measure.ts`) is the words in the region that runs open,
+  counted as prose, and a save whose visible words change while visible plus open words stay the
+  same is a move; `hidden` follows the words that crossed, so the closing save stays exact.
+  `openRegion` runs only when the text runs open: a closed note costs nothing more.
+- **Shared history** (1.2.3, `plugin.history`: `core/history-store.ts`, pure parts in
+  `core/device-history.ts`). The days of writing are kept per device so two devices that sync the
+  vault add up instead of overwriting each other. Everything stays in `data.json` (Obsidian Sync
+  carries no other file of a plugin).
+  - **Shape.** `history` is a frozen base (the 1.2.2 days), `devices: { [id]: History }` has one
+    section per device, `renames` is a shared list of `{ from, to, at }`. A `DayBook` has an
+    optional `at` (ms, set by `applyDelta` and `recordBookTotal`; none counts as oldest). The device
+    id is random, kept in `app.saveLocalStorage("escrita-device")`, never synced.
+  - **View.** `view()` is one merged `History`, cached until a section changes:
+    `mergeHistories(base, devices, renames)` sums `added` and `deleted` per day and per book, and
+    takes a book's `total` from the record with the latest `at`. Streak, goal, charts, pacing, the
+    status bar and writing mode read the view. Goals writes only `own()` (this device's section)
+    and calls `changed()`.
+  - **Read before write.** `persist()` runs one at a time, reads `data.json`, merges other devices
+    and the base with memory by `maxHistory` (per day and field the larger value, per book the
+    larger counts and the newer total), then writes. The base merges through `maxBase`: a 1.2.2
+    device still writes it and renames its keys with no `renames` entry, so a day with the same
+    totals on both sides and a book key renamed (each side has a key the other lacks) takes the
+    file's keys instead of keeping both. The merge is idempotent and commutative, so a
+    stale copy never lowers a count. Its own mtime is remembered so the reload skips it. A file
+    newer than any read or written so far (another device's save not refreshed yet) goes through
+    the settings merge below before the write, so the save doesn't put back an older setting.
+  - **Reload.** `onExternalSettingsChange`, and a check of `data.json`'s mtime on window focus, on
+    `visibilitychange` and once a minute; a file whose mtime differs from the one last read or
+    written goes through `absorb()` (a sync tool may keep the other device's older mtime; absorbing
+    is a `maxHistory`, safe for any file). Settings merge per key (`mergeSettings`) against the copy
+    last read or written (`syncedSettings` in `main.ts`): a key this device didn't change takes the
+    file's value, a key it changed keeps its own. Only a file newer than any seen is merged for
+    settings, so an older synced file never puts back older settings. They are applied without
+    writing. Other data keys keep memory's values
+    (IMPROVEMENTS, known issues).
+  - **Backup.** When a save is asked for and again after it, the own section goes to
+    `app.saveLocalStorage("escrita-history-backup")` (the first write is synchronous, because the
+    save started on unload may not finish before the app quits); on load it merges back by
+    `maxHistory`, so a device that closed before its words synced gets them back.
+  - **Renames.** The data follower renames keys in every section in memory (the base, its own and
+    the other devices') and appends to `renames` (kept 400 days) when anything moved, or when the
+    new path is a book note, a standalone piece, or a folder holding one (`shouldShareRename` in
+    `goals/rename-share.ts`): a closed device may hold words under the old path that nobody here
+    has yet; `mergeHistories` applies the list in `at` order to every section
+    at view time, so a rename made while another device was closed still charts as one book.
+  - The store works with goals off. Only documented, mobile-safe API is used (`loadData`,
+    `saveData`, `adapter.stat`, local storage, `registerDomEvent`, `registerInterval`).
 - **Pure functions** (`src/goals/tracker.ts`, `src/goals/pacing.ts`, tested):
   applying a delta to history; `streak(history, today)` = consecutive days with
   `added > 0` ending today, or ending yesterday when today has nothing yet;

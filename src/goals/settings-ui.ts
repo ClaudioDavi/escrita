@@ -129,6 +129,6 @@ function datesOffRow(ui: SettingsUi, plugin: EscritaPlugin): SettingDefinitionRe
 }
 
 export async function goalsOffNotice(plugin: EscritaPlugin): Promise<string | null> {
-  const n = Object.keys(plugin.data.history).length;
+  const n = Object.keys(plugin.history.view()).length;
   return n > 0 ? plural("settings.features.off.goals", n, { n: fmt(n) }) : null;
 }

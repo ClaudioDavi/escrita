@@ -99,6 +99,16 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
+### 1.2.3 (2026-10-24)
+
+A fix for the daily word count, again, and one history for every device that syncs the vault.
+
+- **Fix**: words written in a note that stays open count again. 1.2.2 counted none of them in a note kept under a `%%` that never closes, a note that starts with a `---` line, or a stray `%%`. Now words written above an open comment count as you go, words that end up after the closing `%%` count once it is typed, and the text inside the comment never counts. The save that opens a comment records only words it added, the save that closes it records the change since the opener (and takes the book or piece total again), and the hidden words never count. Moving the open `%%` up or down (cut and paste) counts nothing.
+- **Fix**: a note's count is taken again each time you open it, and a save still being counted when goals was switched off is dropped. Before, a change synced in while the note was in the background, or words typed while goals was off, could count as written on the next save.
+- **Fix**: the streak, today's words and the charts add up across every device that syncs the vault. Before, each device saved its own copy of the days in `data.json` and the last one to save wiped the other's words. Now each device writes its own section of `data.json`, and the streak, goal, charts and status bar read the sum of all of them. The file is read again before each save, when it changes on disk, when the window gets focus and every minute, and each device keeps a backup of its own section in the browser storage of the app. Settings changed on one device now reach the others too: each setting keeps the last change made to it, on whichever device. A book or piece renamed on one device keeps its days on the others, even days that arrive later from a device that was closed, and a book renamed on a device still on 1.2.2 isn't charted twice (unless that device also wrote more words that day). Nothing to set up, but your sync has to carry `.obsidian/plugins/escrita/data.json`. See [Writing on more than one device](docs/guide/en/writing.md#writing-on-more-than-one-device).
+- Improvement: a slice of candidate 48: the daily progress that writing mode's counter reads is notified only when today's words or the goal change, not on every status bar repaint. Nothing changes in use.
+- Upgrade note: days recorded under 1.2.2 for such notes may be too low. They are not corrected. Update every device that syncs the vault. Going back to 1.2.2 shows only the days written before 1.2.3, and its first save drops the per-device sections from `data.json`; each device brings its own section back from its backup when it runs 1.2.3 again.
+
 ### 1.2.2 (2026-10-22)
 
 A fix for the daily word count.

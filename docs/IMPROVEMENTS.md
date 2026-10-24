@@ -381,8 +381,6 @@ interface lives. Test through the interface.
 - The snapshot store counts words (`store.ts:125`) but every caller passes `words` too
   (`snapshots/index.ts:339,388`, `stage-feature.ts:69`); `take()` counts, and `day` defaults to
   an injected `today()`.
-- `goals/index.ts:306` notifies every daily-progress listener on each status repaint (each
-  selection change and each sprint second); notify only when `{ words, goal }` changes.
 - Progress bars are drawn in five places (`outline/bar.ts:57`, `goals/progress-modal.ts:248,
   301`, `outline/view.ts:603,656`) with three width computations; `setWidth` lives in
   `goals/status-bar.ts`. A `barState` in `core/piece-bar.ts` and `renderProgressBar` in
@@ -618,10 +616,44 @@ writes, the progress modal's two property writes and the outline's summary write
   would cost a second Ctrl+Z. (`src/screenplay/keys.ts`; noted in
   `tests/e2e/specs/screenplay-editor.spec.ts`, test 12.)
 
+Found in 1.2.3 (the daily count review). Left open, each small:
+
+- **A comment closed by a sync leaves a partial total.** A book chapter or piece whose `%%`
+  closes in a change that isn't typing (a sync while the note is in the background) drops its
+  baseline (`src/goals/index.ts`, `onModify`), so the day keeps the total taken while it ran open
+  until the next recorded save. Fix: in that branch, when the dropped baseline was `open`, record
+  the book or piece total.
+- **An opener that pairs with a trailing `%%` records a deletion.** With notes kept under an
+  unclosed `%%` at the end, a new `%%` typed mid-note pairs with it and hides the text between: a
+  closed-to-closed save, recorded as deleted words that never come back. It only undercounts.
+  Related and older: typing `---` on line 1 of a note that already has a later `---` line turns
+  the text between them into frontmatter (deleted), and the real closer brings it back as added,
+  which can count toward a streak. Fix: treat a save whose words drop sharply while the closed and
+  open state flips like the save that opens a comment.
+
+- **Other data keys don't merge across devices.** Only the history is shared (1.2.3). The publish
+  dates, `leftOff`, the lens dismissals, thread dates, POV colours, export choices and read
+  positions keep the values of the device that saved last. Fix: give each a merge rule, or move
+  them into per-device sections like the history (`core/history-store.ts`, `src/main.ts` reload).
+- **A book or piece made again at a renamed path charts under the new name.** A rename stays in
+  the shared `renames` list for 400 days and every section follows it at view time, so a new book
+  or piece created at the old path is counted under the new one until then. Since 1.2.3 every
+  rename of a book or piece is shared, even with nothing to move (a new piece renamed from its
+  first title, for example). No words are lost. Fix: apply a rename only
+  to records whose `at` is older than it (`core/device-history.ts`, `mergeHistories`).
+- **A 1.2.2 rename on a day it also wrote shows the book twice.** A 1.2.2 device renames keys in
+  the base with no `renames` entry. `maxBase` takes the file's keys when the day's totals match,
+  but if that device also wrote more words that day the totals differ and the day keeps both the
+  old and the new key: that day's book row counts twice in the progress window. Day totals and the
+  streak are right, and it ends once every device runs 1.2.3. Also, a stale copy of the file
+  from before that rename (a sync tool delivering an older version) puts the old key back in the
+  base until the next fresh copy. Fix: none planned.
+
 ## Done
 
 | Version | Improvement |
 |---|---|
+| 1.2.3 | The goals bullet of candidate 48: `goals/index.ts` notifies the daily-progress listeners only when `{ words, goal }` changes, not on each status repaint. The rest of 48 stays a candidate |
 | 1.2.2 | Dead code, a first slice (candidate 49): `publish/checks.ts` no longer re-exports `unclosedComment`; `tests/publish.test.ts` and `tests/markdown-consumers.test.ts` import it from `core/readiness.ts`, its home. The rest of 49 stays a candidate |
 | 1.2.1 | Required classifier settings, and one plugin-folder root (candidate 43): every `ClassifySettings` field is required, so the fallbacks for a missing key are gone from `core/classify.ts` (`ownNoteOf`, the scope and form readers, `classifyKey`) and the stage and status reads share `statusPropertyOf`; settings load already fills every key, so nothing changes at run time. `pluginRoot(kind, settings)` (`core/classify.ts`) is the one folder-root rule for snapshots, submissions and export, always with the install's language; `snapshotsRoot`, `submissionsRoot` and `exportRoot` are gone and every caller (`inSnapshots`, `classifyKey`, `folder-problem.ts`, `vault-indexes.ts`, the three modules and the settings rows) goes through it. Tests build their settings with `classifySettings(partial)` (`tests/support/classify-settings.ts`, on `defaultsFor("en")`) |
 | 1.2.0 | Editor glue and "reveal on touch" (candidate 38): `src/ui/editor-glue.ts` has `EditorSet` (one retry, then the editor is dropped: the lens's policy, now everyone's), `fileOfState`, `isLivePreview` and `cmOf`; `src/ui/reveal-on-touch.ts` has `revealOnTouch({ scan, raw, rendered, key })`. The lens, dialogue focus, the name marks, "Appears in", the placeholders and the ghost beats moved onto them, and the screenplay layout is built on them. Two behavior changes: the name marks drop an editor after a second failed dispatch, and ghost beats skip lines outside the visible ranges |

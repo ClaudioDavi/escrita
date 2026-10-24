@@ -3,7 +3,7 @@ import type { DayRecord } from "../src/data";
 import {
   addedOn, applyDelta, bookTotalSeries, countsAsWriting, dailyAverage, dailySeries, dayStates, deletedOn,
   ActiveFiles, countedChange, goalMet, goalMetDays, netOn, num, recordBookTotal, renameBook, streak, sumAdded,
-  type History,
+  type Baseline, type History,
 } from "../src/goals/tracker";
 import { pacing, readNumberField } from "../src/goals/pacing";
 import { chartGeometry, CHART_PAD } from "../src/goals/chart";
@@ -30,7 +30,7 @@ describe("applyDelta", () => {
     const h: History = {};
     applyDelta(h, "2026-09-29", 100, { path: BOOK, total: 1100 });
     applyDelta(h, "2026-09-29", -20, { path: BOOK, total: 1080 });
-    expect(h["2026-09-29"].books[BOOK]).toEqual({ added: 100, deleted: 20, total: 1080 });
+    expect(h["2026-09-29"].books[BOOK]).toEqual({ added: 100, deleted: 20, total: 1080, at: expect.any(Number) });
     expect(h["2026-09-29"].added).toBe(100);
     expect(h["2026-09-29"].deleted).toBe(20);
   });
@@ -60,7 +60,7 @@ describe("applyDelta", () => {
     applyDelta(h, "2026-09-29", 3, { path: BOOK, total: -5 });
     expect(h["2026-09-29"].added).toBe(3);
     expect(h["2026-09-29"].deleted).toBe(0);
-    expect(h["2026-09-29"].books[BOOK]).toEqual({ added: 3, deleted: 0, total: 0 });
+    expect(h["2026-09-29"].books[BOOK]).toEqual({ added: 3, deleted: 0, total: 0, at: expect.any(Number) });
   });
 
   it("does not touch other days", () => {
@@ -74,10 +74,10 @@ describe("recordBookTotal", () => {
   it("updates only the total", () => {
     const h: History = {};
     recordBookTotal(h, "2026-09-29", { path: BOOK, total: 5000 });
-    expect(h["2026-09-29"]).toEqual({ added: 0, deleted: 0, books: { [BOOK]: { added: 0, deleted: 0, total: 5000 } } });
+    expect(h["2026-09-29"]).toEqual({ added: 0, deleted: 0, books: { [BOOK]: { added: 0, deleted: 0, total: 5000, at: expect.any(Number) } } });
     applyDelta(h, "2026-09-29", 10, { path: BOOK, total: 5010 });
     recordBookTotal(h, "2026-09-29", { path: BOOK, total: 7010 });
-    expect(h["2026-09-29"].books[BOOK]).toEqual({ added: 10, deleted: 0, total: 7010 });
+    expect(h["2026-09-29"].books[BOOK]).toEqual({ added: 10, deleted: 0, total: 7010, at: expect.any(Number) });
     expect(h["2026-09-29"].added).toBe(10);
   });
 });
@@ -606,18 +606,72 @@ describe("goals strings", async () => {
 });
 
 describe("countedChange", () => {
+  const closed = (words: number): Baseline => ({ words, open: false });
+
   it("records the change against the baseline and moves it", () => {
-    expect(countedChange(100, { words: 104 })).toEqual({ delta: 4, baseline: 104 });
-    expect(countedChange(100, { words: 97 })).toEqual({ delta: -3, baseline: 97 });
+    expect(countedChange(closed(100), { words: 104 })).toEqual({ delta: 4, baseline: closed(104) });
+    expect(countedChange(closed(100), { words: 97 })).toEqual({ delta: -3, baseline: closed(97) });
   });
 
   it("takes the first count as the baseline without recording", () => {
-    expect(countedChange(undefined, { words: 50 })).toEqual({ delta: 0, baseline: 50 });
+    expect(countedChange(undefined, { words: 50 })).toEqual({ delta: 0, baseline: closed(50) });
+    expect(countedChange(undefined, { words: 20, open: true })).toEqual({ delta: 0, baseline: { words: 20, open: true } });
   });
 
-  it("ignores a count taken while a comment runs open", () => {
-    expect(countedChange(100, { words: 20, open: true })).toEqual({ delta: 0, baseline: 100 });
-    expect(countedChange(undefined, { words: 20, open: true })).toEqual({ delta: 0, baseline: undefined });
+  it("records nothing on the save that opens a comment, and remembers what it hid", () => {
+    expect(countedChange(closed(100), { words: 20, open: true }))
+      .toEqual({ delta: 0, baseline: { words: 20, open: true, hidden: 80 } });
+  });
+
+  it("counts words added in the same save as the opener", () => {
+    // a note that never closes would otherwise never count them
+    expect(countedChange(closed(100), { words: 110, open: true }))
+      .toEqual({ delta: 10, baseline: { words: 110, open: true, hidden: 0 } });
+    expect(countedChange({ words: 110, open: true, hidden: 0 }, { words: 110 }).delta).toBe(0);
+  });
+
+  it("closing a comment counts the words written since the opener, never the hidden ones", () => {
+    const opened = { words: 20, open: true, hidden: 80 };
+    expect(countedChange(opened, { words: 103 })).toEqual({ delta: 3, baseline: closed(103) });
+    // opened before the plugin first counted the note: nothing known, nothing recorded
+    expect(countedChange({ words: 20, open: true }, { words: 103 })).toEqual({ delta: 0, baseline: closed(103) });
+  });
+
+  // 2026-10-24: a note that keeps its notes under an unclosed %% (or starts with a --- rule)
+  // runs open on every save, and 1.2.2 recorded none of the words written in it.
+  it("counts writing in a note that stays open", () => {
+    const notes = "\n\n%%\nnotas para mim\n";
+    const saves = ["Era.", "Era uma vez.", "Era uma vez um menino.", "Era uma vez um menino feliz."];
+    let baseline: Baseline | undefined;
+    const history: History = {};
+    for (const text of saves) {
+      const step = countedChange(baseline, measureText(text + notes));
+      baseline = step.baseline;
+      if (step.delta !== 0) applyDelta(history, "2026-10-24", step.delta);
+    }
+    expect(addedOn(history, "2026-10-24")).toBe(5);
+    const rule = countedChange(closed(3), measureText("---\n\nEra uma vez.\n"));
+    expect(countedChange(rule.baseline, measureText("---\n\nEra uma vez um menino.\n")).delta).toBe(2);
+  });
+
+  it("words written above an unclosed %% count, and so do those under it once it closes", () => {
+    const prose = "Uma frase de cinco palavras.\n\n";
+    const saves = [
+      prose,
+      prose + "%%", // the opener: nothing after it yet
+      "Mais duas. " + prose + "%%", // written above it: counts now
+      "Mais duas. " + prose + "%% nota", // inside it: hidden
+      "Mais duas. " + prose + "%% nota %%\n\nE três aqui.", // closed, then three words
+    ];
+    let baseline: Baseline | undefined;
+    const history: History = {};
+    for (const text of saves) {
+      const step = countedChange(baseline, measureText(text));
+      baseline = step.baseline;
+      if (step.delta !== 0) applyDelta(history, "2026-10-24", step.delta);
+    }
+    expect(addedOn(history, "2026-10-24")).toBe(5);
+    expect(deletedOn(history, "2026-10-24")).toBe(0);
   });
 
   // 2026-10-22: notes to self added to a 199-word story recorded 703 added and 514 deleted.
@@ -631,7 +685,7 @@ describe("countedChange", () => {
       head + "%% XXX: remover %%\n\n" + tail, // closed
       head + "%% XXX: remover %%\n\nSemana um.\n\n" + tail,
     ];
-    let baseline: number | undefined;
+    let baseline: Baseline | undefined;
     const history: History = {};
     for (const text of saves) {
       const step = countedChange(baseline, measureText(text));
@@ -640,5 +694,58 @@ describe("countedChange", () => {
     }
     expect(addedOn(history, "2026-10-22")).toBe(2);
     expect(deletedOn(history, "2026-10-22")).toBe(0);
+  });
+
+  // advisor F6: moving an open opener showed words appearing with nothing typed
+  describe("moving an opener while the note stays open", () => {
+    const above = "Uma frase de cinco palavras. ";
+    const mid = "e mais cinco palavras fingidas. ";
+    const run = (saves: string[]) => {
+      let baseline: Baseline | undefined;
+      const history: History = {};
+      const deltas: number[] = [];
+      for (const text of saves) {
+        const step = countedChange(baseline, measureText(text));
+        baseline = step.baseline;
+        deltas.push(step.delta);
+        if (step.delta !== 0) applyDelta(history, "2026-10-24", step.delta);
+      }
+      return { history, deltas };
+    };
+
+    it("moved down records nothing, and the close records only what was typed", () => {
+      const { history, deltas } = run([
+        above + mid + "\n\nfim.", // closed
+        above + "%% " + mid + "\n\nfim.", // opened above the middle
+        above + mid + "%% \n\nfim.", // moved down: the middle is visible again
+        above + mid + "%% \n\nfim. mais", // typed inside
+        above + mid + "%% %%\n\nfim. mais três", // closed: "mais" and "três" were typed
+      ]);
+      expect(deltas[2]).toBe(0);
+      expect(addedOn(history, "2026-10-24")).toBe(2);
+      expect(deletedOn(history, "2026-10-24")).toBe(0);
+    });
+
+    it("moved up records nothing, and the close records only what was typed", () => {
+      const { history, deltas } = run([
+        above + mid + "\n\nfim.",
+        above + mid + "%% \n\nfim.",
+        above + "%% " + mid + "\n\nfim.", // moved up
+        above + "%% " + mid + "\n\nfim. nota", // typed inside
+        above + mid + "\n\nfim. nota E dois", // the opener deleted: "nota", "E" and "dois" were typed
+      ]);
+      expect(deltas[2]).toBe(0);
+      expect(addedOn(history, "2026-10-24")).toBe(3);
+      expect(deletedOn(history, "2026-10-24")).toBe(0);
+    });
+
+    it("typing above the opener still counts", () => {
+      const { deltas } = run([above + "%% nota", "Mais duas. " + above + "%% nota"]);
+      expect(deltas).toEqual([0, 2]);
+    });
+
+    it("a baseline without openWords keeps the old rule", () => {
+      expect(countedChange({ words: 10, open: true, hidden: 5 }, { words: 40, open: true, openWords: 5 }).delta).toBe(30);
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { Notice, TAbstractFile, TFile, debounce } from "obsidian";
+import { Notice, TAbstractFile, TFile, TFolder, debounce } from "obsidian";
 import { EditorView, type ViewUpdate } from "@codemirror/view";
 import type EscritaPlugin from "../main";
 import { FeatureModule } from "../core/module-context";
@@ -13,11 +13,12 @@ import type { Progress } from "../core/measure";
 import type { FilePlacement } from "../core/books";
 import { dayOffPredicate, hasDaysOff, type DayOffPredicate } from "../core/daysoff";
 import { fmt, t, unitAmount } from "../i18n";
+import { shouldShareRename } from "./rename-share";
 import { ProgressModal } from "./progress-modal";
 import { Sprint, formatClock, type SprintEvent } from "./sprint";
 import { StatusBar } from "./status-bar";
 import {
-  ActiveFiles, addedOn, applyDelta, countedChange, countsAsWriting, recordBookTotal, renameBook, streak,
+  ActiveFiles, addedOn, applyDelta, countedChange, type Baseline, countsAsWriting, recordBookTotal, streak,
 } from "./tracker";
 import { goalsSettingsItems, goalsOffNotice } from "./settings-ui";
 import type { SettingsBlock } from "../ui/settings-rows";
@@ -31,11 +32,13 @@ export class GoalsModule extends FeatureModule {
   readonly id: FeatureId = "goals";
   readonly slots = { editors: 1 };
   /** word count of each file when we last looked, so each change yields a delta */
-  private baseline = new Map<string, number>();
+  private baseline = new Map<string, Baseline>();
   /** the active file plus files left moments ago, whose pending editor save still counts as typing */
   private activeFiles = new ActiveFiles();
   /** tracking work runs one change at a time so quick saves can't double count */
   private queue: Promise<void> = Promise.resolve();
+  /** bumped on unload: work queued before it must not write a baseline back after the clear */
+  private generation = 0;
   private status: StatusBar | null = null;
   private selection = 0;
   private activeCounts: { chapter: number | null; book: number | null } = { chapter: null, book: null };
@@ -45,13 +48,15 @@ export class GoalsModule extends FeatureModule {
   private sprintTimer: number | null = null;
   private modal: ProgressModal | null = null;
   private progressListeners = new Set<() => void>();
+  /** the numbers the listeners were last told about; a repaint with the same ones stays quiet */
+  private notified: DailyProgress | null = null;
 
   /**
    * The daily progress port (core/daily-progress.ts): today's words and the daily goal,
    * read by writing mode's counter through `features.get("goals")` while goals are on.
    */
   readonly dailyProgress: DailyProgressSource = {
-    current: (): DailyProgress => ({ words: addedOn(this.plugin.data.history, this.today()), goal: this.plugin.settings.dailyGoal }),
+    current: (): DailyProgress => ({ words: addedOn(this.plugin.history.view(), this.today()), goal: this.plugin.settings.dailyGoal }),
     onChange: (cb) => {
       this.progressListeners.add(cb);
       return () => { this.progressListeners.delete(cb); };
@@ -132,6 +137,12 @@ export class GoalsModule extends FeatureModule {
       },
     });
 
+    // History written on another device (or a rename shared by it) reaches the screen without a keystroke.
+    this.register(plugin.history.onChange(() => {
+      this.renderStatus();
+      this.refreshModal();
+    }));
+
     // Day rollover and anything else that drifts: a cheap refresh once a minute.
     this.registerInterval(window.setInterval(() => this.renderStatus(), 60_000));
 
@@ -153,18 +164,36 @@ export class GoalsModule extends FeatureModule {
     this.modal = null;
     // Nothing watched the files while off: a stale baseline would count words typed meanwhile.
     this.baseline.clear();
+    this.generation++;
     this.activeFiles = new ActiveFiles();
     this.selection = 0;
     this.status = null;   // its element is removed by the context
     // readers subscribe again when goals come back on (features.onChange)
     this.progressListeners.clear();
+    this.notified = null;
   }
 
   /** Keeps the history of a renamed book or piece current even while goals is off (Q8). */
   dataFollowers(): Follower[] {
     return [{
       moved: (oldPath, newPath) => {
-        if (renameBook(this.plugin.data.history, oldPath, newPath)) this.plugin.requestSave();
+        // a book, a piece or a folder holding one is shared even when nothing here moved (D8)
+        const { books, app } = this.plugin;
+        const share = shouldShareRename(newPath, {
+          classify: (p) => books.classify(p),
+          bookNotes: () => books.allBooks().map((b) => b.note.path),
+          filesUnder: (p) => {
+            const out: string[] = [];
+            const walk = (f: TAbstractFile | null): void => {
+              if (f instanceof TFolder) for (const c of f.children) walk(c);
+              else if (f) out.push(f.path);
+            };
+            const root = app.vault.getAbstractFileByPath(p);
+            if (root instanceof TFolder) walk(root);
+            return out;
+          },
+        });
+        this.plugin.history.rename(oldPath, newPath, { share });
       },
     }];
   }
@@ -180,16 +209,27 @@ export class GoalsModule extends FeatureModule {
 
   // ---------- tracking ----------
 
-  private enqueue(fn: () => Promise<void>): void {
-    this.queue = this.queue.then(fn).catch((e) => console.error("Escrita: word tracking failed", e));
+  /** `fn` gets a check that says whether goals unloaded since it was queued (call it after each await). */
+  private enqueue(fn: (stale: () => boolean) => Promise<void>): void {
+    const gen = this.generation;
+    const stale = () => gen !== this.generation;
+    this.queue = this.queue.then(() => (stale() ? undefined : fn(stale)))
+      .catch((e) => console.error("Escrita: word tracking failed", e));
   }
 
-  /** Remember the active file's current count so the next change can be measured against it. */
+  /**
+   * Remember the active file's current count so the next change can be measured against it.
+   * Always measured again: a save still being counted when its baseline was dropped (a sync
+   * meanwhile) writes back an old one. Only what an open comment hid carries over, while the
+   * note still runs open.
+   */
   private prime(file: TFile | null): void {
     if (!file || !this.plugin.books.classify(file).tracked) return;
-    this.enqueue(async () => {
-      const { baseline } = countedChange(undefined, await this.plugin.measure.counts(file));
-      if (baseline !== undefined) this.baseline.set(file.path, baseline);
+    this.enqueue(async (stale) => {
+      const fresh = countedChange(undefined, await this.plugin.measure.counts(file)).baseline;
+      if (stale()) return;
+      const old = this.baseline.get(file.path);
+      this.baseline.set(file.path, old?.open && fresh.open ? { ...old, words: fresh.words, openWords: fresh.openWords } : fresh);
     });
   }
 
@@ -203,11 +243,16 @@ export class GoalsModule extends FeatureModule {
       this.refreshStatus();
       return;
     }
-    this.enqueue(async () => {
+    this.enqueue(async (stale) => {
       const after = await this.plugin.measure.counts(file);
-      const { delta, baseline } = countedChange(this.baseline.get(file.path), after);
-      if (baseline !== undefined) this.baseline.set(file.path, baseline);
-      if (delta === 0) return;
+      if (stale()) return;
+      const before = this.baseline.get(file.path);
+      const { delta, baseline } = countedChange(before, after);
+      this.baseline.set(file.path, baseline);
+      // the save that closes a comment may record no words, but the book or piece total
+      // taken while it ran open was partial: write the full one (record(0) keeps only the total)
+      const closed = before?.open === true && !baseline.open;
+      if (delta === 0 && !closed) return;
       // classified after the count, as before: a rename queued meanwhile has landed
       const p = this.plugin.books.classify(file);
       this.record(delta, (await this.bookChange(p)) ?? this.pieceChange(p, after.words));
@@ -232,19 +277,18 @@ export class GoalsModule extends FeatureModule {
 
   private record(delta: number, book: { path: string; total: number } | null): void {
     const day = this.today();
-    const history = this.plugin.data.history;
     if (countsAsWriting(delta, this.plugin.settings.ignoreJumpsOver)) {
-      applyDelta(history, day, delta, book);
+      applyDelta(this.plugin.history.own(), day, delta, book);
       const ev = this.currentSprint?.add(delta);
       if (ev) this.sprintEvent(ev);
     } else if (book) {
-      recordBookTotal(history, day, book);
+      recordBookTotal(this.plugin.history.own(), day, book);
     } else {
       return;
     }
-    this.plugin.requestSave();
-    this.renderStatus();
-    this.refreshModal();
+    // changed() rebuilds the view, asks for the save and tells the subscription below, which
+    // repaints the status bar, notifies the listeners and refreshes the modal
+    this.plugin.history.changed();
   }
 
   private onRename(oldPath: string, newPath: string): void {
@@ -306,11 +350,15 @@ export class GoalsModule extends FeatureModule {
   }
 
   private renderStatus(): void {
-    for (const cb of [...this.progressListeners]) {
-      try { cb(); } catch (e) { console.error("Escrita: a daily progress listener failed", e); }
+    const numbers = this.dailyProgress.current();
+    if (numbers.words !== this.notified?.words || numbers.goal !== this.notified?.goal) {
+      this.notified = numbers;
+      for (const cb of [...this.progressListeners]) {
+        try { cb(); } catch (e) { console.error("Escrita: a daily progress listener failed", e); }
+      }
     }
     if (!this.status || !this.plugin.settings.showStatusBar) return;
-    const history = this.plugin.data.history;
+    const history = this.plugin.history.view();
     const today = this.today();
     const s = this.currentSprint;
     const now = Date.now();

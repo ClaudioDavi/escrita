@@ -20,6 +20,16 @@ function setup(texts: Record<string, string> = { "a.md": "um dois", "b.md": "tr�
 }
 
 describe("MeasureCache", () => {
+  it("keeps the words under the open mark, and a change of them alone is a change", async () => {
+    const { cache, events, texts } = setup({ "a.md": "um dois %% três" });
+    expect((await cache.get(file("a.md"))).openWords).toBe(1);
+    texts["a.md"] = "um %% dois três"; // same open, same total, the opener moved
+    const moved = await cache.get(file("a.md", 2));
+    expect(moved.openWords).toBe(2);
+    expect(events.length).toBe(2);
+    expect((await cache.get(file("a.md", 2), { characters: true })).openWords).toBe(2);
+  });
+
   it("keeps the open mark, and a change of it alone is a change", async () => {
     const { cache, events, texts } = setup({ "a.md": "um dois" });
     expect((await cache.get(file("a.md"))).open).toBeUndefined();

@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (1.2.2 at the time of writing). The author's
+Current version: see `manifest.json` (1.2.3 at the time of writing). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down
@@ -97,6 +97,13 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   - `index`: the vault index hub (`core/index-hub.ts`): add a spec for a per-file
     index, or `follow` renames and deletes for path-keyed data. `works`: the live
     list of works, built on it.
+  - `history`: the days of writing (`core/history-store.ts`, pure parts in
+    `core/device-history.ts`, 1.2.3). Each device writes its own section of `data.json`
+    (`devices`; `history` is the frozen base; `renames` is shared). Readers use
+    `history.view()`, the merged sum; goals writes through `history.own()` and then
+    `history.changed()`. Nobody reads `data.history` directly. Saves read the file first;
+    it is read again on an external change, on focus and every minute, and each device keeps
+    a backup of its section in local storage.
 - **1.0 additions.** The setup is a core module (`src/setup/`, `CoreModule`), not a feature:
   it has no switch and is always in the palette. `core/feature-presets.ts` holds the four
   presets (three in 1.0; Screenwriter, the screenplay-only list of 11, in 1.2) (never touching the universe); `core/defaults.ts` holds the default sets per
@@ -269,6 +276,9 @@ and what upkeep it asks of the writer.
   this note" (SF 15), Rhythm in the lens panel (SF 16), and a fix for typing lost when a new tracked
   note got its draft status. Improvements 38 (editor glue) and 52 (the reader rebuilds when the cache
   is ready), and the first slice of 47. Plan and results in `docs/PLAN-1.2.md`.
+- **1.2.3 (shipped), the count you can trust**: words in a note that stays open count again, and
+  one history for every device that syncs the vault (`plugin.history`). Improvement: the goals
+  slice of 48. Plan and results in `docs/PLAN-1.2.3.md`.
 - **Next**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
 
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and

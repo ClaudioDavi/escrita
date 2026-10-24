@@ -4,6 +4,7 @@ import type { Dismissal } from "./lens/types";
 import type { SeenStore } from "./universe/first-seen";
 import type { PovColor } from "./outline/pov";
 import { safeEntries } from "./core/records";
+import type { Rename } from "./core/device-history";
 import { EXPORT_FORMATS, type ExportFormat } from "./core/export-formats";
 
 /** One book's writing on one day. `total` is the book's word count at the last change that day. */
@@ -11,6 +12,8 @@ export interface DayBook {
   added: number;
   deleted: number;
   total: number;
+  /** ms timestamp of the last write to this record; absent in records from before 1.2.3 (counts as oldest) */
+  at?: number;
 }
 
 /** All tracked writing on one writing day (see core/dates.writingDay). */
@@ -169,6 +172,11 @@ export interface EscritaData {
   settings: EscritaSettings;
   /** keyed by writing day, YYYY-MM-DD */
   history: Record<string, DayRecord>;
+  /** 1.2.3: each device's own section of the history, keyed by device id; `history` above is the frozen base.
+   *  Absent before 1.2.3 (loaded as {}); owned by core/history-store */
+  devices: Record<string, Record<string, DayRecord>>;
+  /** 1.2.3: renames of books and folders shared between devices, kept 400 days; absent before (loaded as []) */
+  renames: Rename[];
   /** keyed by note path; absent in data saved by 0.1 (loaded as {}) */
   publish: Record<string, PublishRecord>;
   /** keyed by note path; absent before 0.4 (loaded as {}) */

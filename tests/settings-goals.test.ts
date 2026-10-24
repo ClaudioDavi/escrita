@@ -11,7 +11,7 @@ import { renderBlocks, rowNamed } from "./support/definitions";
 beforeAll(() => registerStrings(coreStrings));
 beforeEach(() => resetSettingLog());
 
-const plugin = (history: Record<string, unknown> = {}) => ({ settings: { ...DEFAULT_SETTINGS }, data: { history } }) as never;
+const plugin = (history: Record<string, unknown> = {}) => ({ settings: { ...DEFAULT_SETTINGS }, history: { view: () => history } }) as never;
 
 describe("goals settings items", () => {
   it("are its rows in order, with no heading (the tab draws the slot's)", () => {

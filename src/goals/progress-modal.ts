@@ -158,7 +158,7 @@ export class ProgressModal extends Modal {
   private renderSummary(): void {
     const el = this.summaryEl;
     el.empty();
-    const history = this.plugin.data.history;
+    const history = this.plugin.history.view();
     const today = this.goals.today();
     const goal = this.plugin.settings.dailyGoal;
     const scope = this.bookScope;
@@ -318,7 +318,7 @@ export class ProgressModal extends Modal {
   }
 
   private renderChart(parent: HTMLElement, days: string[], bookPath: string | null): void {
-    const history = this.plugin.data.history;
+    const history = this.plugin.history.view();
     const goal = this.plugin.settings.dailyGoal;
     const values = dailySeries(history, days, bookPath);
     let totals: number[] | null = null;
@@ -415,7 +415,7 @@ export class ProgressModal extends Modal {
   }
 
   private renderPacing(parent: HTMLElement, scope: BookScope): void {
-    const history = this.plugin.data.history;
+    const history = this.plugin.history.view();
     const today = this.goals.today();
     const callout = parent.createDiv({ cls: "escrita-pacing" });
     const off = this.goals.dayOff();
@@ -481,7 +481,7 @@ export class ProgressModal extends Modal {
   }
 
   private renderPiecePacing(parent: HTMLElement, scope: PieceScope): void {
-    const history = this.plugin.data.history;
+    const history = this.plugin.history.view();
     const today = this.goals.today();
     const { piece } = scope;
     const unit = piece.unit;

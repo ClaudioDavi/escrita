@@ -11,6 +11,14 @@ const PROPS = { targetProperty: "target", limitProperty: "limit", unitProperty: 
 const UNITS: PieceUnit[] = ["words", "characters", "characters-no-spaces"];
 
 describe("measureText", () => {
+  it("counts the words in the region that runs open", () => {
+    expect(measureText("um dois %% três quatro cinco").openWords).toBe(3);
+    expect(measureText("um\n\n```js\ndois três\nquatro").openWords).toBe(3); // the fence's language isn't a word
+    expect(measureText("---\nstatus: x\num dois").openWords).toBe(0);
+    expect("openWords" in measureText("um %% três %% dois")).toBe(false);
+    expect(measureText("um %% [[Alice|Ana]] fala").openWords).toBe(2);
+  });
+
   it("marks a count taken while a comment, fence or frontmatter runs open", () => {
     expect(measureText("um dois %% três").open).toBe(true);
     expect(measureText("um\n\n```\ndois").open).toBe(true);

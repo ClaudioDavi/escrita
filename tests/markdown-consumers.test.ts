@@ -1406,7 +1406,7 @@ describe("characterization table", () => {
         words: countWords(row.text),
         characters: countCharacters(row.text, { spaces: true }),
         charactersNoSpaces: countCharacters(row.text, { spaces: false }),
-        ...(runsOpen(segment(row.text)) ? { open: true } : {}),
+        ...(runsOpen(segment(row.text)) ? { open: true, openWords: expect.any(Number) } : {}),
       });
     }
   });

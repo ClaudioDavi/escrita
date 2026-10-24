@@ -15,7 +15,7 @@ export interface DailyProgress {
 
 export interface DailyProgressSource {
   current(): DailyProgress;
-  /** called whenever the status bar would redraw (a recorded edit, a settings change, the minute tick); returns the unsubscribe */
+  /** called when today's words or the goal change (a recorded edit, a settings change, the day rolling over); returns the unsubscribe */
   onChange(cb: () => void): () => void;
 }
 

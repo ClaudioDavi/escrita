@@ -52,7 +52,7 @@ export interface BookChange {
  * chapter, the book's day record gets the same delta and its new `total`.
  * Mutates and returns `history`.
  */
-export function applyDelta(history: History, dayKey: string, delta: number, book?: BookChange | null): History {
+export function applyDelta(history: History, dayKey: string, delta: number, book?: BookChange | null, now: () => number = Date.now): History {
   if (!Number.isFinite(delta)) delta = 0;
   const rec = day(history, dayKey);
   if (delta > 0) rec.added += delta;
@@ -62,24 +62,30 @@ export function applyDelta(history: History, dayKey: string, delta: number, book
     if (delta > 0) b.added += delta;
     else if (delta < 0) b.deleted += -delta;
     b.total = num(book.total);
+    b.at = now();
   }
   return history;
 }
 
 /** Update only a book's total (for changes that are not counted as writing, e.g. pastes). */
-export function recordBookTotal(history: History, dayKey: string, book: BookChange): History {
+export function recordBookTotal(history: History, dayKey: string, book: BookChange, now: () => number = Date.now): History {
   const rec = day(history, dayKey);
-  dayBook(rec, book.path, book.total).total = num(book.total);
+  const b = dayBook(rec, book.path, book.total);
+  b.total = num(book.total);
+  b.at = now();
   return history;
 }
 
 /** Combine a moved book record with the one already at its new path: counts add, the existing total stands. */
 export function sumDayBook(moved: DayBook, existing: DayBook): DayBook {
-  return {
+  const out: DayBook = {
     added: num(existing?.added) + num(moved?.added),
     deleted: num(existing?.deleted) + num(moved?.deleted),
     total: num(existing?.total),
   };
+  const at = Math.max(num(existing?.at), num(moved?.at));
+  if (at > 0) out.at = at;
+  return out;
 }
 
 /** Move records at `oldPath`, or under it when it is a folder, to `newPath`. Returns whether anything moved. */
@@ -280,18 +286,57 @@ export function countsAsWriting(delta: number, ignoreOver: number): boolean {
 }
 
 /**
- * One save of a note being typed in, against the count before it: the change to
- * record and the count to measure the next save against. A count taken while a
- * comment or fence runs open (`open`) is partial: typing `%%` hides every word
- * after it until the closer, so it neither records nor moves the baseline, and
- * the words written meanwhile count once the comment closes. With no baseline
- * yet, the first closed count becomes it.
+ * The count a note's next save is measured against. `open`: it was taken while a
+ * comment, fence or frontmatter ran open (Counts.open). `hidden`: the words the
+ * opener hid when it was typed (the closed count before it minus the open count
+ * after it); unknown when the note was already open when first counted. `openWords`:
+ * the words in the region that ran open to the end then (Counts.openWords), to tell a
+ * moved opener from typing; kept only while open.
+ */
+export interface Baseline {
+  readonly words: number;
+  readonly open: boolean;
+  readonly hidden?: number;
+  readonly openWords?: number;
+}
+
+/**
+ * One save of a note being typed in, against the baseline before it: the change
+ * to record and the baseline for the next save. Typing `%%` hides every word
+ * after it until the closer, so the save that opens a comment records only words
+ * it added and remembers how much it hid. While the note stays open, changes count as usual:
+ * a note that keeps its notes under an unclosed `%%` (Obsidian hides the rest of
+ * the note) or starts with a `---` rule is written in like any other. The save
+ * that closes it records the change since the opener minus what the opener hid,
+ * so the words written meanwhile count once and the hidden words never do; with
+ * nothing known about the opener, it records nothing. With no baseline yet, the
+ * first count becomes it. While open, moving the opener (cut and paste it further
+ * down or up) shows words in and out of the hidden region with nothing typed: when the
+ * visible and the hidden words still add up to the same total, it records nothing, and
+ * `hidden` follows the words that crossed so the closing save stays exact.
  */
 export function countedChange(
-  before: number | undefined, after: { words: number; open?: boolean },
-): { delta: number; baseline: number | undefined } {
-  if (after.open) return { delta: 0, baseline: before };
-  return { delta: before === undefined ? 0 : after.words - before, baseline: after.words };
+  before: Baseline | undefined, after: { words: number; open?: boolean; openWords?: number },
+): { delta: number; baseline: Baseline } {
+  const open = !!after.open;
+  const openWords = open ? after.openWords : undefined;
+  const taken = (b: Baseline): Baseline => (openWords === undefined ? b : { ...b, openWords });
+  if (!before) return { delta: 0, baseline: taken({ words: after.words, open }) };
+  if (open && !before.open) {
+    // words added in the same save as the opener count now; a drop is what the opener hid
+    const change = after.words - before.words;
+    return { delta: Math.max(0, change), baseline: taken({ words: after.words, open, hidden: Math.max(0, -change) }) };
+  }
+  if (open) {
+    const d = after.words - before.words;
+    const moved = d !== 0 && before.openWords !== undefined && openWords !== undefined
+      && before.words + before.openWords === after.words + openWords;
+    const hidden = before.hidden === undefined ? {} : { hidden: before.hidden - (moved ? d : 0) };
+    return { delta: moved ? 0 : d, baseline: taken({ words: after.words, open, ...hidden }) };
+  }
+  const delta = !before.open ? after.words - before.words
+    : before.hidden === undefined ? 0 : after.words - before.words - before.hidden;
+  return { delta, baseline: { words: after.words, open } };
 }
 
 /**
