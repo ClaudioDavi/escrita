@@ -281,7 +281,12 @@ and what upkeep it asks of the writer.
 - **1.2.3 (shipped), the count you can trust**: words in a note that stays open count again, and
   one history for every device that syncs the vault (`plugin.history`). Improvement: the goals
   slice of 48. Plan and results in `docs/PLAN-1.2.3.md`.
-- **Next**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
+- **Next: 1.3, the deeper lens** (SF 17, planned 2026-10-26): ProWritingAid's rule-based reports
+  in pt-BR and English (passive voice, sentence starts, filter words, sticky sentences, repeated
+  phrases, dialogue tags, clichés and pleonasmos, consistency, verb tense, dialogue formatting,
+  formal register, queísmo, pacing with scene or summary), opt-in and grouped in the panel.
+  Improvement: the rest of 47.
+- **After 1.3**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
 
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and
 `goals/progress-modal.ts` are large and mostly untested (IMPROVEMENTS 5; the chapter rows

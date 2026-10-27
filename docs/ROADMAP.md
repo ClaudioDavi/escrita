@@ -118,10 +118,38 @@ IMPROVEMENTS.md, "Known issues".
 **Not in 1.2:** Reading view layout for screenplays, Fountain in dialogue focus and the lens
 (moved to SP 5), pages as a unit (SP 4) and the scene outline (SP 3).
 
-## Next: universe phase 2
+## Next: 1.3, the deeper lens
+
+Planned with the author on 2026-10-26, from an investigation of ProWritingAid: its rule-based
+reports, in pt-BR and English (PWA is English-only), with its AI and network features left out.
+Chosen before universe phase 2 because the author's next months are contos and essays. Serves
+revision. Upkeep for the writer: none (built-in word tables per language; `## Ignorar` applies).
+Details in [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md), section 17. Not planned in
+detail yet: a `PLAN-1.3.md` comes when it is.
+
+| Feature | Ref | Effort | Stage | Status |
+|---|---|---|---|---|
+| Sentences and words, opt-in rules: passive voice, repeated sentence starts, filter words and telling, intensifiers and vague words, sticky sentences (glue index), repeated phrases | SF 17 (group A) | M | Revision | Planned |
+| Fiction, opt-in rules: dialogue tags, clichés and redundancies (pleonasmos), consistency (with pre-2009 spellings in pt-BR), verb tense (narration that slips out of its scene's tense), dialogue formatting (hyphen for the dash, two speeches in one paragraph), formal register in speech, too many *que* (queísmo), long paragraphs | SF 17 (group B) | M | Revision | Planned |
+| Pacing: a section in the lens panel, one bar per paragraph of the note, colored by speech share and marked as scene or summary | SF 17 (group B) | S–M | Revision | Planned |
+| The lens panel grouped (Words, Sentences, Dialogue, Consistency), one group at a time; mockups first | SF 17 | S | Revision | Planned |
+
+**Improvement:** the rest of candidate 47 (the lens prepares each pass once), which every new
+rule leans on.
+
+**Risks:** thresholds copied from English would fire on every Portuguese sentence, so each is
+calibrated on pt-BR prose and pinned in tests; too many marks at once (hence opt-in rules and
+groups); the 60 ms pass ceiling with every rule on (repeated phrases is the one to watch); verb tense
+reads Portuguese endings without a tagger, so it counts only unambiguous verbs and is pinned on the
+fixture conto for false positives.
+
+**Later (SF 17, group C):** sensory words, most used words, transitions, pt-BR confusables,
+stacked adjectives.
+
+## After 1.3: universe phase 2
 
 Timeline, dates, facts over time, continuity and canon (U 2.1–2.4), moved out of 0.9 on
-2026-10-06, and after 1.2 since 2026-10-19. Not planned in detail yet: the version, its
+2026-10-06, after 1.2 since 2026-10-19, and after 1.3 since 2026-10-26. Not planned in detail yet: the version, its
 improvement and a `PLAN-<version>.md` come when it is planned. Natural improvements: 57 (the
 works of a scope) and 58 (typed property readers). The draft design is in
 `research_notes/0.9-dates-draft/` (local).
@@ -208,7 +236,8 @@ and the README links to every guide.
 
 | Feature | Ref | Effort | Note |
 |---|---|---|---|
-| Book-wide snapshots and revision reports | N 10 | M | Builds on SF 4, SF 5 |
+| Book-wide snapshots and revision reports | N 10 | M | Builds on SF 4, SF 5 and the 1.3 rules (SF 17) |
+| The deeper lens, group C: sensory words, most used words, transitions, pt-BR confusables, stacked adjectives | SF 17 | M | After 1.3 |
 | Companion-plugin guide (unscheduled) | N 6 | S | Dropped from 0.8 on 2026-10-05; written only if a need shows up (for example, a StoryLine clash reported by a writer) |
 | Longform importer | N 5 | S–M | Not wanted for 1.0 |
 | Screenwriting, phase 1: screenplay notes, Fountain parser, Fountain and PDF export | SP 1, SP 6 | M + L | Shipped in 1.1.0 (see "1.1" above). Export first: a script can be drafted in plain Fountain, but can't be handed in without a correct PDF. Builds on the 0.8 export pipeline and the `form` property (0.6) |

@@ -364,6 +364,8 @@ interface lives. Test through the interface.
   `sentencePara`, filled once in `analyze` from one `layout` call, and `longSentences` reads
   them (results unchanged). `layout` still runs for the other rules, `inferredNames` still
   runs twice, and the list sets, `EMPTY_MD`, `measuresFor` and `ruleKey` are as described.
+- **Scheduled for 1.3** (2026-10-26): the deeper lens (SF 17) adds about ten rules, each of
+  which would otherwise call `layout` again; this lands first.
 - **Change.** Build `layout`, `inferredNames` and the list sets once in `analyze` and pass them
   in; keep the three normalizations as they are (merging them changes behaviour).
   `isCapitalized` and `sentenceStarts` next to `core/sentences.ts`. `rangeMeasures` replaces
