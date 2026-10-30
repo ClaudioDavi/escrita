@@ -1116,9 +1116,7 @@ export class OutlineView extends ItemView {
       await this.run(() => this.plugin.chapterOps.retitle(row.file, value));
     } else if (line.field === "summary") {
       await this.run(async () => {
-        // the chapter may be open with unsaved text: on disk first, or the write replaces it
-        await this.plugin.notes.flush(row.file);
-        await this.app.fileManager.processFrontMatter(row.file, (fm: Record<string, unknown>) => {
+        await this.plugin.notes.frontmatter(row.file, (fm) => {
           fm[this.plugin.settings.summaryProperty] = value;
         });
       });
@@ -1365,7 +1363,7 @@ export class OutlineView extends ItemView {
         const ok = await this.run(async () => {
           const file = await this.plugin.chapterOps.createChapterAt(book, idx + 1, untitled);
           created = file;
-          await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+          await this.plugin.notes.frontmatter(file, (fm) => {
             fm[this.plugin.settings.summaryProperty] = beatText;
           });
           const res = await this.plugin.notes.text(row.file).apply(guardedEdit(

@@ -14,8 +14,11 @@
 //       writes, so its pending text is never lost or overwritten.
 //   plugin.notes.flush(file)       → Promise<void>
 //       Saves every view of the file, so its unsaved text is on disk before a
-//       write that reads the disk (processFrontMatter). Without it, a status
+//       write that reads the disk (frontmatter, the vault adapter). Without it, a status
 //       written while the writer types replaced what the editor had not saved.
+//   plugin.notes.frontmatter(file, fn) → Promise<void>
+//       Every property write (1.2.4): flush, then fileManager.processFrontMatter.
+//       The only call of processFrontMatter in src/ (tests/frontmatter-writes.test.ts).
 //   plugin.notes.editorView(file)  → MarkdownView | null
 //       The first view editing the file (source or Live Preview), if any.
 //   plugin.notes.ensureFolder(path) → Promise<void>
@@ -97,6 +100,19 @@ export class NoteService {
   /** Saves every view of the file (any mode), so a write that reads the disk sees its unsaved text. */
   async flush(file: TFile): Promise<void> {
     for (const v of this.views(file)) await v.save();
+  }
+
+  /**
+   * The one way Escrita writes a note's properties. It saves every view of the file first
+   * (flush), then calls fileManager.processFrontMatter(file, fn). processFrontMatter reads the
+   * disk, so without the save it reads the older file and its write replaces text the editor
+   * had not saved yet (rule 1). `fn` changes the parsed properties in place, as with
+   * processFrontMatter. An error from the save or the write is passed on to the caller; if the
+   * save fails, nothing is written.
+   */
+  async frontmatter(file: TFile, fn: (fm: Record<string, unknown>) => void): Promise<void> {
+    await this.flush(file);
+    await this.app.fileManager.processFrontMatter(file, fn);
   }
 
   text(file: TFile): NoteText {

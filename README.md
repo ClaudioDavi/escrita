@@ -99,6 +99,14 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
+### 1.2.4 (2026-10-30)
+
+Two fixes: the screenplay editor in a note it missed, and properties written without losing what you just typed.
+
+- **Fix**: a screenplay note could open as plain text, with no layout, no Tab and Enter, and no **Next screenplay element** in the command palette, until you typed something in it. Escrita had decided the note was not a screenplay before Obsidian had read its properties, and kept that answer. Now it doesn't keep that answer until Obsidian has read the note, and checks again once Obsidian finishes indexing.
+- **Fix**: every place where Escrita writes a note's properties saves the open editor first. Before, adding a note to a universe (the panel's **Add to** button), moving entries into a universe and turning an outline beat into a chapter wrote the properties from the file on disk, so words typed in that note in the last moments before the write could be lost. Publishing, the progress window, the outline's summary and the draft status of a new note already did this; now they all go through the same code.
+- Improvement: the known issue "processFrontMatter callers without a flush". Every property write goes through one method, `notes.frontmatter`, and a test fails if any other code writes properties directly.
+
 ### 1.2.3 (2026-10-24)
 
 A fix for the daily word count, again, and one history for every device that syncs the vault.

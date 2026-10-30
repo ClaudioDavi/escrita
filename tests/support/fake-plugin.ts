@@ -123,6 +123,7 @@ export class FakeVault extends FakeEvents {
   files = new Map<string, unknown>();
   constructor() { super("vault"); }
   getAbstractFileByPath(path: string): unknown { return this.files.get(path) ?? null; }
+  getFileByPath(path: string): unknown { return this.files.get(path) ?? null; }
 }
 
 export class FakeMetadataCache extends FakeEvents {

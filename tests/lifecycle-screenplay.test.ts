@@ -36,7 +36,7 @@ describe("screenplay lifecycle", () => {
     expect(mod.suggestEnabled).toBe(true);
     // no default hotkeys (rule 8)
     for (const c of plugin.commands.values()) expect(c.hotkeys).toBeUndefined();
-    expect(plugin.liveListeners()).toBe(3);
+    expect(plugin.liveListeners()).toBe(4); // metadata changed and resolved, vault rename and delete
   });
 
   it("unload leaves no extension, command or listener, and the suggest answers nothing", () => {
@@ -57,7 +57,7 @@ describe("screenplay lifecycle", () => {
     expect(plugin.extensions).toHaveLength(1);
     expect(plugin.suggests).toHaveLength(1);
     expect(mod.suggestEnabled).toBe(true);
-    expect(plugin.liveListeners()).toBe(3);
+    expect(plugin.liveListeners()).toBe(4); // metadata changed and resolved, vault rename and delete
   });
 
   it("the commands are offered only in a screenplay note", () => {

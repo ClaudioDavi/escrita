@@ -337,9 +337,7 @@ describe("addToUniverse and universe: false", () => {
   function withProps(props: Record<string, unknown>) {
     const f = file("Contos/Fora.md");
     let fm: Record<string, unknown> = { ...props };
-    (plugin.app as unknown as Record<string, unknown>).fileManager = {
-      processFrontMatter: async (_f: unknown, fn: (x: Record<string, unknown>) => void) => { fn(fm); },
-    };
+    (plugin as unknown as Record<string, unknown>).notes = { frontmatter: async (_f: unknown, fn: (x: Record<string, unknown>) => void) => { fn(fm); } };
     (plugin.app as unknown as Record<string, unknown>).metadataCache = Object.assign(plugin.app.metadataCache, {
       fileToLinktext: () => "Universo",
       getFirstLinkpathDest: () => null,

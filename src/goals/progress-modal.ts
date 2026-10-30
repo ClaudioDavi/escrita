@@ -625,9 +625,7 @@ export class ProgressModal extends Modal {
     const current = () => this.pieceScope?.piece ?? { unit: "words" as PieceUnit };
     const apply = async (fn: (fm: Record<string, unknown>) => void, update: (p: Piece) => void): Promise<void> => {
       try {
-        // the editor may hold unsaved text: on disk first, or the write below replaces it
-        await this.plugin.notes.flush(file);
-        await this.plugin.app.fileManager.processFrontMatter(file, fn);
+        await this.plugin.notes.frontmatter(file, fn);
       } catch (e) {
         console.error("Escrita: couldn't update the note's properties", e);
         new Notice(t("goals.set.saveErrorNote"));
@@ -701,9 +699,7 @@ export class ProgressModal extends Modal {
 
   private async writeFrontmatter(book: Book, fn: (fm: Record<string, unknown>) => void): Promise<boolean> {
     try {
-      // the editor may hold unsaved text: on disk first, or the write below replaces it
-      await this.plugin.notes.flush(book.note);
-      await this.plugin.app.fileManager.processFrontMatter(book.note, fn);
+      await this.plugin.notes.frontmatter(book.note, fn);
       return true;
     } catch (e) {
       console.error("Escrita: couldn't update the book note's frontmatter", e);

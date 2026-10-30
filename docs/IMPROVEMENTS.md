@@ -602,14 +602,9 @@ Found in 1.2 (Wave 2 and its judge). Fixed in 1.2.0 (Wave 3, task G): the publis
 writes, the progress modal's two property writes and the outline's summary write now call
 `notes.flush(file)` first; cue suggestions offer only characters (`NameTerm.person`,
 `cueNames`); undoing a Tab-opened parenthetical gives the cue its mode back (`invertedEffects` in
-`src/screenplay/keys.ts`); `outline.reader.noBook` is gone. Still open:
+`src/screenplay/keys.ts`); `outline.reader.noBook` is gone. The three `processFrontMatter` callers
+without a flush were closed in 1.2.4 (see "Done"). Still open:
 
-- **Three `processFrontMatter` callers have no flush.** `src/universe/index.ts:518`, the three
-  writes in `src/universe/migrate.ts` and the outline's "create chapter" write
-  (`src/outline/view.ts:1346`, on a file it just made) call `processFrontMatter` without
-  `notes.flush(file)`, so a write to a note whose editor holds unsaved typing could replace it.
-  Fix: one `plugin.notes.frontmatter(file, fn)` that flushes first, and move every caller onto
-  it (with a test that greps `src/` for a bare `processFrontMatter`).
 - **Undoing an Enter right after a cue loses the cue's mode.** The mode ends when the cursor
   leaves the cue line, a step with no text change and so no undo entry of its own; after the undo
   the cue (with nothing below it yet) is no longer held as a cue. An effects-only history entry
@@ -653,6 +648,7 @@ Found in 1.2.3 (the daily count review). Left open, each small:
 
 | Version | Improvement |
 |---|---|
+| 1.2.4 | The known issue "Three `processFrontMatter` callers have no flush" (found in 1.2): `plugin.notes.frontmatter(file, fn)` saves the file's views, then calls `processFrontMatter`; all eleven property writes use it (the universe's "add to universe" and migration, the outline's beat-to-chapter, which had no flush, and the six that flushed by hand), and `tests/frontmatter-writes.test.ts` fails on any other call in `src/` |
 | 1.2.3 | The goals bullet of candidate 48: `goals/index.ts` notifies the daily-progress listeners only when `{ words, goal }` changes, not on each status repaint. The rest of 48 stays a candidate |
 | 1.2.2 | Dead code, a first slice (candidate 49): `publish/checks.ts` no longer re-exports `unclosedComment`; `tests/publish.test.ts` and `tests/markdown-consumers.test.ts` import it from `core/readiness.ts`, its home. The rest of 49 stays a candidate |
 | 1.2.1 | Required classifier settings, and one plugin-folder root (candidate 43): every `ClassifySettings` field is required, so the fallbacks for a missing key are gone from `core/classify.ts` (`ownNoteOf`, the scope and form readers, `classifyKey`) and the stage and status reads share `statusPropertyOf`; settings load already fills every key, so nothing changes at run time. `pluginRoot(kind, settings)` (`core/classify.ts`) is the one folder-root rule for snapshots, submissions and export, always with the install's language; `snapshotsRoot`, `submissionsRoot` and `exportRoot` are gone and every caller (`inSnapshots`, `classifyKey`, `folder-problem.ts`, `vault-indexes.ts`, the three modules and the settings rows) goes through it. Tests build their settings with `classifySettings(partial)` (`tests/support/classify-settings.ts`, on `defaultsFor("en")`) |

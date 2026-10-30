@@ -102,6 +102,19 @@ export class ScreenplayModule extends FeatureModule {
       this.layout.refresh(file.path);
     }));
     this.registerEvent(p.app.vault.on("delete", (file) => { this.forms.delete(file.path); }));
+    // a "no" kept from a moment the cache was behind would stay until the note's next change (seen in
+    // 1.2.3: a screenplay opened as plain text until edited): when indexing settles, read each "no" again
+    this.registerEvent(p.app.metadataCache.on("resolved", () => {
+      for (const [path, isScript] of this.forms) {
+        if (isScript) continue;
+        const file = p.app.vault.getFileByPath(path);
+        if (!file) { this.forms.delete(path); continue; }
+        if (this.readForm(file)) {
+          this.forms.set(path, true);
+          this.layout.refresh(path);
+        }
+      }
+    }));
   }
 
   onunload(): void {
@@ -126,7 +139,8 @@ export class ScreenplayModule extends FeatureModule {
     let v = this.forms.get(file.path);
     if (v === undefined) {
       v = this.readForm(file);
-      this.forms.set(file.path, v);
+      // a "no" read before the cache has the note (new, or mid re-parse) is not kept: the next ask reads again
+      if (v || this.plugin.app.metadataCache.getFileCache(file)) this.forms.set(file.path, v);
     }
     return v;
   }

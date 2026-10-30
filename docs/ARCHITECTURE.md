@@ -131,8 +131,11 @@ must be generic (any vault, any language), theme-friendly and mobile-safe.
   views — look them up with `workspace.getLeavesOfType`; **don't detach leaves in the
   plugin's `onunload`** (Obsidian restores them on the next start), but **a feature the
   writer switches off closes its own leaves**, because Obsidian can't unregister a view
-  type and would leave ghost panes (see "Modules and feature switches"); modify files with
-  `vault.process` (body) and `fileManager.processFrontMatter` (properties), rename with
+  type and would leave ghost panes (see "Modules and feature switches"); modify a note's
+  text through `plugin.notes` (`vault.process` underneath) and its properties only through
+  `plugin.notes.frontmatter(file, fn)`, which saves the file's views and then calls
+  `fileManager.processFrontMatter` (the only call of it in `src/`; `tests/frontmatter-writes.test.ts`
+  keeps it so), rename with
   `fileManager.renameFile`, delete with `fileManager.trashFile`; `normalizePath` for
   built paths; no Node or Electron APIs (`isDesktopOnly: false`); no global `app`;
   no `console.log` (use `console.error` only for real errors); private APIs only
@@ -803,10 +806,12 @@ refuse.
   views are saved first (`view.save()`), so their pending text is never lost.
 - **`flush(file)`** (1.2). Saves every view of the file (`view.save()`), so a write that reads
   the disk sees text the editor has not saved. The vault adapter calls it before every read and
-  `vault.process`. `draftIfNew` in `main.ts` calls it before `processFrontMatter`: before, the
-  draft status of a just-created tracked note replaced what the writer had typed in the first
-  seconds (spec `tests/e2e/specs/draft-status.spec.ts`). Other `processFrontMatter` callers
-  (publish, the outline, the progress modal) do not call it yet; see IMPROVEMENTS.
+  `vault.process`. `frontmatter` calls it before every property write.
+- **`frontmatter(file, fn)`** (1.2.4). The one property write: `flush(file)`, then
+  `fileManager.processFrontMatter(file, fn)`. Before, a write that skipped the flush (the draft
+  status of a just-created note, 1.2; the universe's "Add to", the migration, the outline's new
+  chapter, 1.2.4) could replace what the writer had typed in the last seconds (spec
+  `tests/e2e/specs/draft-status.spec.ts`). Errors pass through; a failed save writes nothing.
 - **Bound to its note.** Obsidian reuses a view's editor when its tab opens another
   note. The editor port checks, on every read and apply, that its view still shows the
   file in source mode; if not, `read()` rejects (`EditorMovedError`) and `apply()`
@@ -1847,7 +1852,7 @@ replaces and how to add one: `docs/TESTING.md`.
   active file's book, else "All writing" (vault-wide bars, no book tile/line/pacing;
   replace the book tile with "This week" words). Book goal and deadline are read from and
   written to the book note's frontmatter (`goalProperty`, `deadlineProperty`, default `goal`, `deadline`) with
-  `processFrontMatter`. Chart as inline SVG (`createSvg` / `createElementNS`), sized to
+  `plugin.notes.frontmatter`. Chart as inline SVG (`createSvg` / `createElementNS`), sized to
   the modal width, geometry computed by a pure tested function (`src/goals/chart.ts`).
 - **Sprints** (`src/goals/sprint.ts`): duration + target; words = vault-wide `added`
   since start (tracked files); ticks every second via `registerInterval` updating the status bar;
@@ -1907,7 +1912,7 @@ replaces and how to add one: `docs/TESTING.md`.
   from frontmatter (settings property names), words from `measure`, beats with
   `parseBeats`, placeholders with `parsePlaceholders`. Editable inline
   (`contenteditable` plaintext or inputs): chapter title (→ `retitle` on blur/Enter),
-  summary (→ `processFrontMatter`), beat text (→ `vault.process` + `setBeatText`).
+  summary (→ `plugin.notes.frontmatter`), beat text (→ `vault.process` + `setBeatText`).
   Keys (NEO's outline): Enter → new chapter after (or new beat after, from a beat);
   Enter at the very start of a non-empty line inserts above; Tab on a chapter with 0
   words (not the first) → becomes the last beat of the previous chapter (trash the
@@ -2177,7 +2182,7 @@ replaces and how to add one: `docs/TESTING.md`.
   input, and Publish. Blockers disable Publish until "Publish anyway" is checked.
 - **Publish** sets `statusProperty` to the word written for the `published` stage
   (`writtenWord(settings.stages, "published")`, the first word of the stage) and
-  `dateProperty` in one `processFrontMatter` call, then a Notice. A note counts as
+  `dateProperty` in one `plugin.notes.frontmatter` call, then a Notice. A note counts as
   published when its status maps to the `published` stage (`isPublished(status, stages)`),
   so any of the stage's words counts. It stores `data.publish[path] =
   { previousStatus }` when there was one. **Unpublish** restores `previousStatus`, else
@@ -2804,7 +2809,7 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   active leaf and the metadata cache, debounced. The tab, the collapsed groups and "show
   closed" live in the leaf's state. The panel can set a note's universe property ("Add to
   <universe>"), only on that click and only where it is missing, through
-  `processFrontMatter`. "Insert link" goes through `plugin.notes` and refuses a cursor in
+  `plugin.notes.frontmatter`. "Insert link" goes through `plugin.notes` and refuses a cursor in
   the properties (moved to the body start), code or a comment (`linkInsertPoint`).
   Closing a thread opens a popover with an optional answer and a preview of the marker;
   `pickStillValid` drops a pick whose marker changed.
@@ -2825,7 +2830,7 @@ ROADMAP-universe.md (Modes, 1.1, 1.3, 1.5). No network.
   lists name clashes and counts the notes missing the type property. The preview modal
   (board 18) has two checkboxes (add the type property; add the universe property to the
   book note) and applies the plan one note at a time with `fileManager.renameFile`, adding
-  properties with `processFrontMatter` only where missing. Moving into a non-default
+  properties with `plugin.notes.frontmatter` only where missing. Moving into a non-default
   universe also adds the universe property to each moved note.
 - **Mode off.** The universe is a switchable feature and its switch is the mode. Off
   unloads it: its commands are removed, its panel's leaves close, its names provider

@@ -2,7 +2,7 @@
 // modal, the progress and the final notices. Planning is migration.ts
 // (planMigration) and migrate-plan.ts (what the preview shows); this file applies
 // the plan one note at a time with fileManager.renameFile (links update) and adds
-// properties only through processFrontMatter, only where missing, never over a value.
+// properties only through plugin.notes.frontmatter, only where missing, never over a value.
 
 import { App, Modal, Notice, Setting, TFile, TFolder, normalizePath, type Menu, type TAbstractFile } from "obsidian";
 import { inFolder } from "../core/classify";
@@ -287,7 +287,7 @@ async function runMigration(plugin: EscritaPlugin, p: Prepared, addType: boolean
         const value = m.addType;
         try {
           let added = false;
-          await fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+          await plugin.notes.frontmatter(file, (fm) => {
             if (hasValue(fm[s.typeProperty])) return;
             fm[s.typeProperty] = value;
             added = true;
@@ -300,7 +300,7 @@ async function runMigration(plugin: EscritaPlugin, p: Prepared, addType: boolean
       if (!p.universeIsDefault) {
         // another universe's folder doesn't join notes by itself: the moved note names its universe (only where it has none)
         try {
-          await fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+          await plugin.notes.frontmatter(file, (fm) => {
             if (!hasValue(fm[s.universeProperty])) fm[s.universeProperty] = `[[${p.universeLinkText}]]`;
           });
         } catch {
@@ -312,7 +312,7 @@ async function runMigration(plugin: EscritaPlugin, p: Prepared, addType: boolean
     if (addUniverse) {
       try {
         let added = false;
-        await fileManager.processFrontMatter(p.note, (fm: Record<string, unknown>) => {
+        await plugin.notes.frontmatter(p.note, (fm) => {
           if (hasValue(fm[s.universeProperty])) return;
           fm[s.universeProperty] = `[[${p.universeLinkText}]]`;
           added = true;

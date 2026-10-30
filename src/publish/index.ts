@@ -188,7 +188,7 @@ export class PublishModule extends FeatureModule implements PublishNextPort {
   }
 
   /**
-   * Sets status and date in one processFrontMatter call. The date is written
+   * Sets status and date in one notes.frontmatter call. The date is written
    * when the user picked one, or when the note has no date yet; an existing
    * value is left exactly as it is otherwise, even one that isn't YYYY-MM-DD.
    */
@@ -201,9 +201,7 @@ export class PublishModule extends FeatureModule implements PublishNextPort {
     // The text as it was, before the properties change. Never blocks publishing.
     if (this.plugin.features.isOn("snapshots")) await this.plugin.snapshots.beforePublish(file);
     try {
-      // the editor may hold unsaved text: on disk first, or the write below replaces it
-      await this.plugin.notes.flush(file);
-      await this.plugin.app.fileManager.processFrontMatter(file, (fm: Frontmatter) => {
+      await this.plugin.notes.frontmatter(file, (fm: Frontmatter) => {
         previous = fm[s.statusProperty];
         wasPublished = isPublished(previous, s.stages);
         fm[s.statusProperty] = writtenWord(s.stages, "published");
@@ -243,9 +241,7 @@ export class PublishModule extends FeatureModule implements PublishNextPort {
     const record = this.plugin.data.publish[file.path];
     const status = record?.previousStatus?.trim() || writtenWord(s.stages, "ready");
     try {
-      // the editor may hold unsaved text: on disk first, or the write below replaces it
-      await this.plugin.notes.flush(file);
-      await this.plugin.app.fileManager.processFrontMatter(file, (fm: Frontmatter) => {
+      await this.plugin.notes.frontmatter(file, (fm: Frontmatter) => {
         fm[s.statusProperty] = status;
       });
     } catch (e) {

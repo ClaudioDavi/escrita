@@ -10,6 +10,7 @@ let plugin: FakePlugin;
 let mod: ScreenplayModule;
 let form: string | null;
 let reads: number;
+let missing: Set<string>;
 const file = (path: string) => ({ path }) as never;
 
 beforeEach(() => {
@@ -17,6 +18,10 @@ beforeEach(() => {
   form = "screenplay";
   reads = 0;
   plugin.books = { classify: () => { reads++; return { form }; } };
+  // the cache has every note by default; a test that needs one missing deletes it
+  plugin.app.metadataCache.getFileCache = (f: { path: string } | null | undefined) =>
+    f && !missing.has(f.path) ? {} : null;
+  missing = new Set();
   mod = new ScreenplayModule(plugin.asPlugin);
   const registry = new FeatureRegistry(plugin.asPlugin, new Map<FeatureId, ScreenplayModule>([["screenplay", mod]]));
   plugin.features = registry;
@@ -78,6 +83,38 @@ describe("screenplay form per path", () => {
     form = null;
     mod.settingsChanged();
     expect(mod.isScreenplayFile(file("a.md"))).toBe(false);
+  });
+
+  it("a no read before the cache has the note is not kept", () => {
+    form = null;
+    missing.add("a.md");
+    expect(mod.isScreenplayFile(file("a.md"))).toBe(false);
+    missing.delete("a.md");
+    form = "screenplay";
+    expect(mod.isScreenplayFile(file("a.md"))).toBe(true);
+  });
+
+  it("when indexing settles, a kept no is read again and a kept yes is not", () => {
+    plugin.app.vault.files.set("a.md", file("a.md"));
+    plugin.app.vault.files.set("b.md", file("b.md"));
+    expect(mod.isScreenplayFile(file("b.md"))).toBe(true);
+    form = null;
+    expect(mod.isScreenplayFile(file("a.md"))).toBe(false);
+    form = "screenplay";
+    const before = reads;
+    plugin.app.metadataCache.trigger("resolved");
+    expect(reads).toBe(before + 1); // only a.md
+    expect(mod.isScreenplayFile(file("a.md"))).toBe(true);
+  });
+
+  it("when indexing settles, a kept no for a path that is gone is dropped", () => {
+    form = null;
+    expect(mod.isScreenplayFile(file("gone.md"))).toBe(false);
+    const before = reads;
+    plugin.app.metadataCache.trigger("resolved");
+    expect(reads).toBe(before);
+    form = "screenplay";
+    expect(mod.isScreenplayFile(file("gone.md"))).toBe(true);
   });
 
   it("unloading clears the answers", () => {

@@ -515,7 +515,7 @@ export class UniverseModule extends FeatureModule {
     let wrote = false;
     const uf = p.app.vault.getAbstractFileByPath(universe.note);
     const link = uf instanceof TFile ? p.app.metadataCache.fileToLinktext(uf, file.path, true) : universe.name;
-    await p.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+    await p.notes.frontmatter(file, (fm) => {
       const cur = fm[p.settings.universeProperty];
       if (cur !== undefined && cur !== null && cur !== "") return;
       fm[p.settings.universeProperty] = `[[${link}]]`;

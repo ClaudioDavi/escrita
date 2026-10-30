@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (1.2.3 at the time of writing). The author's
+Current version: see `manifest.json` (1.2.4 at the time of writing). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down
@@ -51,7 +51,7 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
    is built.
 8. **Obsidian community guidelines** (the plugin will be submitted): no `innerHTML`,
    no default hotkeys, `register*` for everything (through the module's `ModuleContext`), `vault.process` /
-   `processFrontMatter` / `fileManager.renameFile` / `trashFile`, `normalizePath`, no
+   `processFrontMatter` (only through `plugin.notes.frontmatter`) / `fileManager.renameFile` / `trashFile`, `normalizePath`, no
    Node or Electron APIs, no `console.log`. Exceptions are listed in ARCHITECTURE.md;
    don't add one without listing it there.
 
@@ -84,6 +84,9 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   - `notes.create(path, data, { exists, trashOld })`: every new file (text or binary).
     `exists` is `return`, `fail`, `unique` or `replace`; `replace` refuses a case-only
     clash, and `trashOld` sends the old file to the trash first.
+  - `notes.frontmatter(file, fn)` (1.2.4): every property write. It saves the file's views first
+    (`flush`), then calls `processFrontMatter`, which nothing else in `src/` calls
+    (`tests/frontmatter-writes.test.ts`).
   - `decorations`: the only code that draws in the file explorer.
   - `chapterOps`: create, renumber, retitle chapters.
   - `features`: the registry; `features.isOn(id)` for a soft dependency on another feature. A
@@ -138,7 +141,7 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   `core/fountain.ts`, `core/screenplay-keys.ts` (`decideKey`) and `core/screenplay-suggest.ts`.
   `src/ui/editor-glue.ts` (`EditorSet`, `fileOfState`, `isLivePreview`, `cmOf`) and
   `src/ui/reveal-on-touch.ts` are the shared editor plumbing (improvement 38). `NoteService.flush(file)`
-  saves a file's views before a write that reads the disk. The reader's source is a book, a
+  saves a file's views before a write that reads the disk (since 1.2.4 every property write gets it through `notes.frontmatter`). The reader's source is a book, a
   collection or a note (`readerSource`; "Read this note"). The lens keeps each sentence's length
   (`sentenceWords`, `sentencePara`) for the Rhythm section. Details: ARCHITECTURE.md, "The screenplay
   editor" and "Editor glue".
@@ -281,6 +284,9 @@ and what upkeep it asks of the writer.
 - **1.2.3 (shipped), the count you can trust**: words in a note that stays open count again, and
   one history for every device that syncs the vault (`plugin.history`). Improvement: the goals
   slice of 48. Plan and results in `docs/PLAN-1.2.3.md`.
+- **1.2.4 (shipped), fixes**: a screenplay note no longer opens as plain text until edited, and
+  every property write saves the open editor first (`notes.frontmatter`). Improvement: the known
+  issue of the `processFrontMatter` callers without a flush.
 - **Next**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
 
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and

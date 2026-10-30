@@ -274,11 +274,9 @@ export default class EscritaPlugin extends Plugin {
     if (!needsDraftStatus(this.books.classify(file), fm, o)) return;
     const word = writtenWord(s.stages, "draft");
     try {
-      // the writer may be typing in the new note: put the editor's unsaved text on disk first, or
-      // processFrontMatter reads the older file and its write replaces what was typed (rule 1)
-      await this.notes.flush(file);
-      // checked again inside: the file may have gained a status since the cache was read
-      await this.app.fileManager.processFrontMatter(file, (front: Record<string, unknown>) => {
+      // checked again inside: the file may have gained a status since the cache was read; frontmatter
+      // saves the editor first, so typing in the new note survives (rule 1)
+      await this.notes.frontmatter(file, (front) => {
         if (needsDraftStatus(this.books.classify(file), front, o)) front[prop] = word;
       });
     } catch {
