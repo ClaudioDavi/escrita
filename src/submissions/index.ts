@@ -3,7 +3,7 @@ import type EscritaPlugin from "../main";
 import { FeatureModule, type SettingsUi } from "../core/module-context";
 import type { FeatureId } from "../core/features";
 import type { Follower, VaultIndex } from "../core/vault-index";
-import type { PendingSource, PendingSubmission } from "../core/pending";
+import type { PendingHost, PendingSource, PendingSubmission } from "../core/pending";
 import { followFolderSetting, inSubmissions, pluginRoot } from "../core/classify";
 import { isoDay } from "../core/dates";
 import { writtenWord } from "../core/stages";
@@ -20,7 +20,7 @@ import {
  * Submissions (SF 12, 0.8): one note per submission, "Record a submission" for the active
  * note's work, and the pending list the home block counts (the `pending` port, Q12).
  */
-export class SubmissionsModule extends FeatureModule {
+export class SubmissionsModule extends FeatureModule implements PendingHost {
   readonly id: FeatureId = "submissions";
 
   private index: VaultIndex<TFile, SubmissionRow> | null = null;

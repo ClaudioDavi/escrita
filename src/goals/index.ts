@@ -22,13 +22,13 @@ import {
 } from "./tracker";
 import { goalsSettingsItems, goalsOffNotice } from "./settings-ui";
 import type { SettingsBlock } from "../ui/settings-rows";
-import type { DailyProgress, DailyProgressSource } from "../core/daily-progress";
+import type { DailyProgress, DailyProgressHost, DailyProgressSource } from "../core/daily-progress";
 
 /**
  * Word goals: tracks real typing in the active file, shows progress in the
  * status bar and the progress modal, and runs writing sprints.
  */
-export class GoalsModule extends FeatureModule {
+export class GoalsModule extends FeatureModule implements DailyProgressHost {
   readonly id: FeatureId = "goals";
   readonly slots = { editors: 1 };
   /** word count of each file when we last looked, so each change yields a delta */

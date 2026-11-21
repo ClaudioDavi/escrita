@@ -8,12 +8,11 @@ import { readStatus } from "../core/stages";
 import { bookChapterProgress, type DeskEntry } from "../core/works";
 import { buildDesk, filterByFolders, type DeskModel, type WorkSource } from "./works";
 import { parseBlock } from "./block";
-import type { PendingSource } from "../core/pending";
+import { pendingOf, type PendingSource } from "../core/pending";
 
 /** The pending-submissions port, only while the submissions feature is on (never imports that module). */
 export function pendingSource(plugin: EscritaPlugin): PendingSource | null {
-  if (!plugin.features.isOn("submissions")) return null;
-  return plugin.features.get<{ pending?: PendingSource }>("submissions")?.pending ?? null;
+  return pendingOf(plugin.features);
 }
 
 export type DeskNotice =
