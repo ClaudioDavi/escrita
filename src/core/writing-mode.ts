@@ -5,7 +5,7 @@
 // never by importing the desk. With the desk off there is no writing mode: the caller does
 // without it. Pure, no Obsidian imports.
 
-import type { FeatureId } from "./features";
+import { port, type PortSource } from "./feature-ports";
 
 /**
  * Only the note: the sidebars, tab bar, ribbon and status bar hide (a body class,
@@ -37,6 +37,6 @@ export interface WritingModeHost {
 }
 
 /** The writing mode while the desk is on, else null (a soft dependency on "desk"). */
-export function writingModeOf(features: { get<T>(id: FeatureId): T | undefined }): WritingModePort | null {
-  return features.get<WritingModeHost>("desk")?.writingMode ?? null;
+export function writingModeOf(features: PortSource): WritingModePort | null {
+  return port(features, "desk")?.writingMode ?? null;
 }

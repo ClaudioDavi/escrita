@@ -27,7 +27,8 @@ import {
   type ChipModel, type ColorBy,
 } from "./header";
 import { renderPieceBar } from "./bar";
-import { bookSerial, serialLine, type PublishNextPort } from "../core/serial";
+import { bookSerial, serialLine } from "../core/serial";
+import { port } from "../core/feature-ports";
 import { VIEW_TYPES } from "../core/view-types";
 
 export const OUTLINE_VIEW = VIEW_TYPES.outline;
@@ -693,14 +694,14 @@ export class OutlineView extends ItemView {
   private renderSerial(): void {
     const book = this.book;
     if (!book || !this.serialEl || !this.actionsEl) return;
-    const port = this.plugin.features.get<PublishNextPort>("publish");
+    const publishPort = port(this.plugin.features, "publish");
     // the line is part of "Publish next chapter": with the publish feature off, the header shows neither
-    const state = port ? bookSerial(this.plugin.outline.rowsPort(), book, this.plugin.settings) : null;
+    const state = publishPort ? bookSerial(this.plugin.outline.rowsPort(), book, this.plugin.settings) : null;
     renderSerialLine(this.serialEl, state ? serialLine(state) : null);
     const notePath = book.note.path;
     renderHeaderActions(this.actionsEl, {
       // board 32d: no line and no button until a chapter is published (the palette command still works)
-      publishNext: port && state?.next && state.last ? () => { void port.publishNext(notePath); } : null,
+      publishNext: publishPort && state?.next && state.last ? () => { void publishPort.publishNext(notePath); } : null,
       readBook: () => { if (this.book) void this.plugin.outline.openReader(this.book); },
     });
   }
