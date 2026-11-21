@@ -1044,9 +1044,10 @@ of sitting down to write. Until now the tracking guide sent writers to a zen plu
 **Decided by the author (2026-11-03).**
 
 - Only in writing mode. No command or mode of its own.
-- On by default, with a setting to turn it off: **Typewriter scroll in writing mode**
-  (`writingModeTypewriter`, bool, default on, read by the desk), in the Home note group
-  beside "Open in writing mode". One row in `core/settings-schema.ts`.
+- On by default for tracked notes, with one setting: **Typewriter scroll in writing mode**
+  ("Modo máquina de escrever"; `writingModeTypewriter`: tracked notes, every note, or off; read
+  by the desk), in the Home note group beside "Open in writing mode". Tracked notes are the
+  works in the track folders, so the home note never scrolls (the author, 2026-11-21).
 - The line sits **two thirds of the way down** the editor, fixed, not a setting: two thirds of
   the screen show the text above it (corrected by the author 2026-11-21; first written as "a
   third").
@@ -1057,9 +1058,9 @@ of sitting down to write. Until now the tracking guide sent writers to a zen plu
 
 - While writing mode is on, the line with the cursor stays two thirds of the way down the
   editor as you type: each new line scrolls the note up, not the cursor down.
-- Room above the first line and below the last one, so the first line can sit at two thirds
-  and the last line can too. Only drawn in writing mode; it is space on screen, never text in
-  the note (rule 1).
+- The scroll starts once the text reaches two thirds: a short note never moves and no space is
+  added above the title. Below the last line, Obsidian's own room past the end lets the last
+  line reach two thirds (PLAN-1.2.5, D4).
 - Typing, Enter and the arrow keys bring the line back to its place. A click or a scroll with
   the mouse or trackpad does not: the writer can look around, and the next keystroke brings
   the line back.
@@ -1072,11 +1073,9 @@ of sitting down to write. Until now the tracking guide sent writers to a zen plu
 open editors). On a transaction that changes the document or moves the cursor from the
 keyboard (PLAN-1.2.5, D3: the arrows send a plain `select`; never `select.pointer`), a
 transaction extender adds `EditorView.scrollIntoView(head, { y: "start", yMargin })` with
-`yMargin` two thirds of the editor's height (measured in a `requestMeasure`). The space is CSS under a body class set only
-while the mode and the setting are on (`escrita-typewriter`): two thirds of the height above the first line, a third below the last
-(PLAN-1.2.5, D4).
-The extension reads the mode through the writing mode port and does nothing while it is off,
-on a phone, or with the setting off. The pure part (which transactions recenter, the target
+`yMargin` two thirds of the editor's height (measured in a `requestMeasure`). No space is added
+(PLAN-1.2.5, D4). The extension reads the mode through the writing mode port and does nothing
+while it is off, on a phone, with the setting off, or in a note the setting leaves out. The pure part (which transactions recenter, the target
 offset) is a function in `core/` with vitest tests; an e2e spec checks that the cursor line
 stays two thirds of the way down after typing at the end of a long note, and that a click does
 not scroll.

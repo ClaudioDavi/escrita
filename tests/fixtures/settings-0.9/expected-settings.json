@@ -32,7 +32,7 @@
   "homeNote": "Início.md",
   "openHomeOnStartup": true,
   "openInWritingMode": false,
-  "writingModeTypewriter": true,
+  "writingModeTypewriter": "tracked",
   "summaryProperty": "summary",
   "dailyGoal": 500,
   "dayEndsAt": 0,

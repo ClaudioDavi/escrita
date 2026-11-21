@@ -1,6 +1,6 @@
 // The typewriter scroll's decisions (1.2.5, SF 17; PLAN-1.2.5 D3, D5). In writing mode the line
-// being typed stays two thirds of the way down the editor (two thirds of the screen show the text
-// above it) and the note scrolls instead. The desk's
+// being typed stays two thirds of the way down the editor once it gets there (two thirds of the
+// screen show the text above it; a short note never scrolls, no space is added above the title) and the note scrolls instead. The desk's
 // extension (desk/typewriter.ts) reads a CodeMirror transaction into a `TypewriterTransaction`
 // and asks `recenters`; when it says yes, the extender adds a `scrollIntoView` at the cursor with
 // `typewriterMargin` of the editor's height. Pure, no Obsidian or CodeMirror imports: the input is
@@ -38,7 +38,8 @@ export interface TypewriterTransaction {
 /**
  * Whether this transaction brings the cursor's line back to two thirds of the way down.
  *
- * - Never while `active` is false (writing mode off, the setting off, or a phone).
+ * - Never while `active` is false (writing mode off, the setting off, a phone, or a note the setting
+ *   leaves out: with "tracked", a note outside the track folders such as the home note).
  * - Never without a user event, and never for a pointer event: "select.pointer" (a click or a
  *   mouse drag), "move.drop" and "input.drop" (drag and drop). The next keystroke recenters.
  * - Yes for "input", "delete", "move", "undo" and "redo" and their sub-events ("input.type",
