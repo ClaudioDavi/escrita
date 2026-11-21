@@ -14,9 +14,9 @@ beforeEach(() => resetSettingLog());
 const plugin = (leftOff: Record<string, unknown> = {}) => ({ settings: { ...DEFAULT_SETTINGS }, data: { leftOff } });
 
 describe("desk settings items", () => {
-  it("are the home note and the startup toggles, with no heading (the tab draws the slot's)", () => {
+  it("are the home note, the startup toggles and the typewriter scroll, with no heading (the tab draws the slot's)", () => {
     renderBlocks(deskSettingsItems(fakeUi().ui, plugin() as never));
-    expect(settingLog.map((r) => r.name)).toEqual([t("settings.homeNote"), t("settings.openHomeOnStartup"), t("desk.writingMode.setting")]);
+    expect(settingLog.map((r) => r.name)).toEqual([t("settings.homeNote"), t("settings.openHomeOnStartup"), t("desk.writingMode.setting"), t("desk.typewriter.setting")]);
     expect(settingLog.some((r) => r.heading)).toBe(false);
   });
 
