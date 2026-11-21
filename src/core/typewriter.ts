@@ -33,6 +33,8 @@ export interface TypewriterTransaction {
   docChanged: boolean;
   /** the main cursor's head is somewhere else after the transaction */
   selectionMoved: boolean;
+  /** the main selection is empty after the transaction (a cursor, not a range such as select-all); the extension fills it from `tr.newSelection.main.empty` */
+  selectionEmpty: boolean;
 }
 
 /**
@@ -44,17 +46,25 @@ export interface TypewriterTransaction {
  *   mouse drag), "move.drop" and "input.drop" (drag and drop). The next keystroke recenters.
  * - Yes for "input", "delete", "move", "undo" and "redo" and their sub-events ("input.type",
  *   "delete.backward"…), when the document changed or the cursor moved.
- * - Yes for a plain "select" (the arrow keys, Home, End, Page Up/Down, with or without Shift)
- *   when the cursor moved.
- * - Any other event (another plugin's own name, "select.*" other than the above) does not.
+ * - Yes for a plain "select" (the arrow keys, Home, End, Page Up/Down) when the cursor moved and
+ *   the selection is empty (Shift+arrows and select-all leave a range and do not recenter).
+ * - Yes for "select.undo" and "select.redo" when the cursor moved.
+ * - Any other event (another plugin's own name, "select.search"…) does not.
  *
  * An event matches a name when it equals it or starts with it followed by a dot, as
  * `Transaction.isUserEvent` does.
  */
 export function recenters(tr: TypewriterTransaction, active: boolean): boolean {
-  void tr;
-  void active;
-  throw new Error("1.2.5 Wave 1");
+  const ev = tr.userEvent;
+  if (!active || !ev) return false;
+  const is = (name: string): boolean => ev === name || ev.startsWith(name + ".");
+  if (is("select.pointer") || is("move.drop") || is("input.drop")) return false;
+  if (is("select.undo") || is("select.redo")) return tr.selectionMoved;
+  if (ev === "select") return tr.selectionMoved && tr.selectionEmpty;
+  for (const name of ["input", "delete", "move", "undo", "redo"]) {
+    if (is(name)) return tr.docChanged || tr.selectionMoved;
+  }
+  return false;
 }
 
 /**
@@ -63,6 +73,6 @@ export function recenters(tr: TypewriterTransaction, active: boolean): boolean {
  * before the first measure). The extension passes it as `yMargin` with `y: "start"`.
  */
 export function typewriterMargin(editorHeight: number): number {
-  void editorHeight;
-  throw new Error("1.2.5 Wave 1");
+  if (!Number.isFinite(editorHeight) || editorHeight <= 0) return 0;
+  return Math.round(editorHeight * TYPEWRITER_FRACTION);
 }
