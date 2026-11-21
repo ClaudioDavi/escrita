@@ -134,3 +134,48 @@ folder importing another, and the merge of the three branches into `1.2.5`.
 - **Judge (Opus):** all three accepted. D3 and D4 rewritten from the spike; task T gets
   `selectionEmpty` so select-all and Shift selections never recenter.
 
+
+### Wave 1 (2026-11-21)
+
+- **T, typewriter core:** merged (`685131e`). `recenters` follows D3 with `selectionEmpty`
+  (`select.pointer`, `move.drop` and `input.drop` checked first; a plain `select` needs the cursor
+  moved and an empty selection; `select.undo`/`select.redo` need the cursor moved); event names
+  match as `isUserEvent` does. `typewriterMargin` is 0 for 0, negative and non-finite heights.
+  `tests/typewriter.test.ts`.
+- **E, the extension:** merged (`67970a2`, the e2e fix `333dc05`). `src/desk/typewriter.ts`: an
+  `EditorState.transactionExtender` plus a `ViewPlugin` that measures `scrollDOM.clientHeight`
+  (key `"tw"`) into a per-instance `WeakMap`; the extender finds its view by
+  `view.state === tr.startState` (right in splits and pop-outs, no focus tracking). Only a
+  `MarkdownView`'s own editor on a `.md` file (embeds, popovers and canvas cards are left out),
+  never on a phone; "tracked" reads `books.classify(file).tracked`, cached by path. One editor slot
+  on the desk; the dropdown row after "Open in writing mode". Lifecycle test
+  `tests/lifecycle-typewriter.test.ts`. **Deviation from D5:** the mode is read live
+  (`isActive()`), not through `onChange`, so there is nothing to subscribe to or undo.
+- **I, improvement 42:** merged (`0921828`, merge `0987f18`). `writingModeOf`, `dailyProgressOf`,
+  the new `pendingOf` (in `core/pending.ts`) and the outline's publish-next read go through
+  `port()`; `GoalsModule implements DailyProgressHost`, `SubmissionsModule implements
+  PendingHost`. The helper names are kept, so no caller changed. Behavior unchanged.
+- **Judge fixes** (`93e03c9`): the extension uses `TypewriterTransaction` directly; the tracked
+  cache is also cleared when the desk loads (settings can change while it is off); four comments
+  that still named `features.get` now name `port()`.
+- **Checks on `1.2.5`:** typecheck, vitest (255 files, 5244 passed, 2 skipped), build,
+  test:bundle (4), lint (zero warnings).
+- **Typewriter e2e** (8 of 8, `tests/e2e/specs/typewriter.spec.ts`, band 0.63 to 0.70 unchanged):
+  every "at two thirds" check measured 0.6667 of the scroller height: typing at the end (Live
+  Preview and source), Enter, ArrowDown, PageDown, Ctrl+End, Ctrl+Z, the next key after a click
+  and a mouse scroll, after resizes to 550 and 800 px, the setting back on, and an untracked note
+  with "all". A click, a wheel scroll and select-all left scrollTop unchanged; a short note and
+  the first lines of a long one stayed at 0; the setting off and leaving the mode left scrollTop
+  exactly unchanged; an untracked note with "tracked" never moved. D4's padding fallback was not
+  needed.
+- **Full `npm run e2e`:** 261 passed, 12 failed, 7 skipped, 3 did not run. None comes from Wave 1:
+  - 11 fail closing Obsidian with "Protocol error (Page.handleJavaScriptDialog): No dialog is
+    showing" (a `beforeunload` dialog when a window with edited notes closes; collections 14,
+    demo-findings 9, 3, 5 and 6, new-work 10, release-fixes 3, screenplay-editor 19, setup G2b 3
+    and 4, unlinked 14). The same three tried on the build before the extension (`tw-core`)
+    fail the same way. The typewriter spec works around it in its own `afterAll`.
+  - 2 timing bars miss on this machine (screenplay editor 19 fails both ways), also on the build
+    before the extension: screenplay
+    editor 19, typing median 10.3 ms against 10 (10.3 on the baseline too); "Read the book" G0d,
+    longest task 54 to 66 ms against no long task (45 to 61 ms on the baseline; 1.1 measured 23
+    to 28).
