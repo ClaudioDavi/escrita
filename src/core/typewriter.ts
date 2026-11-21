@@ -1,5 +1,6 @@
 // The typewriter scroll's decisions (1.2.5, SF 17; PLAN-1.2.5 D3, D5). In writing mode the line
-// being typed stays a third of the way down the editor and the note scrolls instead. The desk's
+// being typed stays two thirds of the way down the editor (two thirds of the screen show the text
+// above it) and the note scrolls instead. The desk's
 // extension (desk/typewriter.ts) reads a CodeMirror transaction into a `TypewriterTransaction`
 // and asks `recenters`; when it says yes, the extender adds a `scrollIntoView` at the cursor with
 // `typewriterMargin` of the editor's height. Pure, no Obsidian or CodeMirror imports: the input is
@@ -17,8 +18,8 @@
 // - a click or a drag of the mouse is "select.pointer"; a drop from outside is "input.drop".
 // A transaction with no user event (another plugin, Obsidian itself, a sync) never recenters.
 
-/** The line sits this far down the editor: a third (decided by the author, not a setting). */
-export const TYPEWRITER_FRACTION = 1 / 3;
+/** The line sits this far down the editor: two thirds (decided by the author 2026-11-21, not a setting). */
+export const TYPEWRITER_FRACTION = 2 / 3;
 
 /**
  * What `recenters` needs from one CodeMirror transaction, as plain values. The extension fills it
@@ -35,7 +36,7 @@ export interface TypewriterTransaction {
 }
 
 /**
- * Whether this transaction brings the cursor's line back to a third of the way down.
+ * Whether this transaction brings the cursor's line back to two thirds of the way down.
  *
  * - Never while `active` is false (writing mode off, the setting off, or a phone).
  * - Never without a user event, and never for a pointer event: "select.pointer" (a click or a
@@ -56,7 +57,7 @@ export function recenters(tr: TypewriterTransaction, active: boolean): boolean {
 }
 
 /**
- * The space kept above the cursor's line, in pixels: a third of the editor's visible height,
+ * The space kept above the cursor's line, in pixels: `TYPEWRITER_FRACTION` (two thirds) of the editor's visible height,
  * rounded to a whole pixel, never negative (0 for a zero, negative or non-finite height, as
  * before the first measure). The extension passes it as `yMargin` with `y: "start"`.
  */

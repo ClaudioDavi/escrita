@@ -121,7 +121,7 @@ IMPROVEMENTS.md, "Known issues".
 
 ## Next small version: typewriter scroll in writing mode
 
-Asked for by the author on 2026-11-03: in writing mode, the line being typed stays a third
+Asked for by the author on 2026-11-03: in writing mode, the line being typed stays two thirds
 of the way down the screen and the note scrolls instead. Desktop only, on by default, one
 setting to turn it off. Small (S): a CodeMirror extension in the desk on the editor glue and
 CSS padding; details in SF 17. Serves drafting; no upkeep. The version (1.2.5 or with the next minor), its improvement
@@ -129,7 +129,7 @@ and its plan come when it is planned.
 
 | Feature | Ref | Effort | Stage | Status |
 |---|---|---|---|---|
-| Typewriter scroll in writing mode: the cursor line held a third of the way down (desktop, on by default) | SF 17 | S | Draft | Planned |
+| Typewriter scroll in writing mode: the cursor line held two thirds of the way down (desktop, on by default) | SF 17 | S | Draft | Planned |
 
 ## Next: universe phase 2
 

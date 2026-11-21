@@ -51,7 +51,7 @@ export interface EscritaSettings extends UniverseSettings, FormSettings {
   openInWritingMode: boolean;
   /**
    * Typewriter scroll in writing mode (1.2.5, SF 17): while writing mode is on, the line being
-   * typed stays a third of the way down the editor and the note scrolls instead. On by default;
+   * typed stays two thirds of the way down the editor and the note scrolls instead. On by default;
    * desktop only (the desk's extension does nothing on a phone). Read only while the desk is on.
    */
   writingModeTypewriter: boolean;
