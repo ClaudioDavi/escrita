@@ -36,9 +36,9 @@ default, with one setting to turn it off.
 | # | Question | Decision |
 |---|---|---|
 | D1 | Version | **1.2.5**, a patch: one small feature and one fix, no new switch. |
-| D2 | Improvement | **IMPROVEMENTS 42, typed feature ports.** The desk's writing-mode port is one of the shims it names (`core/writing-mode.ts:41`), and the typewriter reads the mode. A `FeaturePorts` map in core and `port<K>(id)`; `writingModeOf`, `dailyProgressOf`, the desk's pending read (`desk/gather.ts:15`) and the outline's publish-next read (`outline/view.ts:669`) move to it. Candidate 24's "create entry" part is not in this version. |
-| D3 | How the scroll is made | **No dispatch of our own.** An `EditorState.transactionExtender` adds `EditorView.scrollIntoView(head, { y: "start", yMargin })` to a transaction that changes the document or moves the cursor from the keyboard (`userEvent` `input`, `delete`, `move`, `undo`, `redo`; never `select.pointer`). The margin is a third of the editor's height, measured by a small `ViewPlugin` in a `requestMeasure` and kept in a field the extender reads. Whether CodeMirror lets our effect win over Obsidian's own `scrollIntoView` is spike S0's first question. |
-| D4 | The space above and below | CSS under the body class `escrita-typewriter`, set by the desk only while writing mode and the setting are on and not on a phone: `padding-block` on `.cm-content`, a third of the editor's height above and two thirds below (S0 picks between `vh` units and a CSS variable the measure plugin sets on the editor). Never text in the note. |
+| D2 | Improvement | **IMPROVEMENTS 42, typed feature ports.** The desk's writing-mode port is one of the shims it names (`core/writing-mode.ts:41`), and the typewriter reads the mode. A `FeaturePorts` map in core and `port<K>(id)`; `writingModeOf`, `dailyProgressOf`, the desk's pending read (`desk/gather.ts:15`) and the outline's publish-next read (`outline/view.ts:696`) move to it. Candidate 24's "create entry" part is not in this version. |
+| D3 | How the scroll is made | **No dispatch of our own** (final after S0). An `EditorState.transactionExtender` adds `EditorView.scrollIntoView(head, { y: "start", yMargin })` when `recenters` says yes. S0 measured that it wins over Obsidian's and CodeMirror's own scroll in Live Preview and source mode: the line sits at 0.333 of the height, no flicker. On an empty line it sits 24 px low (0.365), accepted. A later dispatch also reached 0.333 but flickered for a frame, so it is not used. **What recenters:** `input`, `delete`, `move`, `undo`, `redo` and their sub-events, when the document changed or the cursor moved; a plain `select` (arrows, Home, End, Page Up/Down, Ctrl+Home/End; the arrows send `select`, not `move`) when the cursor moved and nothing is selected; `select.undo`, `select.redo`. **Never:** no user event, `select.pointer` (a click), `move.drop`, `input.drop`, any other `select.*`, select-all or a Shift selection. A mouse scroll is not a transaction: the view stays until the next keystroke. **The margin** is `typewriterMargin` of the editor's `scrollDOM.clientHeight`, read by a small `ViewPlugin` in a `requestMeasure` (key `"tw"`) on start and on a change of geometry, viewport or focus, kept per view, never module-level. The extender reads a flag (writing mode, the setting, not a phone), not the body class. |
+| D4 | The space above and below | CSS under the body class `escrita-typewriter`, set by the desk only while writing mode and the setting are on and not on a phone. The measure plugin sets `--escrita-tw-h` (the scroller's height in px) on each `.cm-editor`; not `vh`, which S0 measured 12 px off because the scroller is shorter than the window. A third of it above, two thirds below, in a Markdown leaf's note editor only (never embeds, popovers or Canvas cards). **Above:** `padding-top` on `.cm-sizer`, so the inline title and properties sit just above the first line; if that fails in Wave 1's e2e, `.cm-content` and accept the gap. **Below:** `padding-bottom` on `.cm-content` with `!important`, over Obsidian's own 50% "scroll past end" (381 px measured). Readable line length changes nothing (measured). Never text in the note. Leaving the mode or turning the setting off removes the class; the scroll position stays. |
 | D5 | Where the code lives | Pure: `src/core/typewriter.ts` (`recenters(tr-like input)`, `typewriterMargin(height)`), tested in `tests/typewriter.test.ts`. Obsidian-facing: `src/desk/typewriter.ts`, the extension built on the editor glue (`EditorSet`), registered through the desk's `ModuleContext` (the desk declares `editors: 1` in its slots). It reads the mode through `WritingModePort.onChange`, the setting through `plugin.settings`. |
 | D6 | Other plugins | A zen or typewriter plugin running at the same time fights over the scroll. Not detected; the guide says to turn one of the two off. |
 
@@ -74,9 +74,9 @@ and D4. Then the author: G1.
 
 | Task | Owns |
 |---|---|
-| T, typewriter core | `core/typewriter.ts` bodies, `tests/typewriter.test.ts` |
-| E, the extension | `desk/typewriter.ts`, `desk/index.ts` (slots, registration), `desk/writing-mode.ts` (the body class), `desk/styles.css`, `desk/settings-ui.ts` (the row), a lifecycle test (loads, unloads, leaves no class or extension behind), and `tests/e2e/specs/typewriter.spec.ts` (the line at a third after typing at the end of a long note, Enter and arrows recenter, a click does not, the setting off and leaving the mode remove the space) |
-| I, improvement 42 | `core/feature-registry.ts`, a new `core/feature-ports.ts`, `core/writing-mode.ts`, `core/daily-progress.ts`, `core/pending.ts`, `desk/gather.ts`, `outline/view.ts` (the publish-next read only), their tests. Behavior unchanged |
+| T, typewriter core | `core/typewriter.ts` bodies, with `selectionEmpty` added to `TypewriterTransaction` (the judge's change), and `tests/typewriter.test.ts`: true for `select` with the cursor moved and nothing selected, `input.type` with the document changed, `select.undo`; false for `select.pointer`, `move.drop`, `input.drop`, `select` with a selection, no event, inactive; `typewriterMargin` at 0, NaN, negative, and rounding |
+| E, the extension | `desk/typewriter.ts`, `desk/index.ts` (slots, registration), `desk/writing-mode.ts` (the body class), `desk/styles.css`, `desk/settings-ui.ts` (the row), a lifecycle test (loads, unloads, leaves no class or extension behind), and `tests/e2e/specs/typewriter.spec.ts` on an 80-paragraph note, the line within 0.30 to 0.37 of the height: (a) after typing at the end, Live Preview and source; (b) after Enter, ArrowDown, PageDown, Ctrl+Home, Ctrl+End, Ctrl+Z; (c) a click leaves scrollTop alone, a mouse scroll stays and the next key recenters; (d) select-all does not jump; (e) on the first line the inline title is inside the scroller; (f) after a resize; (g) setting off or leaving the mode: no class, Obsidian's padding back, scrollTop unchanged |
+| I, improvement 42 | `core/feature-registry.ts`, a new `core/feature-ports.ts`, `core/writing-mode.ts`, `core/daily-progress.ts`, `core/pending.ts`, `desk/gather.ts`, `outline/view.ts` (the publish-next read at `:696` only), `implements DailyProgressHost` on `GoalsModule` and `implements PendingHost` on `SubmissionsModule`, `pendingOf` moved into `core/pending.ts`, their tests. Behavior unchanged |
 
 **Judge (Opus):** the diff against this plan, the four checks, `npm run e2e` once, no module
 folder importing another, and the merge of the three branches into `1.2.5`.
@@ -93,9 +93,13 @@ folder importing another, and the merge of the three branches into `1.2.5`.
 
 ## Risks
 
-- Obsidian scrolls the cursor into view on its own; if its effect wins (S0), D3 falls back to a
-  scroll set in the measure phase after the update, which can flicker.
-- Themes that pad the editor (Typewriter, Minimal) may add their own space (TEST-1.0 by-eye list).
+- On an empty line the cursor sits 24 px below the third (S0). Accepted.
+- A native selection change that arrives more than 50 ms after the user's action is sent as a
+  plain `select` (CodeMirror view:4081-4088) and can recenter.
+- Not tested in S0: IME composition, splits and pop-out windows. A split uses the focused view's
+  height.
+- Themes that pad `.cm-sizer` or `.cm-content` (Typewriter, Minimal) may add their own space
+  (TEST-1.0 by-eye list).
 - Mobile: the extension is off on phones, so the risk is only that the class never leaks there;
   the lifecycle test checks it. Phone testing is waived.
 
@@ -105,3 +109,20 @@ folder importing another, and the merge of the three branches into `1.2.5`.
   line or paragraph (a zen plugin's job).
 
 ## Results
+
+### Wave 0 (2026-11-21)
+
+- **C, contracts:** merged into `1.2.5` (`46a2bef`). The setting row (default on), its field and
+  the 0.9 settings fixture; the strings (en "Typewriter scroll in writing mode", pt-BR "Rolagem de
+  máquina de escrever no modo escrita"); `core/typewriter.ts` signatures; `core/feature-ports.ts`
+  (`FeaturePorts`, `port()` as a free function over `{ get }`); `PendingHost` in `core/pending.ts`.
+  Setup leaves the setting alone (the default is already on). Typecheck, vitest (5227) and lint
+  pass.
+- **B, the board:** board 48 on the design canvas, "Typewriter scroll in writing mode (SF 17)".
+  Its setting description is a placeholder; the repo strings win.
+- **S0, the spike:** on `tw-spike` (`c197609`, never merged). Answers in D3 and D4 above. The arrow
+  keys send `select`, not `move`; `vh` is off by the window chrome; Obsidian pads 50% below the
+  last line itself; cost is noise (about 0.1 ms a key).
+- **Judge (Opus):** all three accepted. D3 and D4 rewritten from the spike; task T gets
+  `selectionEmpty` so select-all and Shift selections never recenter.
+
