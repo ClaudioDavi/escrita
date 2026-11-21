@@ -19,7 +19,7 @@ export interface DailyProgressSource {
   onChange(cb: () => void): () => void;
 }
 
-/** What the goals module exposes: `features.get<DailyProgressHost>("goals")?.dailyProgress`. */
+/** What the goals module exposes: `port(features, "goals")?.dailyProgress` (core/feature-ports.ts). */
 export interface DailyProgressHost {
   dailyProgress?: DailyProgressSource;
 }

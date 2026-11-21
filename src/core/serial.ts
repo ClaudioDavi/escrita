@@ -145,7 +145,7 @@ export function earlierUnpublished(state: SerialState, path: string): string[] |
 }
 
 /**
- * What the publish module offers the outline (read through `features.get("publish")`, so
+ * What the publish module offers the outline (read through `port(features, "publish")`, so
  * the outline never imports the module; the module is absent when the feature is off).
  */
 export interface PublishNextPort {

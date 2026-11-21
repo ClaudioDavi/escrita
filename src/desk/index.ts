@@ -51,6 +51,7 @@ export class DeskModule extends FeatureModule implements WritingModeHost {
     const coldStart = !p.app.workspace.layoutReady;
     this.recorder.load(this, ctx);
     this.mode.load(ctx);
+    this.typewriter.settingsChanged();   // settings may have changed while the desk was off
     ctx.editor([this.typewriter.extension]);   // typewriter scroll (1.2.5, SF 17)
     ctx.codeBlock("escrita-works", (src, el, mdCtx) => {
       const block = new DeskBlock(p, el, src, this.recorder);

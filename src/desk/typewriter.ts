@@ -27,9 +27,6 @@ import type { WritingModePort } from "../core/writing-mode";
 import { recenters, typewriterMargin, type TypewriterTransaction } from "../core/typewriter";
 import { EditorSet } from "../ui/editor-glue";
 
-/** What `recenters` reads, plus whether the new selection is empty (select-all and Shift selections never recenter). */
-type Input = TypewriterTransaction & { selectionEmpty: boolean };
-
 export class Typewriter {
   private readonly views = new EditorSet();
   private readonly heights = new WeakMap<EditorView, number>();
@@ -59,7 +56,7 @@ export class Typewriter {
       const userEvent = tr.annotation(Transaction.userEvent);
       if (userEvent === undefined) return null;
       if (!this.modeOn()) return null;
-      const input: Input = {
+      const input: TypewriterTransaction = {
         userEvent,
         docChanged: tr.docChanged,
         selectionMoved: tr.startState.selection.main.head !== tr.newSelection.main.head,

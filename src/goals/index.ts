@@ -53,7 +53,7 @@ export class GoalsModule extends FeatureModule implements DailyProgressHost {
 
   /**
    * The daily progress port (core/daily-progress.ts): today's words and the daily goal,
-   * read by writing mode's counter through `features.get("goals")` while goals are on.
+   * read by writing mode's counter through `dailyProgressOf(features)` while goals are on.
    */
   readonly dailyProgress: DailyProgressSource = {
     current: (): DailyProgress => ({ words: addedOn(this.plugin.history.view(), this.today()), goal: this.plugin.settings.dailyGoal }),

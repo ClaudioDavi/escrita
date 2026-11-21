@@ -31,7 +31,7 @@ export interface WritingModePort {
   onChange(cb: (active: boolean) => void): () => void;
 }
 
-/** What the desk module exposes: `features.get<WritingModeHost>("desk")?.writingMode`. */
+/** What the desk module exposes: `port(features, "desk")?.writingMode` (core/feature-ports.ts). */
 export interface WritingModeHost {
   writingMode?: WritingModePort;
 }
