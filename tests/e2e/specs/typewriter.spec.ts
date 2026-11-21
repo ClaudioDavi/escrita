@@ -93,7 +93,11 @@ test.describe("Typewriter scroll", () => {
     await ob.setSettings({ trackFolders: "Stories", writingModeTypewriter: "tracked", draftNewNotes: false });
     await ob.dismissNotices();
   });
-  test.afterAll(async () => { await ob?.close(); });
+  test.afterAll(async () => {
+    // Closing the window with edited notes open raises Chromium's beforeunload dialog; accept it so the close does not fail.
+    ob?.page.on("dialog", (d) => { void d.accept().catch(() => { /* already handled */ }); });
+    await ob?.close();
+  });
 
   test("(a) typing at the end of a tracked note, in Live Preview and in source mode", async () => {
     await open("Stories/Long.md");
