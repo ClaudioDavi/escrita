@@ -51,7 +51,8 @@ default, with one setting to turn it off.
 - **G1** (before Wave 1's UI task): a short board on the design canvas
   (https://claude.ai/artifact/DGww2xWiadXRuWqVv2jFv6): the setting row (a dropdown) in the Home
   note group, and a note in writing mode with the line two thirds of the way down, light and
-  dark. Approved.
+  dark. Approved. **Passed** 2026-11-21: board 48 (canvas version 52), with the dropdown, a short
+  note where nothing moves, and the home-note caption.
 - **After Wave 0** (2026-11-21), the author: the line at two thirds, not a third; no space above
   the title, the scroll starts once the text reaches two thirds; Shift selections and select-all
   never recenter (approved); pt-BR "Modo máquina de escrever"; only tracked notes by default, as a
