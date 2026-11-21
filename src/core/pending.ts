@@ -23,3 +23,8 @@ export interface PendingSource {
   /** called after the list changes; returns the unsubscribe */
   onChange(cb: () => void): () => void;
 }
+
+/** What the submissions module exposes: its `pending` list while loaded (core/feature-ports.ts). */
+export interface PendingHost {
+  pending?: PendingSource;
+}

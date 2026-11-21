@@ -147,6 +147,7 @@ export const SETTINGS_SCHEMA = {
   homeNote: { default: "", kind: trimmed, readBy: ["desk"] },
   openHomeOnStartup: { default: false, kind: bool, readBy: ["desk"] },
   openInWritingMode: { default: false, kind: bool, readBy: ["desk"] },
+  writingModeTypewriter: { default: true, kind: bool, readBy: ["desk"] },
   summaryProperty: { default: "summary", kind: property, readBy: ALWAYS },
 
   // Goals
