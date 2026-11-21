@@ -287,6 +287,7 @@ and what upkeep it asks of the writer.
 - **1.2.4 (shipped), fixes**: a screenplay note no longer opens as plain text until edited, and
   every property write saves the open editor first (`notes.frontmatter`). Improvement: the known
   issue of the `processFrontMatter` callers without a flush.
+- **Next small version**: typewriter scroll in writing mode (SF 17, asked 2026-11-03).
 - **Next**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
 
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and

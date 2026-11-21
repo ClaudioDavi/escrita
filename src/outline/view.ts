@@ -198,6 +198,12 @@ export class OutlineView extends ItemView {
       this.target = { mode: "book", path: s.book };
     }
     if (s && typeof s.note === "string") this.target = { mode: "note", path: s.note };
+    // The saved state is a fallback, never a choice over the active file. Obsidian calls this
+    // right after onOpen, which has already followed the active note, and a sidebar tab that
+    // was hidden since startup (a deferred view) gets the state saved in the layout, which can
+    // be days old. Forget what was followed, so the next refresh follows the active note
+    // again and the saved note or book shows only when nothing followable is active.
+    this.lastActive = undefined;
     await super.setState(state, result);
     this.requestRefresh();
   }

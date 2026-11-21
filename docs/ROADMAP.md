@@ -119,6 +119,18 @@ IMPROVEMENTS.md, "Known issues".
 **Not in 1.2:** Reading view layout for screenplays, Fountain in dialogue focus and the lens
 (moved to SP 5), pages as a unit (SP 4) and the scene outline (SP 3).
 
+## Next small version: typewriter scroll in writing mode
+
+Asked for by the author on 2026-11-03: in writing mode, the line being typed stays a third
+of the way down the screen and the note scrolls instead. Desktop only, on by default, one
+setting to turn it off. Small (S): a CodeMirror extension in the desk on the editor glue and
+CSS padding; details in SF 17. Serves drafting; no upkeep. The version (1.2.5 or with the next minor), its improvement
+and its plan come when it is planned.
+
+| Feature | Ref | Effort | Stage | Status |
+|---|---|---|---|---|
+| Typewriter scroll in writing mode: the cursor line held a third of the way down (desktop, on by default) | SF 17 | S | Draft | Planned |
+
 ## Next: universe phase 2
 
 Timeline, dates, facts over time, continuity and canon (U 2.1–2.4), moved out of 0.9 on

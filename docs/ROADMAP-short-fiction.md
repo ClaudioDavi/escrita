@@ -57,6 +57,7 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 1.0 | Set up a writing vault and presets (10) | S | Shipped |
 | 1.0.4 | Start a new work: "New short story" and "New book" (14) | S–M | Shipped |
 | 1.2.0 | Read a note (15) · Sentence rhythm in the lens panel (16) | S + S | Shipped |
+| Next small version | Typewriter scroll in writing mode (17) | S | Planned |
 
 Sections keep their original numbers so references from the other roadmaps stay valid.
 
@@ -1029,6 +1030,65 @@ lens.
 - Runs are drawn in orange (the echo color), a bar over the long-sentence threshold is marked,
   and the section says "Place the cursor in a paragraph to see its sentences" when there is
   none. A click on a bar selects its sentence.
+
+## 17. Typewriter scroll in writing mode (planned, the author's request 2026-11-03)
+
+**Why.** In a long note the line being typed sinks to the bottom of the window, and the eye
+follows it down. A typewriter keeps the line in one place and moves the paper. Writing mode
+already strips the screen down to the note; holding the line in one place is the other half
+of sitting down to write. Until now the tracking guide sent writers to a zen plugin for this
+("Next to a zen plugin or a theme").
+
+**Stage and upkeep.** Serves drafting. No upkeep: it comes with writing mode, on by default.
+
+**Decided by the author (2026-11-03).**
+
+- Only in writing mode. No command or mode of its own.
+- On by default, with a setting to turn it off: **Typewriter scroll in writing mode**
+  (`writingModeTypewriter`, bool, default on, read by the desk), in the Home note group
+  beside "Open in writing mode". One row in `core/settings-schema.ts`.
+- The line sits **a third of the way down** the editor, fixed, not a setting.
+- **Desktop only.** No phone support: on a phone (`Platform.isMobile`) writing mode works as
+  today and the extension does nothing; the setting's description says it is for desktop.
+
+**What it does.**
+
+- While writing mode is on, the line with the cursor stays a third of the way down the
+  editor as you type: each new line scrolls the note up, not the cursor down.
+- Room above the first line and below the last one, so the first line can sit at the third
+  and the last line can too. Only drawn in writing mode; it is space on screen, never text in
+  the note (rule 1).
+- Typing, Enter and the arrow keys bring the line back to its place. A click or a scroll with
+  the mouse or trackpad does not: the writer can look around, and the next keystroke brings
+  the line back.
+- Live Preview and source mode. Reading view has no cursor and stays as it is.
+- Leaving writing mode, or turning the setting off, removes the space and stops the
+  recentering; the scroll position stays where it is.
+
+**How.** A CodeMirror extension registered by the desk through its `ModuleContext`, in
+`desk/typewriter.ts`, built on the editor glue (`src/ui/editor-glue.ts`, an `EditorSet` of the
+open editors). On a transaction that changes the document or moves the cursor from the
+keyboard (`userEvent` `input`, `delete`, `move`; not `select.pointer`), it dispatches
+`EditorView.scrollIntoView(head, { y: "start", yMargin })` with `yMargin` a third of the
+editor's height (measured in a `requestMeasure`). The space is CSS under a body class set only
+while the mode and the setting are on (`escrita-typewriter`): `padding-block` on `.cm-content`.
+The extension reads the mode through the writing mode port and does nothing while it is off,
+on a phone, or with the setting off. The pure part (which transactions recenter, the target
+offset) is a function in `core/` with vitest tests; an e2e spec checks that the cursor line
+stays a third of the way down after typing at the end of a long note, and that a click does
+not scroll.
+
+**Design.** Mostly behavior. A short board on the design canvas for the setting row and a
+picture of the note in writing mode with the line a third of the way down, light and dark
+(rule 7).
+
+**Docs.** The tracking guide (both languages): the typewriter scroll in "Writing mode", and
+"Next to a zen plugin or a theme" no longer sends writers elsewhere for it; it says to turn
+one of the two off if both scroll.
+
+**Risks.** A zen or typewriter plugin running at the same time would fight over the scroll.
+Themes that pad the editor (Typewriter, Minimal) may add their own space; check writing mode
+with them (the TEST-1.0 by-eye list).
 
 ## Settings summary (new)
 
