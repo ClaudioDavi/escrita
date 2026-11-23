@@ -1362,8 +1362,8 @@ scrolls instead. Part of the desk module (no switch of its own); it registers on
   not `move`) when the cursor moved and nothing is selected, and `select.undo` and `select.redo`.
   Never for no user event, `select.pointer` (a click), `move.drop`, `input.drop`, any other
   `select.*`, select-all or a Shift selection. A mouse scroll is not a transaction, so the view
-  stays until the next key. `typewriterMargin(height)` is the margin for the scroll: the editor's
-  height minus the two thirds, 0 for a height of 0, a negative or a non-finite one.
+  stays until the next key. `typewriterMargin(height)` is the margin for the scroll: two thirds of the
+  editor's height, rounded, 0 for a height of 0, a negative or a non-finite one.
 - **`desk/typewriter.ts`.** An `EditorState.transactionExtender` adds
   `EditorView.scrollIntoView(head, { y: "start", yMargin })` to the transaction itself, so it wins
   over Obsidian's and CodeMirror's own scroll with no flicker (measured in the S0 spike); no
@@ -1770,7 +1770,7 @@ hotkeys keep working.
 
 ## Wave 2 ports and view ids (1.0)
 
-- **Typed ports** (`core/feature-ports.ts`, 1.2.5, IMPROVEMENTS 42): see "Feature ports" below.
+- **Typed ports** (`core/feature-ports.ts`, 1.2.5, IMPROVEMENTS 42): see "Feature ports" above.
 - **Writing mode** (`core/writing-mode.ts`): the desk provides `writingMode`
   (`WritingModePort`); others read it through `writingModeOf(plugin.features)`, null while
   the desk is off. The setup's "focus" layout enters it. The mode itself is
