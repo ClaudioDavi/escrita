@@ -140,6 +140,7 @@ export const exportStrings: Strings = {
     "export.done.show": "Show in the file explorer",
     "export.error": "Couldn't write the export. Nothing was changed; see the developer console.",
     "export.errorFolder": "Couldn't write the export: {path} is a folder.",
+    "export.keptOld": "The old file couldn't go to the trash, so it was kept. The export was saved as {path}.",
     "export.notExportable": "Open a Markdown note to export it.",
     "export.noLast": "This work has no export to repeat yet.",
 
@@ -328,6 +329,7 @@ export const exportStrings: Strings = {
     "export.done.show": "Abrir a pasta",
     "export.error": "Não deu para gravar a exportação. Nada foi alterado; veja o console do desenvolvedor.",
     "export.errorFolder": "Não deu para gravar a exportação: {path} é uma pasta.",
+    "export.keptOld": "Não deu para mover o arquivo antigo para a lixeira, então ele foi mantido. A exportação foi salva como {path}.",
     "export.notExportable": "Abra uma nota Markdown para exportar.",
     "export.noLast": "Esta obra ainda não tem exportação para repetir.",
 

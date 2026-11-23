@@ -99,6 +99,16 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
+### 1.2.4 (2026-11-23)
+
+A fix for Obsidian set to delete into the system trash when the system trash fails (for example, Obsidian installed as a flatpak).
+
+- **Fix**: "Replace" in the export no longer fails with "Couldn't write the export" when the old file can't go to the trash. Obsidian keeps the file in that case (and says so in its own notice), so Escrita keeps it too and saves the new export next to it under the usual "keep both" name, with a notice saying where.
+- **Fix**: deleting an empty chapter, or merging it into the one before, stops with a message when the chapter can't go to the trash. Before, the other chapters were renumbered around it and a merge left its title in both chapters.
+- **Fix**: deleting a snapshot that can't go to the trash says so, instead of dropping it from the list while the file stays.
+- To have these deletions work in such an install, set Obsidian's "Deleted files" to the vault's `.trash` folder. Escrita never falls back to another trash on its own.
+- No code improvement in this release (a patch, by the author's choice).
+
 ### 1.2.3 (2026-10-24)
 
 A fix for the daily word count, again, and one history for every device that syncs the vault.
