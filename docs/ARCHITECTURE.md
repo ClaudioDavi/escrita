@@ -1332,13 +1332,65 @@ Publish runs `readinessOf` and adds its own property checks (recommended propert
 limit); the export modal runs it on each part and adds the embeds the manuscript drops.
 `unclosedComment` and `unclosedHtmlComment` are also exported on their own.
 
+## Feature ports (`core/feature-ports.ts`, 1.2.5, IMPROVEMENTS 42)
+
+What one module offers another is one row of `FeaturePorts`, keyed by feature id: `desk`
+(`WritingModeHost`), `goals` (`DailyProgressHost`), `submissions` (`PendingHost`) and `publish`
+(`PublishNextPort`). The port types live in core (`writing-mode.ts`, `daily-progress.ts`,
+`pending.ts`, `serial.ts`), so core imports no module folder, and the module class `implements`
+its row, so a rename fails to compile on both sides.
+
+- **`port(features, id)`.** A free function over `PortSource` (`{ get }`, so tests and the setup
+  pass plain fakes): the loaded module as its port type, or `undefined` while the feature is off.
+  It replaces the casts of `features.get<T>`, which stays for the settings tab's untyped
+  `FeatureModule` reads.
+- **The readers.** `writingModeOf`, `dailyProgressOf` and `pendingOf` (new, in `core/pending.ts`)
+  keep their names and call `port()`; the outline's "publish next" read uses it directly. No caller
+  changed. A new port is one row here plus its type in core (candidate 24's "create entry" port
+  will land here).
+
+## The typewriter scroll (`src/desk/typewriter.ts`, `core/typewriter.ts`, 1.2.5, SF 17)
+
+In writing mode the line being typed stays two thirds of the way down the editor and the note
+scrolls instead. Part of the desk module (no switch of its own); it registers one editor slot
+(`ctx.editor`), so the desk declares `editors: 1`. Decisions: PLAN-1.2.5 D3 to D7.
+
+- **`core/typewriter.ts` (pure).** `recenters(tr, active)` says whether a transaction brings the
+  line back, from a plain `TypewriterTransaction` (user event, `docChanged`, cursor moved,
+  `selectionEmpty`). Yes for `input`, `delete`, `move`, `undo`, `redo` and their sub-events, and
+  for a plain `select` (the arrows, Home, End, Page Up and Down, Ctrl+Home and End send `select`,
+  not `move`) when the cursor moved and nothing is selected, and `select.undo` and `select.redo`.
+  Never for no user event, `select.pointer` (a click), `move.drop`, `input.drop`, any other
+  `select.*`, select-all or a Shift selection. A mouse scroll is not a transaction, so the view
+  stays until the next key. `typewriterMargin(height)` is the margin for the scroll: the editor's
+  height minus the two thirds, 0 for a height of 0, a negative or a non-finite one.
+- **`desk/typewriter.ts`.** An `EditorState.transactionExtender` adds
+  `EditorView.scrollIntoView(head, { y: "start", yMargin })` to the transaction itself, so it wins
+  over Obsidian's and CodeMirror's own scroll with no flicker (measured in the S0 spike); no
+  dispatch of its own. The height comes from a small `ViewPlugin` that measures
+  `scrollDOM.clientHeight` in a `requestMeasure` (key `"tw"`, on start and on a change of
+  geometry, viewport or focus) into a per-instance `WeakMap`, never module-level state. The
+  extender finds its view by `view.state === tr.startState`, which is right in splits and pop-out
+  windows with no focus tracking.
+- **Which editors qualify.** Only a `MarkdownView`'s own editor on a `.md` file (embeds, popovers
+  and canvas cards are left out), never on a phone (`Platform.isMobile`), and only when writing
+  mode is on and the setting takes the note. The mode is read live (`isActive()`), so there is
+  nothing to subscribe to or undo. The setting `writingModeTypewriter` is `tracked` (default:
+  `books.classify(file).tracked`, cached per path, cleared when the setting changes and when the
+  desk loads), `all` or `off`.
+- **No CSS.** The scroll never goes above the top of the note, so a short note never moves and no
+  space is added above the title; below the last line Obsidian's own "scroll past end" leaves
+  enough room. Leaving the mode or turning the setting off stops the recentering and leaves the
+  scroll position where it is. Lifecycle: `tests/lifecycle-typewriter.test.ts`; e2e:
+  `tests/e2e/specs/typewriter.spec.ts`.
+
 ## Pending submissions (`core/pending.ts`, 0.8)
 
 The port between submissions and the desk. `PendingSource { list(), onChange(cb) }`, with
 `PendingSubmission { path, workPath, workTitle, market, sent }` (newest `sent` first;
 `workPath` is null when the `work` link doesn't resolve). The submissions module provides it
 as its `pending` field while loaded. The desk reads it only while
-`features.isOn("submissions")`, through `features.get<{ pending?: PendingSource }>("submissions")`
+`features.isOn("submissions")`, through `pendingOf(plugin.features)` (`core/pending.ts`, over `port()`; 1.2.5)
 (`desk/gather.ts`), and never imports the submissions module, so an off feature leaves no
 trace. Pure types.
 
@@ -1718,6 +1770,7 @@ hotkeys keep working.
 
 ## Wave 2 ports and view ids (1.0)
 
+- **Typed ports** (`core/feature-ports.ts`, 1.2.5, IMPROVEMENTS 42): see "Feature ports" below.
 - **Writing mode** (`core/writing-mode.ts`): the desk provides `writingMode`
   (`WritingModePort`); others read it through `writingModeOf(plugin.features)`, null while
   the desk is off. The setup's "focus" layout enters it. The mode itself is

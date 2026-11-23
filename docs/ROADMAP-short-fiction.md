@@ -57,7 +57,7 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 1.0 | Set up a writing vault and presets (10) | S | Shipped |
 | 1.0.4 | Start a new work: "New short story" and "New book" (14) | S–M | Shipped |
 | 1.2.0 | Read a note (15) · Sentence rhythm in the lens panel (16) | S + S | Shipped |
-| Next small version | Typewriter scroll in writing mode (17) | S | Planned |
+| 1.2.5 | Typewriter scroll in writing mode (17) | S | Shipped |
 
 Sections keep their original numbers so references from the other roadmaps stay valid.
 
@@ -1031,7 +1031,7 @@ lens.
   and the section says "Place the cursor in a paragraph to see its sentences" when there is
   none. A click on a bar selects its sentence.
 
-## 17. Typewriter scroll in writing mode (planned, the author's request 2026-11-03)
+## 17. Typewriter scroll in writing mode (shipped in 1.2.5, the author's request 2026-11-03)
 
 **Why.** In a long note the line being typed sinks to the bottom of the window, and the eye
 follows it down. A typewriter keeps the line in one place and moves the paper. Writing mode
