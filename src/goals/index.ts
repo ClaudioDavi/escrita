@@ -22,13 +22,13 @@ import {
 } from "./tracker";
 import { goalsSettingsItems, goalsOffNotice } from "./settings-ui";
 import type { SettingsBlock } from "../ui/settings-rows";
-import type { DailyProgress, DailyProgressSource } from "../core/daily-progress";
+import type { DailyProgress, DailyProgressHost, DailyProgressSource } from "../core/daily-progress";
 
 /**
  * Word goals: tracks real typing in the active file, shows progress in the
  * status bar and the progress modal, and runs writing sprints.
  */
-export class GoalsModule extends FeatureModule {
+export class GoalsModule extends FeatureModule implements DailyProgressHost {
   readonly id: FeatureId = "goals";
   readonly slots = { editors: 1 };
   /** word count of each file when we last looked, so each change yields a delta */
@@ -53,7 +53,7 @@ export class GoalsModule extends FeatureModule {
 
   /**
    * The daily progress port (core/daily-progress.ts): today's words and the daily goal,
-   * read by writing mode's counter through `features.get("goals")` while goals are on.
+   * read by writing mode's counter through `dailyProgressOf(features)` while goals are on.
    */
   readonly dailyProgress: DailyProgressSource = {
     current: (): DailyProgress => ({ words: addedOn(this.plugin.history.view(), this.today()), goal: this.plugin.settings.dailyGoal }),

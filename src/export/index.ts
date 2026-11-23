@@ -14,7 +14,7 @@ import { bookSource, collectionAt, type Book } from "../core/books";
 import { propertyValue, type BookSource, type ChapterRef } from "../core/book-source";
 import { storyChapters, type Collection } from "../core/collection";
 import { followFolderSetting, pluginRoot } from "../core/classify";
-import { NoteExistsError, FolderBlockedError } from "../core/notes";
+import { NoteExistsError, FolderBlockedError, TrashFailedError } from "../core/notes";
 import { macrotaskYield, yieldBudget } from "../core/vault-index";
 import { noteName } from "../core/paths";
 import { fmt, lang, plural, t } from "../i18n";
@@ -485,7 +485,15 @@ export class ExportModule extends FeatureModule {
         if (answer === "replace" && canReplace) {
           // a file that is not a recorded export may be the writer's own: it goes to the trash, not over
           const ours = Object.values(p.data.exportChoices).some((c) => c.last?.path === e.existing);
-          file = (await p.notes.create(path, data, { exists: "replace", trashOld: !ours })).file;
+          try {
+            file = (await p.notes.create(path, data, { exists: "replace", trashOld: !ours })).file;
+          } catch (err) {
+            if (!(err instanceof TrashFailedError)) throw err;
+            // the old file stays (Obsidian's trash setting stands): keep both
+            const beside = joinPath(pluginRoot("export", p.settings), keepBothName(title, state.format, state.preset, new Date()));
+            file = (await p.notes.create(beside, data, { exists: "unique" })).file;
+            new Notice(t("export.keptOld", { path: file.path }));
+          }
         } else {
           const again = joinPath(pluginRoot("export", p.settings), keepBothName(title, state.format, state.preset, new Date()));
           file = (await p.notes.create(again, data, { exists: "unique" })).file;

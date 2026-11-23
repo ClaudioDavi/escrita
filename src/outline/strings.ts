@@ -103,6 +103,7 @@ export const outlineStrings: Strings = {
     "outline.err.exists": "“{name}” already exists",
     "outline.err.duplicate": "two chapters would be named “{name}”",
     "outline.err.notFound": "chapter “{name}” not found",
+    "outline.err.trash": "“{name}” couldn't be moved to the trash, so nothing was changed",
 
     "outline.more": "More actions",
     "outline.menu.addBeat": "Add a beat",
@@ -245,6 +246,7 @@ export const outlineStrings: Strings = {
     "outline.err.exists": "“{name}” já existe",
     "outline.err.duplicate": "dois capítulos ficariam com o nome “{name}”",
     "outline.err.notFound": "capítulo “{name}” não encontrado",
+    "outline.err.trash": "não deu para mover “{name}” para a lixeira, então nada foi alterado",
 
     "outline.more": "Mais ações",
     "outline.menu.addBeat": "Adicionar um beat",

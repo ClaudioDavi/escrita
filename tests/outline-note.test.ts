@@ -104,6 +104,19 @@ describe("resolveTarget", () => {
     expect(r2.target).toEqual(bookT);
   });
 
+  it("a restored state never wins over the active note (the view's setState forgets lastActive)", () => {
+    // onOpen followed B; then Obsidian restores the layout's old state (A), and setState clears lastActive
+    const followed = resolveTarget(base({ active: note("Contos/B.md") }));
+    expect(followed.target).toEqual(noteT("Contos/B.md"));
+    const restored = resolveTarget(base({ active: note("Contos/B.md"), lastActive: undefined, shown: noteT("Contos/A.md") }));
+    expect(restored.target).toEqual(noteT("Contos/B.md"));
+    // with lastActive kept, the stale note would stick: the bug this guards against
+    const stuck = resolveTarget(base({ active: note("Contos/B.md"), lastActive: "Contos/B.md", shown: noteT("Contos/A.md") }));
+    expect(stuck.target).toEqual(noteT("Contos/A.md"));
+    // nothing followable active: the restored note shows
+    expect(resolveTarget(base({ active: null, shown: noteT("Contos/A.md") })).target).toEqual(noteT("Contos/A.md"));
+  });
+
   it("a book picked by hand stays until another note is opened", () => {
     // the panel shows A, then the user picks the book: shown = book, active still A
     const picked = resolveTarget(base({ active: note("Contos/A.md"), lastActive: "Contos/A.md", shown: bookT, bookPath: "Novels/Book.md" }));

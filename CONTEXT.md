@@ -12,7 +12,7 @@ mobile-safe (`isDesktopOnly: false`). Portuguese first (pt-BR and English string
 It is the **writing and revision** plugin; planning boards (corkboard, plot grid,
 beat sheets) belong to StoryLine, and Escrita doesn't compete there.
 
-Current version: see `manifest.json` (1.2.4 at the time of writing). The author's
+Current version: see `manifest.json` (1.3.0 at the time of writing). The author's
 next months are short fiction (contos, essays), so short-fiction features come first.
 
 ## Where things are written down
@@ -70,6 +70,10 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   list in `core/settings-order.ts`, and `settings.ts` imports no module internals. Every setting is one
   row of the table in `core/settings-schema.ts` (1.1.1): default, kind, the features that read it, the
   pt-BR word; add a setting there plus its field in `EscritaSettings`.
+- **Feature ports** (1.3, improvement 42): what a module offers another is one row of
+  `FeaturePorts` in `core/feature-ports.ts` (`desk`, `goals`, `submissions`, `publish`), read with
+  `port(plugin.features, id)`, typed and undefined while the feature is off. The module class
+  `implements` its entry. New code does not call `features.get<T>` for a port.
 - **Shared services on `plugin`** (use them; never re-derive):
   - `books.classify(x)`: what a file is (chapter, book note, note…), its book,
     `tracked`, `piece`, `snapshot`, `stage`, `submission`, `export`, `own` (1.2.1: the darlings
@@ -84,13 +88,15 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   - `notes.create(path, data, { exists, trashOld })`: every new file (text or binary).
     `exists` is `return`, `fail`, `unique` or `replace`; `replace` refuses a case-only
     clash, and `trashOld` sends the old file to the trash first.
+  - `notes.trash(file)` (1.3): every delete. It calls `trashFile` and throws `TrashFailedError` when
+    the file is still there (a system trash that fails shows Obsidian's notice and doesn't throw).
   - `notes.frontmatter(file, fn)` (1.2.4): every property write. It saves the file's views first
     (`flush`), then calls `processFrontMatter`, which nothing else in `src/` calls
     (`tests/frontmatter-writes.test.ts`).
   - `decorations`: the only code that draws in the file explorer.
   - `chapterOps`: create, renumber, retitle chapters.
   - `features`: the registry; `features.isOn(id)` for a soft dependency on another feature. A
-    module's port is read through `features.get` (the desk reads the submissions' `pending`
+    module's port is read through `port()` (the desk reads the submissions' `pending`
     port, `core/pending.ts`, and never imports that module).
   - `names`: the names port (`core/names-source.ts`); the lens, the name marks and the
     outline read names through it and never import the universe. The matcher is
@@ -287,7 +293,21 @@ and what upkeep it asks of the writer.
 - **1.2.4 (shipped), fixes**: a screenplay note no longer opens as plain text until edited, and
   every property write saves the open editor first (`notes.frontmatter`). Improvement: the known
   issue of the `processFrontMatter` callers without a flush.
-- **Next**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
+- **1.3 (shipped), typewriter scroll** (built as 1.2.5, renamed 1.3.0 on 2026-11-23): in writing
+  mode the line being typed stays two thirds of the way down and the note scrolls (SF 17,
+  `desk/typewriter.ts`, pure parts in `core/typewriter.ts`; desktop only; the setting
+  `writingModeTypewriter`: tracked notes, every note or off). Also a fix for the outline panel
+  showing an old note when its tab first opened (`OutlineView.setState`), and a fix for a system
+  trash that fails (a flatpak): every delete goes through `notes.trash`, which throws
+  `TrashFailedError`, so Replace in the export keeps both files and an empty chapter or a snapshot
+  stays put. Improvement 42, typed feature ports (`core/feature-ports.ts`). Plan and results in
+  `docs/PLAN-1.3.md`.
+- **Next: 1.4, the deeper lens** (SF 18, planned 2026-10-26): ProWritingAid's rule-based reports
+  in pt-BR and English (passive voice, sentence starts, filter words, sticky sentences, repeated
+  phrases, dialogue tags, clichés and pleonasmos, consistency, verb tense, dialogue formatting,
+  formal register, queísmo, pacing with scene or summary), opt-in and grouped in the panel.
+  Improvement: the rest of 47.
+- **After 1.4**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
 
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and
 `goals/progress-modal.ts` are large and mostly untested (IMPROVEMENTS 5; the chapter rows

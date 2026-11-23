@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { TFile, type App } from "obsidian";
-import { FolderBlockedError, NoteExistsError, NoteService } from "../src/core/notes";
+import { FolderBlockedError, NoteExistsError, NoteService, TrashFailedError } from "../src/core/notes";
 import { toArrayBuffer, uniquePath } from "../src/core/note-text";
 import { FileVault } from "./support/file-vault";
 
@@ -52,6 +52,19 @@ describe("notes.create: trashOld", () => {
     expect(vault.calls).toContain("createBinary a.docx");
     expect(vault.calls).not.toContain("modifyBinary a.docx");
     expect(asBytes(vault.bytes.get("a.docx")!)).toEqual([7]);
+  });
+  it("throws TrashFailedError and writes nothing when the trash leaves the file", async () => {
+    vault.seedFile("a.docx", u8(1).buffer);
+    const app = {
+      vault, workspace: { getLeavesOfType: () => [] },
+      // Obsidian 1.15: a failed system trash shows a notice and returns false; the file stays
+      fileManager: { trashFile: async () => false },
+    } as unknown as App;
+    const err = await new NoteService(app).create("a.docx", u8(7), { exists: "replace", trashOld: true }).catch((e) => e);
+    expect(err).toBeInstanceOf(TrashFailedError);
+    expect(err.path).toBe("a.docx");
+    expect(asBytes(vault.bytes.get("a.docx")!)).toEqual([1]);
+    expect(vault.calls).not.toContain("createBinary a.docx");
   });
 });
 
@@ -236,5 +249,23 @@ describe("uniquePath", () => {
   });
   it("returns the path when free", () => {
     expect(uniquePath("a.md", ["b.md"])).toBe("a.md");
+  });
+});
+
+describe("notes.trash", () => {
+  const withTrash = (trashFile: (f: TFile) => Promise<unknown>) =>
+    new NoteService({ vault, workspace: { getLeavesOfType: () => [] }, fileManager: { trashFile } } as unknown as App);
+
+  it("sends the file to the writer's trash", async () => {
+    const f = vault.seedFile("a.md", "x");
+    await withTrash(async (g) => { vault.entries.delete(g.path); }).trash(f);
+    expect(vault.getAbstractFileByPath("a.md")).toBeNull();
+  });
+  it("throws TrashFailedError when the trash leaves the file (a failed system trash)", async () => {
+    const f = vault.seedFile("a.md", "x");
+    const err = await withTrash(async () => false).trash(f).catch((e) => e);
+    expect(err).toBeInstanceOf(TrashFailedError);
+    expect(err.path).toBe("a.md");
+    expect(vault.getAbstractFileByPath("a.md")).toBe(f);
   });
 });

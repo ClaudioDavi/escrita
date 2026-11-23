@@ -57,6 +57,8 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 1.0 | Set up a writing vault and presets (10) | S | Shipped |
 | 1.0.4 | Start a new work: "New short story" and "New book" (14) | S–M | Shipped |
 | 1.2.0 | Read a note (15) · Sentence rhythm in the lens panel (16) | S + S | Shipped |
+| 1.3.0 | Typewriter scroll in writing mode (17) | S | Shipped |
+| 1.4.0 | The deeper lens: rules and pacing in the manner of ProWritingAid, pt-BR and English (18, groups A and B) | L | Planned |
 
 Sections keep their original numbers so references from the other roadmaps stay valid.
 
@@ -1029,6 +1031,174 @@ lens.
 - Runs are drawn in orange (the echo color), a bar over the long-sentence threshold is marked,
   and the section says "Place the cursor in a paragraph to see its sentences" when there is
   none. A click on a bar selects its sentence.
+
+## 17. Typewriter scroll in writing mode (shipped in 1.3.0, the author's request 2026-11-03)
+
+**Why.** In a long note the line being typed sinks to the bottom of the window, and the eye
+follows it down. A typewriter keeps the line in one place and moves the paper. Writing mode
+already strips the screen down to the note; holding the line in one place is the other half
+of sitting down to write. Until now the tracking guide sent writers to a zen plugin for this
+("Next to a zen plugin or a theme").
+
+**Stage and upkeep.** Serves drafting. No upkeep: it comes with writing mode, on by default.
+
+**Decided by the author (2026-11-03).**
+
+- Only in writing mode. No command or mode of its own.
+- On by default for tracked notes, with one setting: **Typewriter scroll in writing mode**
+  ("Modo máquina de escrever"; `writingModeTypewriter`: tracked notes, every note, or off; read
+  by the desk), in the Home note group beside "Open in writing mode". Tracked notes are the
+  works in the track folders, so the home note never scrolls (the author, 2026-11-21).
+- The line sits **two thirds of the way down** the editor, fixed, not a setting: two thirds of
+  the screen show the text above it (corrected by the author 2026-11-21; first written as "a
+  third").
+- **Desktop only.** No phone support: on a phone (`Platform.isMobile`) writing mode works as
+  today and the extension does nothing; the setting's description says it is for desktop.
+
+**What it does.**
+
+- While writing mode is on, the line with the cursor stays two thirds of the way down the
+  editor as you type: each new line scrolls the note up, not the cursor down.
+- The scroll starts once the text reaches two thirds: a short note never moves and no space is
+  added above the title. Below the last line, Obsidian's own room past the end lets the last
+  line reach two thirds (PLAN-1.3, D4).
+- Typing, Enter and the arrow keys bring the line back to its place. A click or a scroll with
+  the mouse or trackpad does not: the writer can look around, and the next keystroke brings
+  the line back.
+- Live Preview and source mode. Reading view has no cursor and stays as it is.
+- Leaving writing mode, or turning the setting off, removes the space and stops the
+  recentering; the scroll position stays where it is.
+
+**How.** A CodeMirror extension registered by the desk through its `ModuleContext`, in
+`desk/typewriter.ts`, built on the editor glue (`src/ui/editor-glue.ts`, an `EditorSet` of the
+open editors). On a transaction that changes the document or moves the cursor from the
+keyboard (PLAN-1.3, D3: the arrows send a plain `select`; never `select.pointer`), a
+transaction extender adds `EditorView.scrollIntoView(head, { y: "start", yMargin })` with
+`yMargin` two thirds of the editor's height (measured in a `requestMeasure`). No space is added
+(PLAN-1.3, D4). The extension reads the mode through the writing mode port and does nothing
+while it is off, on a phone, with the setting off, or in a note the setting leaves out. The pure part (which transactions recenter, the target
+offset) is a function in `core/` with vitest tests; an e2e spec checks that the cursor line
+stays two thirds of the way down after typing at the end of a long note, and that a click does
+not scroll.
+
+**Design.** Mostly behavior. A short board on the design canvas for the setting row and a
+picture of the note in writing mode with the line two thirds of the way down, light and dark
+(rule 7).
+
+**Docs.** The tracking guide (both languages): the typewriter scroll in "Writing mode", and
+"Next to a zen plugin or a theme" no longer sends writers elsewhere for it; it says to turn
+one of the two off if both scroll.
+
+**Risks.** A zen or typewriter plugin running at the same time would fight over the scroll.
+Themes that pad the editor (Typewriter, Minimal) may add their own space; check writing mode
+with them (the TEST-1.0 by-eye list).
+
+## 18. The deeper lens (v1.4, planned 2026-10-26)
+
+Planned as section 17 for 1.3 on 2026-10-26. On 2026-11-23 typewriter scroll (17) shipped as
+1.3, so the lens became section 18 and version 1.4.
+
+**Why.** ProWritingAid (PWA) is the style checker writers compare against: about 25 reports,
+most of them word lists and patterns over sentences, which is what the lens already does. PWA
+is English-only (its help center says so) and needs a server; its AI features (Rephrase,
+Critique, Manuscript Analysis) break rule 4. So the rule-based half can come to Escrita, in
+pt-BR and English alike, and nobody offers it in Portuguese. Investigation of 2026-10-26; the
+author approved the list the same day. On 2026-10-27 a writing workshop's list of the most
+common faults in contos (adjectives, summary instead of scenes, formal speech, dialogue layout,
+mixed tenses, too many *que*) added verb tense, scene or summary, formal register, dialogue
+formatting and queísmo.
+
+**Stage and upkeep.** Serves revision. No upkeep: every word table is language data in
+`lens/lexicon.ts` (like the adverb and gerund exceptions), written by hand for both languages,
+never copied from PWA. `## Ignorar` covers the new rules too.
+
+**What we already have, by PWA's names.** Echoes and Repeats (single words): echoes. Style
+(adverbs): adverbs. Overused words (your own list): crutch words. Sentence length and variety:
+long sentences and Rhythm (16). Readability: Flesch, adapted for pt. Dialogue share. Consistency
+of names: name variants.
+
+**New rules.** All opt-in (`OPT_IN_RULES`, so existing output is unchanged), each on/off in
+settings. Every number below is a starting point: thresholds are **calibrated per language** on
+the fixture conto and pt-BR prose, then pinned in tests. PWA's English numbers are not copied.
+
+*Group A, sentences and words (high precision, cheap):*
+
+| Rule | pt-BR | en | Effort |
+|---|---|---|---|
+| Passive voice | A form of *ser* + a participle that agrees in gender and number (*foi feita*, *foram vistos*, irregulars such as *feito*, *dito*, *visto*). Never *estar* + participle (*estava cansado* is a state) | A form of *be* + a past participle (`-ed` or an irregular list), with or without *by* | S |
+| Repeated sentence starts | Three or more sentences in a row starting with the same word (*Ela… Ela… Ela…*); the share of sentences starting with a pronoun, as a measure | same (*He… He… He…*, *There was…*) | S |
+| Filter words and telling | *viu, ouviu, sentiu, percebeu, notou, pareceu, decidiu, pensou*; and a told emotion: *estava / ficou / sentiu* + an emotion word (*triste, com raiva, com medo*) | *saw, heard, felt, noticed, realized, seemed, wondered, decided*; *felt / was* + an emotion word | S–M |
+| Intensifiers and vague words | *muito, bem, realmente, simplesmente, meio, bastante, coisa, algo, um pouco* | *very, really, just, quite, rather, thing, somehow, a bit* | S |
+| Sticky sentences | The glue index: the share of glue words (function words, from `core/stem/stopwords.ts` minus the said-verbs and everyday verbs). A measure for the note, and a sentence marked above a threshold. PWA uses 40% / 60% for English; pt-BR is gluier (*do, na, pelo, que*), so its threshold is measured, not copied | same | M |
+| Repeated phrases | The same 2–4 word run, by stem, anywhere in the note; runs made only of stop words are skipped. Echoes for phrases | same | M |
+
+*Group B, fiction:*
+
+| Rule | pt-BR | en | Effort |
+|---|---|---|---|
+| Dialogue tags | Tags other than *disse / perguntou* (*sussurrou, retrucou, exclamou*), and a tag followed by an adverb (*disse calmamente*). The tag is the narration right after speech: after the second dash (*— Vem — sussurrou ela.*) or the closing quote, from `dialogueInDoc` | Tags other than *said / asked*; *said softly* | M |
+| Clichés and redundancies | Pleonasmos (*subir para cima, elo de ligação, há anos atrás, surpresa inesperada, encarar de frente*) and clichés (*frio na espinha, coração na boca*). Our own lists | *each and every, free gift, at the end of the day*, clichés | M (mostly the lists) |
+| Consistency | Mixed forms in the note: *e-mail / email*, `...` and `…`, mixed quote and dash dialogue, *10 / dez*, the same word capitalized two ways. pt only: spellings from before the 2009 Acordo Ortográfico (*idéia, vôo, freqüente, pára*) | Mixed forms, spelling variants (*grey / gray*) | M |
+| Verb tense | Narration that slips out of the scene's tense: a sentence in the present (*abre, está, diz*) in a scene told in the past (*abriu, estava, disse*), or the other way round. Only narration counts: speech (`dialogueInDoc`) and quotes are skipped, since characters speak in the present. The tense of each scene (between scene breaks) is the one most of its narration verbs use, so a flashback scene or an essay in the present is not marked; only the sentences against their own scene are. Verbs are read by high-precision endings (*-ava, -aram, -ou, -ia* after a verb stem) and a hand-written list of frequent irregulars (*era / é, foi / vai, tinha / tem, havia / há, fez / faz*); an ambiguous word (*dia*, *via*) never counts. Shows the scene's tense as a measure | same: past (*-ed* and an irregular list, *was / were, had*) against present (*is / are, has*, *-s* only on a known verb); speech skipped | M |
+| Dialogue formatting | A hyphen or an en dash where the dialogue dash belongs (*- Vem* or *– Vem* at the start of a paragraph, instead of *— Vem*), and two speeches in one paragraph (a second opening dash or quote after narration that ended a speech), which should be two paragraphs. Only in notes that use dash dialogue for the first | Two speakers' quotes in one paragraph | S |
+| Formal register | Speech that sounds written, not said: mesóclise (*dir-se-ia, far-se-á*), ênclise and oblique pronouns in speech (*— Encontrei-o*, *— Dei-lhe*), *vós*, and high-register words (*outrossim, deveras, porquanto, destarte*). Marked inside speech by default, where it jars most; narration is a second switch, since some narrators are formal on purpose | Speech only: *shall, whom, thus, hence, whereupon*, no contractions in a long speech | M (mostly the lists) |
+| Too many *que* (queísmo) | Three or more *que* in one sentence (from group C, moved in on 2026-10-27 after a writing-workshop list of common faults) | (pt only) | S |
+| Long paragraphs | Paragraphs over N words (PWA's "Length"); a faint tint like long sentences | same | S |
+
+*Group B, a measure:*
+
+- **Pacing.** A section in the lens panel, after Rhythm: one bar per paragraph of the whole
+  note, its length in words, colored by its speech share. Rhythm at the scale of the note. It
+  says what it measures (length and dialogue), never "tension", which a rule can't see. A click
+  on a bar selects the paragraph. Needs a board on the design canvas.
+- **Scene or summary** (added 2026-10-27). Each pacing bar also says whether its paragraph
+  reads as a scene or a summary, the workshop's "resumido demais, crie cenas". Summary signs a
+  rule can see: the habitual imperfect (*todo dia ela acordava…*, *-ava* and *-ia* read as in
+  the verb tense rule), time-compression phrases (*durante anos, sempre, todos os dias,
+  costumava, com o tempo*; *for years, always, every day, used to*) and no speech. Scene signs:
+  speech, the preterite, concrete time (*naquela noite*). A paragraph with more summary signs
+  than scene signs is drawn as summary (a hatch on the bar), and the section gives the note's
+  summary share. It says "summary", never "bad": summary is a tool, and the writer decides.
+
+*Group C, later (not in 1.4):*
+
+- **Stacked adjectives**: two or more adjectives in a row (*alta, magra e pálida*), from a
+  hand list of frequent adjectives and suffixes (*-oso, -ível, -ento*); the workshop's
+  "excesso de adjetivação". Waits for a list good enough to be worth it. M.
+
+- **Sensory words**: the share of words per sense (sight, sound, smell, touch, taste), from
+  stemmed lists of about 100 stems per sense per language. M–L, mostly the lists.
+- **Most used words**: the note's top content words by stem, with a rate per 1,000 and step
+  buttons. "Most used", not "overused": there is no frequency baseline. S–M.
+- **Transitions**: the share of sentences with a transition word; for essays more than contos. S.
+- **pt-BR confusables**, high-precision patterns only: *a anos* (*há*), *mau / mal*,
+  *porque / por que*, *onde* for something that is not a place, too many *que* in one sentence
+  (queísmo moved to 1.4, group B). Opt-in; the risk is false positives. M.
+- Book-wide reports and comparing chapters belong to N 10.
+
+**Not copied.** The AI features (Rephrase, Critique, Manuscript Analysis, Sparks): rule 4.
+Plagiarism: network. Full grammar and spelling: a server-sized job; Obsidian's spellcheck,
+LanguageTool and Harper cover it. The thesaurus: a large dictionary (maybe later, if a pt-BR
+list with a usable license turns up). Corporate words, acronyms, alliteration: not for
+fiction. Fix-it buttons: suggestions stay suggestions (rule 2); a click selects the match, as
+today.
+
+**The panel.** PWA's best-known fault is too many marks at once, and the lens shows every rule
+together. So the new rules are opt-in, and the panel groups its rules (Words, Sentences,
+Dialogue, Consistency), with a way to show one group at a time, which is PWA's own answer.
+Mockups on the design canvas first (rule 7): the grouped panel, the pacing section, a note with
+several groups on, in light and dark.
+
+**Foundation.** The rest of IMPROVEMENTS 47 (the lens prepares each pass once) comes first:
+`layout()` already runs up to five times per pass, and each new rule would add one. The new
+rules read the shared layout, the list sets and the sentence starts built once in `analyze`.
+The 60 ms ceiling on a 10,000-word note still holds with every rule on; repeated phrases is the
+one to watch.
+
+**Done when** each rule produces stable, explainable matches on the sample conto in both
+languages (pinned in tests, with the calibrated thresholds), every rule can be dismissed and
+stepped like the current ones, the pass stays under the ceiling with everything on, and the
+no-network test still passes.
 
 ## Settings summary (new)
 

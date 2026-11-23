@@ -27,7 +27,7 @@
 //   plugin.notes.create(path, data, { exists }) → Promise<CreateResult>
 //       Find-or-create a note or a binary file (0.8, IMPROVEMENTS 17). One tested policy for an existing file instead of seven.
 
-import { MarkdownView, TFile, TFolder, normalizePath, type App } from "obsidian";
+import { MarkdownView, TFile, TFolder, normalizePath, type App, type TAbstractFile } from "obsidian";
 import { editorText, findPathIgnoringCase, toArrayBuffer, uniquePath, vaultText, type FileData, type NoteText } from "./note-text";
 
 /** A path segment that should be a folder is a file. */
@@ -56,6 +56,7 @@ export interface CreateOptions {
   /**
    * Under "replace": send the old file to the trash (fileManager.trashFile) and create a new one,
    * instead of overwriting it in place. For a file the plugin may not have written (rule 1).
+   * If the trash leaves the file in place, throws TrashFailedError and writes nothing.
    */
   trashOld?: boolean;
 }
@@ -76,6 +77,18 @@ export class NoteExistsError extends Error {
   constructor(readonly path: string, readonly existing: string, readonly folder: boolean) {
     super(`${existing} already exists`);
     this.name = "NoteExistsError";
+  }
+}
+
+/**
+ * Under "replace" with `trashOld`: the old file couldn't go to the trash (Obsidian's trash
+ * setting is "system trash" and the system trash failed; Obsidian already said so in a notice).
+ * Nothing was changed: the old file is still at `path`.
+ */
+export class TrashFailedError extends Error {
+  constructor(readonly path: string) {
+    super(`${path} couldn't be moved to the trash`);
+    this.name = "TrashFailedError";
   }
 }
 
@@ -162,7 +175,7 @@ export class NoteService {
         // rule 1: a replace never touches a file whose path differs only by case
         if (found !== norm) throw new NoteExistsError(norm, found, false);
         if (o.trashOld) {
-          await this.app.fileManager.trashFile(target);
+          await this.trash(target);
           const file = typeof payload === "string" ? await vault.create(norm, payload) : await vault.createBinary(norm, payload);
           return { file, outcome: "replaced" };
         }
@@ -182,6 +195,18 @@ export class NoteService {
         throw err;
       }
     }
+  }
+
+  /**
+   * Send a file or folder to the trash the writer chose (fileManager.trashFile). trashFile doesn't
+   * throw when the system trash fails (a flatpak, a network drive): it shows Obsidian's notice and
+   * leaves the file. Then this throws TrashFailedError, so the caller stops before acting as if the
+   * file were gone. The writer's deletion setting stands: nothing falls back to another trash.
+   */
+  async trash(file: TAbstractFile): Promise<void> {
+    const path = file.path;
+    await this.app.fileManager.trashFile(file);
+    if (this.app.vault.getAbstractFileByPath(path) === file) throw new TrashFailedError(path);
   }
 
   async ensureFolder(path: string): Promise<void> {

@@ -32,7 +32,7 @@ export interface SnapshotFs {
   write(path: string, text: string): Promise<void>;
   /** a file or a folder; creates missing parent folders of `to`, which must not exist */
   rename(from: string, to: string): Promise<void>;
-  /** to the trash (system or vault), never a permanent delete */
+  /** to the trash (system or vault), never a permanent delete; throws if the file is still there after */
   trash(path: string): Promise<void>;
   /** removes `dir` only when it exists and is empty */
   removeIfEmpty(dir: string): Promise<void>;
@@ -394,7 +394,15 @@ export class SnapshotStore {
       renames[f] = target;
     }
     await this.writeIndex(fs, to, mergeIndexes({ ...dst.index, note: newNote }, src.index, renames));
-    if (src.files.includes(INDEX)) await fs.trash(join(from, INDEX));
+    if (src.files.includes(INDEX)) {
+      // the snapshots are already moved and indexed: an old index left behind (a failed trash) only keeps
+      // the old folder, it loses nothing, so the rename goes on
+      try {
+        await fs.trash(join(from, INDEX));
+      } catch (e) {
+        console.error(`Escrita: couldn't move an old snapshot index to the trash: ${join(from, INDEX)}`, e);
+      }
+    }
   }
 
   /** Empty folders left between a moved snapshot folder and the root. */

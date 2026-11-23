@@ -27,7 +27,8 @@ import {
   type ChipModel, type ColorBy,
 } from "./header";
 import { renderPieceBar } from "./bar";
-import { bookSerial, serialLine, type PublishNextPort } from "../core/serial";
+import { bookSerial, serialLine } from "../core/serial";
+import { port } from "../core/feature-ports";
 import { VIEW_TYPES } from "../core/view-types";
 
 export const OUTLINE_VIEW = VIEW_TYPES.outline;
@@ -198,6 +199,12 @@ export class OutlineView extends ItemView {
       this.target = { mode: "book", path: s.book };
     }
     if (s && typeof s.note === "string") this.target = { mode: "note", path: s.note };
+    // The saved state is a fallback, never a choice over the active file. Obsidian calls this
+    // right after onOpen, which has already followed the active note, and a sidebar tab that
+    // was hidden since startup (a deferred view) gets the state saved in the layout, which can
+    // be days old. Forget what was followed, so the next refresh follows the active note
+    // again and the saved note or book shows only when nothing followable is active.
+    this.lastActive = undefined;
     await super.setState(state, result);
     this.requestRefresh();
   }
@@ -687,14 +694,14 @@ export class OutlineView extends ItemView {
   private renderSerial(): void {
     const book = this.book;
     if (!book || !this.serialEl || !this.actionsEl) return;
-    const port = this.plugin.features.get<PublishNextPort>("publish");
+    const publishPort = port(this.plugin.features, "publish");
     // the line is part of "Publish next chapter": with the publish feature off, the header shows neither
-    const state = port ? bookSerial(this.plugin.outline.rowsPort(), book, this.plugin.settings) : null;
+    const state = publishPort ? bookSerial(this.plugin.outline.rowsPort(), book, this.plugin.settings) : null;
     renderSerialLine(this.serialEl, state ? serialLine(state) : null);
     const notePath = book.note.path;
     renderHeaderActions(this.actionsEl, {
       // board 32d: no line and no button until a chapter is published (the palette command still works)
-      publishNext: port && state?.next && state.last ? () => { void port.publishNext(notePath); } : null,
+      publishNext: publishPort && state?.next && state.last ? () => { void publishPort.publishNext(notePath); } : null,
       readBook: () => { if (this.book) void this.plugin.outline.openReader(this.book); },
     });
   }
@@ -1395,8 +1402,10 @@ export class OutlineView extends ItemView {
           // Re-check, through the note text port (an open editor's unsaved buffer counts), that the chapter is still empty before trashing it.
           const text = await this.plugin.notes.text(row.file).read();
           if (!isBlankBody(text)) throw new Error(t("outline.blocked.notEmptyTab"));
+          // Trash first: if the trash fails, nothing has changed yet (the beat isn't in the previous
+          // chapter twice). The trashed chapter still holds its title and summary if the append fails.
+          await this.plugin.notes.trash(row.file);
           await this.editText(prev.file, (p) => appendBeat(p, beatText));
-          await this.app.fileManager.trashFile(row.file);
           await this.renumberRest(book, row.file);
         });
         if (!ok) { el.dataset.done = ""; if (summaryEl) summaryEl.dataset.done = ""; return; }
@@ -1410,7 +1419,7 @@ export class OutlineView extends ItemView {
         const ok = await this.run(async () => {
           const text = await this.plugin.notes.text(row.file).read();
           if (!isBlankBody(text)) throw new Error(t("outline.blocked.notEmptyDelete"));
-          await this.app.fileManager.trashFile(row.file);
+          await this.plugin.notes.trash(row.file);
           await this.renumberRest(book, row.file);
         });
         if (!ok) { el.dataset.done = ""; return; }
@@ -1483,7 +1492,7 @@ export class OutlineView extends ItemView {
       if (!ok) return;
     }
     await this.run(async () => {
-      await this.app.fileManager.trashFile(row.file);
+      await this.plugin.notes.trash(row.file);
       await this.renumberRest(book, row.file);
     });
     await this.refresh(true);

@@ -1,7 +1,9 @@
 // The pending-submissions port (PLAN-0.8 Q12). The
 // submissions module provides it while loaded; the desk reads it only while
-// `features.isOn("submissions")`, through `features.get<{ pending?: PendingSource }>`,
+// `features.isOn("submissions")`, through `pendingOf` (typed by core/feature-ports.ts),
 // and never imports the submissions module. Pure types, no Obsidian imports.
+
+import { port, type PortSource } from "./feature-ports";
 
 /** One submission whose result is the first value of the result list (pending). */
 export interface PendingSubmission {
@@ -22,4 +24,15 @@ export interface PendingSource {
   list(): readonly PendingSubmission[];
   /** called after the list changes; returns the unsubscribe */
   onChange(cb: () => void): () => void;
+}
+
+/** What the submissions module exposes: its `pending` list while loaded (core/feature-ports.ts). */
+export interface PendingHost {
+  pending?: PendingSource;
+}
+
+/** The pending list while the submissions feature is on, else null (a soft dependency on "submissions"). */
+export function pendingOf(features: PortSource & { isOn(id: "submissions"): boolean }): PendingSource | null {
+  if (!features.isOn("submissions")) return null;
+  return port(features, "submissions")?.pending ?? null;
 }

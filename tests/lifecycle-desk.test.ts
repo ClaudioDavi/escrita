@@ -59,7 +59,8 @@ describe("desk lifecycle", () => {
     expect(plugin.views.size).toBe(0);
     expect(plugin.statusBars).toHaveLength(0);
     expect(plugin.ribbonAdds).toHaveLength(0);
-    expect(plugin.extensions).toHaveLength(0);
+    expect(plugin.extensions).toHaveLength(1);   // the typewriter slot, declared at init and empty now
+    expect(plugin.extensions[0] as unknown[]).toEqual([]);
 
     plugin.turn("desk", true);
     expect(plugin.commands.size).toBe(3);

@@ -296,6 +296,16 @@ fazem nada numa nota de roteiro, com este interruptor ligado ou não.
 **Ler esta nota** é um segundo comando de leitura, ao lado de **Ler o livro**. Pertence ao mesmo
 interruptor, Esboço e beats fantasmas. Veja [Escrita](writing.md#ler-esta-nota).
 
+## Configurações acrescentadas na 1.3
+
+| Configuração | Recurso | O que faz |
+|---|---|---|
+| Modo máquina de escrever | Bloco de obras e onde você parou | No grupo Nota inicial. Quando a linha que você digita chega a dois terços da altura, ela fica ali e a nota rola. **Notas acompanhadas**, **Todas as notas** ou **Desligado**. Notas acompanhadas. Só no computador. |
+
+Ela está explicada em [Acompanhamento](tracking.md#escreva-só-com-a-nota-o-modo-escrita). A mesma
+versão também corrige o painel do esboço, que mostrava uma nota antiga quando a aba da barra
+lateral era aberta pela primeira vez: agora ele acompanha a nota aberta.
+
 ## Linhas de pasta e como os campos salvam
 
 A pasta das exportações (padrão `Escrita/Exports`), a pasta dos envios (padrão `Escrita/Submissions`)

@@ -63,7 +63,10 @@ function vaultFs(app: App, ensureFolder: (path: string) => Promise<void>): Snaps
     },
     trash: async (p) => {
       const f = get(p);
-      if (f) await app.fileManager.trashFile(f);
+      if (!f) return;
+      await app.fileManager.trashFile(f);
+      // a failed system trash shows Obsidian's notice and keeps the file, without throwing (a flatpak)
+      if (get(p) === f) throw new Error(`couldn't move ${p} to the trash`);
     },
     removeIfEmpty: async (dir) => {
       const f = get(dir);

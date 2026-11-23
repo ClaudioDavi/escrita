@@ -1,7 +1,8 @@
 import { fmt, lang, plural, t } from "../i18n";
 import type EscritaPlugin from "../main";
+import type { EscritaSettings } from "../settings";
 import type { SettingsUi } from "../core/module-context";
-import { textRow, toggleRow, type SettingsBlock } from "../ui/settings-rows";
+import { dropdownRow, textRow, toggleRow, type SettingsBlock } from "../ui/settings-rows";
 
 /** The home note rows, under the heading the tab draws. */
 export function deskSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): SettingsBlock[] {
@@ -27,6 +28,17 @@ export function deskSettingsItems(ui: SettingsUi, plugin: EscritaPlugin): Settin
         desc: t("desk.writingMode.setting.desc"),
         get: () => s.openInWritingMode,
         set: (v) => { s.openInWritingMode = v; },
+      }),
+      dropdownRow<EscritaSettings["writingModeTypewriter"]>(ui, {
+        name: t("desk.typewriter.setting"),
+        desc: t("desk.typewriter.setting.desc"),
+        options: [
+          ["tracked", t("desk.typewriter.tracked")],
+          ["all", t("desk.typewriter.all")],
+          ["off", t("desk.typewriter.off")],
+        ],
+        get: () => s.writingModeTypewriter,
+        set: (v) => { s.writingModeTypewriter = v; },
       }),
     ],
   }];

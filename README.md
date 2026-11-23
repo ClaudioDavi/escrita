@@ -55,7 +55,7 @@ Each part is a switch on the Features page, so you can turn off what you don't u
 
 ![Writing under the outline: a chapter's planned beats show as faint labels in the editor; typing under one ticks it off, with the quotes curled and the ellipsis set as you type, and a new beat is added from the outline.](docs/images/outline-and-beats.gif)
 
-**Tracking.** Works move through five stages (idea, draft, revision, ready, published), mapped to your own status words. The home note shows what to write today and opens each work where you left off. Writing mode strips the screen down to the note. A snapshot is taken at each stage change. Guide: [English](docs/guide/en/tracking.md) · [Português](docs/guide/pt-BR/tracking.md).
+**Tracking.** Works move through five stages (idea, draft, revision, ready, published), mapped to your own status words. The home note shows what to write today and opens each work where you left off. Writing mode strips the screen down to the note, and on a computer it keeps the line you are typing two thirds of the way down while the note scrolls (the **Typewriter scroll in writing mode** setting: tracked notes, every note or off). A snapshot is taken at each stage change. Guide: [English](docs/guide/en/tracking.md) · [Português](docs/guide/pt-BR/tracking.md).
 
 **Revision.** The revision lens underlines what is worth rereading (echoes, adverbs, gerunds, crutch words, name variants, long sentences) and never changes your text. Its Rhythm section draws one bar per sentence of a paragraph, so a run of sentences of the same length shows. Snapshots keep named and automatic copies of a note that you can compare word by word and restore. Darlings keep the passages you cut, restorable to where they came from. Guide: [English](docs/guide/en/revision.md) · [Português](docs/guide/pt-BR/revision.md).
 
@@ -98,6 +98,15 @@ To try your build, link or copy the repository folder into a test vault's `.obsi
 To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updates `manifest.json` and `versions.json`), commit, then push a tag with the bare version number (for example `git tag 0.1.1 && git push --tags`). The release workflow builds the plugin and drafts a GitHub release with `main.js`, `manifest.json` and `styles.css`; publish the draft when it looks right.
 
 ## Changelog
+
+### 1.3.0 (2026-11-23)
+
+Typewriter scroll in writing mode, a fix for the outline panel showing an old note, and a fix for a system trash that fails.
+
+- **Typewriter scroll in writing mode** (computer only): once the line you are typing reaches two thirds of the way down the editor, it stays there and the note scrolls instead. A short note never moves, and nothing is added above the title. Typing, Enter, the arrow keys, Page Up and Page Down, Ctrl+Home, Ctrl+End and undo bring the line back to its place; a click, a mouse scroll, select-all or a Shift selection do not. It works in Live Preview and source mode. One setting, in the Home note group: **Typewriter scroll in writing mode** with **Tracked notes** (the default: the notes counted toward goals, every note when there are no track folders), **Every note** or **Off**. A zen or typewriter plugin running at the same time fights over the scroll: turn one of the two off.
+- **Fix**: the **Outline** panel could show an old note when its sidebar tab was first opened. Obsidian restored the note saved in the layout over the note the panel had just followed. Now the panel follows the open note.
+- **Fix**: when Obsidian deletes into the system trash and the system trash fails (for example, Obsidian installed as a flatpak), Obsidian keeps the file and says so in its own notice. Escrita now checks for that. **Replace** in the export keeps the old file and saves the new export next to it under the usual "keep both" name, with a notice saying where (before, it failed with "Couldn't write the export"). Deleting an empty chapter or merging it into the one before stops with a message (before, the other chapters were renumbered around it). Deleting a snapshot says it couldn't (before, it left the list while the file stayed). To have these deletions work in such an install, set Obsidian's **Deleted files** to the vault's `.trash` folder; Escrita never picks another trash on its own.
+- Improvement: candidate 42, typed feature ports. The desk, goals, submissions and publish modules offer what other modules read through one typed table (`core/feature-ports.ts`), so a renamed port fails to compile instead of returning nothing at runtime. Nothing changes in use.
 
 ### 1.2.4 (2026-10-30)
 

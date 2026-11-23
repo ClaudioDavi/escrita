@@ -12,6 +12,7 @@ import { dropKeys, renameKeys } from "../core/path-keys";
 import { deskOffNotice, deskSettingsItems } from "./settings-ui";
 import type { SettingsBlock } from "../ui/settings-rows";
 import { WritingMode } from "./writing-mode";
+import { Typewriter } from "./typewriter";
 import type { WritingModeHost, WritingModePort } from "../core/writing-mode";
 
 /**
@@ -20,19 +21,22 @@ import type { WritingModeHost, WritingModePort } from "../core/writing-mode";
  * and registers the "Open the home note" command and the cold-start open. Its data
  * follower keeps `data.leftOff` and `settings.homeNote` in step with renames and
  * deletes even while the desk is off. It also owns writing mode (board 39), exposed as the
- * `writingMode` port (core/writing-mode.ts) for the setup's layout.
+ * `writingMode` port (core/writing-mode.ts) for the setup's layout, and the typewriter scroll
+ * (desk/typewriter.ts, one editor slot).
  */
 export class DeskModule extends FeatureModule implements WritingModeHost {
   readonly id = "desk" as const;
-  readonly slots = { codeBlocks: ["escrita-works"] } as const;
+  readonly slots = { codeBlocks: ["escrita-works"], editors: 1 } as const;
   private recorder: LeftOffRecorder;
   private blocks = new Set<DeskBlock>();
   private mode: WritingMode;
+  private typewriter: Typewriter;
 
   constructor(private plugin: EscritaPlugin) {
     super();
     this.recorder = new LeftOffRecorder(plugin);
     this.mode = new WritingMode(plugin);
+    this.typewriter = new Typewriter(plugin, this.mode);
   }
 
   /** Writing mode, read by others through `writingModeOf(plugin.features)` while the desk is on. */
@@ -47,6 +51,8 @@ export class DeskModule extends FeatureModule implements WritingModeHost {
     const coldStart = !p.app.workspace.layoutReady;
     this.recorder.load(this, ctx);
     this.mode.load(ctx);
+    this.typewriter.settingsChanged();   // settings may have changed while the desk was off
+    ctx.editor([this.typewriter.extension]);   // typewriter scroll (1.3, SF 17)
     ctx.codeBlock("escrita-works", (src, el, mdCtx) => {
       const block = new DeskBlock(p, el, src, this.recorder);
       this.blocks.add(block);
@@ -95,6 +101,7 @@ export class DeskModule extends FeatureModule implements WritingModeHost {
   }
 
   settingsChanged(): void {
+    this.typewriter.settingsChanged();
     for (const b of this.blocks) void b.refresh();
   }
 
