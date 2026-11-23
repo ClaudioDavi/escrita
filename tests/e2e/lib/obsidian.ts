@@ -198,6 +198,14 @@ export class Obsidian {
   }
 
   private async stop(): Promise<void> {
+    // Closing the window with edited notes raises Chromium's beforeunload dialog; accept it on every page so the close does not fail.
+    const accept = (d: { accept(): Promise<void> }) => { void d.accept().catch(() => { /* already handled */ }); };
+    try {
+      for (const ctx of this.browser?.contexts() ?? []) {
+        ctx.on("dialog", accept);
+        for (const pg of ctx.pages()) pg.on("dialog", accept);
+      }
+    } catch { /* already gone */ }
     // Ask the browser to quit (Browser.close over CDP) so Chromium flushes localStorage; a SIGKILL loses it.
     try {
       const session = await this.browser?.newBrowserCDPSession();

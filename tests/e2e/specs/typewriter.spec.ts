@@ -94,8 +94,6 @@ test.describe("Typewriter scroll", () => {
     await ob.dismissNotices();
   });
   test.afterAll(async () => {
-    // Closing the window with edited notes open raises Chromium's beforeunload dialog; accept it so the close does not fail.
-    ob?.page.on("dialog", (d) => { void d.accept().catch(() => { /* already handled */ }); });
     await ob?.close();
   });
 
