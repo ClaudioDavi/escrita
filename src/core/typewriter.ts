@@ -1,4 +1,4 @@
-// The typewriter scroll's decisions (1.2.5, SF 17; PLAN-1.2.5 D3, D5). In writing mode the line
+// The typewriter scroll's decisions (1.3, SF 17; PLAN-1.3 D3, D5). In writing mode the line
 // being typed stays two thirds of the way down the editor once it gets there (two thirds of the
 // screen show the text above it; a short note never scrolls, no space is added above the title) and the note scrolls instead. The desk's
 // extension (desk/typewriter.ts) reads a CodeMirror transaction into a `TypewriterTransaction`

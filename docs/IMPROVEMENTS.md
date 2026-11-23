@@ -91,7 +91,7 @@ interface lives. Test through the interface.
   provider, the provider calls back into `UniverseModule`. Neither is about names.
 - **Change.** One `NameCounts` interface implemented by `NamesIndex`; the provider exposes
   `counts?`, and the port returns a null object while there is none. "Create entry" becomes a
-  universe port the lens reads through `port()` (`core/feature-ports.ts`, 1.2.5), like the desk reads `pending`.
+  universe port the lens reads through `port()` (`core/feature-ports.ts`, 1.3), like the desk reads `pending`.
 - **Wins.** Fewer pass-through methods; the names port answers names only.
 
 ### 25. Export "parts": one value for a book and a collection
@@ -352,6 +352,8 @@ interface lives. Test through the interface.
   `sentencePara`, filled once in `analyze` from one `layout` call, and `longSentences` reads
   them (results unchanged). `layout` still runs for the other rules, `inferredNames` still
   runs twice, and the list sets, `EMPTY_MD`, `measuresFor` and `ruleKey` are as described.
+- **Scheduled for 1.4** (2026-10-26, planned as 1.3): the deeper lens (SF 18) adds about ten
+  rules, each of which would otherwise call `layout` again; this lands first.
 - **Change.** Build `layout`, `inferredNames` and the list sets once in `analyze` and pass them
   in; keep the three normalizations as they are (merging them changes behaviour).
   `isCapitalized` and `sentenceStarts` next to `core/sentences.ts`. `rangeMeasures` replaces
@@ -532,7 +534,7 @@ interface lives. Test through the interface.
   A test checks every literal `t("…")` key in `src/`.
 - **Touches.** `main.ts`, `i18n.ts`, `tests/strings.test.ts`, each module's `strings.ts`.
 
-### 62. Modules depend on a typed core interface, not EscritaPlugin (pairs with 42, done in 1.2.5, and 48)
+### 62. Modules depend on a typed core interface, not EscritaPlugin (pairs with 42, done in 1.3, and 48)
 
 **Strength:** worth exploring · one module at a time
 
@@ -636,7 +638,7 @@ Found in 1.2.3 (the daily count review). Left open, each small:
 
 | Version | Improvement |
 |---|---|
-| 1.2.5 | Typed feature ports (candidate 42): `core/feature-ports.ts` has `FeaturePorts` (`desk`: `WritingModeHost`, `goals`: `DailyProgressHost`, `submissions`: `PendingHost`, `publish`: `PublishNextPort`) and `port(features, id)`; `writingModeOf`, `dailyProgressOf`, the new `pendingOf` (in `core/pending.ts`) and the outline's publish-next read go through it, and the module classes `implements` their port. Behavior unchanged. Candidate 24's "create entry" port is not done and stays a candidate |
+| 1.3.0 | Typed feature ports (candidate 42): `core/feature-ports.ts` has `FeaturePorts` (`desk`: `WritingModeHost`, `goals`: `DailyProgressHost`, `submissions`: `PendingHost`, `publish`: `PublishNextPort`) and `port(features, id)`; `writingModeOf`, `dailyProgressOf`, the new `pendingOf` (in `core/pending.ts`) and the outline's publish-next read go through it, and the module classes `implements` their port. Behavior unchanged. Candidate 24's "create entry" port is not done and stays a candidate |
 | 1.2.4 | The known issue "Three `processFrontMatter` callers have no flush" (found in 1.2): `plugin.notes.frontmatter(file, fn)` saves the file's views, then calls `processFrontMatter`; all eleven property writes use it (the universe's "add to universe" and migration, the outline's beat-to-chapter, which had no flush, and the six that flushed by hand), and `tests/frontmatter-writes.test.ts` fails on any other call in `src/` |
 | 1.2.3 | The goals bullet of candidate 48: `goals/index.ts` notifies the daily-progress listeners only when `{ words, goal }` changes, not on each status repaint. The rest of 48 stays a candidate |
 | 1.2.2 | Dead code, a first slice (candidate 49): `publish/checks.ts` no longer re-exports `unclosedComment`; `tests/publish.test.ts` and `tests/markdown-consumers.test.ts` import it from `core/readiness.ts`, its home. The rest of 49 stays a candidate |

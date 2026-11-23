@@ -1,4 +1,4 @@
-// The typewriter scroll in writing mode (1.2.5, SF 17; PLAN-1.2.5 D3, D4, D7). In a tracked note the
+// The typewriter scroll in writing mode (1.3, SF 17; PLAN-1.3 D3, D4, D7). In a tracked note the
 // line being typed sits two thirds of the way down the editor (its top within 0.63 to 0.70 of the
 // scroller's height), once the text is long enough to get there; a click or a mouse scroll leaves the
 // scroll alone and the next key brings the line back; select-all never jumps; a short note never

@@ -99,7 +99,7 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
-### 1.2.5 (2026-11-23)
+### 1.3.0 (2026-11-23)
 
 Typewriter scroll in writing mode, a fix for the outline panel showing an old note, and a fix for a system trash that fails.
 

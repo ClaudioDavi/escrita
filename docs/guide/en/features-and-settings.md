@@ -281,7 +281,7 @@ whether this switch is on or not.
 **Read this note** is a second reading command, next to **Read the book**. It belongs to the
 same switch, Outline and ghost beats. See [Writing](writing.md#read-this-note).
 
-## Settings added in 1.2.5
+## Settings added in 1.3
 
 | Setting | Feature | What it does |
 |---|---|---|

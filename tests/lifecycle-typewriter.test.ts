@@ -1,4 +1,4 @@
-// The typewriter scroll's wiring (1.2.5 W1 E): one editor slot on the desk, filled while the desk is
+// The typewriter scroll's wiring (1.3 W1 E): one editor slot on the desk, filled while the desk is
 // on and empty after, and an extender that stays quiet in every case that must not scroll. What
 // `recenters` answers is tested in typewriter.test.ts; here only the wiring is checked, so these
 // tests never rely on the core's result.

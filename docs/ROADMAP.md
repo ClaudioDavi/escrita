@@ -53,7 +53,7 @@ improvement to "Done" in IMPROVEMENTS.md, and pick the next version's contents
 | 1.2.2 | Fix: an open `%%` comment no longer inflates the daily word count (the measurer's `Counts.open`, the goals tracker's `countedChange`) · Improvement: the stale `unclosedComment` re-export removed (a slice of candidate 49) |
 | 1.2.3 | Fix: words written in a note that stays open (kept under a `%%` that never closes, a note starting with a `---` line, a stray `%%`) count again; `countedChange` takes a `Baseline` `{ words, open, hidden? }`, the save that opens or closes records nothing extra and the hidden words never count · Fix: one history across devices, each device writes its own section of `data.json` (`devices`, `renames`, `DayBook.at`), read before write, re-read on external change, focus and every minute, a per-device backup; `plugin.history` (`core/history-store.ts`, `core/device-history.ts`) · Improvement: the goals bullet of candidate 48, the daily progress port is notified only when `{ words, goal }` changes |
 | 1.2.4 | Fix: a screenplay note opened as plain text until edited (the screenplay module kept a "no" read before the metadata cache had the note; it no longer keeps one then, and reads each "no" again on `resolved`) · Improvement: every property write goes through `notes.frontmatter`, which saves the open editor first (the known issue "Three `processFrontMatter` callers have no flush") |
-| 1.2.5 | Typewriter scroll in writing mode (SF 17): once the line being typed reaches two thirds of the way down, it stays there and the note scrolls; desktop only, in Live Preview and source mode; one setting in the Home note group with tracked notes (default), every note or off · Fix: the outline panel showed an old note when its sidebar tab was first opened (`OutlineView.setState`) · Fix: a system trash that fails (a flatpak) no longer breaks Replace in the export (it keeps both files), deleting or merging an empty chapter, or deleting a snapshot; `notes.trash` throws `TrashFailedError` · Improvement: typed feature ports (candidate 42, `core/feature-ports.ts`) · PLAN-1.2.5 |
+| 1.3.0 | Typewriter scroll in writing mode (SF 17): once the line being typed reaches two thirds of the way down, it stays there and the note scrolls; desktop only, in Live Preview and source mode; one setting in the Home note group with tracked notes (default), every note or off · Fix: the outline panel showed an old note when its sidebar tab was first opened (`OutlineView.setState`) · Fix: a system trash that fails (a flatpak) no longer breaks Replace in the export (it keeps both files), deleting or merging an empty chapter, or deleting a snapshot; `notes.trash` throws `TrashFailedError` · Improvement: typed feature ports (candidate 42, `core/feature-ports.ts`) · Built as 1.2.5 and renamed 1.3.0 · PLAN-1.3 |
 
 ## 1.1, screenwriting (phase 1): shipped
 
@@ -120,10 +120,56 @@ IMPROVEMENTS.md, "Known issues".
 **Not in 1.2:** Reading view layout for screenplays, Fountain in dialogue focus and the lens
 (moved to SP 5), pages as a unit (SP 4) and the scene outline (SP 3).
 
-## Next: universe phase 2
+## 1.3, typewriter scroll: shipped
+
+**Shipped** as 1.3.0 on 2026-11-23. Plan and results: [PLAN-1.3.md](PLAN-1.3.md).
+
+Built as 1.2.5 (the author's request of 2026-11-03) and renamed 1.3.0 by the author on
+2026-11-23. Serves drafting. Upkeep for the writer: none; it comes with writing mode.
+
+| Feature | Ref | Effort | Stage | Status |
+|---|---|---|---|---|
+| Typewriter scroll in writing mode: once the line being typed reaches two thirds of the way down, it stays there and the note scrolls. Desktop only, Live Preview and source mode; one setting (tracked notes, every note or off) | SF 17 | S | Draft | Shipped |
+| Fix: the outline panel showed an old note when its sidebar tab was first opened (`OutlineView.setState`) | not a feature | – | | Shipped |
+| Fix: a system trash that fails (a flatpak) no longer breaks Replace in the export, deleting or merging an empty chapter, or deleting a snapshot; `notes.trash` throws `TrashFailedError` | not a feature | – | | Shipped |
+
+**Improvement:** typed feature ports (candidate 42, `core/feature-ports.ts`). In "Done" under
+1.3.0 in IMPROVEMENTS.md.
+
+## Next: 1.4, the deeper lens
+
+Planned with the author on 2026-10-26 (as 1.3; it became 1.4 on 2026-11-23, when typewriter
+scroll shipped as 1.3), from an investigation of ProWritingAid: its rule-based
+reports, in pt-BR and English (PWA is English-only), with its AI and network features left out.
+Chosen before universe phase 2 because the author's next months are contos and essays. Serves
+revision. Upkeep for the writer: none (built-in word tables per language; `## Ignorar` applies).
+Details in [ROADMAP-short-fiction.md](ROADMAP-short-fiction.md), section 18. Not planned in
+detail yet: a `PLAN-1.4.md` comes when it is.
+
+| Feature | Ref | Effort | Stage | Status |
+|---|---|---|---|---|
+| Sentences and words, opt-in rules: passive voice, repeated sentence starts, filter words and telling, intensifiers and vague words, sticky sentences (glue index), repeated phrases | SF 18 (group A) | M | Revision | Planned |
+| Fiction, opt-in rules: dialogue tags, clichés and redundancies (pleonasmos), consistency (with pre-2009 spellings in pt-BR), verb tense (narration that slips out of its scene's tense), dialogue formatting (hyphen for the dash, two speeches in one paragraph), formal register in speech, too many *que* (queísmo), long paragraphs | SF 18 (group B) | M | Revision | Planned |
+| Pacing: a section in the lens panel, one bar per paragraph of the note, colored by speech share and marked as scene or summary | SF 18 (group B) | S–M | Revision | Planned |
+| The lens panel grouped (Words, Sentences, Dialogue, Consistency), one group at a time; mockups first | SF 18 | S | Revision | Planned |
+
+**Improvement:** the rest of candidate 47 (the lens prepares each pass once), which every new
+rule leans on.
+
+**Risks:** thresholds copied from English would fire on every Portuguese sentence, so each is
+calibrated on pt-BR prose and pinned in tests; too many marks at once (hence opt-in rules and
+groups); the 60 ms pass ceiling with every rule on (repeated phrases is the one to watch); verb tense
+reads Portuguese endings without a tagger, so it counts only unambiguous verbs and is pinned on the
+fixture conto for false positives.
+
+**Later (SF 18, group C):** sensory words, most used words, transitions, pt-BR confusables,
+stacked adjectives.
+
+## After 1.4: universe phase 2
 
 Timeline, dates, facts over time, continuity and canon (U 2.1–2.4), moved out of 0.9 on
-2026-10-06, and after 1.2 since 2026-10-19. Not planned in detail yet: the version, its
+2026-10-06, after 1.2 since 2026-10-19, after 1.3 since 2026-10-26, and after 1.4 since
+2026-11-23. Not planned in detail yet: the version, its
 improvement and a `PLAN-<version>.md` come when it is planned. Natural improvements: 57 (the
 works of a scope) and 58 (typed property readers). The draft design is in
 `research_notes/0.9-dates-draft/` (local).
@@ -210,7 +256,8 @@ and the README links to every guide.
 
 | Feature | Ref | Effort | Note |
 |---|---|---|---|
-| Book-wide snapshots and revision reports | N 10 | M | Builds on SF 4, SF 5 |
+| Book-wide snapshots and revision reports | N 10 | M | Builds on SF 4, SF 5 and the 1.4 rules (SF 18) |
+| The deeper lens, group C: sensory words, most used words, transitions, pt-BR confusables, stacked adjectives | SF 18 | M | After 1.4 |
 | Companion-plugin guide (unscheduled) | N 6 | S | Dropped from 0.8 on 2026-10-05; written only if a need shows up (for example, a StoryLine clash reported by a writer) |
 | Longform importer | N 5 | S–M | Not wanted for 1.0 |
 | Screenwriting, phase 1: screenplay notes, Fountain parser, Fountain and PDF export | SP 1, SP 6 | M + L | Shipped in 1.1.0 (see "1.1" above). Export first: a script can be drafted in plain Fountain, but can't be handed in without a correct PDF. Builds on the 0.8 export pipeline and the `form` property (0.6) |

@@ -1,4 +1,4 @@
-// Typed feature ports (1.2.5, IMPROVEMENTS 42). A module that offers something to other modules
+// Typed feature ports (1.3, IMPROVEMENTS 42). A module that offers something to other modules
 // exposes it on itself, and the others read it through the registry while the feature is loaded,
 // never by importing the module (CONTEXT.md, "features"). `features.get<T>(id)` casts the module
 // to whatever `T` the caller names, so a renamed port returned undefined at runtime instead of

@@ -296,7 +296,7 @@ fazem nada numa nota de roteiro, com este interruptor ligado ou não.
 **Ler esta nota** é um segundo comando de leitura, ao lado de **Ler o livro**. Pertence ao mesmo
 interruptor, Esboço e beats fantasmas. Veja [Escrita](writing.md#ler-esta-nota).
 
-## Configurações acrescentadas na 1.2.5
+## Configurações acrescentadas na 1.3
 
 | Configuração | Recurso | O que faz |
 |---|---|---|

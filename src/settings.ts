@@ -50,7 +50,7 @@ export interface EscritaSettings extends UniverseSettings, FormSettings {
    */
   openInWritingMode: boolean;
   /**
-   * Typewriter scroll in writing mode (1.2.5, SF 17): while writing mode is on, the line being
+   * Typewriter scroll in writing mode (1.3, SF 17): while writing mode is on, the line being
    * typed stays two thirds of the way down the editor once it gets there, and the note scrolls
    * instead. Which notes: "tracked" (inside the track folders, `classify().tracked`; the default, so
    * the home note and loose notes never scroll), "all" (every Markdown note) or "off". Desktop only

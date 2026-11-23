@@ -1,4 +1,4 @@
-// The typewriter scroll's extension (1.2.5, SF 17; PLAN-1.2.5 D3, D5, D7). In writing mode, for the
+// The typewriter scroll's extension (1.3, SF 17; PLAN-1.3 D3, D5, D7). In writing mode, for the
 // notes the setting takes, a keystroke that `recenters` (core/typewriter.ts) brings the cursor's
 // line to two thirds of the way down. The scroll is made by an `EditorState.transactionExtender`
 // adding `EditorView.scrollIntoView(head, { y: "start", yMargin })` to the transaction itself, so it

@@ -850,6 +850,9 @@ refuse.
   the check and the create is looked for once more. Callers: the outline (the board file
   and the new book note), darlings, the home note, the lens' word-lists note, the universe
   (create entry, entry templates), the export and the submissions.
+- **Deleting files.** `notes.trash(file)` is every delete. It throws `TrashFailedError` when
+  `trashFile` left the file in place (the system trash failed), so callers never go on as if it
+  were gone.
 - **Plans written as text-to-text.** `guardedEdit(guard, edit)` turns "check the text,
   then return the new whole text" into a plan (the smallest `Change` between the two;
   null when the guard fails or `edit` answers null; `edit` may throw to refuse with a
@@ -1334,7 +1337,7 @@ Publish runs `readinessOf` and adds its own property checks (recommended propert
 limit); the export modal runs it on each part and adds the embeds the manuscript drops.
 `unclosedComment` and `unclosedHtmlComment` are also exported on their own.
 
-## Feature ports (`core/feature-ports.ts`, 1.2.5, IMPROVEMENTS 42)
+## Feature ports (`core/feature-ports.ts`, 1.3, IMPROVEMENTS 42)
 
 What one module offers another is one row of `FeaturePorts`, keyed by feature id: `desk`
 (`WritingModeHost`), `goals` (`DailyProgressHost`), `submissions` (`PendingHost`) and `publish`
@@ -1351,11 +1354,11 @@ its row, so a rename fails to compile on both sides.
   changed. A new port is one row here plus its type in core (candidate 24's "create entry" port
   will land here).
 
-## The typewriter scroll (`src/desk/typewriter.ts`, `core/typewriter.ts`, 1.2.5, SF 17)
+## The typewriter scroll (`src/desk/typewriter.ts`, `core/typewriter.ts`, 1.3, SF 17)
 
 In writing mode the line being typed stays two thirds of the way down the editor and the note
 scrolls instead. Part of the desk module (no switch of its own); it registers one editor slot
-(`ctx.editor`), so the desk declares `editors: 1`. Decisions: PLAN-1.2.5 D3 to D7.
+(`ctx.editor`), so the desk declares `editors: 1`. Decisions: PLAN-1.3 D3 to D7.
 
 - **`core/typewriter.ts` (pure).** `recenters(tr, active)` says whether a transaction brings the
   line back, from a plain `TypewriterTransaction` (user event, `docChanged`, cursor moved,
@@ -1392,7 +1395,7 @@ The port between submissions and the desk. `PendingSource { list(), onChange(cb)
 `PendingSubmission { path, workPath, workTitle, market, sent }` (newest `sent` first;
 `workPath` is null when the `work` link doesn't resolve). The submissions module provides it
 as its `pending` field while loaded. The desk reads it only while
-`features.isOn("submissions")`, through `pendingOf(plugin.features)` (`core/pending.ts`, over `port()`; 1.2.5)
+`features.isOn("submissions")`, through `pendingOf(plugin.features)` (`core/pending.ts`, over `port()`; 1.3)
 (`desk/gather.ts`), and never imports the submissions module, so an off feature leaves no
 trace. Pure types.
 
@@ -1772,7 +1775,7 @@ hotkeys keep working.
 
 ## Wave 2 ports and view ids (1.0)
 
-- **Typed ports** (`core/feature-ports.ts`, 1.2.5, IMPROVEMENTS 42): see "Feature ports" above.
+- **Typed ports** (`core/feature-ports.ts`, 1.3, IMPROVEMENTS 42): see "Feature ports" above.
 - **Writing mode** (`core/writing-mode.ts`): the desk provides `writingMode`
   (`WritingModePort`); others read it through `writingModeOf(plugin.features)`, null while
   the desk is off. The setup's "focus" layout enters it. The mode itself is

@@ -1,4 +1,6 @@
-# Escrita 1.2.5, typewriter scroll: implementation plan
+# Escrita 1.3, typewriter scroll: implementation plan
+
+Planned and built as 1.2.5; shipped as 1.3.0 (the author's decision, 2026-11-23).
 
 A small version. In writing mode the line being typed stays two thirds of the way down the editor
 and the note scrolls instead (SF 17, asked by the author 2026-11-03). It also carries the outline
@@ -36,7 +38,7 @@ default, with one setting to turn it off.
 
 | # | Question | Decision |
 |---|---|---|
-| D1 | Version | **1.2.5**, a patch: one small feature and one fix, no new switch. |
+| D1 | Version | **1.3.0** (planned as the patch 1.2.5): one small feature and one fix, no new switch. |
 | D2 | Improvement | **IMPROVEMENTS 42, typed feature ports.** The desk's writing-mode port is one of the shims it names (`core/writing-mode.ts:41`), and the typewriter reads the mode. A `FeaturePorts` map in core and `port<K>(id)`; `writingModeOf`, `dailyProgressOf`, the desk's pending read (`desk/gather.ts:15`) and the outline's publish-next read (`outline/view.ts:696`) move to it. Candidate 24's "create entry" part is not in this version. |
 | D3 | How the scroll is made | **No dispatch of our own** (final after S0). An `EditorState.transactionExtender` adds `EditorView.scrollIntoView(head, { y: "start", yMargin })` when `recenters` says yes. S0 measured that it wins over Obsidian's and CodeMirror's own scroll in Live Preview and source mode: the line sits at 0.333 of the height, no flicker (S0 ran at a third; the author moved the line to two thirds after Wave 0, the same mechanism with a larger margin). On an empty line it sits 24 px low, accepted. A later dispatch also reached 0.333 but flickered for a frame, so it is not used. **What recenters:** `input`, `delete`, `move`, `undo`, `redo` and their sub-events, when the document changed or the cursor moved; a plain `select` (arrows, Home, End, Page Up/Down, Ctrl+Home/End; the arrows send `select`, not `move`) when the cursor moved and nothing is selected; `select.undo`, `select.redo`. **Never:** no user event, `select.pointer` (a click), `move.drop`, `input.drop`, any other `select.*`, select-all or a Shift selection. A mouse scroll is not a transaction: the view stays until the next keystroke. **The margin** is `typewriterMargin` of the editor's `scrollDOM.clientHeight`, read by a small `ViewPlugin` in a `requestMeasure` (key `"tw"`) on start and on a change of geometry, viewport or focus, kept per view, never module-level. The extender reads a flag (writing mode on, not a phone) and, per editor, whether the setting takes its note (D7), cached per view and file. |
 | D4 | The space above and below | **None added** (the author, 2026-11-21: "activate if it has enough text to warrant the scroll"). The scroll never goes above the top of the note, so a line higher than two thirds stays where it is: a short note never moves and there is no blank space above the title. Below the last line, Obsidian's own "scroll past end" already leaves half the height (381 px measured in S0), more than the third the line needs to reach two thirds, so no CSS and no body class. If Wave 1's e2e finds a case without that room, a `padding-bottom` of a third of `--escrita-tw-h` on `.cm-content` under `escrita-typewriter` is the fallback. Never text in the note. Leaving the mode or turning the setting off stops the recentering; the scroll position stays. |
@@ -63,7 +65,7 @@ default, with one setting to turn it off.
 ## Waves
 
 The usual rules: Sonnet for code, tests and docs; Opus for contracts, the board, the judge and
-every architecture call. Worktrees are made in the main loop from the `1.2.5` branch, and each
+every architecture call. Worktrees are made in the main loop from the branch named after the first plan, and each
 task commits on its branch. Heavy checks run behind `flock`, vitest with `--maxWorkers=4`. One
 Obsidian at a time.
 
@@ -94,9 +96,9 @@ folder importing another, and the merge of the three branches into `1.2.5`.
 - Guide, English and pt-BR: "Writing mode" gets the typewriter scroll; "Next to a zen plugin or a
   theme" no longer sends writers elsewhere for it and says to turn one of the two off if both
   scroll; the settings page gets the row.
-- README: the feature line and the 1.2.5 changelog (the typewriter scroll, the outline fix).
+- README: the feature line and the 1.3 changelog (the typewriter scroll, the outline fix).
 - ARCHITECTURE: `desk/typewriter.ts`, `core/typewriter.ts`, `core/feature-ports.ts`. CONTEXT: the
-  1.2.5 line. IMPROVEMENTS: 42 to Done. ROADMAP and SF 17: shipped; plan what's next.
+  1.3 line. IMPROVEMENTS: 42 to Done. ROADMAP and SF 17: shipped; plan what's next.
 - The test vault's plugin links checked after the build.
 
 ## Risks
@@ -185,16 +187,16 @@ folder importing another, and the merge of the three branches into `1.2.5`.
 - **G, the guide:** merged (`adee80b`, review fix `ebcf96f`, fast-forward). `tracking.md` (en and
   pt-BR): a "Typewriter scroll" paragraph in writing mode with the three values, "Next to a zen
   plugin or a theme" says Escrita has its own and to turn one of the two off if both scroll, and a
-  row in the page's settings table; `features-and-settings.md`: a "Settings added in 1.2.5" section
+  row in the page's settings table; `features-and-settings.md`: a "Settings added in 1.3" section
   with the row and the outline fix. Strings match `src/desk/strings.ts` ("Typewriter scroll in
   writing mode" / "Modo máquina de escrever"; Tracked notes, Every note, Off / Notas acompanhadas,
   Todas as notas, Desligado). **Review fix:** both pages said the home note is never tracked; with
   no track folders every note is tracked (`isTracked` in `core/classify.ts`), the home note too, so
   the text now says a home note kept outside the track folders never scrolls.
 - **R, repo docs:** merged (`e943c0f`, review fix `036d70d`, merge `5867a98`). README (the Tracking
-  line and the 1.2.5 changelog), ARCHITECTURE ("Feature ports", "The typewriter scroll", pending
-  through `pendingOf`), CONTEXT (1.2.5 line, feature ports), IMPROVEMENTS (42 to Done), ROADMAP
-  (1.2.5 shipped; next stays universe phase 2) and SF 17 shipped. **Review fixes:** the same home
+  line and the 1.3 changelog), ARCHITECTURE ("Feature ports", "The typewriter scroll", pending
+  through `pendingOf`), CONTEXT (1.3 line, feature ports), IMPROVEMENTS (42 to Done), ROADMAP
+  (1.3 shipped; next stays universe phase 2) and SF 17 shipped. **Review fixes:** the same home
   note claim in the README changelog; ARCHITECTURE said `typewriterMargin` is the height minus two
   thirds (it is two thirds of the height, rounded); a "see below" that points above.
 - **H, the harness:** merged (`0dcb89a`, merge `1f0811a`). `Obsidian.stop()` accepts the
@@ -204,7 +206,7 @@ folder importing another, and the merge of the three branches into `1.2.5`.
   test:bundle (4), lint (zero warnings).
 - **Full `npm run e2e`:** 271 passed, 2 failed, 7 skipped, 3 did not run (11.8 min). The 11
   "No dialog is showing" failures of Wave 1 are gone. The two left are the timing bars that already
-  failed on the pre-1.2.5 build in Wave 1:
+  failed on the pre-1.3 build in Wave 1:
   - `screenplay-editor.spec.ts:560` 19, a 120-page script: `expect(received).toBeLessThanOrEqual(expected)`,
     expected `<= 10`, received `10.5` (typing to the DOM median; 10.3 on the baseline).
   - `read-book.spec.ts:356` G0d: `expect(received).toBe(expected)`, expected `true`, received
