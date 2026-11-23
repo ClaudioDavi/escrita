@@ -179,3 +179,36 @@ folder importing another, and the merge of the three branches into `1.2.5`.
     editor 19, typing median 10.3 ms against 10 (10.3 on the baseline too); "Read the book" G0d,
     longest task 54 to 66 ms against no long task (45 to 61 ms on the baseline; 1.1 measured 23
     to 28).
+
+### Wave 2 (2026-11-23)
+
+- **G, the guide:** merged (`adee80b`, review fix `ebcf96f`, fast-forward). `tracking.md` (en and
+  pt-BR): a "Typewriter scroll" paragraph in writing mode with the three values, "Next to a zen
+  plugin or a theme" says Escrita has its own and to turn one of the two off if both scroll, and a
+  row in the page's settings table; `features-and-settings.md`: a "Settings added in 1.2.5" section
+  with the row and the outline fix. Strings match `src/desk/strings.ts` ("Typewriter scroll in
+  writing mode" / "Modo máquina de escrever"; Tracked notes, Every note, Off / Notas acompanhadas,
+  Todas as notas, Desligado). **Review fix:** both pages said the home note is never tracked; with
+  no track folders every note is tracked (`isTracked` in `core/classify.ts`), the home note too, so
+  the text now says a home note kept outside the track folders never scrolls.
+- **R, repo docs:** merged (`e943c0f`, review fix `036d70d`, merge `5867a98`). README (the Tracking
+  line and the 1.2.5 changelog), ARCHITECTURE ("Feature ports", "The typewriter scroll", pending
+  through `pendingOf`), CONTEXT (1.2.5 line, feature ports), IMPROVEMENTS (42 to Done), ROADMAP
+  (1.2.5 shipped; next stays universe phase 2) and SF 17 shipped. **Review fixes:** the same home
+  note claim in the README changelog; ARCHITECTURE said `typewriterMargin` is the height minus two
+  thirds (it is two thirds of the height, rounded); a "see below" that points above.
+- **H, the harness:** merged (`0dcb89a`, merge `1f0811a`). `Obsidian.stop()` accepts the
+  `beforeunload` dialog on every context and page before `Browser.close`; the typewriter spec's own
+  workaround is gone. No timing bar changed.
+- **Checks on `1.2.5`:** typecheck, vitest (255 files, 5244 passed, 2 skipped), build,
+  test:bundle (4), lint (zero warnings).
+- **Full `npm run e2e`:** 271 passed, 2 failed, 7 skipped, 3 did not run (11.8 min). The 11
+  "No dialog is showing" failures of Wave 1 are gone. The two left are the timing bars that already
+  failed on the pre-1.2.5 build in Wave 1:
+  - `screenplay-editor.spec.ts:560` 19, a 120-page script: `expect(received).toBeLessThanOrEqual(expected)`,
+    expected `<= 10`, received `10.5` (typing to the DOM median; 10.3 on the baseline).
+  - `read-book.spec.ts:356` G0d: `expect(received).toBe(expected)`, expected `true`, received
+    `false` at `:380` (long tasks over 50 ms: 2, 1, 0; longest task 62, 59.5, 47.9 ms; first text
+    median 31.8 ms against 500). Baseline: longest 45 to 61 ms.
+- **Test vault:** `~/Projects/escrita-test/` was not found on this machine, so its plugin links
+  could not be checked.
