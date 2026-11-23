@@ -58,7 +58,7 @@ scores, but readability is English only and dialogue is found by quote marks alo
 | 1.0.4 | Start a new work: "New short story" and "New book" (14) | S–M | Shipped |
 | 1.2.0 | Read a note (15) · Sentence rhythm in the lens panel (16) | S + S | Shipped |
 | 1.3.0 | Typewriter scroll in writing mode (17) | S | Shipped |
-| 1.4.0 | The deeper lens: rules and pacing in the manner of ProWritingAid, pt-BR and English (18, groups A and B) | L | Planned |
+| – | The deeper lens: rules and pacing in the manner of ProWritingAid, pt-BR and English (18, groups A and B) | L | Shelved |
 
 Sections keep their original numbers so references from the other roadmaps stay valid.
 
@@ -1093,7 +1093,10 @@ one of the two off if both scroll.
 Themes that pad the editor (Typewriter, Minimal) may add their own space; check writing mode
 with them (the TEST-1.0 by-eye list).
 
-## 18. The deeper lens (v1.4, planned 2026-10-26)
+## 18. The deeper lens (planned 2026-10-26, shelved 2026-11-23)
+
+**Shelved by the author on 2026-11-23**: not ready yet; the author wants to come back to it. No version
+is set. Where this section says 1.4, read "the version that ships it".
 
 Planned as section 17 for 1.3 on 2026-10-26. On 2026-11-23 typewriter scroll (17) shipped as
 1.3, so the lens became section 18 and version 1.4.
