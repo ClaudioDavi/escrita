@@ -88,6 +88,8 @@ These decide most design questions. Full text in ARCHITECTURE.md, "Conventions".
   - `notes.create(path, data, { exists, trashOld })`: every new file (text or binary).
     `exists` is `return`, `fail`, `unique` or `replace`; `replace` refuses a case-only
     clash, and `trashOld` sends the old file to the trash first.
+  - `notes.trash(file)` (1.2.5): every delete. It calls `trashFile` and throws `TrashFailedError` when
+    the file is still there (a system trash that fails shows Obsidian's notice and doesn't throw).
   - `notes.frontmatter(file, fn)` (1.2.4): every property write. It saves the file's views first
     (`flush`), then calls `processFrontMatter`, which nothing else in `src/` calls
     (`tests/frontmatter-writes.test.ts`).

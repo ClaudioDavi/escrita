@@ -1,10 +1,12 @@
 import { Notice } from "obsidian";
 import { t } from "../i18n";
 import { ChapterError } from "../core/chapter-plan";
+import { TrashFailedError } from "../core/notes";
 
 /** A user-facing, translated message for an error from a chapter or file operation. */
 export function errorMessage(e: unknown): string {
   if (e instanceof ChapterError) return t(`outline.err.${e.code}`, { name: e.subject });
+  if (e instanceof TrashFailedError) return t("outline.err.trash", { name: e.path });
   return e instanceof Error ? e.message : String(e);
 }
 

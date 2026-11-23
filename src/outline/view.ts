@@ -1402,8 +1402,10 @@ export class OutlineView extends ItemView {
           // Re-check, through the note text port (an open editor's unsaved buffer counts), that the chapter is still empty before trashing it.
           const text = await this.plugin.notes.text(row.file).read();
           if (!isBlankBody(text)) throw new Error(t("outline.blocked.notEmptyTab"));
+          // Trash first: if the trash fails, nothing has changed yet (the beat isn't in the previous
+          // chapter twice). The trashed chapter still holds its title and summary if the append fails.
+          await this.plugin.notes.trash(row.file);
           await this.editText(prev.file, (p) => appendBeat(p, beatText));
-          await this.app.fileManager.trashFile(row.file);
           await this.renumberRest(book, row.file);
         });
         if (!ok) { el.dataset.done = ""; if (summaryEl) summaryEl.dataset.done = ""; return; }
@@ -1417,7 +1419,7 @@ export class OutlineView extends ItemView {
         const ok = await this.run(async () => {
           const text = await this.plugin.notes.text(row.file).read();
           if (!isBlankBody(text)) throw new Error(t("outline.blocked.notEmptyDelete"));
-          await this.app.fileManager.trashFile(row.file);
+          await this.plugin.notes.trash(row.file);
           await this.renumberRest(book, row.file);
         });
         if (!ok) { el.dataset.done = ""; return; }
@@ -1490,7 +1492,7 @@ export class OutlineView extends ItemView {
       if (!ok) return;
     }
     await this.run(async () => {
-      await this.app.fileManager.trashFile(row.file);
+      await this.plugin.notes.trash(row.file);
       await this.renumberRest(book, row.file);
     });
     await this.refresh(true);

@@ -840,7 +840,9 @@ refuse.
     for bytes), keeping the file and its links. Only for a derived file (an export) or
     after the writer said yes (rule 1); asking stays with the caller. With `trashOld`,
     the old file goes to the trash (`fileManager.trashFile`) and a new one is created,
-    for a file the plugin may not have written.
+    for a file the plugin may not have written. `trashFile` doesn't throw when the system
+    trash fails (a flatpak): it shows Obsidian's notice and leaves the file. Then `create`
+    throws `TrashFailedError` and writes nothing; the export keeps both files.
 
   A folder at the path throws `NoteExistsError` under every policy but `unique`. A
   `replace` refuses when the clash differs from the path only by case (on a
