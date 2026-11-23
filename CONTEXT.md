@@ -302,12 +302,12 @@ and what upkeep it asks of the writer.
   `TrashFailedError`, so Replace in the export keeps both files and an empty chapter or a snapshot
   stays put. Improvement 42, typed feature ports (`core/feature-ports.ts`). Plan and results in
   `docs/PLAN-1.3.md`.
-- **Next: 1.4, the deeper lens** (SF 18, planned 2026-10-26): ProWritingAid's rule-based reports
+- **Shelved: the deeper lens** (SF 18, planned 2026-10-26, shelved by the author 2026-11-23: not ready yet, coming back later): ProWritingAid's rule-based reports
   in pt-BR and English (passive voice, sentence starts, filter words, sticky sentences, repeated
   phrases, dialogue tags, clichés and pleonasmos, consistency, verb tense, dialogue formatting,
   formal register, queísmo, pacing with scene or summary), opt-in and grouped in the panel.
   Improvement: the rest of 47.
-- **After 1.4**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
+- **Next**: not chosen yet. **Later**: universe phase 2 (timeline, dates, continuity, canon; U 2.1–2.4), moved out of 0.9.
 
 Known weak spots to keep in mind when touching nearby code: `outline/view.ts` and
 `goals/progress-modal.ts` are large and mostly untested (IMPROVEMENTS 5; the chapter rows
