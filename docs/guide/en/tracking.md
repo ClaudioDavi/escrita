@@ -167,19 +167,38 @@ and then the mode starts. The setup's "Writing mode" layout turns it on for you
 **Open a work from the home note.** Click a work: it opens in the same tab, where you left
 off, and you stay in writing mode.
 
+**Typewriter scroll.** In writing mode, once the line you are typing reaches two thirds of the
+way down the editor, it stays there and the note scrolls instead. A short note never moves, and
+nothing is added above the title. These bring the line back to that place: typing, Enter, the
+arrow keys, Page Up and Page Down, Ctrl+Home and Ctrl+End, and undo. These leave the page alone,
+so you can look around: a click, the mouse wheel, select all and a Shift selection. It works in
+Live Preview and in source mode, on desktop only.
+
+The setting **Typewriter scroll in writing mode**, in the Home note group, has three values:
+
+- **Tracked notes** (the default): only notes in the track folders, the ones counted toward goals.
+  The home note is never one of them, so it never scrolls.
+- **Every note**: any note you open in writing mode.
+- **Off**: no scrolling.
+
 Writing mode is part of the home block feature and has no switch of its own. Turning that
 feature off while the mode is on leaves the mode first, so nothing stays hidden.
 
 ### Next to a zen plugin or a theme
 
 Obsidian has no zen mode of its own, and community plugins do: **Zen Mode**, **Ultra Zen Mode**
-and **Easy View** are three. If you want more than this (a typewriter scroll, fading the
+and **Easy View** are three. If you want more than this (fading the
 other lines, hiding more of the chrome), try one of them. Escrita's mode stays small on
-purpose: it can enter without a second plugin, and only Escrita has the goal counter and "where you left off".
+purpose: it can enter without a second plugin, it has its own typewriter scroll, and only Escrita
+has the goal counter and "where you left off".
 
 The two can sit side by side. Escrita reopens only what it hid itself, so a zen plugin's own hiding is
 left alone when you leave writing mode. If both of them hid the same sidebar, leaving Escrita's mode may bring it back; leave the zen
 plugin's mode afterwards.
+
+A zen or typewriter plugin that also scrolls the note will fight with Escrita over the scroll.
+If you see the page jump, turn one of the two off: either set **Typewriter scroll in writing
+mode** to **Off**, or turn off the other plugin's scrolling.
 
 ## Settings and commands on this page
 
@@ -187,6 +206,7 @@ plugin's mode afterwards.
 |---|---|---|
 | Settings › Stages | Words for each stage, Color for each stage, Other status colors, New notes start as draft | Map your status words to stages |
 | Settings › Home note | Home note, Open on startup, Open in writing mode | The note that holds the block, and what happens when Obsidian starts |
+| Settings › Home note | Typewriter scroll in writing mode | Keeps the line you type two thirds of the way down: Tracked notes, Every note or Off |
 | Features › The desk | Works block and where you left off, Snapshot at each stage | The home block and the stage snapshot |
 | Commands | Open the home note, Enter writing mode, Exit writing mode | |
 

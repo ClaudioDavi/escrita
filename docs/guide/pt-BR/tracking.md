@@ -172,21 +172,39 @@ cofre liga essa configuração para você (veja
 **Abrir uma obra pela nota inicial.** Clique numa obra: ela abre na mesma aba, onde você
 parou, e você continua no modo escrita.
 
+**Rolagem de máquina de escrever.** No modo escrita, quando a linha que você está digitando
+chega a dois terços da altura do editor, ela fica ali e a nota rola. Uma nota curta nunca se
+mexe, e nada é acrescentado acima do título. Estas ações trazem a linha de volta para esse lugar:
+digitar, Enter, as setas, Page Up e Page Down, Ctrl+Home e Ctrl+End, e desfazer. Estas deixam a
+página quieta, para você olhar em volta: um clique, a roda do mouse, selecionar tudo e uma seleção
+com Shift. Funciona na Visualização ao vivo e no modo código-fonte, só no computador.
+
+A configuração **Modo máquina de escrever**, no grupo Nota inicial, tem três valores:
+
+- **Notas acompanhadas** (o padrão): só as notas das pastas acompanhadas, as que contam para as
+  metas. A nota inicial nunca é uma delas, então ela nunca rola.
+- **Todas as notas**: qualquer nota que você abrir no modo escrita.
+- **Desligado**: sem rolagem.
+
 O modo escrita faz parte do recurso do bloco de obras e não tem interruptor próprio. Desligar
 esse recurso com o modo ligado faz o modo sair antes, então nada fica escondido.
 
 ### Ao lado de um plugin zen ou de um tema
 
 O Obsidian não tem modo zen próprio, e plugins da comunidade têm: **Zen Mode**, **Ultra Zen
-Mode** e **Easy View** são três. Se você quer mais do que isso (rolagem de máquina de
-escrever, esmaecer as outras linhas, esconder mais da interface), experimente um deles. O modo
-do Escrita fica pequeno de propósito: dá para entrar nele sem um segundo plugin, e só o
-Escrita tem o contador da meta e o "onde você parou".
+Mode** e **Easy View** são três. Se você quer mais do que isso (esmaecer as outras
+linhas, esconder mais da interface), experimente um deles. O modo do Escrita fica pequeno de
+propósito: dá para entrar nele sem um segundo plugin, ele tem a sua própria rolagem de máquina de
+escrever, e só o Escrita tem o contador da meta e o "onde você parou".
 
 Os dois podem coexistir. O Escrita reabre só o que ele mesmo escondeu, então o que um plugin
 zen escondeu fica como está quando você sai do modo escrita. Se os dois esconderam a mesma
 barra lateral, sair do modo do Escrita pode trazê-la de volta; saia do modo do plugin zen
 depois.
+
+Um plugin zen ou de máquina de escrever que também rola a nota briga com o Escrita pela rolagem.
+Se a página pular, desligue um dos dois: ponha **Modo máquina de escrever** em **Desligado**, ou
+desligue a rolagem do outro plugin.
 
 ## Configurações e comandos desta página
 
@@ -194,6 +212,7 @@ depois.
 |---|---|---|
 | Configurações › Estágios | Palavras para cada estágio, Cor de cada estágio, Outras cores de status, Notas novas começam como rascunho | Ligam as suas palavras de status aos estágios |
 | Configurações › Nota inicial | Nota inicial, Abrir ao iniciar, Abrir no modo escrita | A nota que guarda o bloco, e o que acontece quando o Obsidian abre |
+| Configurações › Nota inicial | Modo máquina de escrever | Mantém a linha que você digita a dois terços da altura: Notas acompanhadas, Todas as notas ou Desligado |
 | Recursos › Acompanhamento | Bloco de obras e onde você parou, Versão a cada estágio | O bloco da nota inicial e a versão de estágio |
 | Comandos | Abrir a nota inicial, Entrar no modo escrita, Sair do modo escrita | |
 

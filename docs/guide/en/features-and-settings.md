@@ -281,6 +281,16 @@ whether this switch is on or not.
 **Read this note** is a second reading command, next to **Read the book**. It belongs to the
 same switch, Outline and ghost beats. See [Writing](writing.md#read-this-note).
 
+## Settings added in 1.2.5
+
+| Setting | Feature | What it does |
+|---|---|---|
+| Typewriter scroll in writing mode | Works block and where you left off | In the Home note group. Once the line you type reaches two thirds of the way down, it stays there and the note scrolls. **Tracked notes**, **Every note** or **Off**. Tracked notes. Desktop only. |
+
+It is explained in [Tracking](tracking.md#write-with-only-the-note-writing-mode). The same
+version also fixes the outline panel showing an old note when its sidebar tab was first opened:
+it now follows the open note.
+
 ## Folder rows and how fields save
 
 The export folder (default `Escrita/Exports`), the submissions folder (default `Escrita/Submissions`)
