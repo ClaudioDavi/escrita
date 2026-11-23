@@ -162,7 +162,9 @@ export class OutlineView extends ItemView {
   private progressEl: HTMLElement | null = null;
   private chipsEl: HTMLElement | null = null;
   private serialEl: HTMLElement | null = null;
-  private actionsEl: HTMLElement | null = null;
+  /** the book's buttons in our own header. Not `actionsEl`: that is ItemView's view-header slot, and a field of
+   *  that name set to null broke `addAction` for every plugin (the bookmarks icon threw on `prepend`). */
+  private bookActionsEl: HTMLElement | null = null;
   /** Q43: what the stripe follows; kept in the view's state, so Obsidian saves it with the layout */
   private colorBy: ColorBy = "status";
   /** Q44: session only */
@@ -505,7 +507,7 @@ export class OutlineView extends ItemView {
     this.progressEl = header.createDiv({ cls: "escrita-outline-progress" });
     this.chipsEl = header.createDiv({ cls: "escrita-outline-chipbox" });
     this.serialEl = header.createDiv({ cls: "escrita-outline-serial", attr: { role: "status" } });
-    this.actionsEl = header.createDiv({ cls: "escrita-outline-actions" });
+    this.bookActionsEl = header.createDiv({ cls: "escrita-outline-actions" });
     this.observeChips(this.chipsEl);
     this.renderStats();
 
@@ -693,13 +695,13 @@ export class OutlineView extends ItemView {
   /** The serial line and "Publish next" (0.9, N 4): read from the chapters' status and date, never stored. */
   private renderSerial(): void {
     const book = this.book;
-    if (!book || !this.serialEl || !this.actionsEl) return;
+    if (!book || !this.serialEl || !this.bookActionsEl) return;
     const publishPort = port(this.plugin.features, "publish");
     // the line is part of "Publish next chapter": with the publish feature off, the header shows neither
     const state = publishPort ? bookSerial(this.plugin.outline.rowsPort(), book, this.plugin.settings) : null;
     renderSerialLine(this.serialEl, state ? serialLine(state) : null);
     const notePath = book.note.path;
-    renderHeaderActions(this.actionsEl, {
+    renderHeaderActions(this.bookActionsEl, {
       // board 32d: no line and no button until a chapter is published (the palette command still works)
       publishNext: publishPort && state?.next && state.last ? () => { void publishPort.publishNext(notePath); } : null,
       readBook: () => { if (this.book) void this.plugin.outline.openReader(this.book); },

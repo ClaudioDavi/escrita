@@ -548,6 +548,36 @@ interface lives. Test through the interface.
 - **Change.** One core interface handed through `ModuleContext`, with `main.ts` as its only adapter.
 - **Touches.** `main.ts`, `core/module-context.ts`, every module, `tests/support/fake-plugin.ts`.
 
+### 63. Obsidian's real behavior in tests (added 2026-11-23, after 1.3.0 and 1.3.1)
+
+**Strength:** strong · S each, can ship in slices
+
+- **Problem.** Two bugs found on 2026-11-23 had one cause: the code trusted `obsidian.d.ts`, and the
+  app does something the types don't say. Tests that fake Obsidian the way we assume can't catch it.
+  - `fileManager.trashFile` is `Promise<void>`, but when the system trash fails (a flatpak) it shows
+    a notice, returns `false` and keeps the file. The export then created over a taken path (fixed in
+    1.3.0 with `notes.trash` and `TrashFailedError`). The fakes always deleted.
+  - `ItemView.actionsEl` is not in the `.d.ts`. The outline declared its own `actionsEl = null`, a class
+    field that replaced the base's, so `addAction` (the bookmarks icon) threw on `prepend` (fixed in
+    1.3.1, with `tests/view-fields.test.ts`, which checks a list of names only).
+- **Change.**
+  - **`#private` fields** in every class that extends an Obsidian class (views, modals, setting
+    tabs, suggests, render children): an ES private field can't collide with a base member, so the
+    name list in `view-fields.test.ts` stops mattering.
+  - **Check the outcome of silent Obsidian calls in one place.** Like `notes.trash`, every call whose
+    failure is a return value or a notice (rename, create, process, trash) goes through a service that
+    checks the result and throws a typed error. Read the app code (CLAUDE.md, "Reading Obsidian's real
+    behavior") for each one.
+  - **Fakes that fail like Obsidian**: the test fakes (`tests/support/`) get the real failure modes
+    from the app code (a `false` return, a file left in place, a null field), and the services' tests
+    use them.
+  - **e2e fails on console errors**: the harness fails a spec on an uncaught error or `console.error`
+    (with an allow-list for known ones). The fixture vault turns on the core plugins most writers use
+    (Bookmarks, Outline, Backlinks, File recovery). One spec sets the trash to "system" with a failing
+    `trashSystem`.
+- **Touches.** `src/**/view.ts`, modals and setting tabs (field renames), `core/notes.ts`,
+  `tests/support/`, `tests/e2e/` (harness and fixture vault).
+
 ## Measured and set aside
 
 ### 12. Content indexes share one read and one segmentation per file

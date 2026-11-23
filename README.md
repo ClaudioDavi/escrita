@@ -99,6 +99,12 @@ To release, run `npm version <patch|minor|major> --no-git-tag-version` (it updat
 
 ## Changelog
 
+### 1.3.1 (2026-11-23)
+
+A fix for the Outline panel breaking other plugins' buttons.
+
+- **Fix**: while the **Outline** panel was open, Obsidian's bookmark button in a tab's header (and any plugin's button there) could fail with "Cannot read properties of null (reading 'prepend')" in the developer console. The panel was overwriting a part of the tab that Obsidian uses for those buttons. A test now stops any Escrita panel from doing that again.
+
 ### 1.3.0 (2026-11-23)
 
 Typewriter scroll in writing mode, a fix for the outline panel showing an old note, and a fix for a system trash that fails.
