@@ -181,8 +181,8 @@ com Shift. Funciona na Visualização ao vivo e no modo código-fonte, só no co
 
 A configuração **Modo máquina de escrever**, no grupo Nota inicial, tem três valores:
 
-- **Notas acompanhadas** (o padrão): só as notas das pastas acompanhadas, as que contam para as
-  metas. A nota inicial nunca é uma delas, então ela nunca rola.
+- **Notas acompanhadas** (o padrão): só as notas que contam para as metas, as das suas pastas
+  acompanhadas (todas as notas, se a lista estiver vazia). Uma nota inicial fora delas nunca rola.
 - **Todas as notas**: qualquer nota que você abrir no modo escrita.
 - **Desligado**: sem rolagem.
 

@@ -176,8 +176,8 @@ Live Preview and in source mode, on desktop only.
 
 The setting **Typewriter scroll in writing mode**, in the Home note group, has three values:
 
-- **Tracked notes** (the default): only notes in the track folders, the ones counted toward goals.
-  The home note is never one of them, so it never scrolls.
+- **Tracked notes** (the default): only the notes goals count, the ones in your track folders
+  (every note, if the list is empty). A home note kept outside them never scrolls.
 - **Every note**: any note you open in writing mode.
 - **Off**: no scrolling.
 
